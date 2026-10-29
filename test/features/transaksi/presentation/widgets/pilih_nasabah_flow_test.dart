@@ -14,6 +14,25 @@ Finder _pickerText(String text) => find.descendant(
       matching: find.text(text),
     );
 
+void _servePagedRows(StubApi api, List<Map<String, dynamic>> rows) {
+  api.onRequest(
+    'GET',
+    '/api/v1/nasabah',
+    json: (options) {
+      final query = options.uri.queryParameters;
+      final page = int.parse(query['page'] ?? '1');
+      final pageSize = int.parse(query['page_size'] ?? '50');
+      final start = (page - 1) * pageSize;
+      final results = rows.skip(start).take(pageSize).toList();
+      return nasabahPage(
+        results,
+        count: rows.length,
+        hasNext: start + results.length < rows.length,
+      );
+    },
+  );
+}
+
 class _BrokenNasabahNotifier extends NasabahNotifier {
   _BrokenNasabahNotifier(NasabahNotifier delegate)
       : super(
@@ -167,27 +186,41 @@ void main() {
     },
   );
 
+  testWidgets(
+    'clearing search reloads the first page and shows no-match state',
+    (tester) async {
+      final row = nasabahRow('1', nama: 'Load Nasabah 0001');
+      api.onRequest(
+        'GET',
+        '/api/v1/nasabah',
+        json: (options) => options.uri.queryParameters['search'] == null
+            ? nasabahPage([row])
+            : nasabahPage([]),
+      );
+      await open(tester);
+      await openPicker(tester);
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'missing');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(find.text('Nasabah tidak ditemukan.'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+      expect(api.requests, hasLength(3));
+      expect(api.last.query['page'], '1');
+      expect(api.last.query['search'], isNull);
+    },
+  );
+
   testWidgets('scrolling loads the next server page', (tester) async {
     final rows = List.generate(100, (index) {
       final number = (index + 1).toString().padLeft(4, '0');
       return nasabahRow(number, nama: 'Load Nasabah $number');
     });
-    api.onRequest(
-      'GET',
-      '/api/v1/nasabah',
-      json: (options) {
-        final query = options.uri.queryParameters;
-        final page = int.parse(query['page'] ?? '1');
-        final pageSize = int.parse(query['page_size'] ?? '50');
-        final start = (page - 1) * pageSize;
-        final results = rows.skip(start).take(pageSize).toList();
-        return nasabahPage(
-          results,
-          count: rows.length,
-          hasNext: start + results.length < rows.length,
-        );
-      },
-    );
+    _servePagedRows(api, rows);
     await open(tester);
     await openPicker(tester);
 
@@ -195,6 +228,36 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.requests, hasLength(2));
+    expect(api.last.query['page'], '2');
+    expect(find.text('Load Nasabah 0051'), findsOneWidget);
+  });
+
+  testWidgets('a failed next page shows progress and can be retried', (
+    tester,
+  ) async {
+    final rows = List.generate(100, (index) {
+      final number = (index + 1).toString().padLeft(4, '0');
+      return nasabahRow(number, nama: 'Load Nasabah $number');
+    });
+    _servePagedRows(api, rows);
+    await open(tester);
+    await openPicker(tester);
+
+    api.status('GET', '/api/v1/nasabah', 500);
+    api.latency = const Duration(seconds: 1);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -5000));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Gagal memuat. Coba lagi'), findsOneWidget);
+    expect(api.last.query['page'], '2');
+
+    api.status('GET', '/api/v1/nasabah', 200);
+    api.latency = null;
+    await tester.tap(find.text('Gagal memuat. Coba lagi'));
+    await tester.pumpAndSettle();
     expect(api.last.query['page'], '2');
     expect(find.text('Load Nasabah 0051'), findsOneWidget);
   });

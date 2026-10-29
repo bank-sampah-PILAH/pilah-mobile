@@ -93,6 +93,30 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
     required int generation,
     bool append = false,
   }) async {
+    _setLoading(append: append);
+    try {
+      final result =
+          await ref.read(nasabahProvider.notifier).loadActiveNasabahPage(
+                page: page,
+                search: query.length >= 2 ? query : null,
+              );
+      if (!_isCurrentRequest(generation)) return;
+      _setLoadedPage(
+        page: page,
+        items: _eligibleNasabah(result.items),
+        hasMore: result.hasMore,
+        append: append,
+      );
+    } catch (error) {
+      if (!_isCurrentRequest(generation)) return;
+      _setLoadError(error, append: append);
+    }
+  }
+
+  bool _isCurrentRequest(int generation) =>
+      mounted && generation == _requestGeneration;
+
+  void _setLoading({required bool append}) {
     setState(() {
       if (append) {
         _isLoadingMore = true;
@@ -102,43 +126,43 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
         _error = null;
       }
     });
-    try {
-      final result =
-          await ref.read(nasabahProvider.notifier).loadActiveNasabahPage(
-                page: page,
-                search: query.length >= 2 ? query : null,
-              );
-      if (!mounted || generation != _requestGeneration) return;
-      final eligible = result.items
-          .where(
-            (customer) => customer.isActive && customer.status == 'approved',
-          )
-          .toList();
-      setState(() {
-        _page = page;
-        if (append) {
-          _nasabah.addAll(eligible);
-        } else {
-          _nasabah
-            ..clear()
-            ..addAll(eligible);
-        }
-        _hasMore = result.hasMore;
-        _isLoading = false;
-        _isLoadingMore = false;
-      });
-    } catch (error) {
-      if (!mounted || generation != _requestGeneration) return;
-      setState(() {
-        _isLoading = false;
-        _isLoadingMore = false;
-        if (append) {
-          _loadMoreError = error;
-        } else {
-          _error = error;
-        }
-      });
-    }
+  }
+
+  List<NasabahEntity> _eligibleNasabah(List<NasabahEntity> items) => items
+      .where((customer) => customer.isActive && customer.status == 'approved')
+      .toList();
+
+  void _setLoadedPage({
+    required int page,
+    required List<NasabahEntity> items,
+    required bool hasMore,
+    required bool append,
+  }) {
+    setState(() {
+      _page = page;
+      if (append) {
+        _nasabah.addAll(items);
+      } else {
+        _nasabah
+          ..clear()
+          ..addAll(items);
+      }
+      _hasMore = hasMore;
+      _isLoading = false;
+      _isLoadingMore = false;
+    });
+  }
+
+  void _setLoadError(Object error, {required bool append}) {
+    setState(() {
+      _isLoading = false;
+      _isLoadingMore = false;
+      if (append) {
+        _loadMoreError = error;
+      } else {
+        _error = error;
+      }
+    });
   }
 
   void _loadMoreWhenNearEnd() {
@@ -163,35 +187,45 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
   }
 
   Widget _buildNasabahList() {
-    if (searchQuery.length == 1) {
-      return Center(
+    if (searchQuery.length == 1) return _buildSearchHint();
+    if (_isLoading && _nasabah.isEmpty) return _buildInitialLoading();
+    if (_error != null && _nasabah.isEmpty) return _buildInitialError();
+    if (_nasabah.isEmpty) return _buildEmptyState();
+
+    return ListView.builder(
+      controller: _listController,
+      itemCount: _nasabah.length + (_hasMore ? 1 : 0),
+      itemBuilder: _buildNasabahItem,
+    );
+  }
+
+  Widget _buildSearchHint() => Center(
         child: Text(
           'Ketik minimal 2 karakter untuk mencari.',
           style: AppTextStyle.small.copyWith(color: AppColors.grey100),
         ),
       );
-    }
-    if (_isLoading && _nasabah.isEmpty) {
-      return const Center(
+
+  Widget _buildInitialLoading() => const Center(
         child: SizedBox(
           height: 24,
           width: 24,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
       );
-    }
-    if (_error != null && _nasabah.isEmpty) {
-      final error = _error;
-      return Center(
-        child: Text(
-          error is NetworkException ? error.displayMessage : error.toString(),
-          textAlign: TextAlign.center,
-          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
-        ),
-      );
-    }
-    if (_nasabah.isEmpty) {
-      return Center(
+
+  Widget _buildInitialError() {
+    final error = _error!;
+    return Center(
+      child: Text(
+        error is NetworkException ? error.displayMessage : error.toString(),
+        textAlign: TextAlign.center,
+        style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() => Center(
         child: Text(
           searchQuery.isEmpty
               ? 'Belum ada nasabah aktif.'
@@ -199,117 +233,113 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
           style: AppTextStyle.small.copyWith(color: AppColors.grey100),
         ),
       );
-    }
 
-    return ListView.builder(
-      controller: _listController,
-      itemCount: _nasabah.length + (_hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _nasabah.length) {
-          if (_isLoadingMore) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+  Widget _buildNasabahItem(BuildContext context, int index) {
+    if (index == _nasabah.length) return _buildLoadMoreFooter();
+
+    final customer = _nasabah[index];
+    // `id` is the backend UUID and means nothing to a user;
+    // `idNasabah` carries the human-readable kode. It can be empty (the
+    // mapper defaults it), in which case the phone stands alone.
+    final subtitle = [
+      if (customer.idNasabah.trim().isNotEmpty) customer.idNasabah,
+      customer.phone,
+    ].join(' · ');
+    return InkWell(
+      onTap: () => context.pop(customer),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: customer.avatarColor,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                customer.initials,
+                style: AppTextStyle.title1.copyWith(
+                  color: customer.textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
-            );
-          }
-          if (_loadMoreError != null) {
-            return Center(
-              child: TextButton(
-                onPressed: _loadMore,
-                child: const Text('Gagal memuat. Coba lagi'),
-              ),
-            );
-          }
-          return const SizedBox(height: 24);
-        }
-
-        final customer = _nasabah[index];
-        // `id` is the backend UUID and means nothing to a user;
-        // `idNasabah` carries the human-readable kode. It can be empty (the
-        // mapper defaults it), in which case the phone stands alone.
-        final subtitle = [
-          if (customer.idNasabah.trim().isNotEmpty) customer.idNasabah,
-          customer.phone,
-        ].join(' · ');
-        return InkWell(
-          onTap: () => context.pop(customer),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: customer.avatarColor,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    customer.initials,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    customer.name,
                     style: AppTextStyle.title1.copyWith(
-                      color: customer.textColor,
+                      color: Colors.black87,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        customer.name,
-                        style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: AppTextStyle.small.copyWith(
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Saldo',
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: Colors.grey[500],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Saldo',
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      customer.balance,
-                      style: AppTextStyle.title1.copyWith(
-                        color: AppColors.greenDark,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  customer.balance,
+                  style: AppTextStyle.title1.copyWith(
+                    color: AppColors.greenDark,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
+  }
+
+  Widget _buildLoadMoreFooter() {
+    if (_isLoadingMore) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    if (_loadMoreError != null) {
+      return Center(
+        child: TextButton(
+          onPressed: _loadMore,
+          child: const Text('Gagal memuat. Coba lagi'),
+        ),
+      );
+    }
+    return const SizedBox(height: 24);
   }
 
   @override
