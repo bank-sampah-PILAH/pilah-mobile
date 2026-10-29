@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_media_dialog.dart';
 
@@ -62,12 +61,14 @@ void main() {
     expect(find.byType(AppMediaDialog), findsNothing);
   });
 
-  testWidgets('dims the screen behind it to black', (tester) async {
+  testWidgets('dims the screen with the same barrier as every dialog',
+      (tester) async {
     await open(tester);
 
     final barrier = tester.widget<ModalBarrier>(
       find.byType(ModalBarrier).last,
     );
-    expect(barrier.color, AppColors.black.withValues(alpha: 0.87));
+    // The app sets no barrier of its own, so this is Flutter's default.
+    expect(barrier.color, Colors.black54);
   });
 }
