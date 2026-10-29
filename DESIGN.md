@@ -31,7 +31,7 @@ Read this before adding or changing a screen. Each rule is marked **in code** (e
 | Dividers and outlines | `AppColors.border` | `#E5E7EB` | in code |
 | Strong secondary text | `AppColors.inkSoft` | `#374151` | in code; 10:1 on white |
 
-Avatars are the one place that keeps several hues on purpose. The list avatars (`core/utils/avatar_style.dart`) are light tints with dark initials, six pairs, guarded in `test/core/utils/avatar_style_contrast_test.dart`. The profile header avatar picks from `AppColors.avatarFills` (dark fills behind white initials), guarded in `test/design/contrast_test.dart`. The gender icons in the profile form are neutral (`AppColors.inkSoft`), not blue and pink.
+Avatars are the one place that keeps several hues on purpose. The list avatars (`core/utils/avatar_style.dart`) are light tints with dark initials, six pairs held as `AppColors.avatar*` tokens, guarded in `test/core/utils/avatar_style_contrast_test.dart`. The profile header avatar picks from `AppColors.avatarFills` (dark fills behind white initials), guarded in `test/design/contrast_test.dart`. The gender icons in the profile form are neutral (`AppColors.inkSoft`), not blue and pink.
 
 Retired colors: the greys, ambers, green tints and reds that used to be copied into screens are listed in `test/design/retired_palette_test.dart`, which fails if one comes back. If a screen needs a new color, add a token here and a contrast pair in `test/design/contrast_test.dart` instead of a literal.
 
@@ -51,7 +51,7 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 | `AppTextStyle.small` | 12 | Body, captions |
 | `AppTextStyle.extraSmall` | 10 | Meta text, nav labels |
 
-`NasabahStyle.text(size, …)` exists for nasabah screens. Prefer sizes from the table above; sizes 11, 13, 15, 17, 22 and 26 appear in the code today and should be moved onto the scale over time (**proposed**).
+`NasabahStyle.text(size, …)` exists for nasabah screens. **In code**, every font size is a step of `AppFontSize` (`lib/design/constants/font_size.dart`): `xs` 10, `sm` 12, `md` 14, `lg` 16, `xl` 18, `xxl` 20, `display` 24, `figure` 28 (a big number) and `jumbo` 48. A bare `fontSize: 15` fails `test/design/hardcoded_styles_test.dart`; the old off-scale sizes were moved to the nearest step (11 and 13 to `sm`, 15 to `md`, 17 to `lg`, 22 to `xxl`, 26 to `display`).
 
 ### Shape and spacing
 
@@ -150,7 +150,7 @@ Known gaps against this baseline, not yet audited screen by screen: light grey h
 
 ## 7. Checklist for a new screen
 
-- [ ] Colors and text from tokens, no new literals. `test/design/hardcoded_styles_test.dart` fails on any new raw `Color(0x…)` or `fontSize:` outside `lib/design/`; after removing some, lower its baseline with `UPDATE_BASELINE=1 flutter test test/design/hardcoded_styles_test.dart`.
+- [ ] Colors and text from tokens, no new literals. `test/design/hardcoded_styles_test.dart` fails on any raw `Color(0x…)`, `Color.fromARGB`, `Color.fromRGBO`, `Color.from` or `fontSize:` outside `lib/design/` (font sizes only live in `font_size.dart`). There is no baseline.
 - [ ] Stock widgets left alone, so the theme applies.
 - [ ] Sheets use `BottomSheetHeader`.
 - [ ] Loading, empty and error states handled.

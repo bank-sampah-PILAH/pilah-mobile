@@ -9,7 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// theme. Colours may be written in `lib/design/` (that is where the tokens
 /// live); font sizes only in `lib/design/constants/font_size.dart`.
 
-final _color = RegExp(r'Color\(\s*0x[0-9A-Fa-f]{8}\s*\)|Color\.fromRGBO\(');
+final _color = RegExp(
+  r'Color\(\s*0x[0-9A-Fa-f]{8}\s*\)|Color\.(fromRGBO|fromARGB|from)\(',
+);
 final _fontSize = RegExp(r'fontSize:\s*[0-9.]+');
 
 List<String> _scan() {
