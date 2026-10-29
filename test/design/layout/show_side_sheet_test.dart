@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/side_sheet_presentation.dart';
 
@@ -16,6 +17,10 @@ void main() {
   const contentKey = Key('side-sheet-content');
   final nestedNavigatorKey = GlobalKey<NavigatorState>();
 
+  /// What the panel answered, so a caller's `await` is observable.
+  String? result;
+  setUp(() => result = null);
+
   /// Opens the sheet from a context inside a *nested* navigator, so where the
   /// route actually lands is observable.
   Future<void> open(WidgetTester tester, Size window) async {
@@ -30,13 +35,24 @@ void main() {
           key: nestedNavigatorKey,
           onGenerateRoute: (settings) => MaterialPageRoute<void>(
             builder: (nestedContext) => TextButton(
-              onPressed: () => showSideSheet<void>(
-                context: nestedContext,
-                builder: (_) => const SizedBox.expand(
-                  key: contentKey,
-                  child: Text('isi panel'),
-                ),
-              ),
+              onPressed: () async {
+                result = await showSideSheet<String>(
+                  context: nestedContext,
+                  builder: (sheetContext) => SizedBox.expand(
+                    key: contentKey,
+                    child: Column(
+                      children: [
+                        const Text('isi panel'),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(sheetContext).pop('tersimpan'),
+                          child: const Text('selesai'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
               child: const Text('buka'),
             ),
           ),
@@ -88,6 +104,44 @@ void main() {
       findsNothing,
       reason: 'a panel inside the nested navigator would go with its branch',
     );
+  });
+
+  /// Three ways out, all of them in the acceptance criteria. They are pinned
+  /// here because they are the reason the panel is a route at all: an
+  /// `OverlayEntry` would have to re-implement each one, and the browser back
+  /// button could not be made to work at all.
+  group('closing it', () {
+    testWidgets('tapping the page beside the panel closes it', (tester) async {
+      await open(tester, const Size(1440, 900));
+      expect(find.byKey(contentKey), findsOneWidget);
+
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+    });
+
+    testWidgets('pressing escape closes it', (tester) async {
+      await open(tester, const Size(1440, 900));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing,
+          reason: 'a keyboard user on the web expects escape to work');
+    });
+
+    testWidgets('popping the panel closes it and answers its value',
+        (tester) async {
+      await open(tester, const Size(1440, 900));
+
+      await tester.tap(find.text('selesai'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+      expect(result, 'tersimpan',
+          reason: 'the form reports what it did through the sheet');
+    });
   });
 
   testWidgets('shrinking the window to a phone keeps the panel inside it',
