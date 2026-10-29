@@ -89,15 +89,14 @@ void main() {
     test('the narrowest side-sheet window gets a narrower panel', () {
       expect(
         SideSheetPresentation.widthFor(LayoutBreakpoint.mediumMinWidth),
-        LayoutBreakpoint.mediumMinWidth -
-            SideSheetPresentation.minPageVisible,
+        LayoutBreakpoint.mediumMinWidth - SideSheetPresentation.minPageVisible,
         reason: 'a 560 panel would leave a 40 px sliver of the page',
       );
     });
 
     test('the panel stops growing once the page has room to spare', () {
-      const firstFullWidthWindow = SideSheetPresentation.maxWidth +
-          SideSheetPresentation.minPageVisible;
+      const firstFullWidthWindow =
+          SideSheetPresentation.maxWidth + SideSheetPresentation.minPageVisible;
       expect(
         SideSheetPresentation.widthFor(firstFullWidthWindow),
         SideSheetPresentation.maxWidth,
