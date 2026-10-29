@@ -80,63 +80,72 @@ void main() {
     );
   });
 
-  testWidgets('opened cold, the picker fetches every active nasabah',
-      (tester) async {
-    when(() => getActiveUseCase.execute()).thenAnswer(
-      (_) async => Right(HalamanNasabah(
-        items: [_nasabah('NAS-0001')],
-        totalCount: 1,
-        hasMore: false,
-      )),
+  testWidgets('opened cold, the picker fetches its first active page', (
+    tester,
+  ) async {
+    when(() => getUseCase.execute(any())).thenAnswer(
+      (_) async => Right(
+        HalamanNasabah(
+          items: [_nasabah('NAS-0001')],
+          totalCount: 1,
+          hasMore: false,
+        ),
+      ),
     );
 
-    await tester.pumpWidget(MaterialApp(
-      home: withNasabahProvider(
-        notifier,
-        const Scaffold(body: PilihNasabahPicker()),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: withNasabahProvider(
+          notifier,
+          const Scaffold(body: PilihNasabahPicker()),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
-    // Picker tidak boleh memakai jalur berpaginasi milik halaman nasabah,
-    // karena ia harus menampilkan seluruh pilihan sekaligus.
-    verify(() => getActiveUseCase.execute()).called(1);
-    verifyNever(() => getUseCase.execute(any()));
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .single as GetNasabahParams;
+    expect(params.page, 1);
+    expect(params.pageSize, 50);
+    expect(params.status, 'aktif');
+    expect(params.search, isNull);
+    verifyNever(() => getActiveUseCase.execute());
   });
 
   testWidgets(
-      'fetches even when the notifier already holds the nasabah page list',
-      (tester) async {
-    when(() => getUseCase.execute(any())).thenAnswer(
-      (_) async => Right(HalamanNasabah(
-        items: [_nasabah('NAS-0009')],
-        totalCount: 1,
-        hasMore: false,
-      )),
-    );
-    when(() => getActiveUseCase.execute()).thenAnswer(
-      (_) async => Right(HalamanNasabah(
-        items: [_nasabah('NAS-0001')],
-        totalCount: 1,
-        hasMore: false,
-      )),
-    );
+    'fetches even when the notifier already holds the nasabah page list',
+    (tester) async {
+      when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+        final params =
+            invocation.positionalArguments.single as GetNasabahParams;
+        final id = params.pageSize == null ? 'NAS-0009' : 'NAS-0001';
+        return Right(
+          HalamanNasabah(items: [_nasabah(id)], totalCount: 1, hasMore: false),
+        );
+      });
 
-    // The page state is loaded first in the same container the picker uses.
-    final harness = NotifierHarness(nasabahProvider, () => notifier);
-    addTearDown(harness.dispose);
-    await notifier.loadNasabah();
-    clearInteractions(getActiveUseCase);
+      // The page state is loaded first in the same container the picker uses.
+      final harness = NotifierHarness(nasabahProvider, () => notifier);
+      addTearDown(harness.dispose);
+      await notifier.loadNasabah();
+      final pageState = notifier.state;
+      clearInteractions(getUseCase);
 
-    await tester.pumpWidget(MaterialApp(
-      home: UncontrolledProviderScope(
-        container: harness.container,
-        child: const Scaffold(body: PilihNasabahPicker()),
-      ),
-    ));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UncontrolledProviderScope(
+            container: harness.container,
+            child: const Scaffold(body: PilihNasabahPicker()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    verify(() => getActiveUseCase.execute()).called(1);
-    expect(find.text('Nasabah NAS-0001'), findsOneWidget);
-  });
+      verify(() => getUseCase.execute(any())).called(1);
+      verifyNever(() => getActiveUseCase.execute());
+      expect(notifier.state, same(pageState));
+      expect(find.text('Nasabah NAS-0001'), findsOneWidget);
+    },
+  );
 }

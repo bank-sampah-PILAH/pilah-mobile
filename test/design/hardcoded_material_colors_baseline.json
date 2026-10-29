@@ -44,7 +44,7 @@
   "lib/features/transaksi/presentation/pages/transaksi_baru_page.dart": 6,
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": 16,
   "lib/features/transaksi/presentation/widgets/item_setoran_card.dart": 16,
-  "lib/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart": 5,
+  "lib/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart": 3,
   "lib/features/transaksi/presentation/widgets/pilih_nasabah_section.dart": 7,
   "lib/features/transaksi/presentation/widgets/transaction_summary_section.dart": 4,
   "lib/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart": 7

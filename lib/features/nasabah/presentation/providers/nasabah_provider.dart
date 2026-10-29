@@ -70,6 +70,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
   /// Jeda ketik sebelum pencarian dikirim, supaya satu kata tidak memicu
   /// satu panggilan API per huruf.
   static const Duration jedaPencarian = Duration(milliseconds: 300);
+  static const int _pickerPageSize = 50;
 
   NasabahNotifier(
     this.getNasabahUseCase,
@@ -99,9 +100,8 @@ class NasabahNotifier extends Notifier<NasabahState> {
   /// Menghitung isi daftar akan salah begitu daftarnya berpaginasi.
   int get activeCount => _totalAktif;
 
-  /// Every active nasabah, independent of the nasabah page's active/inactive
-  /// tab and search query. The Transaksi Baru picker reads this so its options
-  /// aren't narrowed by whatever the nasabah page was last showing.
+  /// Approved active nasabah from the legacy snapshot, independent of the
+  /// nasabah page's tab and search query. The picker uses paged results.
   List<NasabahEntity> get activeNasabah =>
       _allNasabah.where((n) => n.isActive && n.status == 'approved').toList();
 
@@ -226,10 +226,27 @@ class NasabahNotifier extends Notifier<NasabahState> {
     return _isActiveTab! ? 'aktif' : 'tidak_aktif';
   }
 
-  /// Memuat seluruh nasabah aktif untuk picker Transaksi Baru.
+  /// Loads one server-filtered page for the setoran recipient picker.
   ///
-  /// Dipisah dari [loadNasabah] karena halaman daftar nasabah berpaginasi,
-  /// sedangkan picker harus menampilkan semua pilihan sekaligus (PIL-214).
+  /// Keeping this separate from [loadNasabah] avoids changing the nasabah
+  /// page state while the picker searches and paginates independently.
+  Future<HalamanNasabah> loadActiveNasabahPage({
+    int page = 1,
+    String? search,
+  }) async {
+    final result = await getNasabahUseCase.execute(
+      GetNasabahParams(
+        page: page,
+        pageSize: _pickerPageSize,
+        status: 'aktif',
+        search: search,
+      ),
+    );
+    return result.fold((failure) => throw failure, (data) => data);
+  }
+
+  /// Memuat snapshot nasabah aktif satu halaman; picker setoran memakai
+  /// [loadActiveNasabahPage] agar daftar panjang tetap dapat dicari.
   Future<List<NasabahEntity>> loadActiveNasabah() async {
     final result = await getActiveNasabahUseCase.execute();
     return result.fold((failure) => throw failure, (data) {
