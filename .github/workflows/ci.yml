@@ -249,13 +249,18 @@ jobs:
             for tracefile in "${unit_tracefiles[@]}"; do
               lcov_args+=(--add-tracefile "$tracefile")
             done
-            lcov "${lcov_args[@]}" --output-file coverage/lcov.info
+            # A selection that runs no app code (a test-only change) records nothing,
+            # which lcov reports as an error unless told that an empty trace is fine.
+            lcov "${lcov_args[@]}" --ignore-errors empty --output-file coverage/lcov.info
+            grep -q '^SF:' coverage/lcov.info || rm -f coverage/lcov.info
           fi
 
           mapfile -t browser_tracefiles < <(find coverage/browser -type f -name '*.info' -print | sort)
           if ((${#browser_tracefiles[@]})); then
             lcov_args=()
             for tracefile in "${browser_tracefiles[@]}"; do
+              # Chrome records absolute SF paths; Sonar resolves only repo-relative ones.
+              sed -i "s|^SF:$PWD/|SF:|" "$tracefile"
               lcov_args+=(--add-tracefile "$tracefile")
             done
             lcov "${lcov_args[@]}" --output-file coverage/browser.lcov.info

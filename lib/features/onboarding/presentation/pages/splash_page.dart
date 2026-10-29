@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
@@ -10,6 +11,8 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key, this.from});
@@ -105,8 +108,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       'PILAH',
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.greenDark,
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
+                        fontSize: AppFontSize.jumbo,
+                        fontWeight: AppFontWeight.bold,
                         letterSpacing: 2.0,
                       ),
                     ),
@@ -116,7 +119,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       'Sistem Manajemen Bank Sampah',
                       style: AppTextStyle.small.copyWith(
                         color: AppColors.grey100,
-                        fontSize: 14,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -134,7 +137,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: AppColors.greenDark,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -142,7 +145,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       'Bank Sampah BTH, Depok',
                       style: AppTextStyle.extraSmall.copyWith(
                         color: AppColors.grey100,
-                        fontSize: 12,
+                        fontSize: AppFontSize.sm,
                       ),
                     ),
                   ],

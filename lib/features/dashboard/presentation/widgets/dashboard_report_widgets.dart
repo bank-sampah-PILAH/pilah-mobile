@@ -10,6 +10,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_o
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 
 export 'dashboard_report_range_filter.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DashboardKpiCard extends StatelessWidget {
   final String label;
@@ -51,7 +52,7 @@ class DashboardKpiCard extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(icon, color: color, size: 20),
                 ),
@@ -288,7 +289,7 @@ class _ReportTotalBadge extends StatelessWidget {
           'Total ${WeightFormatter.formatKg(totalWeightKg)} kg',
           style: AppTextStyle.small.copyWith(
             color: AppColors.greenDark,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.semibold,
           ),
         ),
       );
@@ -424,7 +425,8 @@ class _WasteCategoryBreakdown extends StatelessWidget {
         Text(category.category,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600)),
+            style: AppTextStyle.small
+                .copyWith(fontWeight: AppFontWeight.semibold)),
         Text('${category.depositCount} setoran',
             style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100)),
       ],

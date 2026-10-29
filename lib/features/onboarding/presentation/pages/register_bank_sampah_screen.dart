@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -17,6 +18,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class RegisterBankSampahScreen extends ConsumerStatefulWidget {
   /// True when the user is re-applying after a previous registration was
@@ -141,11 +143,11 @@ class _RegisterBankSampahScreenState
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.dangerLight), // red-200
       ),
-      child: Row(
+      child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade600, size: 22),
-          const SizedBox(width: 12),
+          Icon(Icons.error_outline, color: AppColors.danger, size: 22),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,18 +155,18 @@ class _RegisterBankSampahScreenState
                 Text(
                   'Pendaftaran Ditolak',
                   style: TextStyle(
-                    color: Colors.red.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    color: AppColors.danger,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.md,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Pendaftaran sebelumnya ditolak. Mohon periksa kembali data '
                   'Anda dan daftar ulang.',
                   style: TextStyle(
-                    color: Colors.red.shade700,
-                    fontSize: 13,
+                    color: AppColors.danger,
+                    fontSize: AppFontSize.sm,
                     height: 1.4,
                   ),
                 ),
@@ -231,7 +233,7 @@ class _RegisterBankSampahScreenState
               // error, so the two read as one form.
               final errorColor = Theme.of(field.context).colorScheme.error;
               final placeholderColor =
-                  field.hasError ? errorColor : Colors.grey.shade400;
+                  field.hasError ? errorColor : AppColors.grey200;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -266,7 +268,7 @@ class _RegisterBankSampahScreenState
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: const BoxDecoration(
-                                        color: Colors.black54,
+                                        color: AppColors.grey100,
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -289,26 +291,26 @@ class _RegisterBankSampahScreenState
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(vertical: 32),
-                              child: Column(
+                              child: const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.image_outlined,
+                                  Icon(Icons.image_outlined,
                                       color: AppColors.greenDark, size: 32),
-                                  const SizedBox(height: 12),
-                                  const Text(
+                                  SizedBox(height: 12),
+                                  Text(
                                     'Pilih foto',
                                     style: TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
+                                      color: AppColors.black,
+                                      fontWeight: AppFontWeight.semibold,
+                                      fontSize: AppFontSize.md,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Text(
                                     'JPG / PNG · Maks. 5 MB',
                                     style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 12,
+                                      color: AppColors.grey100,
+                                      fontSize: AppFontSize.sm,
                                     ),
                                   ),
                                 ],
@@ -322,7 +324,7 @@ class _RegisterBankSampahScreenState
                       field.errorText!,
                       style: TextStyle(
                         color: errorColor,
-                        fontSize: 12,
+                        fontSize: AppFontSize.sm,
                       ),
                     ),
                   ],
@@ -361,14 +363,14 @@ class _RegisterBankSampahScreenState
         ),
 
         // 5. Footer Text
-        Padding(
-          padding: const EdgeInsets.all(24.0),
+        const Padding(
+          padding: EdgeInsets.all(24.0),
           child: Text(
             'Pengajuan akan ditinjau oleh Admin PILAH.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade400,
+              fontSize: AppFontSize.sm,
+              color: AppColors.grey200,
             ),
           ),
         ),

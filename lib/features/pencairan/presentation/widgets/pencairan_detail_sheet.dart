@@ -20,6 +20,7 @@ import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 String _time(DateTime? tanggal) {
   if (tanggal == null) return '-';
@@ -130,7 +131,7 @@ class PencairanDetailSheet extends StatelessWidget {
                 initialsOf(item.nasabahNama),
                 style: AppTextStyle.small.copyWith(
                   color: palette.$2,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.bold,
                 ),
               ),
             ),
@@ -171,7 +172,7 @@ class PencairanDetailSheet extends StatelessWidget {
               _rupiah(item.nominal),
               style: AppTextStyle.headline1.copyWith(
                 color: AppColors.danger,
-                fontWeight: FontWeight.w700,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -278,7 +279,7 @@ class _SaldoBlock extends StatelessWidget {
                   _rupiah(value),
                   style: AppTextStyle.headline3.copyWith(
                     color: emphasis ? AppColors.greenDark : AppColors.black,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppFontWeight.bold,
                   ),
                 ),
               ),

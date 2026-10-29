@@ -22,6 +22,7 @@ import '../widgets/pencairan_konfirmasi_sheet.dart';
 import '../widgets/pencairan_sort_button.dart';
 import '../widgets/pencairan_ui.dart';
 import 'draft_editor_args.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The pencairan screen: saved drafts to resume, and the way to start a new one.
 class DraftListPage extends StatelessWidget {
@@ -324,8 +325,8 @@ class _KelompokHeader extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyle.extraSmall.copyWith(
-            color: Colors.grey[700],
-            fontWeight: FontWeight.bold,
+            color: AppColors.inkSoft,
+            fontWeight: AppFontWeight.bold,
             letterSpacing: 0.8,
           ),
         ),
@@ -350,7 +351,8 @@ class _TidakAdaHasil extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                    const Icon(Icons.search_off,
+                        size: 48, color: AppColors.grey200),
                     const SizedBox(height: 12),
                     Text(
                       "Tidak ada pencairan untuk '$query'",
@@ -386,14 +388,15 @@ Future<void> _batalkan(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: AppColors.fill,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(draft.nama,
-              style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w700)),
+              style:
+                  AppTextStyle.small.copyWith(fontWeight: AppFontWeight.bold)),
           const SizedBox(height: 2),
           Text(
             '${draft.jumlahItem} nasabah \u00b7 ${rupiah(draft.totalDibayar)}',
@@ -458,7 +461,8 @@ class _DraftCardState extends State<_DraftCard> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.people_outline, size: 16, color: Colors.grey[700]),
+                const Icon(Icons.people_outline,
+                    size: 16, color: AppColors.inkSoft),
                 const SizedBox(width: 4),
                 Text('${draft.jumlahItem} nasabah',
                     style: AppTextStyle.extraSmall),
@@ -473,12 +477,12 @@ class _DraftCardState extends State<_DraftCard> {
                     children: [
                       Text('Total dibayar',
                           style: AppTextStyle.extraSmall
-                              .copyWith(color: Colors.grey[700])),
+                              .copyWith(color: AppColors.inkSoft)),
                       Text(
                         rupiah(draft.totalDibayar),
                         style: AppTextStyle.headline3.copyWith(
                           color: AppColors.greenDark,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ],
@@ -493,7 +497,7 @@ class _DraftCardState extends State<_DraftCard> {
                     _expanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: Colors.grey[800],
+                    color: AppColors.inkSoft,
                   ),
                 ),
               ],
@@ -502,9 +506,9 @@ class _DraftCardState extends State<_DraftCard> {
               const SizedBox(height: 8),
               _Rincian(draft: draft),
             ],
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, color: Colors.grey.shade200),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: AppColors.border),
             ),
             _Footer(draft: draft, onCancel: widget.onCancel),
           ],
@@ -530,8 +534,8 @@ class _Rincian extends StatelessWidget {
             Text(
               value,
               style: AppTextStyle.small.copyWith(
-                fontWeight: FontWeight.w600,
-                color: color ?? Colors.black87,
+                fontWeight: AppFontWeight.semibold,
+                color: color ?? AppColors.black,
               ),
             ),
           ],
@@ -570,7 +574,7 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = AppTextStyle.extraSmall.copyWith(color: Colors.grey[700]);
+    final muted = AppTextStyle.extraSmall.copyWith(color: AppColors.inkSoft);
     final time = waktu(draft.createdAt);
     return Row(
       key: Key('footer-${draft.id}'),
@@ -586,15 +590,16 @@ class _Footer extends StatelessWidget {
               if (draft.dibuatOlehNama.isNotEmpty)
                 Text(
                   draft.dibuatOlehNama,
-                  style:
-                      AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyle.small
+                      .copyWith(fontWeight: AppFontWeight.semibold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               if (time.isNotEmpty)
                 Row(
                   children: [
-                    Icon(Icons.schedule, size: 14, color: Colors.grey[700]),
+                    const Icon(Icons.schedule,
+                        size: 14, color: AppColors.inkSoft),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(time,
@@ -613,7 +618,7 @@ class _Footer extends StatelessWidget {
             tooltip: 'Batalkan draft',
             visualDensity: VisualDensity.compact,
             onPressed: onCancel,
-            icon: Icon(Icons.delete_outline, color: Colors.red[700]),
+            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
           ),
       ],
     );

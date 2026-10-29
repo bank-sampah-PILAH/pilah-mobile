@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
@@ -22,6 +23,7 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_l
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_footer.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_header.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   @visibleForTesting
@@ -208,7 +210,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                             Text(
                               'Masuk ke akun Anda',
                               style: AppTextStyle.headline1.copyWith(
-                                fontWeight: FontWeight.w700,
+                                fontWeight: AppFontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -216,7 +218,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                               'Pilih Google atau gunakan email dan kata sandi yang terdaftar untuk melanjutkan.',
                               style: AppTextStyle.small.copyWith(
                                 color: AppColors.grey100,
-                                fontSize: 14,
+                                fontSize: AppFontSize.md,
                               ),
                             ),
                             const SizedBox(height: 32),
@@ -299,7 +301,7 @@ class _EmailPasswordLoginFormState extends State<_EmailPasswordLoginForm> {
                   'ATAU',
                   style: AppTextStyle.extraSmall.copyWith(
                     color: AppColors.grey100,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.semibold,
                   ),
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
@@ -20,7 +21,7 @@ class CustomSearchField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       decoration: appSearchDecoration(hintText: hintText),
-      style: AppTextStyle.small.copyWith(color: Colors.black87),
+      style: AppTextStyle.small.copyWith(color: AppColors.black),
     );
   }
 }

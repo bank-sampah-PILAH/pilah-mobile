@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pengurus dashboard action area: the two things done most, side by side.
 /// Pencairan remains visible but disabled in the Transaksi Baru chooser per
@@ -129,7 +130,7 @@ class _ChoiceTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Row(
@@ -154,19 +155,21 @@ class _ChoiceTile extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyle.title1.copyWith(
-                      color: enabled ? Colors.black87 : AppColors.grey100,
-                      fontWeight: FontWeight.bold,
+                      color: enabled ? AppColors.black : AppColors.grey100,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100),
                   ),
                 ],
               ),
             ),
-            if (enabled) Icon(Icons.chevron_right, color: Colors.grey[400]),
+            if (enabled)
+              const Icon(Icons.chevron_right, color: AppColors.grey200),
           ],
         ),
       ),

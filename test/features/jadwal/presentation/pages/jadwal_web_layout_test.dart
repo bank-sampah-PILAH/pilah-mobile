@@ -21,9 +21,7 @@ class _JadwalCalls {
 /// button below it.
 Future<void> _tapCreate(WidgetTester tester) async {
   final fab = find.byTooltip('Buat Jadwal');
-  await tester.tap(fab.evaluate().isNotEmpty
-      ? fab
-      : find.widgetWithText(AppButton, 'Buat Jadwal'));
+  await tester.tap(fab.evaluate().isNotEmpty ? fab : _headerCreate);
 }
 
 Future<_JadwalCalls> _pumpAt(
@@ -69,6 +67,14 @@ Future<_JadwalCalls> _pumpAt(
 /// On a phone it stays the modal bottom sheet it already was. In a browser
 /// window it becomes a panel beside the agenda, so the day being scheduled
 /// into stays visible while it is filled in.
+/// The create button in the page header, not the one in an empty day.
+final _headerCreate = find.byWidgetPredicate(
+  (widget) =>
+      widget is AppButton &&
+      widget.label == 'Buat Jadwal' &&
+      widget.key != const Key('jadwal-empty-create'),
+);
+
 void main() {
   testWidgets('on a desktop window the title is a page header, not an AppBar',
       (tester) async {
@@ -141,9 +147,9 @@ void main() {
     await _pumpAt(tester, const Size(1440, 900));
 
     expect(find.byType(FloatingActionButton), findsNothing);
-    expect(find.widgetWithText(AppButton, 'Buat Jadwal'), findsOneWidget);
+    expect(_headerCreate, findsOneWidget);
 
-    await tester.tap(find.widgetWithText(AppButton, 'Buat Jadwal'));
+    await tester.tap(_headerCreate);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
@@ -154,7 +160,7 @@ void main() {
     await _pumpAt(tester, const Size(700, 900));
 
     expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Buat Jadwal'), findsNothing);
+    expect(_headerCreate, findsNothing);
   });
 
   testWidgets('the calendar stays put while a long agenda scrolls',
@@ -232,13 +238,10 @@ void main() {
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
 
-    final button = find.descendant(
-      of: find.byType(FilledButton),
-      matching: find.text('Buat Jadwal'),
-    );
+    final button = find.byKey(const Key('jadwal-empty-create'));
     expect(button, findsOneWidget);
     expect(
-      tester.getSize(find.widgetWithText(FilledButton, 'Buat Jadwal')).width,
+      tester.getSize(button).width,
       lessThanOrEqualTo(280),
     );
   });

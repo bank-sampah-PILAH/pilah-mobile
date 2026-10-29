@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/versi_harga.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/riwayat_harga_provider.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Riwayat harga satu jenis sampah sebagai linimasa, terbaru di atas.
 ///
@@ -225,7 +226,7 @@ class _Selisih extends StatelessWidget {
       '(${naik ? '+' : '-'}$persen%)',
       style: AppTextStyle.small.copyWith(
         color: naik ? AppColors.greenDark : AppColors.danger,
-        fontWeight: FontWeight.w600,
+        fontWeight: AppFontWeight.semibold,
       ),
     );
   }
