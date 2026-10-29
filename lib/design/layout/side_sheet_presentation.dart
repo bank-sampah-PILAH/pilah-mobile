@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'layout_breakpoint.dart';
 
 /// Wadah yang dipakai sebuah formulir panjang pada lebar jendela tertentu.
@@ -25,6 +27,35 @@ enum SideSheetPresentation {
   /// Panel yang masuk dari tepi kanan di atas halaman, menyisakan halaman itu
   /// tetap terlihat di belakangnya.
   sideSheet;
+
+  /// Lebar terlebar panel, dalam logical pixel.
+  ///
+  /// Sedikit di bawah [LayoutBreakpoint.formMaxWidth] (640): panel ini memegang
+  /// formulir satu kolom, dan kolom isian yang terlalu lebar justru sulit
+  /// dipindai. 560 cukup untuk satu baris jenis sampah — jenis, berat, dan
+  /// subtotal — tanpa menutup lebih banyak halaman daripada yang perlu.
+  static const double maxWidth = 560;
+
+  /// Bagian jendela yang harus tetap tidak tertutup, dalam logical pixel.
+  ///
+  /// Inti dari panel ini adalah halaman di belakangnya tetap terlihat. Panel
+  /// selebar [maxWidth] pada jendela medium tersempit (600) hanya menyisakan
+  /// 40 px, yang terbaca sebagai halaman penuh yang rusak alih-alih sebuah
+  /// panel. 160 px cukup untuk memperlihatkan tepi daftar di belakangnya
+  /// sehingga jelas halaman itu masih ada dan masih di tempatnya.
+  static const double minPageVisible = 160;
+
+  /// Lebar panel untuk jendela selebar [windowWidth] logical pixel.
+  ///
+  /// Sebuah batas atas sekaligus batas bawah: panel tidak melewati [maxWidth],
+  /// dan tidak pernah menutup jendela sampai menyisakan kurang dari
+  /// [minPageVisible]. Pada jendela sempit batas keduanyalah yang menentukan,
+  /// jadi panel di tablet memang lebih sempit daripada di desktop.
+  ///
+  /// Hanya bermakna untuk lebar yang mendapat [sideSheet]; di bawah itu tidak
+  /// ada panel untuk diukur.
+  static double widthFor(double windowWidth) =>
+      math.min(maxWidth, windowWidth - minPageVisible);
 
   /// Mengklasifikasikan [width] logical pixel ke dalam satu wadah.
   ///
