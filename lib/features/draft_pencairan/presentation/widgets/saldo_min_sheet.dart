@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import '../../domain/model/draft_pencairan.dart';
 import 'draft_format.dart';
 import 'pencairan_ui.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Asks for the smallest saldo to list: amounts to pick with a tap, a field
 /// for any other, and a count of who meets it. A bottom sheet on a phone and a
@@ -162,10 +163,11 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
           const SizedBox(height: 16),
           Row(
             children: [
-              ElevatedButton(
+              AppButton(
                 key: const Key('terapkan-saldo-min'),
+                label: 'Terapkan',
+                expand: false,
                 onPressed: () => Navigator.of(context).pop(_nilai),
-                child: const Text('Terapkan'),
               ),
               const SizedBox(width: 12),
               TextButton(

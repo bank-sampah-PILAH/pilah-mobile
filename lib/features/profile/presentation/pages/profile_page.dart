@@ -484,9 +484,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               style: AppTextStyle.small.copyWith(color: AppColors.grey100),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(
+            AppButton(
+              label: 'Coba Lagi',
+              variant: AppButtonVariant.outlined,
+              expand: false,
               onPressed: () => ref.read(profileProvider.notifier).load(),
-              child: const Text('Coba Lagi'),
             ),
           ],
         ),

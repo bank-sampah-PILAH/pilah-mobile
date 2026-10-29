@@ -4,6 +4,8 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_calendar_range_picker.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 const _indonesianMonths = [
   'Januari',
@@ -67,16 +69,6 @@ class DashboardReportRangeFilter extends StatelessWidget {
     final controller = MenuController();
     final today = DateUtils.dateOnly(DateTime.now());
     final lastDate = range.end.isAfter(today) ? range.end : today;
-    final style = OutlinedButton.styleFrom(
-      minimumSize: const Size(0, 48),
-      visualDensity: VisualDensity.standard,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      side: BorderSide(color: AppColors.greenDark.withValues(alpha: 0.2)),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md)),
-      textStyle: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
-    );
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 760),
       child: Wrap(
@@ -85,22 +77,10 @@ class DashboardReportRangeFilter extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           for (final days in [1, 7, 30])
-            Semantics(
+            AppChip(
+              label: days == 1 ? 'Hari ini' : '$days Hari',
               selected: _isSelected(_preset(days)),
-              child: OutlinedButton(
-                style: style.copyWith(
-                  foregroundColor: WidgetStatePropertyAll(
-                      _isSelected(_preset(days))
-                          ? Colors.white
-                          : AppColors.grey100),
-                  backgroundColor: WidgetStatePropertyAll(
-                      _isSelected(_preset(days))
-                          ? AppColors.greenDark
-                          : Colors.white),
-                ),
-                onPressed: () => onChanged(_preset(days)),
-                child: Text(days == 1 ? 'Hari ini' : '$days Hari'),
-              ),
+              onTap: () => onChanged(_preset(days)),
             ),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -119,29 +99,16 @@ class DashboardReportRangeFilter extends StatelessWidget {
                         color: AppColors.grey200.withValues(alpha: 0.3)),
                   )),
                 ),
-                builder: (context, controller, child) => OutlinedButton.icon(
+                builder: (context, controller, child) => AppButton(
+                  label: 'Kustom',
+                  icon: Icons.calendar_month_outlined,
+                  trailingIcon:
+                      controller.isOpen ? Icons.expand_less : Icons.expand_more,
+                  variant: AppButtonVariant.tonal,
+                  expand: false,
                   onPressed: () => controller.isOpen
                       ? controller.close()
                       : controller.open(),
-                  style: style.copyWith(
-                    foregroundColor:
-                        const WidgetStatePropertyAll(AppColors.greenDark),
-                    backgroundColor:
-                        const WidgetStatePropertyAll(AppColors.greenLight),
-                  ),
-                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Kustom'),
-                      const SizedBox(width: 4),
-                      Icon(
-                          controller.isOpen
-                              ? Icons.expand_less
-                              : Icons.expand_more,
-                          size: 16),
-                    ],
-                  ),
                 ),
                 menuChildren: [
                   AppCalendarRangePicker(

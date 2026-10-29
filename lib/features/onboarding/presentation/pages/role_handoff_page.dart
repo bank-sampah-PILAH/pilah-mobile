@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
@@ -58,11 +59,7 @@ class RoleHandoffPage extends ConsumerWidget {
     });
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        title: const Text('PILAH'),
-      ),
+      appBar: const NasabahPageAppBar(title: 'PILAH'),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

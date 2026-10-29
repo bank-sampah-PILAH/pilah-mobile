@@ -17,7 +17,6 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
@@ -308,19 +307,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
           ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
           : _webHeader
               ? null
-              : AppBar(
-                  title: Text(
-                    'Jadwal Kegiatan',
-                    style: AppTextStyle.headline1.copyWith(
-                      color: AppColors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: AppFontSize.display,
-                    ),
-                  ),
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  surfaceTintColor: Colors.transparent,
-                ),
+              : const NasabahPageAppBar(title: 'Jadwal Kegiatan'),
       floatingActionButton: widget.customerMode || _createInHeader
           ? null
           : Builder(
@@ -833,10 +820,11 @@ class _EmptyScheduleDay extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 280),
               child: SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
+                child: AppButton(
+                  key: const Key('jadwal-empty-create'),
+                  label: _createScheduleLabel,
+                  icon: Icons.add,
                   onPressed: onCreate,
-                  icon: const Icon(Icons.add),
-                  label: const Text(_createScheduleLabel),
                 ),
               ),
             ),
@@ -969,9 +957,10 @@ class _ScheduleCard extends StatelessWidget {
             onPressed: onCancel,
             child: Text(action.label),
           ),
-        JadwalAction.terbitkan => FilledButton(
+        JadwalAction.terbitkan => AppButton(
+            label: action.label,
+            expand: false,
             onPressed: onPublish,
-            child: Text(action.label),
           ),
         JadwalAction.selesaikan => AppButton(
             label: action.label,

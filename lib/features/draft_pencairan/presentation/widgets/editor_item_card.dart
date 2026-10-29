@@ -14,6 +14,7 @@ import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
 import 'pencairan_ui.dart';
 import 'potongan_control.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// One nasabah in the editor: how much, how paid, and what comes off.
 class EditorItemCard extends StatelessWidget {
@@ -61,11 +62,12 @@ class EditorItemCard extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  ElevatedButton(
+                  AppButton(
                     key: const Key('terapkan-item'),
+                    label: 'Terapkan',
+                    expand: false,
                     onPressed: () => Navigator.of(sheetContext)
                         .pop(_PotonganChoice(pilihan)),
-                    child: const Text('Terapkan'),
                   ),
                   const SizedBox(width: 12),
                   Flexible(

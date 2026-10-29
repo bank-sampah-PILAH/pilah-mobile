@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// The look of Catat Pencairan, shared by the draft screens so they read as
 /// one flow: a grey rounded back button, bold title, spaced section labels,
@@ -283,74 +284,11 @@ class PencairanActionButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    final foreground = !enabled
-        ? AppColors.grey100
-        : filled
-            ? Colors.white
-            : AppColors.greenDark;
-    final onTap = isLoading ? null : onPressed;
-    final content = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        isLoading
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: foreground,
-                ),
-              )
-            : Icon(icon, color: foreground, size: 20),
-        const SizedBox(width: 8),
-        Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: AppTextStyle.title1.copyWith(
-                color: foreground,
-                fontWeight: FontWeight.bold,
-                fontSize: AppFontSize.md,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-    );
-    return SizedBox(
-      height: 52,
-      child: filled
-          ? ElevatedButton(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                disabledBackgroundColor: AppColors.border,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: shape,
-                elevation: 0,
-              ),
-              child: content,
-            )
-          : OutlinedButton(
-              onPressed: onTap,
-              style: OutlinedButton.styleFrom(
-                backgroundColor: Colors.white,
-                side: BorderSide(
-                  color: enabled ? AppColors.greenDark : AppColors.border,
-                  width: 1.5,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: shape,
-              ),
-              child: content,
-            ),
-    );
-  }
+  Widget build(BuildContext context) => AppButton(
+        label: label,
+        icon: icon,
+        variant: filled ? AppButtonVariant.primary : AppButtonVariant.outlined,
+        isLoading: isLoading,
+        onPressed: onPressed,
+      );
 }
