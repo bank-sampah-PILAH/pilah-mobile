@@ -12,9 +12,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// `AppRadius.md` starts with a letter, so it is not counted.
 final _literal = RegExp(r'Radius\.circular\(\s*[0-9]');
 
-Map<String, int> _scan() {
+Map<String, int> _scan([Directory? root]) {
   final found = <String, int>{};
-  for (final entity in Directory('lib').listSync(recursive: true)) {
+  for (final entity in (root ?? Directory('lib')).listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('.dart')) continue;
     final path = entity.path;
     if (path.endsWith('radius.dart')) continue;
@@ -31,6 +31,21 @@ void main() {
     expect(_literal.hasMatch('Radius.circular( 24 )'), isTrue);
     expect(_literal.hasMatch('BorderRadius.circular(AppRadius.md)'), isFalse);
     expect(_literal.hasMatch('Radius.circular(AppRadius.xl)'), isFalse);
+  });
+
+  test('only the radius scale itself may hold a bare number', () {
+    final root = Directory.systemTemp.createTempSync('radius_guard');
+    addTearDown(() => root.deleteSync(recursive: true));
+    for (final path in [
+      'design/constants/radius.dart',
+      'features/radius.dart'
+    ]) {
+      File('${root.path}/$path')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('final r = BorderRadius.circular(10);');
+    }
+
+    expect(_scan(root).keys, ['${root.path}/features/radius.dart']);
   });
 
   test('no file writes a corner radius as a bare number', () {
