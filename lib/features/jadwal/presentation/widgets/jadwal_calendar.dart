@@ -31,7 +31,7 @@ const _weekdayShortNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 /// Label hari di atas kolom tanggal; dipakai juga untuk mengukur ke mana judul
 /// bulan harus sejajar.
-final _weekdayLabelStyle = const TextStyle(
+const _weekdayLabelStyle = TextStyle(
   color: AppColors.grey100,
   fontSize: 11,
   fontWeight: FontWeight.w600,
