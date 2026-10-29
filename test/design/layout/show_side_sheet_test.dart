@@ -23,7 +23,11 @@ void main() {
 
   /// Opens the sheet from a context inside a *nested* navigator, so where the
   /// route actually lands is observable.
-  Future<void> open(WidgetTester tester, Size window) async {
+  Future<void> open(
+    WidgetTester tester,
+    Size window, {
+    bool Function()? hasUnsavedInput,
+  }) async {
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -38,6 +42,7 @@ void main() {
               onPressed: () async {
                 result = await showSideSheet<String>(
                   context: nestedContext,
+                  hasUnsavedInput: hasUnsavedInput,
                   builder: (sheetContext) => SizedBox.expand(
                     key: contentKey,
                     child: Column(
@@ -158,5 +163,101 @@ void main() {
     expect(panel.width, greaterThan(0));
     expect(panel.width, lessThanOrEqualTo(380));
     expect(panel.right, 380);
+  });
+
+  /// The full-screen page never needed this guard: you leave it by pressing
+  /// back, which is deliberate. A panel adds a way out that is not — the scrim
+  /// is most of a wide window, and a mis-aimed click on it would throw away a
+  /// half-typed setoran with no way to get it back.
+  ///
+  /// The guard belongs to the container rather than to the form, so every
+  /// panel asks the same question in the same words. It reads the form's
+  /// dirtiness at the moment of the attempt, not when the panel was built,
+  /// because that is when the answer actually matters.
+  group('a panel holding unsaved input', () {
+    const question = 'Buang isi formulir?';
+
+    testWidgets('is not thrown away by a click on the scrim', (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsOneWidget);
+      expect(find.byKey(contentKey), findsOneWidget,
+          reason: 'the input is still there while the question is open');
+    });
+
+    testWidgets('stays open when the question is declined', (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Lanjut mengisi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsNothing);
+      expect(find.byKey(contentKey), findsOneWidget);
+    });
+
+    testWidgets('closes once discarding is confirmed', (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Buang'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+      expect(result, isNull, reason: 'nothing was saved');
+    });
+
+    testWidgets('is asked about on escape as well as on the scrim',
+        (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsOneWidget);
+    });
+
+    testWidgets('is read again on each attempt, not cached', (tester) async {
+      var dirty = false;
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => dirty);
+
+      dirty = true;
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsOneWidget,
+          reason: 'the form became dirty after the panel was built, which is '
+              'the only order that ever happens in practice');
+    });
+
+    testWidgets('does not second-guess the form closing itself',
+        (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      await tester.tap(find.text('selesai'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsNothing,
+          reason: 'a successful submit leaves input unsaved by definition; '
+              'asking there would block the save it just made');
+      expect(find.byKey(contentKey), findsNothing);
+      expect(result, 'tersimpan');
+    });
+  });
+
+  testWidgets('a panel with nothing in it closes without asking',
+      (tester) async {
+    await open(tester, const Size(1440, 900), hasUnsavedInput: () => false);
+
+    await tester.tapAt(const Offset(100, 450));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(contentKey), findsNothing);
+    expect(find.text('Buang isi formulir?'), findsNothing);
   });
 }
