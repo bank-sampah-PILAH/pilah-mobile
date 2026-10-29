@@ -1,9 +1,7 @@
 /// The font sizes of the app. Screens take a step from here (or an
 /// `AppTextStyle`) instead of writing a number, so the same kind of text is
 /// the same size everywhere.
-class AppFontSize {
-  AppFontSize._();
-
+abstract final class AppFontSize {
   static const double xs = 10;
   static const double sm = 12;
   static const double md = 14;
