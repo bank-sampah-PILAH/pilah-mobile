@@ -13,7 +13,6 @@ Future<void> showAppMediaDialog(
 }) =>
     showDialog<void>(
       context: context,
-      barrierColor: AppColors.black.withValues(alpha: 0.87),
       builder: (_) => AppMediaDialog(closeLabel: closeLabel, child: child),
     );
 
