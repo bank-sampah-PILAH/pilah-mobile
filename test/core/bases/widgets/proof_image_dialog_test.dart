@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 import '../../../support/fake_image_download.dart';
 
@@ -35,6 +36,22 @@ List<String> _renderedNetworkUrls(WidgetTester tester) => tester
 
 void main() {
   group('showProofImageDialog', () {
+    testWidgets('dims the page behind it at 87%, not solid black',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _openDialog(
+        tester,
+        imageUrl: 'https://storage.googleapis.com/pilah/kegiatan/bukti.jpg',
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final barrier = tester.widget<ModalBarrier>(
+        find.byType(ModalBarrier).last,
+      );
+      expect(barrier.color, AppColors.black.withValues(alpha: 0.87));
+    });
+
     testWidgets('with no photo on record, shows nothing rather than a stand-in',
         (tester) async {
       await _openDialog(tester, imageUrl: null);
