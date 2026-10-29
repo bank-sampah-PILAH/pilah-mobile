@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
@@ -22,6 +23,13 @@ class RoleSelectionPage extends ConsumerStatefulWidget {
   const RoleSelectionPage({super.key});
 
   static const route = '/choose-role';
+
+  /// The title a role is offered under here, for screens that name the role
+  /// being registered; null for a role this page does not offer.
+  static String? titleFor(String? role) => _roleOptions
+      .where((option) => option.value.wireValue == role)
+      .firstOrNull
+      ?.title;
 
   @override
   ConsumerState<RoleSelectionPage> createState() => _RoleSelectionPageState();
@@ -32,10 +40,25 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
   GoogleRegistrationRequired? _registration;
   bool _isChangingAccount = false;
 
+  /// The signed-in account picking again (PIL-451): its role was saved when it
+  /// first tapped Lanjutkan, and it may still change it while the profile step
+  /// is unfinished. Null when this page serves a fresh Google registration.
+  AuthEntity? _account;
+  bool _isChangingRole = false;
+
   @override
   void initState() {
     super.initState();
-    _registration = _registrationFrom(ref.read(authenticationProvider));
+    final state = ref.read(authenticationProvider);
+    _registration = _registrationFrom(state);
+    if (_registration == null &&
+        state is Authenticated &&
+        state.authEntity.nextStep == 'complete_profile') {
+      _account = state.authEntity;
+      _selectedRole = GoogleRegistrationRole.values
+          .where((role) => role.wireValue == state.authEntity.role)
+          .firstOrNull;
+    }
   }
 
   GoogleRegistrationRequired? _registrationFrom(AuthenticationStates state) {
@@ -52,6 +75,10 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     if (registration != null) _registration = registration;
 
     if (state is Authenticated) {
+      // A draft typed for the old role must not prefill the new role's form.
+      if (_account != null) {
+        ref.read(onboardingProvider.notifier).clearProfileDraft();
+      }
       context.go(locationForAuthStep(
         state.authEntity.nextStep,
         hasPendingInvite: di<InviteTokenStore>().hasToken,
@@ -73,6 +100,32 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
         ),
       );
     }
+  }
+
+  /// Lanjutkan: a fresh registration creates the account with [role]; a
+  /// signed-in account switches to it.
+  void _submit(GoogleRegistrationRole role) {
+    if (_account != null) {
+      _changeRole(role);
+    } else {
+      ref.read(authenticationProvider.notifier).registerGoogleRole(role);
+    }
+  }
+
+  /// Lanjutkan for a signed-in account. Success arrives as a new
+  /// [Authenticated] session, which [_listen] routes on; a refusal keeps the
+  /// account where it was and says why.
+  Future<void> _changeRole(GoogleRegistrationRole role) async {
+    setState(() => _isChangingRole = true);
+    final error =
+        await ref.read(authenticationProvider.notifier).changeRole(role);
+    if (!mounted || error == null) return;
+    setState(() => _isChangingRole = false);
+    AppNotification.showError(
+      context,
+      title: 'Ganti Peran Gagal',
+      message: error,
+    );
   }
 
   Future<void> _changeAccount() async {
@@ -104,14 +157,15 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     });
     final state = ref.watch(authenticationProvider);
     final registration = _registration;
-    if (registration == null) {
+    final account = _account;
+    if (registration == null && account == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go(LoginPage.route);
       });
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    final isLoading = state is GoogleRegistrationSubmitting;
+    final isLoading = state is GoogleRegistrationSubmitting || _isChangingRole;
     final roleOptions = _roleOptions
         .where((option) => isRoleSupportedOnPlatform(
               option.value.wireValue,
@@ -146,8 +200,11 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                     ),
                     const SizedBox(height: 24),
                     _VerifiedIdentity(
-                      name: registration.name,
-                      email: registration.email,
+                      name: registration?.name ?? account!.name,
+                      email: registration?.email ?? account!.email,
+                      // The account already exists once a role was saved;
+                      // leaving it is the profile step's logout.
+                      showChangeAccount: registration != null,
                       onChangeAccount: isLoading || _isChangingAccount
                           ? null
                           : _changeAccount,
@@ -190,9 +247,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                 isLoading: isLoading,
                 onPressed: _selectedRole == null
                     ? null
-                    : () => ref
-                        .read(authenticationProvider.notifier)
-                        .registerGoogleRole(_selectedRole!),
+                    : () => _submit(_selectedRole!),
               ),
             ),
           ],
@@ -205,11 +260,13 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
 class _VerifiedIdentity extends StatelessWidget {
   final String name;
   final String email;
+  final bool showChangeAccount;
   final VoidCallback? onChangeAccount;
 
   const _VerifiedIdentity({
     required this.name,
     required this.email,
+    required this.showChangeAccount,
     required this.onChangeAccount,
   });
 
@@ -243,10 +300,11 @@ class _VerifiedIdentity extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(
-            onPressed: onChangeAccount,
-            child: const Text('Ganti akun'),
-          ),
+          if (showChangeAccount)
+            TextButton(
+              onPressed: onChangeAccount,
+              child: const Text('Ganti akun'),
+            ),
         ],
       ),
     );

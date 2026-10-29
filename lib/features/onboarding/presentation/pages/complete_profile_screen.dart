@@ -10,6 +10,7 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -17,6 +18,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/providers/onboardi
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acceptance_notice.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
@@ -417,6 +419,16 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     AppNotification.showError(context, title: title, message: message);
   }
 
+  /// The title of the role this account registers as, while it may still be
+  /// changed (PIL-451): the role was saved on the role page and stays
+  /// changeable until a bank sampah is registered for it. An invite fixes the
+  /// role, so it gets none. Null when the note should not show.
+  String? _changeableRoleTitle(AuthenticationStates state) {
+    if (_isInviteMode || state is! Authenticated) return null;
+    if (state.authEntity.bankSampahStatus != null) return null;
+    return RoleSelectionPage.titleFor(state.authEntity.role);
+  }
+
   /// Intercepts a back-navigation attempt. [canPop] on the [PopScope] is false,
   /// so the pop is already blocked when this fires; we only need to offer the
   /// exit confirmation.
@@ -430,6 +442,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     ref.listen(authenticationProvider, (previous, current) {
       if (current is Unauthenticated) context.go(LoginPage.route);
     });
+    // Watched, not only listened to: a role changed from the role page comes
+    // back to this same screen, which must then draw the new role's form.
+    final roleTitle = _changeableRoleTitle(ref.watch(authenticationProvider));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
@@ -455,6 +470,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                   secondStepLabel:
                       _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
                 ),
+
+              if (roleTitle != null) _RoleNote(roleTitle: roleTitle),
 
               const SizedBox(height: 24),
               OnboardingFormCard(
@@ -584,6 +601,35 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Names the role being registered, with the way back to the role page for an
+/// account that tapped the wrong one (PIL-451). Pushed, so back returns here.
+class _RoleNote extends StatelessWidget {
+  const _RoleNote({required this.roleTitle});
+
+  final String roleTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Mendaftar sebagai $roleTitle',
+            style: AppTextStyle.small.copyWith(color: AppColors.inkSoft),
+          ),
+          TextButton(
+            onPressed: () => context.push(RoleSelectionPage.route),
+            child: const Text('Ganti peran'),
+          ),
+        ],
       ),
     );
   }

@@ -67,6 +67,13 @@ class PreviewAuthenticationSession
   }
 
   @override
+  Future<Either<NetworkException, AuthEntity>> changeRole(
+      GoogleRegistrationRole role) async {
+    _hasSession = true;
+    return const Right(auth);
+  }
+
+  @override
   Future<Either<Exception, void>> saveToken(
           String accessToken, String refreshToken) async =>
       const Right(null);

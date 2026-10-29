@@ -13,6 +13,9 @@ abstract class AuthRemoteDataSources {
   Future<Map<String, dynamic>> registerGoogleUser(
       String registrationToken, String role);
 
+  /// Switches a registering account to [role]; answers with a new session.
+  Future<Map<String, dynamic>> changeRole(String role);
+
   /// Restores the current session from the persisted bearer token.
   Future<AuthEntity> getMe();
 
@@ -48,6 +51,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
     final response = await networkService.post(
       Endpoints.registerGoogleUser,
       data: {'registration_token': registrationToken, 'role': role},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> changeRole(String role) async {
+    final response = await networkService.patch(
+      Endpoints.onboardingRole,
+      data: {'role': role},
     );
     return response.data as Map<String, dynamic>;
   }
