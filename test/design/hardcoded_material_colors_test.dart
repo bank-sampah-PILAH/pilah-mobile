@@ -38,7 +38,10 @@ void main() {
     expect(_stock.hasMatch('color: Colors.red,'), isTrue);
     expect(_stock.hasMatch('AppColors.black'), isFalse);
     expect(_stock.hasMatch('AppColors.grey100'), isFalse);
+    expect(_stock.hasMatch('Colors.white70'), isTrue);
+    expect(_stock.hasMatch('Colors.white12'), isTrue);
     expect(_stock.hasMatch('color: Colors.white'), isFalse);
+    expect(_stock.hasMatch('Colors.white,'), isFalse);
     expect(_stock.hasMatch('Colors.transparent'), isFalse);
   });
 
