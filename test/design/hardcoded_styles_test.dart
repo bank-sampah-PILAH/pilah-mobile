@@ -21,7 +21,7 @@ Map<String, Map<String, int>> _scan() {
   final found = <String, Map<String, int>>{};
   for (final entity in Directory('lib').listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final path = entity.path;
+    final path = entity.path.replaceAll(r'\', '/');
     if (path.startsWith('lib/design/')) continue;
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
     final source = entity.readAsStringSync();

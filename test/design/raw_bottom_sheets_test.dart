@@ -30,7 +30,7 @@ void main() {
     final offenders = <String>[];
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      final path = entity.path;
+      final path = entity.path.replaceAll(r'\', '/');
       if (path.startsWith('lib/design/') || _exempt.contains(path)) continue;
       if (_raw.hasMatch(entity.readAsStringSync())) offenders.add(path);
     }

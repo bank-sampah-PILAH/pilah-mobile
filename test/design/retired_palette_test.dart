@@ -32,11 +32,12 @@ void main() {
       final offenders = <String>[];
       for (final entity in Directory('lib').listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
-        if (entity.path == 'lib/design/constants/colors.dart') continue;
+        final path = entity.path.replaceAll(r'\', '/');
+        if (path == 'lib/design/constants/colors.dart') continue;
         final source = entity.readAsStringSync().toUpperCase();
         for (final hex in group.value) {
           if (source.contains('0XFF$hex')) {
-            offenders.add('${entity.path}: $hex');
+            offenders.add('$path: $hex');
           }
         }
       }

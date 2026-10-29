@@ -11,9 +11,10 @@ void main() {
     final offenders = <String>[];
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path == 'lib/design/constants/colors.dart') continue;
+      final path = entity.path.replaceAll(r'\', '/');
+      if (path == 'lib/design/constants/colors.dart') continue;
       final source = entity.readAsStringSync().toUpperCase();
-      if (retired.any(source.contains)) offenders.add(entity.path);
+      if (retired.any(source.contains)) offenders.add(path);
     }
 
     expect(offenders, isEmpty,

@@ -23,8 +23,9 @@ void main() {
     final offenders = <String>[];
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path.startsWith('lib/design/')) continue;
-      if (stock.hasMatch(entity.readAsStringSync())) offenders.add(entity.path);
+      final path = entity.path.replaceAll(r'\', '/');
+      if (path.startsWith('lib/design/')) continue;
+      if (stock.hasMatch(entity.readAsStringSync())) offenders.add(path);
     }
 
     expect(offenders, isEmpty,

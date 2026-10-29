@@ -15,9 +15,10 @@ void main() {
     final offenders = <String>[];
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path == 'lib/design/constants/colors.dart') continue;
+      final path = entity.path.replaceAll(r'\', '/');
+      if (path == 'lib/design/constants/colors.dart') continue;
       if (entity.readAsStringSync().toUpperCase().contains('0XFF006D44')) {
-        offenders.add(entity.path);
+        offenders.add(path);
       }
     }
 

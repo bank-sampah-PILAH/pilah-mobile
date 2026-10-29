@@ -15,11 +15,12 @@ void main() {
     final offenders = <String>[];
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path == 'lib/core/utils/formatter/currency_formatter.dart') {
+      final path = entity.path.replaceAll(r'\', '/');
+      if (path == 'lib/core/utils/formatter/currency_formatter.dart') {
         continue;
       }
       final source = entity.readAsStringSync();
-      if (grouping.any((re) => re.hasMatch(source))) offenders.add(entity.path);
+      if (grouping.any((re) => re.hasMatch(source))) offenders.add(path);
     }
 
     expect(offenders, isEmpty,
