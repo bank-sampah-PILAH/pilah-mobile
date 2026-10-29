@@ -34,7 +34,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                     if (loadingProgress == null) return child;
                     return Container(
                       color: AppColors.fill,
-                      child: Center(
+                      child: const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.grey100,
                         ),
@@ -91,7 +91,7 @@ class _ProofPlaceholder extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.inkSoft,
               fontSize: AppFontSize.sm,
               fontWeight: FontWeight.bold,
@@ -101,8 +101,8 @@ class _ProofPlaceholder extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style:
-                TextStyle(color: AppColors.grey100, fontSize: AppFontSize.sm),
+            style: const TextStyle(
+                color: AppColors.grey100, fontSize: AppFontSize.sm),
           ),
         ],
       ),
