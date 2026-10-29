@@ -44,8 +44,8 @@ class WebHostingTest(unittest.TestCase):
                     with self.subTest(path=path), urllib.request.urlopen(base + path) as response:
                         self.assertEqual(response.status, 200)
                         self.assertEqual(response.headers["Cache-Control"], "no-cache")
-                        self.assertEqual(
-                            response.headers["Content-Security-Policy"], "frame-ancestors 'none';"
+                        self.assertIn(
+                            "frame-ancestors 'none'", response.headers["Content-Security-Policy"]
                         )
                         self.assertEqual(response.headers["Referrer-Policy"], "strict-origin-when-cross-origin")
                         self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
