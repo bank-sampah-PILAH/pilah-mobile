@@ -103,9 +103,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final params =
-        verify(() => getUseCase.execute(captureAny())).captured.single
-            as GetNasabahParams;
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .single as GetNasabahParams;
     expect(params.page, 1);
     expect(params.pageSize, 50);
     expect(params.status, 'aktif');

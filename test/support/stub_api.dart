@@ -91,14 +91,14 @@ class StubApi implements HttpClientAdapter {
     int status = 200,
     required Object? Function(RequestOptions options) json,
   }) {
-    _routes['${method.toUpperCase()} $path'] = (options) =>
-        ResponseBody.fromString(
-          jsonEncode(json(options)),
-          status,
-          headers: {
-            Headers.contentTypeHeader: [Headers.jsonContentType],
-          },
-        );
+    _routes['${method.toUpperCase()} $path'] =
+        (options) => ResponseBody.fromString(
+              jsonEncode(json(options)),
+              status,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
   }
 
   /// Answers `METHOD path` with raw bytes.

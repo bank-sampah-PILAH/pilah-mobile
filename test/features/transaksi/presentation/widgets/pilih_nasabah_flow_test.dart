@@ -36,7 +36,8 @@ class _BrokenNasabahNotifier extends NasabahNotifier {
   Future<HalamanNasabah> loadActiveNasabahPage({
     int page = 1,
     String? search,
-  }) async => throw StateError('rusak');
+  }) async =>
+      throw StateError('rusak');
 }
 
 void main() {

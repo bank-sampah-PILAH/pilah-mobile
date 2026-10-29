@@ -103,12 +103,11 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
       }
     });
     try {
-      final result = await ref
-          .read(nasabahProvider.notifier)
-          .loadActiveNasabahPage(
-            page: page,
-            search: query.length >= 2 ? query : null,
-          );
+      final result =
+          await ref.read(nasabahProvider.notifier).loadActiveNasabahPage(
+                page: page,
+                search: query.length >= 2 ? query : null,
+              );
       if (!mounted || generation != _requestGeneration) return;
       final eligible = result.items
           .where(
