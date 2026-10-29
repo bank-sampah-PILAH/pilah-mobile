@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final String title;
@@ -57,7 +58,7 @@ class BottomSheetHeader extends StatelessWidget {
                 title,
                 style: AppTextStyle.headline1.copyWith(
                   color: AppColors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   fontSize: AppFontSize.xxl,
                 ),
               ),

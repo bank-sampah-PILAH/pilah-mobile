@@ -33,6 +33,7 @@ import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key, this.isWeb});
@@ -363,11 +364,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     labelColor: AppColors.greenDark,
                     unselectedLabelColor: AppColors.grey200,
                     labelStyle: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       fontSize: AppFontSize.md,
                     ),
                     unselectedLabelStyle: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.normal,
+                      fontWeight: AppFontWeight.regular,
                       fontSize: AppFontSize.md,
                     ),
                     indicatorColor: AppColors.greenDark,
@@ -840,7 +841,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                         'Undang Pengurus Baru',
                         style: AppTextStyle.title1.copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                           fontSize: AppFontSize.lg,
                         ),
                       ),
@@ -881,7 +882,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       '${team.length} aktif',
                       style: AppTextStyle.extraSmall.copyWith(
                         color: AppColors.greenDark,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: AppFontWeight.bold,
                       ),
                     ),
                   ),
@@ -953,7 +954,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               _initials(member.nama),
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 fontSize: AppFontSize.md,
               ),
             ),
@@ -967,7 +968,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     member.nama.isNotEmpty ? member.nama : member.email,
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.black,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -985,7 +986,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       'Anda',
                       style: AppTextStyle.extraSmall.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: AppFontWeight.bold,
                         fontSize: AppFontSize.xs,
                       ),
                     ),
@@ -1005,7 +1006,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               member.isPrimary ? 'Pengurus Utama' : 'Pengurus',
               style: AppTextStyle.extraSmall.copyWith(
                 color: AppColors.greenDark,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -1032,7 +1033,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           label,
           style: AppTextStyle.extraSmall.copyWith(
             color: AppColors.grey100,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             letterSpacing: 1.0,
           ),
         ),
@@ -1056,7 +1057,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           label,
           style: AppTextStyle.extraSmall.copyWith(
             color: AppColors.grey100,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             letterSpacing: 0.5,
           ),
         ),
@@ -1114,7 +1115,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                         'Pesan otomatis dikirim setelah transaksi',
                         style: AppTextStyle.small.copyWith(
                           color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         ),
                       ),
                     ),
@@ -1126,7 +1127,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                 'ISI PESAN',
                 style: AppTextStyle.extraSmall.copyWith(
                   color: AppColors.grey100,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1173,7 +1174,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                           'PREVIEW PESAN',
                           style: AppTextStyle.extraSmall.copyWith(
                             color: AppColors.grey100,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: AppFontWeight.bold,
                             letterSpacing: 0.5,
                           ),
                         ),

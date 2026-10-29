@@ -31,6 +31,7 @@ import 'package:pilah_mobile/features/harga/presentation/providers/harga_provide
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class HargaPage extends StatelessWidget {
   const HargaPage({super.key, this.isWeb = kIsWeb});
@@ -252,7 +253,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
               _pageTitle,
               style: AppTextStyle.headline1.copyWith(
                 color: AppColors.black,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 fontSize: AppFontSize.display,
               ),
             ),
@@ -525,7 +526,7 @@ class _HargaCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle.headline3.copyWith(
                     color: AppColors.black,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.semibold,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -544,7 +545,7 @@ class _HargaCard extends StatelessWidget {
                     '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
                     style: AppTextStyle.extraSmall.copyWith(
                       color: AppColors.warning,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                   ),
                 ],

@@ -36,6 +36,7 @@ import '../widgets/potongan_control.dart';
 import 'draft_editor_args.dart';
 import 'draft_pdf_preview_page.dart';
 import 'draft_list_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Shapes a pencairan: name, general potongan and method, then each nasabah.
 /// A saved draft can be resumed, paid (confirmed), cancelled or exported.
@@ -678,7 +679,7 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
               key: const Key('belum-diterapkan'),
               style: AppTextStyle.small.copyWith(
                 color: AppColors.statOrange,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.semibold,
               ),
             ),
             const SizedBox(height: 8),
@@ -729,7 +730,7 @@ class _DaftarSaldoKurang extends StatelessWidget {
                       'Saldo ${rupiah(item.saldo)}',
                       style: AppTextStyle.small.copyWith(
                         color: AppColors.inkSoft,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.semibold,
                       ),
                     ),
                   ],
@@ -832,7 +833,7 @@ class _RingkasanBayar extends StatelessWidget {
                 'Nasabah',
                 Text('$jumlah',
                     style: AppTextStyle.small
-                        .copyWith(fontWeight: FontWeight.w600)),
+                        .copyWith(fontWeight: AppFontWeight.semibold)),
               ),
               const SizedBox(height: 10),
               baris(
@@ -842,7 +843,7 @@ class _RingkasanBayar extends StatelessWidget {
                   rupiah(total),
                   style: AppTextStyle.headline3.copyWith(
                     color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                   ),
                 ),
               ),

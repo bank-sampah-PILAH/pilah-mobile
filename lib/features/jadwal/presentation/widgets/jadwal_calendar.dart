@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _monthNames = [
   'Januari',
@@ -35,7 +36,7 @@ const _weekdayShortNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const _weekdayLabelStyle = TextStyle(
   color: AppColors.grey100,
   fontSize: AppFontSize.sm,
-  fontWeight: FontWeight.w600,
+  fontWeight: AppFontWeight.semibold,
 );
 
 String formatJadwalDayHeading(DateTime date, {DateTime? today}) {
@@ -118,7 +119,7 @@ class JadwalCalendar extends StatelessWidget {
                         style: const TextStyle(
                           color: AppColors.black,
                           fontSize: AppFontSize.lg,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -301,7 +302,8 @@ class _JadwalDateCell extends StatelessWidget {
                               ? AppColors.black
                               : AppColors.grey200,
                       fontSize: AppFontSize.sm,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight:
+                          selected ? AppFontWeight.bold : AppFontWeight.medium,
                     ),
                   ),
                 ),

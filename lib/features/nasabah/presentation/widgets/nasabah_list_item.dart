@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_appro
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class NasabahListItem extends ConsumerWidget {
   /// Satu nasabah sebagaimana dikembalikan API, dipakai apa adanya.
@@ -150,7 +151,7 @@ class NasabahListItem extends ConsumerWidget {
               initials,
               style: AppTextStyle.title1.copyWith(
                 color: textColor,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -166,7 +167,7 @@ class NasabahListItem extends ConsumerWidget {
                         name,
                         style: AppTextStyle.title1.copyWith(
                           color: isActive ? AppColors.black : AppColors.grey100,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                           fontSize: AppFontSize.lg,
                         ),
                         maxLines: 1,
@@ -199,7 +200,7 @@ class NasabahListItem extends ConsumerWidget {
                 balance,
                 style: AppTextStyle.title1.copyWith(
                   color: isActive ? AppColors.greenDark : AppColors.grey100,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   fontSize: AppFontSize.md,
                 ),
               ),
@@ -231,7 +232,7 @@ class _PendingBadge extends StatelessWidget {
         'Menunggu',
         style: AppTextStyle.extraSmall.copyWith(
           color: AppColors.warning,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );

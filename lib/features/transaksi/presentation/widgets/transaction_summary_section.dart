@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class TransactionSummarySection extends StatelessWidget {
   final int grandTotal;
@@ -49,7 +50,7 @@ class TransactionSummarySection extends StatelessWidget {
                     maxLines: 1,
                     style: AppTextStyle.title1.copyWith(
                       color: AppColors.black,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       fontSize: AppFontSize.md,
                     ),
                   ),
@@ -68,7 +69,7 @@ class TransactionSummarySection extends StatelessWidget {
                 'Grand Total',
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   fontSize: AppFontSize.lg,
                 ),
               ),
@@ -86,7 +87,7 @@ class TransactionSummarySection extends StatelessWidget {
                     maxLines: 1,
                     style: AppTextStyle.headline1.copyWith(
                       color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       fontSize: AppFontSize.xxl,
                     ),
                   ),

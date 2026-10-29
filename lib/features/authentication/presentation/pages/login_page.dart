@@ -23,6 +23,7 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_l
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_footer.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_header.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   @visibleForTesting
@@ -209,7 +210,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                             Text(
                               'Masuk ke akun Anda',
                               style: AppTextStyle.headline1.copyWith(
-                                fontWeight: FontWeight.w700,
+                                fontWeight: AppFontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -300,7 +301,7 @@ class _EmailPasswordLoginFormState extends State<_EmailPasswordLoginForm> {
                   'ATAU',
                   style: AppTextStyle.extraSmall.copyWith(
                     color: AppColors.grey100,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.semibold,
                   ),
                 ),
               ),

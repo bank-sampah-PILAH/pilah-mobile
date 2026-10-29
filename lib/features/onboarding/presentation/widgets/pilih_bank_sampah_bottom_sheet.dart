@@ -10,6 +10,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Lets a calon nasabah pick a bank sampah to apply to (PIL-204), searching
 /// the list [OnboardingNotifier.loadBankSampahDirectory] fetches on open.
@@ -182,7 +183,7 @@ class _PilihBankSampahBottomSheetState
                         bank.nama,
                         style: AppTextStyle.title1.copyWith(
                           color: AppColors.black,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                           fontSize: AppFontSize.lg,
                         ),
                       ),

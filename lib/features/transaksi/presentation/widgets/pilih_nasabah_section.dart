@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasab
 
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class PilihNasabahSection extends StatelessWidget {
   final NasabahEntity? selectedCustomer;
@@ -80,7 +81,7 @@ class PilihNasabahSection extends StatelessWidget {
                     selectedCustomer!.initials,
                     style: AppTextStyle.title1.copyWith(
                       color: selectedCustomer!.textColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       fontSize: AppFontSize.lg,
                     ),
                   ),
@@ -94,7 +95,7 @@ class PilihNasabahSection extends StatelessWidget {
                         selectedCustomer!.name,
                         style: AppTextStyle.title1.copyWith(
                           color: AppColors.black,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                       // Show the kode, not the backend UUID.

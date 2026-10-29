@@ -11,6 +11,7 @@ import 'package:pilah_mobile/features/harga/presentation/providers/harga_provide
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
@@ -122,7 +123,7 @@ class ItemSetoranCard extends StatelessWidget {
                                     type.name,
                                     style: AppTextStyle.small.copyWith(
                                       color: AppColors.black,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: AppFontWeight.bold,
                                     ),
                                   ),
                                 ],
@@ -218,7 +219,7 @@ class ItemSetoranCard extends StatelessWidget {
                         decoration: appBorderlessInputDecoration(),
                         style: AppTextStyle.small.copyWith(
                           color: AppColors.inkSoft,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -267,7 +268,7 @@ class ItemSetoranCard extends StatelessWidget {
                   onFieldSubmitted: (_) => onSubmitted?.call(),
                   style: AppTextStyle.small.copyWith(
                     color: AppColors.black,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                   ),
                   decoration: appBorderlessInputDecoration(),
                   onChanged: (value) {
@@ -300,7 +301,7 @@ class ItemSetoranCard extends StatelessWidget {
                     CurrencyFormatter.formatRupiah(subtotal),
                     style: AppTextStyle.title1.copyWith(
                       color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       fontSize: AppFontSize.lg,
                     ),
                   ),

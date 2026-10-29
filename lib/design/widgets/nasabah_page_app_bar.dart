@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The app bar of a Nasabah page: a white bar with a 20 semibold title.
 ///
@@ -29,7 +30,8 @@ class NasabahPageAppBar extends StatelessWidget implements PreferredSizeWidget {
         title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: NasabahStyle.text(AppFontSize.xxl, weight: FontWeight.w600),
+        style:
+            NasabahStyle.text(AppFontSize.xxl, weight: AppFontWeight.semibold),
       );
 
   @override

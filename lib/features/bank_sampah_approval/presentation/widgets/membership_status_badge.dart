@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pill badge for a membership's [MembershipStatus], coloured distinctly per
 /// status — pending amber (matching [NasabahListItem]'s pending badge),
@@ -42,7 +43,7 @@ class MembershipStatusBadge extends StatelessWidget {
         label,
         style: AppTextStyle.extraSmall.copyWith(
           color: foreground,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class AppNotification {
   /// Warning tone: a light amber tint carrying dark amber content.
@@ -75,7 +76,7 @@ class AppNotification {
         title,
         style: AppTextStyle.title1.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             fontSize: AppFontSize.md),
       ),
       messageText: Text(
@@ -98,8 +99,8 @@ class AppNotification {
               },
               child: Text(
                 actionLabel,
-                style: AppTextStyle.small
-                    .copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                style: AppTextStyle.small.copyWith(
+                    color: Colors.white, fontWeight: AppFontWeight.bold),
               ),
             )
           : null,
@@ -122,7 +123,7 @@ class AppNotification {
         title,
         style: AppTextStyle.title1.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             fontSize: AppFontSize.md),
       ),
       messageText: Text(
@@ -156,7 +157,7 @@ class AppNotification {
         title,
         style: AppTextStyle.title1.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             fontSize: AppFontSize.md),
       ),
       messageText: Text(
@@ -188,7 +189,7 @@ class AppNotification {
         title,
         style: AppTextStyle.title1.copyWith(
             color: _warningForeground,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             fontSize: AppFontSize.md),
       ),
       messageText: Text(

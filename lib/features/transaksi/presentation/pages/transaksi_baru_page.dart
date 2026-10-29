@@ -31,6 +31,7 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.da
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
 /// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
@@ -519,7 +520,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                 'Belum Ada Item Setoran',
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.grey100,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   fontSize: AppFontSize.lg,
                 ),
               ),

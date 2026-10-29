@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key, this.from});
@@ -108,7 +109,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.greenDark,
                         fontSize: AppFontSize.jumbo,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: AppFontWeight.bold,
                         letterSpacing: 2.0,
                       ),
                     ),

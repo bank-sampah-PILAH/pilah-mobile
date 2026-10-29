@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DemoLoginButton extends StatelessWidget {
   final bool isLoading;
@@ -30,7 +31,8 @@ class DemoLoginButton extends StatelessWidget {
                   child: Text(
                     'Pilih akun demo',
                     style: TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: AppFontSize.xl),
+                        fontWeight: AppFontWeight.bold,
+                        fontSize: AppFontSize.xl),
                   ),
                 ),
               ),

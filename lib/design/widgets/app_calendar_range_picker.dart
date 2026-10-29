@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Selects and applies a bounded, inclusive date range from a calendar.
 class AppCalendarRangePicker extends StatefulWidget {
@@ -172,8 +173,8 @@ class _AppCalendarRangePickerState extends State<AppCalendarRangePicker> {
                 child: Text(
                   localizations.formatMonthYear(_month),
                   textAlign: TextAlign.center,
-                  style:
-                      AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyle.small
+                      .copyWith(fontWeight: AppFontWeight.semibold),
                 ),
               ),
               IconButton(

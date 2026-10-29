@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class RoleSelectionPage extends ConsumerStatefulWidget {
   const RoleSelectionPage({super.key});
@@ -131,7 +132,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                     Text('Langkah 1',
                         style: AppTextStyle.small.copyWith(
                           color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         )),
                     const SizedBox(height: 4),
                     Text('Daftar Akun', style: AppTextStyle.headline1),

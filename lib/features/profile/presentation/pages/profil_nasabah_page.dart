@@ -19,6 +19,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Shows the nasabah's own profile and lets them edit the fields the backend
 /// allows (nama, no_hp, jenis_kelamin, tanggal_lahir, alamat). Email, role and
@@ -113,11 +114,12 @@ class _IdentityCard extends StatelessWidget {
             child: Text(
                 name.isEmpty ? 'N' : name.characters.first.toUpperCase(),
                 style: NasabahStyle.text(28,
-                    weight: FontWeight.w700, color: NasabahStyle.emeraldDark))),
+                    weight: AppFontWeight.bold,
+                    color: NasabahStyle.emeraldDark))),
         const SizedBox(height: 16),
         Text(name.isEmpty ? 'Nama belum tersedia' : name,
             textAlign: TextAlign.center,
-            style: NasabahStyle.text(20, weight: FontWeight.w700)),
+            style: NasabahStyle.text(20, weight: AppFontWeight.bold)),
         const SizedBox(height: 12),
         Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -126,7 +128,8 @@ class _IdentityCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.sm)),
             child: Text('Nasabah',
                 style: NasabahStyle.text(13,
-                    weight: FontWeight.w600, color: NasabahStyle.emeraldDark))),
+                    weight: AppFontWeight.semibold,
+                    color: NasabahStyle.emeraldDark))),
       ]));
 }
 
@@ -143,7 +146,8 @@ class _AccountCard extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('EMAIL',
               style: NasabahStyle.text(11,
-                  weight: FontWeight.w600, color: NasabahStyle.labelMuted)),
+                  weight: AppFontWeight.semibold,
+                  color: NasabahStyle.labelMuted)),
           const SizedBox(height: 4),
           Text(email.isEmpty ? 'Email belum tersedia' : email,
               style: NasabahStyle.text(15)),
@@ -172,7 +176,8 @@ class _LogoutCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 Text('Keluar dari Akun',
-                    style: NasabahStyle.text(15, weight: FontWeight.w600)),
+                    style:
+                        NasabahStyle.text(15, weight: AppFontWeight.semibold)),
                 const SizedBox(height: 4),
                 Text('Anda perlu masuk kembali untuk mengakses akun ini.',
                     style: NasabahStyle.text(13, color: NasabahStyle.muted)),
@@ -322,7 +327,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           _IdentityCard(name: _identity.name.trim()),
           const SizedBox(height: 24),
           Text('Informasi Akun',
-              style: NasabahStyle.text(17, weight: FontWeight.w600)),
+              style: NasabahStyle.text(17, weight: AppFontWeight.semibold)),
           const SizedBox(height: 12),
           _AccountCard(email: _identity.email.trim()),
           const SizedBox(height: 24),
@@ -330,7 +335,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Informasi Pribadi',
-                  style: NasabahStyle.text(17, weight: FontWeight.w600)),
+                  style: NasabahStyle.text(17, weight: AppFontWeight.semibold)),
               if (!_editing)
                 IconButton(
                     tooltip: 'Ubah profil',
@@ -377,7 +382,8 @@ class _DetailRow extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label,
               style: NasabahStyle.text(11,
-                  weight: FontWeight.w600, color: NasabahStyle.labelMuted)),
+                  weight: AppFontWeight.semibold,
+                  color: NasabahStyle.labelMuted)),
           const SizedBox(height: 4),
           Text(value, style: NasabahStyle.text(15)),
         ])),
@@ -451,7 +457,7 @@ class _ProfileEditForm extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(text,
           style: NasabahStyle.text(11,
-              weight: FontWeight.w600, color: NasabahStyle.labelMuted)));
+              weight: AppFontWeight.semibold, color: NasabahStyle.labelMuted)));
 
   Widget _genderOption(String value, String label) {
     final selected = jenisKelamin == value;
@@ -471,7 +477,7 @@ class _ProfileEditForm extends StatelessWidget {
                   color: selected ? NasabahStyle.emerald : NasabahStyle.line)),
           child: Text(label,
               style: NasabahStyle.text(14,
-                  weight: FontWeight.w600,
+                  weight: AppFontWeight.semibold,
                   color: selected ? Colors.white : NasabahStyle.ink)),
         ),
       ),

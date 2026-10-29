@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The totals of a draft, pinned above the action buttons so they stay in view
 /// while the nasabah list scrolls and is edited. Closed it shows only what is
@@ -57,7 +58,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
               key: const Key('total-dibayar'),
               style: AppTextStyle.headline1.copyWith(
                 color: AppColors.greenDark,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -127,7 +128,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                                     key: const Key('total-dibayar'),
                                     style: AppTextStyle.headline1.copyWith(
                                       color: AppColors.greenDark,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: AppFontWeight.bold,
                                       fontSize: AppFontSize.xxl,
                                     ),
                                   ),
@@ -232,7 +233,7 @@ class _Baris extends StatelessWidget {
               key: nilaiKey,
               style: AppTextStyle.title1.copyWith(
                 color: warna ?? AppColors.black,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 fontSize: AppFontSize.md,
               ),
             ),

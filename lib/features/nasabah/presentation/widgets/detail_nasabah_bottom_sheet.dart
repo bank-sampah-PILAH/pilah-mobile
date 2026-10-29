@@ -18,6 +18,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/email_dikelol
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DetailNasabahBottomSheet extends ConsumerStatefulWidget {
   static const dragHandleKey = ValueKey('detail-drag-handle');
@@ -102,7 +103,7 @@ class _DetailNasabahBottomSheetState
                   initials,
                   style: AppTextStyle.headline1.copyWith(
                     color: isActive ? AppColors.greenDark : AppColors.danger,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                     fontSize: AppFontSize.display,
                   ),
                 ),
@@ -116,7 +117,7 @@ class _DetailNasabahBottomSheetState
                       name,
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.black,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: AppFontWeight.bold,
                         fontSize: AppFontSize.xxl,
                       ),
                     ),
@@ -127,7 +128,7 @@ class _DetailNasabahBottomSheetState
                           idNasabah,
                           style: AppTextStyle.small.copyWith(
                             color: AppColors.grey100,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: AppFontWeight.medium,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -200,7 +201,7 @@ class _DetailNasabahBottomSheetState
                   address,
                   style: AppTextStyle.title1.copyWith(
                     color: AppColors.black,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.semibold,
                     fontSize: AppFontSize.md,
                     height: 1.4,
                   ),
@@ -214,7 +215,7 @@ class _DetailNasabahBottomSheetState
               backgroundColor: DetailNasabahBottomSheet.mintTint,
               titleStyle: AppTextStyle.title1.copyWith(
                 color: AppColors.greenDark,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 fontSize: AppFontSize.md,
               ),
               messageStyle: AppTextStyle.small.copyWith(
@@ -331,7 +332,7 @@ class _DetailNasabahBottomSheetState
                       'Data akun berbeda',
                       style: AppTextStyle.title1.copyWith(
                         color: AppColors.warning,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: AppFontWeight.bold,
                         fontSize: AppFontSize.md,
                       ),
                     ),
@@ -471,7 +472,8 @@ class _DetailNasabahBottomSheetState
                   value,
                   style: AppTextStyle.title1.copyWith(
                     color: valueColor ?? AppColors.black,
-                    fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                    fontWeight:
+                        isBold ? AppFontWeight.bold : AppFontWeight.medium,
                     fontSize: AppFontSize.md,
                   ),
                   textAlign: TextAlign.right,

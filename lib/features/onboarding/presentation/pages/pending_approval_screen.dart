@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class PendingApprovalScreen extends ConsumerWidget {
   const PendingApprovalScreen({super.key});
@@ -71,7 +72,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       fontSize: AppFontSize.md,
                       color: AppColors.black,
                     ),
@@ -118,7 +119,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                     'Pendaftaran Terkirim!',
                     style: TextStyle(
                       fontSize: AppFontSize.display,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
@@ -147,7 +148,7 @@ class PendingApprovalScreen extends ConsumerWidget {
               'Sedang Diproses',
               style: TextStyle(
                 fontSize: AppFontSize.xxl,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 color: AppColors.black,
               ),
             ),

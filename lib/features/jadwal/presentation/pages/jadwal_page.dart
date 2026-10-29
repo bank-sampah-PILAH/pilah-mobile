@@ -27,6 +27,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calenda
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_months.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _createScheduleLabel = 'Buat Jadwal';
 
@@ -396,7 +397,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                 style: const TextStyle(
                   color: AppColors.black,
                   fontSize: AppFontSize.xl,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.bold,
                 ),
               ),
             ),
@@ -405,7 +406,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               style: const TextStyle(
                 color: AppColors.grey100,
                 fontSize: AppFontSize.sm,
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
           ],
@@ -666,7 +667,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               style: const TextStyle(
                 color: AppColors.black,
                 fontSize: AppFontSize.xl,
-                fontWeight: FontWeight.w700,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -675,7 +676,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
             style: const TextStyle(
               color: AppColors.grey100,
               fontSize: AppFontSize.sm,
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
           ),
         ],
@@ -799,7 +800,7 @@ class _EmptyScheduleDay extends StatelessWidget {
             'Belum ada jadwal kegiatan',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: AppFontSize.lg, fontWeight: FontWeight.w700),
+                fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold),
           ),
           const SizedBox(height: 6),
           Text(
@@ -883,7 +884,7 @@ class _ScheduleCard extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.black,
                   fontSize: AppFontSize.lg,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1024,7 +1025,7 @@ class _ScheduleStatus extends StatelessWidget {
         style: TextStyle(
           color: foreground,
           fontSize: AppFontSize.sm,
-          fontWeight: FontWeight.w700,
+          fontWeight: AppFontWeight.bold,
         ),
       ),
     );

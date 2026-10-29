@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The look of Catat Pencairan, shared by the draft screens so they read as
 /// one flow: a grey rounded back button, bold title, spaced section labels,
@@ -27,7 +28,7 @@ class SectionLabel extends StatelessWidget {
         style: AppTextStyle.extraSmall.copyWith(
           color: _field ? AppColors.inkSoft : AppColors.black,
           fontSize: _field ? 11 : 12,
-          fontWeight: FontWeight.bold,
+          fontWeight: AppFontWeight.bold,
           letterSpacing: 1.0,
         ),
       );
@@ -132,7 +133,7 @@ class PencairanAvatar extends StatelessWidget {
         initialsOf(nama),
         style: AppTextStyle.small.copyWith(
           color: foreground,
-          fontWeight: FontWeight.bold,
+          fontWeight: AppFontWeight.bold,
           fontSize: size * 0.34,
         ),
       ),
@@ -165,7 +166,7 @@ class PencairanMetaLine extends StatelessWidget {
             text: nama,
             style: muted.copyWith(
               color: AppColors.black,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
             ),
           ),
           TextSpan(text: ' \u00b7 $waktu', style: muted),
@@ -249,7 +250,7 @@ class PencairanPopupMenu<T> extends StatelessWidget {
                   child: Text(
                     entry.label,
                     style: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                       color: entry.destruktif ? _merah : null,
                     ),
                   ),

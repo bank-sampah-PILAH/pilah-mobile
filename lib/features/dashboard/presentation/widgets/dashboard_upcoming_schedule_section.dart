@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DashboardUpcomingScheduleSection extends StatefulWidget {
   final JadwalRepository repository;
@@ -92,7 +93,7 @@ class _DashboardUpcomingScheduleSectionState
                     'Jadwal Terdekat',
                     style: AppTextStyle.title1.copyWith(
                       color: AppColors.black,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                 ),
@@ -221,7 +222,7 @@ class _ScheduleRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.black,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                   ),
                   Text(

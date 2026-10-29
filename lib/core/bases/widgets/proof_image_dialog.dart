@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_media_dialog.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Shows a bank sampah's foto kegiatan so a superadmin can review it.
 ///
@@ -94,7 +95,7 @@ class _ProofPlaceholder extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.inkSoft,
               fontSize: AppFontSize.sm,
-              fontWeight: FontWeight.bold,
+              fontWeight: AppFontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),

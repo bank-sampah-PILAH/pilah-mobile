@@ -18,6 +18,7 @@ import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_jenis.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Isi form jenis sampah, tanpa wadah.
 ///
@@ -291,7 +292,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
                 'Rp',
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.black,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
             ),
@@ -591,7 +592,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
     final keterangan = AppTextStyle.small.copyWith(color: AppColors.grey100);
     final nilai = AppTextStyle.headline3.copyWith(
       color: AppColors.black,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.semibold,
     );
     return Container(
       width: double.infinity,

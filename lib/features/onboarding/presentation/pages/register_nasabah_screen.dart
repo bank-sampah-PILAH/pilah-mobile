@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The nasabah half of PIL-204: a calon nasabah, having already completed
 /// their profile (including address) on the shared complete_profile step,
@@ -171,7 +172,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
             'BANK SAMPAH YANG SUDAH TERGABUNG',
             style: TextStyle(
               fontSize: AppFontSize.sm,
-              fontWeight: FontWeight.bold,
+              fontWeight: AppFontWeight.bold,
               color: AppColors.inkSoft,
             ),
           ),
@@ -185,7 +186,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
                     child: Text(
                       membership.bankSampahNama,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.semibold,
                       ),
                     ),
                   ),

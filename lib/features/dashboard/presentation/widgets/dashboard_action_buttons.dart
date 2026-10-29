@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pengurus dashboard action area: the two things done most, side by side.
 /// Pencairan remains visible but disabled in the Transaksi Baru chooser per
@@ -155,7 +156,7 @@ class _ChoiceTile extends StatelessWidget {
                     title,
                     style: AppTextStyle.title1.copyWith(
                       color: enabled ? AppColors.black : AppColors.grey100,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),

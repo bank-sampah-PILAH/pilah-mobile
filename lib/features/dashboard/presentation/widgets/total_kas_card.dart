@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/states/dashboard_state.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class TotalKasCard extends ConsumerWidget {
   const TotalKasCard({super.key});
@@ -40,7 +41,7 @@ class TotalKasCard extends ConsumerWidget {
             'TOTAL KAS BULAN INI',
             style: AppTextStyle.extraSmall.copyWith(
               color: AppColors.greenLight,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
               letterSpacing: 1.0,
             ),
           ),
@@ -49,7 +50,7 @@ class TotalKasCard extends ConsumerWidget {
             _display(state),
             style: AppTextStyle.headline1.copyWith(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontWeight: AppFontWeight.bold,
               fontSize: AppFontSize.figure,
             ),
           ),

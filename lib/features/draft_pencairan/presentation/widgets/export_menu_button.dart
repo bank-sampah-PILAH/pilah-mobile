@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import '../../domain/model/draft_pencairan.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The labelled "Ekspor" pill in the header, opening a small white card with
 /// one row per file type. A bare three-dot icon was not read as export.
@@ -81,7 +82,7 @@ class ExportMenuButton extends StatelessWidget {
             Text(
               busy ? 'Menyiapkan...' : 'Ekspor',
               style: AppTextStyle.small
-                  .copyWith(fontWeight: FontWeight.w600, color: color),
+                  .copyWith(fontWeight: AppFontWeight.semibold, color: color),
             ),
           ],
         ),
@@ -112,8 +113,8 @@ class _ExportItem extends PopupMenuItem<ExportBerkas> {
               ),
               const SizedBox(width: 12),
               Text(label,
-                  style:
-                      AppTextStyle.small.copyWith(fontWeight: FontWeight.w600)),
+                  style: AppTextStyle.small
+                      .copyWith(fontWeight: AppFontWeight.semibold)),
             ],
           ),
         );

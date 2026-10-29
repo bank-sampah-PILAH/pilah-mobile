@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The sort button beside a search field: a grey square with a swap icon that
 /// opens a white, rounded menu of the fields to order by. The menu stays open
@@ -81,8 +82,8 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
                       labelOf(field),
                       style: AppTextStyle.small.copyWith(
                         fontWeight: current == field
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                            ? AppFontWeight.bold
+                            : AppFontWeight.medium,
                       ),
                     ),
                   ),

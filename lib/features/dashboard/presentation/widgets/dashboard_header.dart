@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key, this.showProfile = true});
@@ -56,7 +57,7 @@ class DashboardHeader extends ConsumerWidget {
                 ),
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   fontSize: AppFontSize.xxl,
                 ),
                 maxLines: 2,
@@ -100,7 +101,7 @@ class DashboardHeader extends ConsumerWidget {
                 _initials(name),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   fontSize: AppFontSize.xl,
                 ),
               ),

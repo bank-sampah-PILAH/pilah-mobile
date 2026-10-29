@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/n
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_bank_identity.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Detail view for one membership, pushed from [ApprovalBankSampahListView]
 /// with the tapped [NasabahMembershipEntity] passed directly via GoRouter's
@@ -129,7 +130,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             membership: membership,
             nameStyle: AppTextStyle.title1.copyWith(
               color: AppColors.black,
-              fontWeight: FontWeight.bold,
+              fontWeight: AppFontWeight.bold,
               fontSize: AppFontSize.lg,
             ),
             locationStyle: AppTextStyle.small.copyWith(
@@ -142,7 +143,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
               'Alasan Penolakan',
               style: AppTextStyle.extraSmall.copyWith(
                 color: AppColors.grey100,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 letterSpacing: 0.5,
               ),
             ),

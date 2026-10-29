@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/selection_field_frame.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The tappable field on [RegisterNasabahScreen] that opens
 /// [PilihBankSampahBottomSheet] and shows the picked bank sampah.
@@ -99,7 +100,7 @@ class PilihBankSampahSection extends StatelessWidget {
                         selectedBank!.nama,
                         style: AppTextStyle.title1.copyWith(
                           color: AppColors.black,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                       if (selectedBank!.kota.trim().isNotEmpty) ...[

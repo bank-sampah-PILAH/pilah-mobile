@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The header of a full page that has no app bar: a grey back button and the
 /// page title beside it, such as "Catat Pencairan", with optional [actions] at
@@ -61,7 +62,7 @@ class AppBackHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTextStyle.headline1.copyWith(
                 color: AppColors.black,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 fontSize: AppFontSize.xxl,
               ),
             ),

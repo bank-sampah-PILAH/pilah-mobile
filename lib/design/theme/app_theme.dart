@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 Color? _dateForeground(Set<WidgetState> states, Color normal) {
   if (states.contains(WidgetState.disabled)) return AppColors.grey100;
@@ -38,7 +39,7 @@ abstract final class AppTheme {
     // "Batal" and "Simpan Perubahan", must fit a phone.
     final label = AppTextStyle.headline3.copyWith(
       fontSize: AppFontSize.md,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.semibold,
     );
     const padding = EdgeInsets.symmetric(horizontal: 24, vertical: 12);
     return base.copyWith(
@@ -175,7 +176,7 @@ abstract final class AppTheme {
         headerHelpStyle: AppTextStyle.small,
         weekdayStyle: AppTextStyle.extraSmall.copyWith(
           color: AppColors.grey100,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
         dayStyle: AppTextStyle.small,
         dayForegroundColor: WidgetStateProperty.resolveWith(

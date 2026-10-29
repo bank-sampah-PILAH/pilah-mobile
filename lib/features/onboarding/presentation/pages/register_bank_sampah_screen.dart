@@ -18,6 +18,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class RegisterBankSampahScreen extends ConsumerStatefulWidget {
   /// True when the user is re-applying after a previous registration was
@@ -155,7 +156,7 @@ class _RegisterBankSampahScreenState
                   'Pendaftaran Ditolak',
                   style: TextStyle(
                     color: AppColors.danger,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                     fontSize: AppFontSize.md,
                   ),
                 ),
@@ -300,7 +301,7 @@ class _RegisterBankSampahScreenState
                                     'Pilih foto',
                                     style: TextStyle(
                                       color: AppColors.black,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: AppFontWeight.semibold,
                                       fontSize: AppFontSize.md,
                                     ),
                                   ),

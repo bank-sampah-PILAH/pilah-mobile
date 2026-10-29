@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class AppTextStyle {
   static TextStyle small = GoogleFonts.poppins(
@@ -22,7 +23,7 @@ class AppTextStyle {
       textStyle: const TextStyle(
     height: 1.5,
     color: AppColors.black,
-    fontWeight: FontWeight.w600,
+    fontWeight: AppFontWeight.semibold,
     fontSize: AppFontSize.xl,
   ));
 
@@ -30,25 +31,25 @@ class AppTextStyle {
       textStyle: const TextStyle(
     height: 1.5,
     color: AppColors.black,
-    fontWeight: FontWeight.w600,
+    fontWeight: AppFontWeight.semibold,
     fontSize: AppFontSize.display,
   ));
 
   static TextStyle regularSemiBold = GoogleFonts.poppins(
       textStyle: const TextStyle(
-          height: 1.5, fontWeight: FontWeight.w500, color: Colors.white));
+          height: 1.5, fontWeight: AppFontWeight.medium, color: Colors.white));
 
   static TextStyle headline3 = GoogleFonts.poppins(
       textStyle: const TextStyle(
     height: 1.5,
-    fontWeight: FontWeight.w500,
+    fontWeight: AppFontWeight.medium,
     fontSize: AppFontSize.lg,
   ));
 
   static TextStyle appBar = GoogleFonts.poppins(
       textStyle: const TextStyle(
           height: 1.5,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
           fontSize: AppFontSize.xl,
           color: AppColors.black));
 }

@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DashboardOperationalChart extends StatelessWidget {
   final List<OperationalTrendBucket> buckets;
@@ -163,7 +164,8 @@ class DashboardOperationalChart extends StatelessWidget {
                       return LineTooltipItem(
                         '${reportDate(buckets[index].periodStart)}\n$_title: ${values[index].$1} transaksi\n${_rupiah(values[index].$2)}',
                         AppTextStyle.small.copyWith(
-                            color: Colors.white, fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontWeight: AppFontWeight.semibold),
                       );
                     }).toList(),
                   ),

@@ -18,6 +18,7 @@ import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_ent
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const List<String> _monthsId = [
   'Jan',
@@ -177,7 +178,7 @@ class _SuperAdminDashboardScreenState
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: AppFontSize.xxl,
-                        fontWeight: FontWeight.bold),
+                        fontWeight: AppFontWeight.bold),
                   ),
                 ],
               ),
@@ -594,7 +595,7 @@ class _CardHeader extends StatelessWidget {
             title,
             style: const TextStyle(
                 fontSize: AppFontSize.lg,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 color: AppColors.black),
           ),
         ),
@@ -616,7 +617,7 @@ class _CardHeader extends StatelessWidget {
                 style: TextStyle(
                     color: badgeFg,
                     fontSize: AppFontSize.xs,
-                    fontWeight: FontWeight.bold),
+                    fontWeight: AppFontWeight.bold),
               ),
             ],
           ),
@@ -638,7 +639,7 @@ Widget _infoRow(IconData icon, String text, {bool isBold = false}) {
           style: TextStyle(
             fontSize: AppFontSize.sm,
             color: isBold ? AppColors.black : AppColors.grey100,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isBold ? AppFontWeight.bold : AppFontWeight.regular,
           ),
         ),
       ),

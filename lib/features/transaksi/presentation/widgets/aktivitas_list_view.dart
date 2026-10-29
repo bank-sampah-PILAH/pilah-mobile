@@ -22,6 +22,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_tran
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/hold_to_select.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Renders the merged setoran + pencairan feed (PIL-282), grouped by day.
 /// Tapping a row opens that type's own detail sheet — setoran's
@@ -213,7 +214,7 @@ class AktivitasListView extends StatelessWidget {
             header,
             style: AppTextStyle.extraSmall.copyWith(
               color: AppColors.grey100,
-              fontWeight: FontWeight.bold,
+              fontWeight: AppFontWeight.bold,
               letterSpacing: 1.0,
             ),
           ),

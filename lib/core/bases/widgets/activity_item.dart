@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// A single row in a money-activity list (setoran, pencairan, …): avatar,
 /// title/subtitle on the left, amount/captions on the right. Shared so every
@@ -66,7 +67,7 @@ class ActivityItem extends StatelessWidget {
               avatarText,
               style: AppTextStyle.small.copyWith(
                 color: avatarTextColor,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -81,7 +82,7 @@ class ActivityItem extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle.small.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                     color: AppColors.black,
                   ),
                 ),
@@ -108,7 +109,7 @@ class ActivityItem extends StatelessWidget {
                   textAlign: TextAlign.end,
                   style: AppTextStyle.small.copyWith(
                     color: accentColor,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                   ),
                 ),
                 if (trailingCaptions.isNotEmpty) ...[

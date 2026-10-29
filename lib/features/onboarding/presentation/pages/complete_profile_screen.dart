@@ -20,6 +20,7 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/login_pa
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _genderMaleApiValue = 'laki-laki';
 const _genderMaleLabel = 'Laki-laki';
@@ -475,7 +476,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                         'Pilih jenis kelamin',
                         style: TextStyle(
                           color: AppColors.grey200,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: AppFontWeight.regular,
                         ),
                       ),
                       icon: const Icon(Icons.keyboard_arrow_down,

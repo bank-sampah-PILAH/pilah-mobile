@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_pro
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Isi picker nasabah: cari, pilih, pop nasabah yang dipilih.
 ///
@@ -265,7 +266,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                 customer.initials,
                 style: AppTextStyle.title1.copyWith(
                   color: customer.textColor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                   fontSize: AppFontSize.lg,
                 ),
               ),
@@ -279,7 +280,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                     customer.name,
                     style: AppTextStyle.title1.copyWith(
                       color: AppColors.black,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                       fontSize: AppFontSize.lg,
                     ),
                   ),
@@ -307,7 +308,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                   customer.balance,
                   style: AppTextStyle.title1.copyWith(
                     color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                     fontSize: AppFontSize.md,
                   ),
                 ),

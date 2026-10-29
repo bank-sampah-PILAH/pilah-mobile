@@ -15,6 +15,7 @@ import 'draft_format.dart';
 import 'pencairan_ui.dart';
 import 'potongan_control.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// One nasabah in the editor: how much, how paid, and what comes off.
 class EditorItemCard extends StatelessWidget {
@@ -116,7 +117,7 @@ class EditorItemCard extends StatelessWidget {
                     Text(
                       item.nasabahNama,
                       style: AppTextStyle.headline3.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.semibold,
                         color: AppColors.black,
                       ),
                     ),
@@ -307,7 +308,7 @@ class _HasilStrip extends StatelessWidget {
                   'Edit',
                   style: AppTextStyle.small.copyWith(
                     color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                     fontSize: AppFontSize.sm,
                   ),
                 ),
@@ -331,7 +332,7 @@ class _HasilStrip extends StatelessWidget {
           label,
           style: AppTextStyle.small.copyWith(
             color: emphasized ? AppColors.black : AppColors.inkSoft,
-            fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
+            fontWeight: emphasized ? AppFontWeight.bold : AppFontWeight.regular,
             fontSize: emphasized ? 15 : 13,
           ),
         ),
@@ -346,7 +347,8 @@ class _HasilStrip extends StatelessWidget {
               key: valueKey,
               style: AppTextStyle.title1.copyWith(
                 fontSize: emphasized ? 20 : 15,
-                fontWeight: emphasized ? FontWeight.bold : FontWeight.w600,
+                fontWeight:
+                    emphasized ? AppFontWeight.bold : AppFontWeight.semibold,
                 color: emphasized ? AppColors.greenDark : valueColor,
               ),
             ),

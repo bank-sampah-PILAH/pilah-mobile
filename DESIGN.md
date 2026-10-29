@@ -51,7 +51,7 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 | `AppTextStyle.small` | 12 | Body, captions |
 | `AppTextStyle.extraSmall` | 10 | Meta text, nav labels |
 
-`NasabahStyle.text(size, …)` exists for nasabah screens. **In code**, every font size is a step of `AppFontSize` (`lib/design/constants/font_size.dart`): `xs` 10, `sm` 12, `md` 14, `lg` 16, `xl` 18, `xxl` 20, `display` 24, `figure` 28 (a big number) and `jumbo` 48. A bare `fontSize: 15` fails `test/design/hardcoded_styles_test.dart`; the old off-scale sizes were moved to the nearest step (11 and 13 to `sm`, 15 to `md`, 17 to `lg`, 22 to `xxl`, 26 to `display`).
+`NasabahStyle.text(size, …)` exists for nasabah screens. **In code**, every font size is a step of `AppFontSize` (`lib/design/constants/font_size.dart`): `xs` 10, `sm` 12, `md` 14, `lg` 16, `xl` 18, `xxl` 20, `display` 24, `figure` 28 (a big number) and `jumbo` 48. A bare `fontSize: 15` fails `test/design/hardcoded_styles_test.dart`; the old off-scale sizes were moved to the nearest step (11 and 13 to `sm`, 15 to `md`, 17 to `lg`, 22 to `xxl`, 26 to `display`). Weights are a scale too: `AppFontWeight` (`lib/design/constants/font_weight.dart`) has `regular` 400, `medium` 500, `semibold` 600 and `bold` 700, the four faces of the bundled Poppins. A stock `FontWeight.w600` or `FontWeight.bold` fails `test/design/hardcoded_font_weight_test.dart`.
 
 ### Shape and spacing
 

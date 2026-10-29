@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class RecentActivitySection extends ConsumerWidget {
   final DateTime Function() now;
@@ -39,7 +40,7 @@ class RecentActivitySection extends ConsumerWidget {
                 'Aktivitas Terbaru',
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeight.bold,
                 ),
               ),
             ),
@@ -51,7 +52,7 @@ class RecentActivitySection extends ConsumerWidget {
                     'Lihat Semua',
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.greenDark,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -144,7 +145,7 @@ class _ActivityError extends StatelessWidget {
                 'Coba Lagi',
                 style: AppTextStyle.small.copyWith(
                   color: AppColors.greenDark,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
             ),

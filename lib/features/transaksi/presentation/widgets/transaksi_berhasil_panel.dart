@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class TransaksiBerhasilPanel extends StatefulWidget {
   final String customerName;
@@ -55,7 +56,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
           'Transaksi Berhasil!',
           style: AppTextStyle.headline1.copyWith(
             color: AppColors.black,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             fontSize: AppFontSize.xxl,
           ),
         ),
@@ -128,7 +129,9 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
           value,
           style: AppTextStyle.title1.copyWith(
             color: isPrimary ? AppColors.greenDark : AppColors.black,
-            fontWeight: isBold || isPrimary ? FontWeight.bold : FontWeight.w600,
+            fontWeight: isBold || isPrimary
+                ? AppFontWeight.bold
+                : AppFontWeight.semibold,
             fontSize: isPrimary ? 16 : 14,
           ),
         ),

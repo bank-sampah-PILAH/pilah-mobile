@@ -22,6 +22,7 @@ import '../widgets/pencairan_konfirmasi_sheet.dart';
 import '../widgets/pencairan_sort_button.dart';
 import '../widgets/pencairan_ui.dart';
 import 'draft_editor_args.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The pencairan screen: saved drafts to resume, and the way to start a new one.
 class DraftListPage extends StatelessWidget {
@@ -325,7 +326,7 @@ class _KelompokHeader extends StatelessWidget {
           label,
           style: AppTextStyle.extraSmall.copyWith(
             color: AppColors.inkSoft,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             letterSpacing: 0.8,
           ),
         ),
@@ -394,7 +395,8 @@ Future<void> _batalkan(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(draft.nama,
-              style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w700)),
+              style:
+                  AppTextStyle.small.copyWith(fontWeight: AppFontWeight.bold)),
           const SizedBox(height: 2),
           Text(
             '${draft.jumlahItem} nasabah \u00b7 ${rupiah(draft.totalDibayar)}',
@@ -480,7 +482,7 @@ class _DraftCardState extends State<_DraftCard> {
                         rupiah(draft.totalDibayar),
                         style: AppTextStyle.headline3.copyWith(
                           color: AppColors.greenDark,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ],
@@ -532,7 +534,7 @@ class _Rincian extends StatelessWidget {
             Text(
               value,
               style: AppTextStyle.small.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeight.semibold,
                 color: color ?? AppColors.black,
               ),
             ),
@@ -588,8 +590,8 @@ class _Footer extends StatelessWidget {
               if (draft.dibuatOlehNama.isNotEmpty)
                 Text(
                   draft.dibuatOlehNama,
-                  style:
-                      AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyle.small
+                      .copyWith(fontWeight: AppFontWeight.semibold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class StatCard extends StatelessWidget {
   final IconData icon;
@@ -52,7 +53,7 @@ class StatCard extends StatelessWidget {
               value,
               style: AppTextStyle.title1.copyWith(
                 color: AppColors.black,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
                 fontSize: AppFontSize.lg,
               ),
               maxLines: 1,

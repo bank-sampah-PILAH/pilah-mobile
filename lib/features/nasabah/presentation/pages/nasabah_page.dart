@@ -19,6 +19,7 @@ import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class NasabahPage extends StatelessWidget {
   const NasabahPage({super.key, this.isWeb = kIsWeb});
@@ -100,7 +101,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.black,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: AppFontWeight.bold,
                         fontSize: AppFontSize.display,
                       ),
                     ),
@@ -116,7 +117,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
                       '${notifier.activeCount} aktif',
                       style: AppTextStyle.small.copyWith(
                         color: AppColors.greenDark,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.semibold,
                       ),
                     ),
                   ),
