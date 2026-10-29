@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
@@ -187,16 +188,16 @@ void main() {
         'NASABAH (3)',
       ]) {
         final style = tester.widget<Text>(find.text(heading)).style!;
-        expect(style.color, Colors.black87, reason: heading);
+        expect(style.color, AppColors.black, reason: heading);
         expect(style.fontSize, 12, reason: heading);
       }
       for (final label in ['POTONGAN UMUM']) {
         expect(tester.widget<Text>(find.text(label)).style!.color,
-            Colors.grey[700],
+            AppColors.inkSoft,
             reason: label);
       }
       expect(tester.widget<Text>(find.text('NOMINAL').first).style!.color,
-          Colors.grey[700]);
+          AppColors.inkSoft);
     });
 
     testWidgets('each nasabah card leads with an avatar and the name',
@@ -257,7 +258,7 @@ void main() {
               matching: find.byType(Container))
           .first);
       final border = (box.decoration! as BoxDecoration).border! as Border;
-      expect(border.top.color, Colors.red.shade300);
+      expect(border.top.color, AppColors.danger);
     });
 
     testWidgets('Total potongan is yellow with a minus, like on the cards',
@@ -839,7 +840,7 @@ void main() {
       expect(simpan.right, lessThan(konfirmasi.left));
       expect(simpan.left, 16);
       expect(konfirmasi.right, 420 - 16);
-      expect(simpan.height, 52);
+      expect(simpan.height, 48);
       expect(konfirmasi.width, greaterThan(simpan.width),
           reason: 'the payment is the main action');
     });
@@ -859,7 +860,8 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('saving shows a spinner in the save button, labels unchanged',
+    testWidgets(
+        'saving swaps the save button for a spinner, as every button does',
         (tester) async {
       final pending = Completer<Either<NetworkException, DraftPencairan>>();
       when(() => repository.createDraft(any()))
@@ -874,7 +876,7 @@ void main() {
               of: find.byKey(const Key('simpan')),
               matching: find.byType(CircularProgressIndicator)),
           findsOneWidget);
-      expect(find.text('Simpan Draft'), findsOneWidget);
+      expect(find.text('Simpan Draft'), findsNothing);
       expect(find.text('Konfirmasi Pembayaran'), findsOneWidget);
 
       pending.complete(Right(_saved()));
@@ -952,7 +954,7 @@ void main() {
           .children!
           .cast<TextSpan>();
       expect(spans[1].text, 'Ibu Sari');
-      expect(spans[1].style!.color, Colors.black87);
+      expect(spans[1].style!.color, AppColors.black);
     });
 
     testWidgets('opening an already paid draft does not announce a payment',
@@ -1378,7 +1380,7 @@ void main() {
           tester.widget<Container>(panel()).decoration! as BoxDecoration;
       expect(dekor.color, Colors.white);
       final sudut = dekor.borderRadius! as BorderRadius;
-      expect(sudut.topLeft, const Radius.circular(20));
+      expect(sudut.topLeft, const Radius.circular(AppRadius.xl));
       expect(sudut.bottomLeft, Radius.zero);
       expect(dekor.boxShadow, isNotEmpty);
     });

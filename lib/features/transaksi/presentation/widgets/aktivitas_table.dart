@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/data_table_card.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Daftar aktivitas untuk layar lebar: satu baris per setoran atau pencairan
 /// dengan kolom yang sejajar, seperti tabel nasabah dan harga. Di telepon
@@ -48,7 +49,7 @@ class AktivitasTable extends StatelessWidget {
 
   static final _headStyle = AppTextStyle.extraSmall.copyWith(
     color: AppColors.grey100,
-    fontWeight: FontWeight.w600,
+    fontWeight: AppFontWeight.semibold,
     letterSpacing: 0.3,
   );
 
@@ -170,7 +171,7 @@ class _RowState extends State<_Row> {
                       item.avatarText,
                       style: AppTextStyle.extraSmall.copyWith(
                         color: item.avatarTextColor,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppFontWeight.bold,
                       ),
                     ),
                   ),
@@ -180,7 +181,7 @@ class _RowState extends State<_Row> {
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: base.copyWith(fontWeight: FontWeight.w600),
+                      style: base.copyWith(fontWeight: AppFontWeight.semibold),
                     ),
                   ),
                 ]),
@@ -218,7 +219,7 @@ class _RowState extends State<_Row> {
                   textAlign: TextAlign.end,
                   style: base.copyWith(
                     color: item.amountColor ?? AppColors.greenDark,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.semibold,
                   ),
                 ),
               ),

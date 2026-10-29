@@ -12,6 +12,8 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Isi picker nasabah: cari, pilih, pop nasabah yang dipilih.
 ///
@@ -264,8 +266,8 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                 customer.initials,
                 style: AppTextStyle.title1.copyWith(
                   color: customer.textColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.lg,
                 ),
               ),
             ),
@@ -277,16 +279,16 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                   Text(
                     customer.name,
                     style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      color: AppColors.black,
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: AppFontSize.lg,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -298,7 +300,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                 Text(
                   'Saldo',
                   style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[500],
+                    color: AppColors.grey100,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -306,8 +308,8 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                   customer.balance,
                   style: AppTextStyle.title1.copyWith(
                     color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.md,
                   ),
                 ),
               ],

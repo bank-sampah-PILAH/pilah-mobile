@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Lets a calon nasabah pick a bank sampah to apply to (PIL-204), searching
 /// the list [OnboardingNotifier.loadBankSampahDirectory] fetches on open.
@@ -119,7 +121,7 @@ class _PilihBankSampahBottomSheetState
               Text(
                 _errorMessage ?? 'Gagal memuat daftar bank sampah.',
                 textAlign: TextAlign.center,
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const SizedBox(height: 12),
               TextButton(onPressed: _load, child: const Text('Coba Lagi')),
@@ -145,7 +147,7 @@ class _PilihBankSampahBottomSheetState
           query.isEmpty
               ? 'Belum ada bank sampah yang tersedia.'
               : 'Bank sampah tidak ditemukan.',
-          style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
         ),
       );
     }
@@ -180,9 +182,9 @@ class _PilihBankSampahBottomSheetState
                       Text(
                         bank.nama,
                         style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          color: AppColors.black,
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.lg,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -191,7 +193,7 @@ class _PilihBankSampahBottomSheetState
                             .where((part) => part.trim().isNotEmpty)
                             .join(' · '),
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

@@ -23,6 +23,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_appro
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Daftar nasabah untuk layar lebar: tabel, bukan kartu satu kolom.
 ///
@@ -258,7 +259,9 @@ const _columns = <int>[5, 2, 3, 2, 2, 4];
 const _gutter = 32.0;
 
 TextStyle get _headStyle => AppTextStyle.small.copyWith(
-    color: AppColors.grey100, fontWeight: FontWeight.w600, letterSpacing: 0.3);
+    color: AppColors.grey100,
+    fontWeight: AppFontWeight.semibold,
+    letterSpacing: 0.3);
 
 class _HeaderRow extends StatelessWidget {
   const _HeaderRow();
@@ -346,7 +349,7 @@ class _RowState extends ConsumerState<_Row> {
                       borderRadius: BorderRadius.circular(AppRadius.md)),
                   child: Text(n.initials,
                       style: AppTextStyle.small.copyWith(
-                          color: n.textColor, fontWeight: FontWeight.bold)),
+                          color: n.textColor, fontWeight: AppFontWeight.bold)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -356,7 +359,8 @@ class _RowState extends ConsumerState<_Row> {
                       Text(n.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: base.copyWith(fontWeight: FontWeight.w600)),
+                          style: base.copyWith(
+                              fontWeight: AppFontWeight.semibold)),
                       if (n.email.isNotEmpty)
                         Text(n.email,
                             maxLines: 1,
@@ -381,7 +385,7 @@ class _RowState extends ConsumerState<_Row> {
                     child: Text(n.balance,
                         textAlign: TextAlign.end,
                         style: base.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.semibold,
                             color: muted
                                 ? AppColors.grey100
                                 : AppColors.greenDark)))),
@@ -477,7 +481,8 @@ class _Skeleton extends StatelessWidget {
         width: w,
         height: 12,
         decoration: BoxDecoration(
-            color: AppColors.fill, borderRadius: BorderRadius.circular(6)));
+            color: AppColors.fill,
+            borderRadius: BorderRadius.circular(AppRadius.sm)));
     return Column(children: [
       const _HeaderRow(),
       const Divider(height: 1),

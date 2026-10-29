@@ -15,6 +15,7 @@ import '../../domain/model/pencairan.dart';
 import '../../domain/model/revisi_pencairan.dart';
 import '../providers/revisi_pencairan_provider.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pengurus-only change history of one pencairan (PIL-230): the current
 /// version, then every replaced version with why, who and when.
@@ -248,7 +249,7 @@ class _PerubahanCard extends StatelessWidget {
             'Mengganti versi ${versi.versi}',
             style: AppTextStyle.small.copyWith(
               color: AppColors.black,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
             ),
           ),
           Text(
@@ -312,7 +313,7 @@ class _DiffRow extends StatelessWidget {
               TextSpan(text: '  →  ', style: base),
               TextSpan(
                 text: baru,
-                style: base.copyWith(fontWeight: FontWeight.w600),
+                style: base.copyWith(fontWeight: AppFontWeight.semibold),
               ),
             ])),
           ),

@@ -18,6 +18,7 @@ import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_jenis.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Isi form jenis sampah, tanpa wadah.
 ///
@@ -217,7 +218,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
         const SizedBox(height: 4),
         Text(
           'Kode unik untuk identifikasi jenis sampah ini.',
-          style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
         ),
         const SizedBox(height: 20),
       ];
@@ -243,7 +244,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
           validator: _validateWajib,
           hint: const Text('— Pilih Kategori —'),
           decoration: appInputDecoration(),
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+          icon: const Icon(Icons.arrow_drop_down, color: AppColors.grey100),
           items: _categories.map(_buildDropdownItem).toList(),
           onChanged: (newValue) {
             setState(() {
@@ -290,8 +291,8 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
               child: Text(
                 'Rp',
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w600,
+                  color: AppColors.black,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
             ),
@@ -302,7 +303,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
         const SizedBox(height: 4),
         Text(
           'Harga yang akan dibayarkan ke nasabah.',
-          style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
         ),
       ];
 
@@ -430,7 +431,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
       value: category.value,
       child: Row(
         children: [
-          Icon(category.icon, size: 20, color: Colors.grey[600]),
+          Icon(category.icon, size: 20, color: AppColors.grey100),
           const SizedBox(width: 12),
           Text(category.label),
         ],
@@ -563,7 +564,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
           const SizedBox(height: 4),
           Text(
             'Mulai ${formatTanggalId(berlakuMulai)}, pukul 00.00',
-            style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+            style: AppTextStyle.small.copyWith(color: AppColors.grey100),
           ),
         ],
       ],
@@ -588,16 +589,16 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
   Widget _buildRingkasanHarga(HargaEntity jenis) {
     final berlakuMulai = jenis.berlakuMulai;
     final terjadwal = jenis.hargaTerjadwal;
-    final keterangan = AppTextStyle.small.copyWith(color: Colors.grey[600]);
+    final keterangan = AppTextStyle.small.copyWith(color: AppColors.grey100);
     final nilai = AppTextStyle.headline3.copyWith(
-      color: Colors.black87,
-      fontWeight: FontWeight.w600,
+      color: AppColors.black,
+      fontWeight: AppFontWeight.semibold,
     );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: AppColors.fill,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
@@ -649,7 +650,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
             child: Text(
               'Perubahan harga tidak berlaku surut. Setoran yang sudah '
               'tercatat tetap memakai harga lama.',
-              style: AppTextStyle.small.copyWith(color: Colors.black87),
+              style: AppTextStyle.small.copyWith(color: AppColors.black),
             ),
           ),
         ],

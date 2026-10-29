@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
@@ -13,6 +14,8 @@ import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
 import 'pencairan_ui.dart';
 import 'potongan_control.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// One nasabah in the editor: how much, how paid, and what comes off.
 class EditorItemCard extends StatelessWidget {
@@ -60,11 +63,12 @@ class EditorItemCard extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  ElevatedButton(
+                  AppButton(
                     key: const Key('terapkan-item'),
+                    label: 'Terapkan',
+                    expand: false,
                     onPressed: () => Navigator.of(sheetContext)
                         .pop(_PotonganChoice(pilihan)),
-                    child: const Text('Terapkan'),
                   ),
                   const SizedBox(width: 12),
                   Flexible(
@@ -95,7 +99,7 @@ class EditorItemCard extends StatelessWidget {
     return PencairanCard.shadow(
       key: Key('item-${item.nasabahId}'),
       padding: const EdgeInsets.all(12),
-      borderColor: error != null ? Colors.red.shade300 : null,
+      borderColor: error != null ? AppColors.danger : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -113,8 +117,8 @@ class EditorItemCard extends StatelessWidget {
                     Text(
                       item.nasabahNama,
                       style: AppTextStyle.headline3.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        fontWeight: AppFontWeight.semibold,
+                        color: AppColors.black,
                       ),
                     ),
                   ],
@@ -202,7 +206,7 @@ class EditorItemCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(error,
-                  style: AppTextStyle.small.copyWith(color: Colors.red)),
+                  style: AppTextStyle.small.copyWith(color: AppColors.danger)),
             ),
         ],
       ),
@@ -264,12 +268,12 @@ class _HasilStrip extends StatelessWidget {
             'Potongan',
             potongan > 0 ? '\u2212 ${rupiah(potongan)}' : rupiah(potongan),
             Key('potongan-$nasabahId'),
-            valueColor: potongan > 0 ? AppColors.statOrange : Colors.black87,
+            valueColor: potongan > 0 ? AppColors.statOrange : AppColors.black,
             trailing: onEdit == null ? null : _editButton(),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1, color: Colors.green.shade100),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: AppColors.greenLight),
           ),
           _row(
             'Dibayar',
@@ -304,8 +308,8 @@ class _HasilStrip extends StatelessWidget {
                   'Edit',
                   style: AppTextStyle.small.copyWith(
                     color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.sm,
                   ),
                 ),
               ],
@@ -318,7 +322,7 @@ class _HasilStrip extends StatelessWidget {
     String label,
     String value,
     Key valueKey, {
-    Color valueColor = Colors.black87,
+    Color valueColor = AppColors.black,
     bool emphasized = false,
     Widget? trailing,
   }) {
@@ -327,8 +331,8 @@ class _HasilStrip extends StatelessWidget {
         Text(
           label,
           style: AppTextStyle.small.copyWith(
-            color: emphasized ? Colors.black87 : Colors.grey[700],
-            fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
+            color: emphasized ? AppColors.black : AppColors.inkSoft,
+            fontWeight: emphasized ? AppFontWeight.bold : AppFontWeight.regular,
             fontSize: emphasized ? 15 : 13,
           ),
         ),
@@ -343,7 +347,8 @@ class _HasilStrip extends StatelessWidget {
               key: valueKey,
               style: AppTextStyle.title1.copyWith(
                 fontSize: emphasized ? 20 : 15,
-                fontWeight: emphasized ? FontWeight.bold : FontWeight.w600,
+                fontWeight:
+                    emphasized ? AppFontWeight.bold : AppFontWeight.semibold,
                 color: emphasized ? AppColors.greenDark : valueColor,
               ),
             ),
@@ -403,7 +408,7 @@ class _NominalFieldState extends State<_NominalField> {
   Widget build(BuildContext context) {
     final red = OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      borderSide: const BorderSide(color: Colors.red),
+      borderSide: const BorderSide(color: AppColors.danger),
     );
     final base = appInputDecoration(hintText: 'Contoh: 50000');
     return TextField(

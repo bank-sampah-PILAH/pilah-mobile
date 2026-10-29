@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import '../../domain/model/draft_pencairan.dart';
 import 'draft_format.dart';
 import 'pencairan_ui.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Asks for the smallest saldo to list: amounts to pick with a tap, a field
 /// for any other, and a count of who meets it. A bottom sheet on a phone and a
@@ -83,7 +84,7 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
           const SizedBox(height: 4),
           Text(
             'Tampilkan nasabah yang saldonya sedikitnya segini.',
-            style: AppTextStyle.small.copyWith(color: Colors.grey[700]),
+            style: AppTextStyle.small.copyWith(color: AppColors.inkSoft),
           ),
           const SizedBox(height: 16),
           SingleChildScrollView(
@@ -128,7 +129,7 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: nilai > 0 && memenuhi == 0
-                  ? Colors.red.shade50
+                  ? AppColors.dangerLight
                   : AppColors.greenLight,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
@@ -140,7 +141,7 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
                       : Icons.people_outline,
                   size: 18,
                   color: nilai > 0 && memenuhi == 0
-                      ? Colors.red.shade700
+                      ? AppColors.danger
                       : AppColors.greenDark,
                 ),
                 const SizedBox(width: 8),
@@ -162,10 +163,11 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
           const SizedBox(height: 16),
           Row(
             children: [
-              ElevatedButton(
+              AppButton(
                 key: const Key('terapkan-saldo-min'),
+                label: 'Terapkan',
+                expand: false,
                 onPressed: () => Navigator.of(context).pop(_nilai),
-                child: const Text('Terapkan'),
               ),
               const SizedBox(width: 12),
               TextButton(

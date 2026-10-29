@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,7 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/login_pa
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _genderMaleApiValue = 'laki-laki';
 const _genderMaleLabel = 'Laki-laki';
@@ -470,15 +472,15 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                     child: DropdownButtonFormField<String>(
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       initialValue: _gender,
-                      hint: Text(
+                      hint: const Text(
                         'Pilih jenis kelamin',
                         style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontWeight: FontWeight.normal,
+                          color: AppColors.grey200,
+                          fontWeight: AppFontWeight.regular,
                         ),
                       ),
                       icon: const Icon(Icons.keyboard_arrow_down,
-                          color: Colors.grey),
+                          color: AppColors.grey100),
                       items: const [
                         DropdownMenuItem(
                           value: _genderMaleLabel,
@@ -528,7 +530,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       decoration: appInputDecoration(
                           hintText: 'dd/mm/yyyy',
                           suffixIcon: const Icon(Icons.calendar_today_outlined,
-                              color: Colors.black87)),
+                              color: AppColors.black)),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Tanggal lahir wajib diisi';
@@ -566,14 +568,14 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               ),
 
               // 5. Footer Text
-              Padding(
-                padding: const EdgeInsets.all(24.0),
+              const Padding(
+                padding: EdgeInsets.all(24.0),
                 child: Text(
                   'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
+                    fontSize: AppFontSize.sm,
+                    color: AppColors.grey100,
                     height: 1.5,
                   ),
                 ),

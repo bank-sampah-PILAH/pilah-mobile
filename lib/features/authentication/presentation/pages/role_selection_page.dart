@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -15,6 +16,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class RoleSelectionPage extends ConsumerStatefulWidget {
   const RoleSelectionPage({super.key});
@@ -130,7 +132,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                     Text('Langkah 1',
                         style: AppTextStyle.small.copyWith(
                           color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         )),
                     const SizedBox(height: 4),
                     Text('Daftar Akun', style: AppTextStyle.headline1),
@@ -139,7 +141,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                       'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
                       style: AppTextStyle.small.copyWith(
                         color: AppColors.grey100,
-                        fontSize: 14,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -333,7 +335,7 @@ class _RoleCard extends StatelessWidget {
                         Text(option.description,
                             style: AppTextStyle.small.copyWith(
                               color: AppColors.grey100,
-                              fontSize: 13,
+                              fontSize: AppFontSize.sm,
                             )),
                       ],
                     ),

@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class RecentActivitySection extends ConsumerWidget {
   final DateTime Function() now;
@@ -38,8 +39,8 @@ class RecentActivitySection extends ConsumerWidget {
               child: Text(
                 'Aktivitas Terbaru',
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                  fontWeight: AppFontWeight.bold,
                 ),
               ),
             ),
@@ -51,7 +52,7 @@ class RecentActivitySection extends ConsumerWidget {
                     'Lihat Semua',
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.greenDark,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -85,7 +86,7 @@ class RecentActivitySection extends ConsumerWidget {
             child: Center(
               child: Text(
                 'Belum ada aktivitas transaksi.',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
             ),
           )
@@ -130,12 +131,12 @@ class _ActivityError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, color: Colors.grey[400], size: 32),
+            const Icon(Icons.cloud_off, color: AppColors.grey200, size: 32),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -144,7 +145,7 @@ class _ActivityError extends StatelessWidget {
                 'Coba Lagi',
                 style: AppTextStyle.small.copyWith(
                   color: AppColors.greenDark,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
             ),

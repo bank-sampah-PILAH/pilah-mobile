@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_h
 import 'package:pilah_mobile/features/riwayat/presentation/pages/riwayat_nasabah_page.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_preview_button.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Re-key history on account or membership changes to discard stale responses.
 class NasabahHistoryScreen extends ConsumerWidget {
@@ -66,7 +67,7 @@ class NasabahHistoryScreen extends ConsumerWidget {
                                     'SALDO TABUNGAN',
                                     style: NasabahStyle.text(
                                       11,
-                                      weight: FontWeight.w600,
+                                      weight: AppFontWeight.semibold,
                                       color: NasabahStyle.emeraldLight,
                                     ),
                                   ),
@@ -75,7 +76,7 @@ class NasabahHistoryScreen extends ConsumerWidget {
                                     nasabahRupiah(balance.amount),
                                     style: NasabahStyle.text(
                                       24,
-                                      weight: FontWeight.w700,
+                                      weight: AppFontWeight.bold,
                                       color: Colors.white,
                                       height: 1.25,
                                     ),
@@ -125,12 +126,13 @@ class NasabahHistoryScreen extends ConsumerWidget {
                                       indicatorSize: TabBarIndicatorSize.tab,
                                       indicator: BoxDecoration(
                                         color: NasabahStyle.emerald,
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.md),
                                       ),
                                       labelColor: Colors.white,
                                       unselectedLabelColor: NasabahStyle.muted,
                                       labelStyle: NasabahStyle.text(14,
-                                          weight: FontWeight.w600),
+                                          weight: AppFontWeight.semibold),
                                       tabs: const [
                                         Tab(text: 'Setoran'),
                                         Tab(text: 'Pencairan'),
