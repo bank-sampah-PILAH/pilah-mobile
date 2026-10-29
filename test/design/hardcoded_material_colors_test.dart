@@ -7,7 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// `Colors.grey`, `Colors.black87` and `Colors.red` are not the colours of the
 /// app: `Colors.grey` is #9E9E9E, 2.7:1 on white, which fails WCAG AA as text.
 /// `AppColors` holds the palette that was checked for contrast. `Colors.white`
-/// and `Colors.transparent` are fine. No file outside `lib/design/` may use a
+/// and `Colors.transparent` are fine, but `Colors.white70` and the other
+/// translucent whites are stock values too. No file outside `lib/design/` may use a
 /// stock colour, and there is no baseline to hide behind.
 
 /// The left boundary keeps `AppColors.black` and `AppColors.grey100` out of the
@@ -15,7 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 final _stock = RegExp(
   r'(?<![A-Za-z_])Colors\.(grey|black|red|green|blue|orange|amber|teal|'
   r'yellow|purple|pink|indigo|brown|cyan|lime|deepOrange|lightBlue|'
-  r'lightGreen|blueGrey|deepPurple)',
+  r'lightGreen|blueGrey|deepPurple|white[0-9])',
 );
 
 Map<String, int> _scan() {

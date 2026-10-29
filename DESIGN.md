@@ -35,7 +35,7 @@ Avatars are the one place that keeps several hues on purpose. The list avatars (
 
 Retired colors: the greys, ambers, green tints and reds that used to be copied into screens are listed in `test/design/retired_palette_test.dart`, which fails if one comes back. If a screen needs a new color, add a token here and a contrast pair in `test/design/contrast_test.dart` instead of a literal.
 
-Flutter's stock palette is guarded too: `Colors.grey`, `Colors.black87`, `Colors.red` and the like are not the app's colours (`Colors.grey` is `#9E9E9E`, 2.7:1 on white, below WCAG AA for text). `test/design/hardcoded_material_colors_test.dart` fails on a new one outside `lib/design/`; the existing ones are in its baseline and can only go down. `Colors.white` and `Colors.transparent` are fine.
+Flutter's stock palette is guarded too: `Colors.grey`, `Colors.black87`, `Colors.red` and the like are not the app's colours (`Colors.grey` is `#9E9E9E`, 2.7:1 on white, below WCAG AA for text). `test/design/hardcoded_material_colors_test.dart` fails on any of them outside `lib/design/constants/colors.dart`, with no baseline. That includes the translucent whites (`Colors.white70`); a plain `Colors.white` and `Colors.transparent` are fine.
 
 `AppColors.primary` (`#2B637B`, teal-blue) is **not** the app's accent. It was the Material seed until this theme change and still leaks into the browser tab color in `lib/app.dart`. Do not use it for new UI.
 
