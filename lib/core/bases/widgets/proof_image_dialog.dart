@@ -17,7 +17,6 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
 
   showDialog(
     context: context,
-    barrierColor: AppColors.black.withValues(alpha: 0.87),
     builder: (context) {
       return Dialog(
         backgroundColor: Colors.white,
