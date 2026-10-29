@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 Color? _dateForeground(Set<WidgetState> states, Color normal) {
   if (states.contains(WidgetState.disabled)) return AppColors.grey100;
@@ -36,8 +38,8 @@ abstract final class AppTheme {
     // 14 rather than the 16 of headline3: two half-width buttons, such as
     // "Batal" and "Simpan Perubahan", must fit a phone.
     final label = AppTextStyle.headline3.copyWith(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
+      fontSize: AppFontSize.md,
+      fontWeight: AppFontWeight.semibold,
     );
     const padding = EdgeInsets.symmetric(horizontal: 24, vertical: 12);
     return base.copyWith(
@@ -174,7 +176,7 @@ abstract final class AppTheme {
         headerHelpStyle: AppTextStyle.small,
         weekdayStyle: AppTextStyle.extraSmall.copyWith(
           color: AppColors.grey100,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
         dayStyle: AppTextStyle.small,
         dayForegroundColor: WidgetStateProperty.resolveWith(

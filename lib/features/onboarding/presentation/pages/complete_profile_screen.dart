@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -483,10 +484,12 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       isExpanded: true,
                       initialValue: _gender,
-                      hint: Text(
+                      hint: const Text(
                         'Pilih jenis kelamin',
-                        style: AppTextStyle.headline3
-                            .copyWith(color: AppColors.grey100),
+                        style: TextStyle(
+                          color: AppColors.grey200,
+                          fontWeight: AppFontWeight.regular,
+                        ),
                       ),
                       icon: const Icon(Icons.keyboard_arrow_down,
                           color: AppColors.grey100),
@@ -537,7 +540,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       decoration: appInputDecoration(
                           hintText: 'dd/mm/yyyy',
                           suffixIcon: const Icon(Icons.calendar_today_outlined,
-                              color: AppColors.inkSoft)),
+                              color: AppColors.black)),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Tanggal lahir wajib diisi';

@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart'
     show nasabahDate;
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Full announcement content (PIL-244). The row is passed as [extra] from the
 /// list — an announcement that expired or was withdrawn can no longer appear
@@ -35,8 +36,8 @@ class PengumumanDetailPage extends StatelessWidget {
           children: [
             Text(
               pengumuman.judul,
-              style:
-                  NasabahStyle.text(20, weight: FontWeight.w700, height: 1.3),
+              style: NasabahStyle.text(20,
+                  weight: AppFontWeight.bold, height: 1.3),
             ),
             if (terbitPada != null) ...[
               const SizedBox(height: 8),
@@ -66,7 +67,7 @@ class PengumumanDetailPage extends StatelessWidget {
                     child: Text(
                       bankMention,
                       style: NasabahStyle.text(13,
-                          weight: FontWeight.w500, height: 1.5),
+                          weight: AppFontWeight.medium, height: 1.5),
                     ),
                   ),
                 ],

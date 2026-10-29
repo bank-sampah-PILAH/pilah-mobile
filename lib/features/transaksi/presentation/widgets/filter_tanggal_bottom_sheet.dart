@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_calendar_range_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class FilterTanggalBottomSheet extends ConsumerStatefulWidget {
   const FilterTanggalBottomSheet({super.key});
@@ -90,7 +91,7 @@ class _FilterTanggalBottomSheetState
                       'Filter akan diterapkan ke daftar transaksi.',
                       style: AppTextStyle.small.copyWith(
                         color: AppColors.greenDark,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: AppFontWeight.medium,
                       ),
                     ),
                   ),

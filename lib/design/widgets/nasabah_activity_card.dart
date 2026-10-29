@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class NasabahActivityCard extends StatelessWidget {
   const NasabahActivityCard({
@@ -47,7 +48,8 @@ class NasabahActivityCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: NasabahStyle.text(14, weight: FontWeight.w500)),
+                        style: NasabahStyle.text(14,
+                            weight: AppFontWeight.medium)),
                     if (local != null)
                       Text(
                         '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year} · ${local.hour.toString().padLeft(2, '0')}.${local.minute.toString().padLeft(2, '0')}',
@@ -63,9 +65,8 @@ class NasabahActivityCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: NasabahStyle.text(
                   13,
-                  weight: FontWeight.w600,
-                  color:
-                      isWithdrawal ? Colors.red.shade700 : AppColors.greenDark,
+                  weight: AppFontWeight.semibold,
+                  color: isWithdrawal ? AppColors.danger : AppColors.greenDark,
                   tabularFigures: true,
                 ),
               ),

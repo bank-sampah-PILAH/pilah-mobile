@@ -20,6 +20,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Membuka form koreksi setoran [id]. Mengembalikan true bila tersimpan.
 Future<bool?> showEditSetoranSheet(BuildContext context, String id) =>
@@ -265,8 +266,8 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Total baru',
-                style:
-                    AppTextStyle.small.copyWith(fontWeight: FontWeight.bold)),
+                style: AppTextStyle.small
+                    .copyWith(fontWeight: AppFontWeight.bold)),
             Text(
               CurrencyFormatter.formatRupiah(_total),
               style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
@@ -334,7 +335,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
                   initialsOf(detail.name),
                   style: AppTextStyle.small.copyWith(
                     color: palette.$2,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                   ),
                 ),
               ),
@@ -348,7 +349,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle.headline3
-                          .copyWith(fontWeight: FontWeight.w600),
+                          .copyWith(fontWeight: AppFontWeight.semibold),
                     ),
                     if (tanggal != null)
                       Text(
@@ -431,7 +432,7 @@ class _Nominal extends StatelessWidget {
           value,
           style: AppTextStyle.title1.copyWith(
             color: emphasis ? AppColors.greenDark : AppColors.black,
-            fontWeight: FontWeight.w700,
+            fontWeight: AppFontWeight.bold,
           ),
         ),
       ],
@@ -456,7 +457,7 @@ class _Chip extends StatelessWidget {
         label,
         style: AppTextStyle.extraSmall.copyWith(
           color: AppColors.warning,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );

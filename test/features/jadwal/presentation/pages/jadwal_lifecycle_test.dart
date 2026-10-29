@@ -174,8 +174,8 @@ void main() {
 
     expect(
       tester
-          .widget<FilledButton>(
-            find.widgetWithText(FilledButton, 'Terbitkan'),
+          .widget<ElevatedButton>(
+            find.widgetWithText(ElevatedButton, 'Terbitkan'),
           )
           .onPressed,
       isNull,
@@ -193,8 +193,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<FilledButton>(
-            find.widgetWithText(FilledButton, 'Terbitkan'),
+          .widget<ElevatedButton>(
+            find.widgetWithText(ElevatedButton, 'Terbitkan'),
           )
           .onPressed,
       isNotNull,
@@ -232,8 +232,8 @@ void main() {
         cubit.state, JadwalLoaded([schedule], isSaving: true, totalCount: 1));
     expect(
       tester
-          .widget<FilledButton>(
-            find.widgetWithText(FilledButton, 'Terbitkan'),
+          .widget<ElevatedButton>(
+            find.widgetWithText(ElevatedButton, 'Terbitkan'),
           )
           .onPressed,
       isNull,
@@ -250,8 +250,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<FilledButton>(
-            find.widgetWithText(FilledButton, 'Terbitkan'),
+          .widget<ElevatedButton>(
+            find.widgetWithText(ElevatedButton, 'Terbitkan'),
           )
           .onPressed,
       isNotNull,

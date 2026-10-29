@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
@@ -228,13 +229,13 @@ class OnboardingProgress extends StatelessWidget {
       child: done
           ? const Icon(Icons.check, size: 20, color: AppColors.greenDark)
           : Text('${index + 1}',
-              style: AppTextStyle.small
-                  .copyWith(color: numberColor, fontWeight: FontWeight.w600)),
+              style: AppTextStyle.small.copyWith(
+                  color: numberColor, fontWeight: AppFontWeight.semibold)),
     );
     final label = Text(text,
         textAlign: vertical ? TextAlign.start : TextAlign.center,
         style: AppTextStyle.small
-            .copyWith(color: color, fontWeight: FontWeight.w600));
+            .copyWith(color: color, fontWeight: AppFontWeight.semibold));
     return Semantics(
       label: 'Langkah ${index + 1} dari 3. $text. $status',
       excludeSemantics: true,

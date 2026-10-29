@@ -123,6 +123,18 @@ def is_coverage_gate(event_name, ref):
     return event_name == "push" and ref == "refs/heads/staging"
 
 
+def _commit_exists(sha):
+    try:
+        subprocess.run(
+            ["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError:
+        return False
+    return True
+
+
 def _base_and_head():
     event_name = os.environ["GITHUB_EVENT_NAME"]
     ref = os.environ["GITHUB_REF"]
@@ -131,7 +143,8 @@ def _base_and_head():
         return os.environ["PR_BASE_SHA"], os.environ["PR_HEAD_SHA"], event_name, ref
     if event_name == "push":
         base = os.environ["PUSH_BEFORE_SHA"]
-        if not base or set(base) == {"0"}:
+        # A force-push replaces the old tip, so `before` may no longer exist.
+        if not base or set(base) == {"0"} or not _commit_exists(base):
             try:
                 base = subprocess.run(
                     ["git", "merge-base", "origin/staging", head],
@@ -141,7 +154,7 @@ def _base_and_head():
                 ).stdout.strip()
             except subprocess.CalledProcessError as error:
                 raise RuntimeError(
-                    "Cannot find a merge base with origin/staging for the first branch push."
+                    "Cannot find a merge base with origin/staging for a first or force push."
                 ) from error
         return base, head, event_name, ref
     raise ValueError(f"Unsupported event for test selection: {event_name}")

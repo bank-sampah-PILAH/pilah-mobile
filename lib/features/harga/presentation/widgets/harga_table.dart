@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/data_table_card.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Daftar jenis sampah untuk layar lebar: satu baris per jenis dengan kolom
 /// yang sejajar, seperti tabel nasabah. Di telepon daftar tetap berupa kartu.
@@ -43,7 +44,7 @@ class HargaTable extends StatelessWidget {
 
   static final _headStyle = AppTextStyle.extraSmall.copyWith(
     color: AppColors.grey100,
-    fontWeight: FontWeight.w600,
+    fontWeight: AppFontWeight.semibold,
     letterSpacing: 0.3,
   );
 
@@ -143,7 +144,8 @@ class _RowState extends State<_Row> {
                         Text(item.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: base.copyWith(fontWeight: FontWeight.w600)),
+                            style: base.copyWith(
+                                fontWeight: AppFontWeight.semibold)),
                         Text(item.subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -166,7 +168,8 @@ class _RowState extends State<_Row> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(item.priceFormatted,
-                        style: base.copyWith(fontWeight: FontWeight.w600)),
+                        style:
+                            base.copyWith(fontWeight: AppFontWeight.semibold)),
                     if (terjadwal != null)
                       Text(
                         '${CurrencyFormatter.formatRupiah(terjadwal.harga)} mulai '
@@ -174,7 +177,7 @@ class _RowState extends State<_Row> {
                         textAlign: TextAlign.end,
                         style: AppTextStyle.extraSmall.copyWith(
                           color: AppColors.warning,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         ),
                       ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 /// The grey bar at the top of a bottom sheet that says it can be dragged.
 ///
@@ -21,7 +22,7 @@ class AppSheetHandle extends StatelessWidget {
           height: 4,
           decoration: BoxDecoration(
             color: AppColors.border,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
       ),

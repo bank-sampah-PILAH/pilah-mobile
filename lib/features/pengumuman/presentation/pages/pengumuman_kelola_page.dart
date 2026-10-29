@@ -23,6 +23,7 @@ import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_enti
 import 'package:pilah_mobile/features/pengumuman/presentation/states/pengumuman_state.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The filter chips of the manage screen: derived statuses come straight from
 /// the backend's `?status=`, and '' means no filter.
@@ -261,7 +262,7 @@ class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text('Buat',
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w600)),
+                      color: Colors.white, fontWeight: AppFontWeight.semibold)),
             ),
       body: SafeArea(
         child: MasterDetailLayout(

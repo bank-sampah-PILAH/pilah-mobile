@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -142,25 +144,32 @@ class _RegisterBankSampahScreenState
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.dangerLight), // red-200
       ),
-      child: Row(
+      child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger),
-          const SizedBox(width: 12),
+          Icon(Icons.error_outline, color: AppColors.danger, size: 22),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Pendaftaran Ditolak',
-                  style:
-                      AppTextStyle.headline3.copyWith(color: AppColors.danger),
+                  style: TextStyle(
+                    color: AppColors.danger,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.md,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Pendaftaran sebelumnya ditolak. Mohon periksa kembali data '
                   'Anda dan daftar ulang.',
-                  style: AppTextStyle.small.copyWith(color: AppColors.danger),
+                  style: TextStyle(
+                    color: AppColors.danger,
+                    fontSize: AppFontSize.sm,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
@@ -230,7 +239,7 @@ class _RegisterBankSampahScreenState
                 // error, so the two read as one form.
                 final errorColor = Theme.of(field.context).colorScheme.error;
                 final placeholderColor =
-                    field.hasError ? errorColor : AppColors.grey100;
+                    field.hasError ? errorColor : AppColors.grey200;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -265,7 +274,7 @@ class _RegisterBankSampahScreenState
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: const BoxDecoration(
-                                          color: Colors.black54,
+                                          color: AppColors.grey100,
                                           shape: BoxShape.circle,
                                         ),
                                         child: const Icon(
@@ -298,8 +307,9 @@ class _RegisterBankSampahScreenState
                                     const Text(
                                       'Pilih foto',
                                       style: TextStyle(
-                                        color: AppColors.inkSoft,
-                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.black,
+                                        fontWeight: AppFontWeight.semibold,
+                                        fontSize: AppFontSize.md,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -319,7 +329,7 @@ class _RegisterBankSampahScreenState
                         field.errorText!,
                         style: TextStyle(
                           color: errorColor,
-                          fontSize: 12,
+                          fontSize: AppFontSize.sm,
                         ),
                       ),
                     ],
@@ -330,7 +340,7 @@ class _RegisterBankSampahScreenState
           ),
         ),
         Text('Pengajuan akan ditinjau oleh Admin PILAH.',
-            style: AppTextStyle.small.copyWith(color: AppColors.grey100)),
+            style: AppTextStyle.small.copyWith(color: AppColors.grey200)),
       ],
       footer: const [],
       actions: OnboardingActions(
