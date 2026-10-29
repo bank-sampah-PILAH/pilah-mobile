@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 
 import '../../../support/fake_image_download.dart';
 
@@ -36,7 +35,7 @@ List<String> _renderedNetworkUrls(WidgetTester tester) => tester
 
 void main() {
   group('showProofImageDialog', () {
-    testWidgets('dims the page behind it at 87%, not solid black',
+    testWidgets('dims the page with the same barrier as every other dialog',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -49,7 +48,8 @@ void main() {
       final barrier = tester.widget<ModalBarrier>(
         find.byType(ModalBarrier).last,
       );
-      expect(barrier.color, AppColors.black.withValues(alpha: 0.87));
+      // The app sets no barrier of its own, so this is Flutter's default.
+      expect(barrier.color, Colors.black54);
     });
 
     testWidgets('with no photo on record, shows nothing rather than a stand-in',
