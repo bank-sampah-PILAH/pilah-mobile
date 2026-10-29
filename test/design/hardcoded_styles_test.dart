@@ -30,6 +30,15 @@ List<String> _scan() {
 }
 
 void main() {
+  test('the colour pattern catches every literal constructor', () {
+    expect(_color.hasMatch('Color(0xFF112233)'), isTrue);
+    expect(_color.hasMatch('Color.fromRGBO(1, 2, 3, 0.5)'), isTrue);
+    expect(_color.hasMatch('Color.fromARGB(255, 1, 2, 3)'), isTrue);
+    expect(_color.hasMatch('Color.from(alpha: 1, red: 0, green: 0, blue: 0)'),
+        isTrue);
+    expect(_color.hasMatch('AppColors.black'), isFalse);
+  });
+
   test('no file hard-codes a colour or a font size', () {
     expect(
       _scan(),
