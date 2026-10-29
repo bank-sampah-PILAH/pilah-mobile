@@ -10,7 +10,7 @@ class LoginFooter extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
+        const Icon(
           Icons.lock_outline,
           size: 16,
           color: AppColors.grey200,

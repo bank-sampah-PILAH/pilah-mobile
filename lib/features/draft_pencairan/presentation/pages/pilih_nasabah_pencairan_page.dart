@@ -395,7 +395,7 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final terpilih = state.terpilih;
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),

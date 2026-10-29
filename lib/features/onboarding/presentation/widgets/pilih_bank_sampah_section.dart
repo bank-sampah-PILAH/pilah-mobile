@@ -62,7 +62,7 @@ class PilihBankSampahSection extends StatelessWidget {
                     color: AppColors.fill,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.recycling_outlined,
+                  child: const Icon(Icons.recycling_outlined,
                       color: AppColors.grey100, size: 20),
                 ),
                 const SizedBox(width: 12),
@@ -74,7 +74,7 @@ class PilihBankSampahSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
+                const Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
               ],
             )
           : Row(
@@ -114,7 +114,7 @@ class PilihBankSampahSection extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.edit_outlined, color: AppColors.grey200),
+                const Icon(Icons.edit_outlined, color: AppColors.grey200),
               ],
             ),
     );

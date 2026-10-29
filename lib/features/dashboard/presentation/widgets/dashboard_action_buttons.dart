@@ -167,7 +167,8 @@ class _ChoiceTile extends StatelessWidget {
                 ],
               ),
             ),
-            if (enabled) Icon(Icons.chevron_right, color: AppColors.grey200),
+            if (enabled)
+              const Icon(Icons.chevron_right, color: AppColors.grey200),
           ],
         ),
       ),

@@ -215,7 +215,7 @@ class PencairanPopupMenu<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<T>(
       tooltip: tooltip,
-      icon: Icon(Icons.more_vert, color: AppColors.inkSoft),
+      icon: const Icon(Icons.more_vert, color: AppColors.inkSoft),
       color: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 8,

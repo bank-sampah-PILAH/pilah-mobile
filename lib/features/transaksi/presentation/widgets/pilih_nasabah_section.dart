@@ -50,7 +50,7 @@ class PilihNasabahSection extends StatelessWidget {
                     color: AppColors.fill,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.person_outline,
+                  child: const Icon(Icons.person_outline,
                       color: AppColors.grey100, size: 20),
                 ),
                 const SizedBox(width: 12),
@@ -62,7 +62,7 @@ class PilihNasabahSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
+                const Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
               ],
             )
           : Row(
@@ -109,7 +109,7 @@ class PilihNasabahSection extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.edit_outlined, color: AppColors.grey200),
+                const Icon(Icons.edit_outlined, color: AppColors.grey200),
               ],
             ),
     );

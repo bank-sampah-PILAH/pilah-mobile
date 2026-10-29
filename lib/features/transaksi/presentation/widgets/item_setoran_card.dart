@@ -107,7 +107,7 @@ class ItemSetoranCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          icon: Icon(Icons.keyboard_arrow_down,
+                          icon: const Icon(Icons.keyboard_arrow_down,
                               color: AppColors.grey200),
                           items: activeList.map((type) {
                             return DropdownMenuItem<String>(

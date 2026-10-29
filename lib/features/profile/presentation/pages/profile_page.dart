@@ -347,7 +347,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               ContentInset(
                 child: Container(
                   margin: EdgeInsets.symmetric(horizontal: _gutter),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     border: Border(
                       bottom: BorderSide(color: AppColors.border, width: 1),
                     ),
@@ -475,7 +475,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off, color: AppColors.grey200, size: 48),
+            const Icon(Icons.cloud_off, color: AppColors.grey200, size: 48),
             const SizedBox(height: 16),
             Text(
               message ?? 'Gagal memuat data profil',
@@ -920,7 +920,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     children: [
                       for (int i = 0; i < team.length; i++) ...[
                         if (i > 0)
-                          Divider(
+                          const Divider(
                               color: AppColors.fill,
                               height: 1,
                               thickness: 1,

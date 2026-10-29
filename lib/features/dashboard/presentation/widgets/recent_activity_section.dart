@@ -130,7 +130,7 @@ class _ActivityError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, color: AppColors.grey200, size: 32),
+            const Icon(Icons.cloud_off, color: AppColors.grey200, size: 32),
             const SizedBox(height: 8),
             Text(
               message,

@@ -76,7 +76,7 @@ class _LocationLine extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 13, color: AppColors.grey100),
+        style: const TextStyle(fontSize: 13, color: AppColors.grey100),
       ),
     );
   }

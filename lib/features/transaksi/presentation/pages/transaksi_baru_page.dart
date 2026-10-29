@@ -510,7 +510,8 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                child: Icon(Icons.add, color: AppColors.grey200, size: 24),
+                child:
+                    const Icon(Icons.add, color: AppColors.grey200, size: 24),
               ),
               const SizedBox(height: 16),
               Text(

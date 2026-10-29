@@ -414,7 +414,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
             ),
             Text(
               '${loadedState.totalCount} jadwal',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.grey100,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -684,7 +684,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
           ),
           Text(
             '$count jadwal',
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.grey100,
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -816,7 +816,7 @@ class _EmptyScheduleDay extends StatelessWidget {
           Text(
             'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.grey100,
               fontSize: 13,
               height: 1.4,
@@ -995,7 +995,7 @@ class _ScheduleInfoLine extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.inkSoft,
                 fontSize: 13,
                 height: 1.35,

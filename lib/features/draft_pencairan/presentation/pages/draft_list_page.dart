@@ -350,7 +350,8 @@ class _TidakAdaHasil extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.search_off, size: 48, color: AppColors.grey200),
+                    const Icon(Icons.search_off,
+                        size: 48, color: AppColors.grey200),
                     const SizedBox(height: 12),
                     Text(
                       "Tidak ada pencairan untuk '$query'",
@@ -458,7 +459,8 @@ class _DraftCardState extends State<_DraftCard> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.people_outline, size: 16, color: AppColors.inkSoft),
+                const Icon(Icons.people_outline,
+                    size: 16, color: AppColors.inkSoft),
                 const SizedBox(width: 4),
                 Text('${draft.jumlahItem} nasabah',
                     style: AppTextStyle.extraSmall),
@@ -502,8 +504,8 @@ class _DraftCardState extends State<_DraftCard> {
               const SizedBox(height: 8),
               _Rincian(draft: draft),
             ],
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
               child: Divider(height: 1, color: AppColors.border),
             ),
             _Footer(draft: draft, onCancel: widget.onCancel),
@@ -594,7 +596,8 @@ class _Footer extends StatelessWidget {
               if (time.isNotEmpty)
                 Row(
                   children: [
-                    Icon(Icons.schedule, size: 14, color: AppColors.inkSoft),
+                    const Icon(Icons.schedule,
+                        size: 14, color: AppColors.inkSoft),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(time,
@@ -613,7 +616,7 @@ class _Footer extends StatelessWidget {
             tooltip: 'Batalkan draft',
             visualDensity: VisualDensity.compact,
             onPressed: onCancel,
-            icon: Icon(Icons.delete_outline, color: AppColors.danger),
+            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
           ),
       ],
     );

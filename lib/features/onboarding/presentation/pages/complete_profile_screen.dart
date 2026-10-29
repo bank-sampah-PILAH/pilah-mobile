@@ -470,7 +470,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                     child: DropdownButtonFormField<String>(
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       initialValue: _gender,
-                      hint: Text(
+                      hint: const Text(
                         'Pilih jenis kelamin',
                         style: TextStyle(
                           color: AppColors.grey200,
@@ -566,8 +566,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               ),
 
               // 5. Footer Text
-              Padding(
-                padding: const EdgeInsets.all(24.0),
+              const Padding(
+                padding: EdgeInsets.all(24.0),
                 child: Text(
                   'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
                   textAlign: TextAlign.center,

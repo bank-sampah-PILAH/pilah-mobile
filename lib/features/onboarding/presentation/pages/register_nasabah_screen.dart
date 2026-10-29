@@ -138,7 +138,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Text(
+            child: const Text(
               'Saat ini Anda hanya dapat terdaftar di 1 '
               'bank sampah.',
               style: TextStyle(
@@ -166,7 +166,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
         ),
         if (_memberships.isNotEmpty) ...[
           const SizedBox(height: 20),
-          Text(
+          const Text(
             'BANK SAMPAH YANG SUDAH TERGABUNG',
             style: TextStyle(
               fontSize: 12,
@@ -190,7 +190,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
                   ),
                   Text(
                     _membershipStatusLabel(membership),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.grey100,
                     ),
@@ -227,8 +227,8 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(24.0),
+        const Padding(
+          padding: EdgeInsets.all(24.0),
           child: Text(
             'Pengajuan akan ditinjau oleh pengurus bank sampah.',
             textAlign: TextAlign.center,

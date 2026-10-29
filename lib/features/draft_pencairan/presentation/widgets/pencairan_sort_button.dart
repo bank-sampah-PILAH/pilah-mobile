@@ -115,7 +115,7 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: Icon(Icons.swap_vert, color: AppColors.inkSoft),
+            child: const Icon(Icons.swap_vert, color: AppColors.inkSoft),
           ),
         ),
       ),

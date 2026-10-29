@@ -182,7 +182,7 @@ class _DetailNasabahBottomSheetState
                   'Tanggal Daftar',
                   tanggalDaftar,
                   isBold: true,
-                  icon: Icon(Icons.calendar_month,
+                  icon: const Icon(Icons.calendar_month,
                       size: 16, color: AppColors.blue),
                 ),
                 const SizedBox(height: 16),
@@ -323,7 +323,7 @@ class _DetailNasabahBottomSheetState
               children: [
                 Row(
                   children: [
-                    Icon(Icons.sync_problem,
+                    const Icon(Icons.sync_problem,
                         size: 18, color: AppColors.warning),
                     const SizedBox(width: 8),
                     Text(

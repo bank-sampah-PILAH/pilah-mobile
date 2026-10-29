@@ -40,7 +40,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Container(
           width: 64,
           height: 64,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.greenLight,
             shape: BoxShape.circle,
           ),

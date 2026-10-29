@@ -40,7 +40,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                       : Container(
                           width: 12,
                           height: 12,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.grey200,
                             shape: BoxShape.circle,
                           ),
@@ -78,7 +78,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.grey100,
                     ),
@@ -136,7 +136,7 @@ class PendingApprovalScreen extends ConsumerWidget {
             const SizedBox(height: 40),
 
             // 2. Central Icon and Title
-            Icon(
+            const Icon(
               Icons.access_time_filled,
               size: 64,
               color: AppColors.grey200,
@@ -151,7 +151,7 @@ class PendingApprovalScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Admin sedang meninjau data institusi Anda.',
               style: TextStyle(
                 fontSize: 14,
@@ -214,12 +214,12 @@ class PendingApprovalScreen extends ConsumerWidget {
                   color: AppColors.fill,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Row(
+                child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.info_outline,
                         color: AppColors.grey100, size: 20),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Silakan periksa halaman ini secara berkala. Status pendaftaran Anda akan otomatis diperbarui di layar ini.',

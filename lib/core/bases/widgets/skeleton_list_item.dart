@@ -64,7 +64,7 @@ class _SkeletonListItemState extends State<SkeletonListItem> {
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.grey200,
                 shape: BoxShape.circle,
               ),

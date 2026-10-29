@@ -34,7 +34,7 @@ class DraftPdfPreviewPage extends StatelessWidget {
         maxPageWidth: 700,
         pdfFileName: 'draft-pencairan.pdf',
         loadingWidget: const CircularProgressIndicator(),
-        scrollViewDecoration: BoxDecoration(color: AppColors.border),
+        scrollViewDecoration: const BoxDecoration(color: AppColors.border),
       );
   // coverage:ignore-end
 

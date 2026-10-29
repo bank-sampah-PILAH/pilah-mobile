@@ -267,8 +267,8 @@ class _HasilStrip extends StatelessWidget {
             valueColor: potongan > 0 ? AppColors.statOrange : AppColors.black,
             trailing: onEdit == null ? null : _editButton(),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: AppColors.greenLight),
           ),
           _row(

@@ -52,7 +52,7 @@ InputDecoration appInputDecoration({
 InputDecoration appSearchDecoration({String? hintText}) => InputDecoration(
       hintText: hintText,
       hintStyle: AppTextStyle.small.copyWith(color: AppColors.grey200),
-      prefixIcon: Icon(Icons.search, color: AppColors.grey200),
+      prefixIcon: const Icon(Icons.search, color: AppColors.grey200),
       filled: true,
       fillColor: AppColors.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

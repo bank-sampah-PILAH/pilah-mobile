@@ -141,11 +141,11 @@ class _RegisterBankSampahScreenState
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.dangerLight), // red-200
       ),
-      child: Row(
+      child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.error_outline, color: AppColors.danger, size: 22),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +158,7 @@ class _RegisterBankSampahScreenState
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Pendaftaran sebelumnya ditolak. Mohon periksa kembali data '
                   'Anda dan daftar ulang.',
@@ -289,13 +289,13 @@ class _RegisterBankSampahScreenState
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(vertical: 32),
-                              child: Column(
+                              child: const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.image_outlined,
+                                  Icon(Icons.image_outlined,
                                       color: AppColors.greenDark, size: 32),
-                                  const SizedBox(height: 12),
-                                  const Text(
+                                  SizedBox(height: 12),
+                                  Text(
                                     'Pilih foto',
                                     style: TextStyle(
                                       color: AppColors.black,
@@ -303,7 +303,7 @@ class _RegisterBankSampahScreenState
                                       fontSize: 14,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Text(
                                     'JPG / PNG · Maks. 5 MB',
                                     style: TextStyle(
@@ -361,8 +361,8 @@ class _RegisterBankSampahScreenState
         ),
 
         // 5. Footer Text
-        Padding(
-          padding: const EdgeInsets.all(24.0),
+        const Padding(
+          padding: EdgeInsets.all(24.0),
           child: Text(
             'Pengajuan akan ditinjau oleh Admin PILAH.',
             textAlign: TextAlign.center,

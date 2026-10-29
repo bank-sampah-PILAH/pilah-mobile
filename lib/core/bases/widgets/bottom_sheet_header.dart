@@ -71,7 +71,8 @@ class BottomSheetHeader extends StatelessWidget {
                   color: AppColors.fill,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Icon(Icons.close, color: AppColors.grey100, size: 20),
+                child:
+                    const Icon(Icons.close, color: AppColors.grey100, size: 20),
               ),
             ),
           ],
