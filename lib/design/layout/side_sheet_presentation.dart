@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 
 import 'layout_breakpoint.dart';
@@ -96,11 +97,17 @@ enum SideSheetPresentation {
 /// dan halaman di belakangnya tidak dapat dinavigasi sementara formulir masih
 /// berjalan.
 ///
+/// [hasUnsavedInput] dibaca saat panel hendak ditutup, bukan saat dibangun:
+/// bila ia menjawab true, pengguna ditanya lebih dulu sebelum isinya dibuang.
+/// Pertanyaannya milik wadah, bukan milik formulir, supaya setiap panel
+/// bertanya dengan kalimat yang sama.
+///
 /// Mengembalikan nilai yang di-pop oleh isi panel, atau null bila ditutup tanpa
 /// hasil.
 Future<T?> showSideSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
+  bool Function()? hasUnsavedInput,
 }) {
   return showGeneralDialog<T>(
     context: context,
@@ -108,25 +115,35 @@ Future<T?> showSideSheet<T>({
     barrierDismissible: true,
     barrierLabel: 'Tutup panel',
     transitionDuration: const Duration(milliseconds: 220),
-    // LayoutBuilder, bukan MediaQuery sekali baca: lebar panel harus ikut
-    // berubah ketika jendela peramban diseret sementara panel terbuka, dan
-    // membangun ulang dari constraint menjaga state isi tetap hidup.
-    pageBuilder: (sheetContext, animation, secondaryAnimation) => LayoutBuilder(
-      builder: (layoutContext, constraints) => Align(
-        alignment: Alignment.centerRight,
-        child: SizedBox(
-          width: SideSheetPresentation.widthFor(constraints.maxWidth),
-          height: double.infinity,
-          child: Material(
-            color: Colors.white,
-            clipBehavior: Clip.antiAlias,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.horizontal(
-                left: Radius.circular(AppRadius.xl),
+    pageBuilder: (sheetContext, animation, secondaryAnimation) => PopScope(
+      // Selalu false, lalu diputuskan di dalam callback. PopScope menilai
+      // canPop saat build, sedangkan formulir baru menjadi kotor jauh setelah
+      // panel dibangun, jadi nilai yang dihitung saat build selalu basi.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _confirmSideSheetClose(sheetContext, hasUnsavedInput);
+      },
+      // LayoutBuilder, bukan MediaQuery sekali baca: lebar panel harus ikut
+      // berubah ketika jendela peramban diseret sementara panel terbuka, dan
+      // membangun ulang dari constraint menjaga state isi tetap hidup.
+      child: LayoutBuilder(
+        builder: (layoutContext, constraints) => Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: SideSheetPresentation.widthFor(constraints.maxWidth),
+            height: double.infinity,
+            child: Material(
+              color: Colors.white,
+              clipBehavior: Clip.antiAlias,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.horizontal(
+                  left: Radius.circular(AppRadius.xl),
+                ),
               ),
+              // Di bawah bilah sistem pada jendela yang punya inset.
+              child: SafeArea(child: Builder(builder: builder)),
             ),
-            // Di bawah bilah sistem pada jendela yang punya inset.
-            child: SafeArea(child: Builder(builder: builder)),
           ),
         ),
       ),
@@ -140,4 +157,39 @@ Future<T?> showSideSheet<T>({
       child: child,
     ),
   );
+}
+
+/// Menanyakan konfirmasi sebelum panel yang isinya belum tersimpan ditutup,
+/// lalu menutupnya bila pengguna setuju.
+///
+/// Hanya jalan untuk jalan keluar yang **tidak disengaja** — klik di luar
+/// panel, tombol Esc, tombol kembali peramban — karena hanya itu yang lewat
+/// `Navigator.maybePop`, satu-satunya jalan yang menghormati PopScope.
+/// `Navigator.pop` dari dalam panel, yaitu tombol simpan formulir, tidak ikut
+/// tertahan, dan memang tidak boleh: di sana pengguna sudah memutuskan, dan
+/// bertanya justru akan menghalangi simpan yang baru saja ia minta.
+Future<void> _confirmSideSheetClose(
+  BuildContext sheetContext,
+  bool Function()? hasUnsavedInput,
+) async {
+  // Navigator diambil sebelum await. Sesudahnya element pemanggil bisa sudah
+  // tidak terpasang, dan membacanya dari context yang sudah mati adalah kelas
+  // bug yang sama dengan yang pernah muncul pada panel harga dan jadwal.
+  final navigator = Navigator.of(sheetContext);
+
+  if (!(hasUnsavedInput?.call() ?? false)) {
+    navigator.pop();
+    return;
+  }
+
+  final discard = await showAppConfirmDialog(
+    sheetContext,
+    title: 'Buang isi formulir?',
+    message: 'Isi formulir ini belum tersimpan dan akan hilang.',
+    confirmLabel: 'Buang',
+    cancelLabel: 'Lanjut mengisi',
+    destructive: true,
+  );
+
+  if (discard) navigator.pop();
 }
