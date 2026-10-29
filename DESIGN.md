@@ -41,7 +41,7 @@ Flutter's stock palette is guarded too: `Colors.grey`, `Colors.black87`, `Colors
 
 ### Typography (`lib/design/constants/text_style.dart`)
 
-Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). `AppTheme` sets it as the default text font, so a bare `Text` is Poppins and `fontWeight` picks the real face. `AppTextStyle` still loads Poppins through `google_fonts` at runtime; both look the same.
+Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). `AppTheme` sets it as the default text font, so a bare `Text` is Poppins and `fontWeight` picks the real face. `AppTextStyle` still loads Poppins through `google_fonts` at runtime; both look the same. Choosing another family in a screen (`fontFamily:`, `GoogleFonts`) fails `test/design/hardcoded_font_family_test.dart`; the family is named only in `lib/design/`.
 
 | Style | Size / weight | Use |
 |---|---|---|
