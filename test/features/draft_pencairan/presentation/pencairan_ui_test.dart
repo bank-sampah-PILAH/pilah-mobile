@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
@@ -417,45 +418,41 @@ void main() {
           ),
         );
 
-    testWidgets('shows its icon and label, 52 tall, and reports taps',
+    testWidgets('shows its icon and label, 48 tall, and reports taps',
         (tester) async {
       var taps = 0;
       await pump(tester, filled: false, onPressed: () => taps++);
 
       expect(find.byIcon(Icons.save_outlined), findsOneWidget);
       expect(find.text('Simpan Draft'), findsOneWidget);
-      expect(tester.getSize(find.byKey(const Key('aksi'))).height, 52);
+      expect(tester.getSize(find.byKey(const Key('aksi'))).height, 48);
       await tester.tap(find.byKey(const Key('aksi')));
       expect(taps, 1);
     });
 
-    testWidgets('filled is solid green with white content', (tester) async {
+    testWidgets('filled is the primary AppButton', (tester) async {
       await pump(tester, filled: true, onPressed: () {});
 
-      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-      expect(button.style!.backgroundColor!.resolve({}), AppColors.greenDark);
-      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
-          Colors.white);
+      final button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.variant, AppButtonVariant.primary);
     });
 
-    testWidgets('outlined is white with a green border and green content',
-        (tester) async {
+    testWidgets('outlined is the outlined AppButton', (tester) async {
       await pump(tester, filled: false, onPressed: () {});
 
-      expect(find.byType(OutlinedButton), findsOneWidget);
-      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
-          AppColors.greenDark);
+      final button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.variant, AppButtonVariant.outlined);
     });
 
-    testWidgets('a disabled button is grey and ignores taps', (tester) async {
+    testWidgets('a disabled button ignores taps', (tester) async {
       await pump(tester, filled: true, onPressed: null);
 
-      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
-          AppColors.grey100);
+      expect(
+          tester.widget<AppButton>(find.byType(AppButton)).onPressed, isNull);
       await tester.tap(find.byKey(const Key('aksi')), warnIfMissed: false);
     });
 
-    testWidgets('loading swaps the icon for a spinner and keeps the label',
+    testWidgets('loading swaps the label for a spinner and ignores taps',
         (tester) async {
       var taps = 0;
       await pump(tester,
@@ -463,7 +460,6 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byIcon(Icons.save_outlined), findsNothing);
-      expect(find.text('Simpan Draft'), findsOneWidget);
       await tester.tap(find.byKey(const Key('aksi')), warnIfMissed: false);
       expect(taps, 0, reason: 'busy: no double taps');
     });

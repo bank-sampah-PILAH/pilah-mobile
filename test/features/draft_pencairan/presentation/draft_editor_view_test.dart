@@ -840,7 +840,7 @@ void main() {
       expect(simpan.right, lessThan(konfirmasi.left));
       expect(simpan.left, 16);
       expect(konfirmasi.right, 420 - 16);
-      expect(simpan.height, 52);
+      expect(simpan.height, 48);
       expect(konfirmasi.width, greaterThan(simpan.width),
           reason: 'the payment is the main action');
     });
@@ -860,7 +860,8 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('saving shows a spinner in the save button, labels unchanged',
+    testWidgets(
+        'saving swaps the save button for a spinner, as every button does',
         (tester) async {
       final pending = Completer<Either<NetworkException, DraftPencairan>>();
       when(() => repository.createDraft(any()))
@@ -875,7 +876,7 @@ void main() {
               of: find.byKey(const Key('simpan')),
               matching: find.byType(CircularProgressIndicator)),
           findsOneWidget);
-      expect(find.text('Simpan Draft'), findsOneWidget);
+      expect(find.text('Simpan Draft'), findsNothing);
       expect(find.text('Konfirmasi Pembayaran'), findsOneWidget);
 
       pending.complete(Right(_saved()));
