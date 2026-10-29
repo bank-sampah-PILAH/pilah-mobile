@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import '../../support/auth_support.dart';
+import '../../support/setoran_form_support.dart';
 import '../../support/nasabah_approval_support.dart';
 
 const pending = NasabahMembershipEntity(
@@ -105,7 +107,9 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
       nasabahApprovalProvider.overrideWith(() => approval),
       authenticationProvider.overrideWith(() => auth),
     ],
-    child: MaterialApp.router(routerConfig: router),
+    child: withSetoranFormProviders(
+      child: MaterialApp.router(routerConfig: router),
+    ),
   ));
   if (settle) {
     await tester.pumpAndSettle();
@@ -173,7 +177,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final router = await mount(
+    await mount(
       tester,
       session('pengelola'),
       isWebOverride: true,
@@ -184,7 +188,9 @@ void main() {
     await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
     await tester.pumpAndSettle();
 
-    expect(find.text('Form Setoran'), findsOneWidget);
+    // The form now opens as a panel over the shell rather than as its own
+    // page, so what proves it arrived is the form itself, not the stub route.
+    expect(find.text('PILIH NASABAH'), findsOneWidget);
     final transactionMenu = tester.widget<RoleMenuRow>(find.byKey(
       RoleTransactionMenu.headerKey,
       skipOffstage: false,
@@ -196,7 +202,10 @@ void main() {
     ));
     expect(setoran.selected, isTrue);
 
-    router.pop();
+    // Closed the way a user closes a panel. `router.pop()` would reach past
+    // it: the panel is pushed straight onto the Navigator and never enters
+    // go_router's match list, so GoRouter would pop the shell underneath.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     final inactiveMenu =
         tester.widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.headerKey));

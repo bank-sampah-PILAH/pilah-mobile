@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pengurus dashboard action area: the two things done most, side by side.
@@ -61,7 +61,7 @@ class DashboardActionButtons extends StatelessWidget {
     if (choice == null || !context.mounted) return;
     switch (choice) {
       case _TransaksiChoice.setoran:
-        context.push(TransaksiBaruPage.route);
+        await openSetoranBaru(context);
     }
   }
 }

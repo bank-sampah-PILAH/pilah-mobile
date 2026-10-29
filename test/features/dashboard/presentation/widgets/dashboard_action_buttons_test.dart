@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../support/setoran_form_support.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
@@ -69,7 +70,9 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(withSetoranFormProviders(
+      child: MaterialApp.router(routerConfig: router),
+    ));
     await tester.tap(find.text('Transaksi Baru'));
     await tester.pumpAndSettle();
     return router;
@@ -116,7 +119,9 @@ void main() {
     await tester.tap(find.text('Catat Setoran'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Form Setoran'), findsOneWidget);
+    // A wide window gets the form as a panel over the dashboard, so the
+    // form itself is the evidence rather than the stub route behind it.
+    expect(find.text('PILIH NASABAH'), findsOneWidget);
   });
 
   testWidgets('cannot navigate from the disabled Pencairan choice',

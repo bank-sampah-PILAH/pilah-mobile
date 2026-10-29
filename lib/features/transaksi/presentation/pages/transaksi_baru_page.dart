@@ -112,10 +112,10 @@ class SetoranFormView extends ConsumerStatefulWidget {
   final Widget header;
 
   @override
-  ConsumerState<SetoranFormView> createState() => _SetoranFormViewState();
+  ConsumerState<SetoranFormView> createState() => SetoranFormViewState();
 }
 
-class _SetoranFormViewState extends ConsumerState<SetoranFormView> {
+class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
@@ -146,6 +146,20 @@ class _SetoranFormViewState extends ConsumerState<SetoranFormView> {
       });
     }
   }
+
+  /// Apakah ada isian yang belum tersimpan dan akan hilang bila formulir
+  /// ditutup sekarang.
+  ///
+  /// Dibaca oleh wadah, lewat sebuah GlobalKey, pada saat panel hendak
+  /// ditutup — bukan didorong ke atas saat berubah. Pertanyaannya hanya muncul
+  /// sekali, tepat ketika jawabannya dibutuhkan, jadi menariknya di saat itu
+  /// lebih sederhana daripada menjaga satu salinan keadaan di dua tempat.
+  ///
+  /// Kartu item yang baru ditambahkan dan masih kosong tetap dihitung: pengguna
+  /// sudah menekan "Tambah Item Setoran", dan membuang pekerjaan itu tanpa
+  /// bertanya sama saja mengabaikan satu langkah yang memang ia lakukan.
+  bool get hasUnsavedInput =>
+      selectedCustomer != null || setoranItems.isNotEmpty;
 
   /// Keadaan form sebagai draft, supaya aturan kelayakannya hidup di satu
   /// tempat dan dapat diuji tanpa widget.
