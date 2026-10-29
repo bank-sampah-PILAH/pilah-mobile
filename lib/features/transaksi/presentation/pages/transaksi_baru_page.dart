@@ -59,16 +59,63 @@ String newTransaksiIdempotencyKey() {
       '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
-class TransaksiBaruPage extends ConsumerStatefulWidget {
+/// Halaman penuh untuk mencatat setoran.
+///
+/// Tinggal rangka: latar, header, dan jalan keluar. Seluruh isi dan keadaan
+/// formulir ada di [SetoranFormView], supaya panel samping di peramban
+/// menjalankan formulir yang sama alih-alih salinan kedua yang harus dijaga
+/// agar tetap sejalan.
+class TransaksiBaruPage extends StatelessWidget {
   const TransaksiBaruPage({super.key});
 
   static const route = '/transaksi-baru';
 
   @override
-  ConsumerState<TransaksiBaruPage> createState() => _TransaksiBaruPageState();
+  Widget build(BuildContext context) {
+    void close() => context.pop();
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SetoranFormView(
+        onClose: close,
+        header: AppBackHeader(title: 'Transaksi Baru', onBack: close),
+      ),
+    );
+  }
 }
 
-class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
+/// Isi dan keadaan formulir setoran, tanpa rangka halaman.
+///
+/// Tidak punya Scaffold, tidak membangun header sendiri, dan tidak pernah
+/// mem-pop sebuah route: wadahnya yang menentukan bagaimana formulir ini
+/// ditutup, lewat [onClose]. Itulah yang membuat formulir yang sama dapat
+/// berjalan sebagai halaman penuh dan sebagai panel samping.
+class SetoranFormView extends ConsumerStatefulWidget {
+  const SetoranFormView({
+    required this.onClose,
+    required this.header,
+    super.key,
+  });
+
+  /// Dipanggil ketika formulir ditinggalkan atau selesai tersimpan.
+  ///
+  /// Halaman mem-pop route-nya; panel menutup panelnya. Formulir sendiri tidak
+  /// tahu yang mana, dan tidak boleh tahu: `GoRouter.pop()` dari dalam panel
+  /// akan mem-pop halaman di belakang panel, karena route panel dibuka
+  /// langsung pada Navigator dan tidak pernah masuk ke match list go_router.
+  final VoidCallback onClose;
+
+  /// Header wadah: [AppBackHeader] pada halaman, `AppPanelHeader` pada panel.
+  ///
+  /// Diterima dari luar tetapi dipasang di dalam AbsorbPointer formulir, jadi
+  /// tombol kembali ikut membeku selama penyimpanan berjalan — sama seperti
+  /// sebelum header ini dapat diganti.
+  final Widget header;
+
+  @override
+  ConsumerState<SetoranFormView> createState() => _SetoranFormViewState();
+}
+
+class _SetoranFormViewState extends ConsumerState<SetoranFormView> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
@@ -119,8 +166,8 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     });
   }
 
-  /// Tombol simpan. Satu definisi dipakai dua layout: di telepon ia menjadi
-  /// bottomNavigationBar, di layar lebar ia duduk di panel samping.
+  /// Tombol simpan. Satu definisi dipakai dua tata letak: pada lebar sempit ia
+  /// berlabuh di dasar formulir, pada layar lebar ia duduk di panel ringkasan.
   Widget _saveButton() => AppButton(
         label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
         icon: Icons.save_outlined,
@@ -290,7 +337,11 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
           // while `sheetContext` belongs to the modal route this callback is
           // about to remove.
           final sheetNavigator = Navigator.of(sheetContext);
-          final router = GoRouter.of(context);
+          // Wadahnya yang menutup dirinya, bukan formulir ini. `GoRouter.pop()`
+          // dulu benar ketika formulir selalu sebuah halaman; dari dalam panel
+          // ia akan mem-pop halaman di belakang panel dan meninggalkan panelnya
+          // menggantung di atas halaman yang sudah berganti.
+          final close = widget.onClose;
 
           // TEMP (Twilio outage): the backend no longer dispatches this message,
           // so instead of requesting a resend, we open WhatsApp with
@@ -310,7 +361,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
           if (!mounted) return;
 
           sheetNavigator.pop();
-          router.pop();
+          close();
 
           // Deferred rather than raised here. A Flushbar shows itself by
           // pushing a route, and Navigator anchors an imperatively pushed route
@@ -358,12 +409,15 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Lebar jendela menentukan apakah ringkasan menemani isian atau
-    // mengikutinya. Di bawah expanded tidak ada ruang untuk dua kolom, jadi
-    // layout telepon dipertahankan apa adanya.
-    final sideBySide = context.layoutBreakpoint == LayoutBreakpoint.expanded;
-    return Scaffold(
-      backgroundColor: Colors.white,
+    // Yang menentukan tata letak adalah lebar yang tersedia untuk formulir
+    // ini, bukan lebar jendela. Di dalam panel samping jendelanya bisa saja
+    // expanded sementara panelnya hanya 560 px; membaca jendela di sana akan
+    // memasang kolom isian dan panel ringkasan 340 px berdampingan di ruang
+    // yang hanya cukup untuk satu kolom. Di halaman penuh keduanya sama, jadi
+    // perilaku halaman tidak berubah.
+    return LayoutBuilder(builder: (context, constraints) {
+      final sideBySide = LayoutBreakpoint.fromWidth(constraints.maxWidth) ==
+          LayoutBreakpoint.expanded;
       // Dibekukan selama permintaan berjalan. Mematikan tombol simpan saja tidak
       // cukup: picker nasabah, kolom berat dan tombol hapus tetap hidup, dan
       // menyuntingnya di tengah round trip mengubah apa yang diceritakan kepada
@@ -371,7 +425,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
       // ia menggantikan isi halaman dengan skeleton dan sengaja menyembunyikan
       // konten lama, yang pada sebuah form berarti menghilangkan isian yang
       // baru saja ditulis pengelola.
-      body: AbsorbPointer(
+      return AbsorbPointer(
         absorbing: _isSaving,
         child: SafeArea(
           // Both panes scroll out to the window edges, so their scrollbars sit
@@ -380,10 +434,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
               child: Column(
             children: [
               // Header
-              ContentInset(
-                child: AppBackHeader(
-                    title: 'Transaksi Baru', onBack: () => context.pop()),
-              ),
+              ContentInset(child: widget.header),
 
               Expanded(
                 child: Builder(builder: (context) {
@@ -464,22 +515,21 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                   );
                 }),
               ),
+              // Pada telepon, dan di dalam panel samping, tombol simpan
+              // berlabuh di bawah isian alih-alih ikut tergulir. Dulu ia adalah
+              // bottomNavigationBar milik Scaffold; formulir ini tidak punya
+              // Scaffold, jadi ia memasangnya sendiri di dasar kolomnya. Sudah
+              // berada di dalam SafeArea di atas, jadi tidak perlu lagi.
+              if (!sideBySide)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _saveButton(),
+                ),
             ],
           )),
         ),
-      ),
-      bottomNavigationBar: sideBySide
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [_saveButton()],
-                ),
-              ),
-            ),
-    );
+      );
+    });
   }
 
   Widget _buildItemsSection() {
