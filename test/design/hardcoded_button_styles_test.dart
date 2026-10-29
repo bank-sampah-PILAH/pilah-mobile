@@ -7,9 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// `AppTheme` already gives every Material button the app's look, and
 /// `AppButton` covers the red and grey variants, so a screen that writes its
 /// own `styleFrom(...)` or `ButtonStyle(...)` is restyling a button the design
-/// system already styles. New ones are not allowed; the existing ones are
-/// recorded per file in `hardcoded_button_styles_baseline.json` and can only
-/// go down.
+/// system already styles. None is allowed, and there is no baseline to hide
+/// behind.
 final _override = RegExp(r'\bstyleFrom\(|\bButtonStyle\(');
 
 List<String> _scan() {

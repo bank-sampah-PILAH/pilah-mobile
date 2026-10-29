@@ -8,8 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// about a person or an item) and `showAppConfirmDialog` (a plain yes or no)
 /// give every dialog the same title, the same buttons and the same radius. A
 /// screen that builds its own `AlertDialog(...)` or `Dialog(...)` restyles all
-/// three. New ones are not allowed; the existing ones are recorded per file in
-/// `hardcoded_dialogs_baseline.json` and can only go down.
+/// three. None is allowed, and there is no baseline to hide behind.
 /// The left boundary keeps `showDialog(` and `SimpleDialog(` out of the count:
 /// only the bare widgets are a dialog built by hand.
 final _stock = RegExp(r'(?<![A-Za-z_])(AlertDialog|Dialog)\(');
