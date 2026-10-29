@@ -72,4 +72,61 @@ void main() {
       });
     });
   });
+
+  /// The whole point of the panel is that the page stays behind it, so how wide
+  /// the panel is cannot be one fixed number: 560 of a 600 px window leaves a
+  /// 40 px sliver, which reads as a broken full-screen page rather than a
+  /// panel. The rule is therefore a cap *and* a floor on what stays uncovered,
+  /// and the second half is what the fixed number would have missed.
+  group('SideSheetPresentation.widthFor', () {
+    test('a desktop window gets the preferred width', () {
+      expect(
+        SideSheetPresentation.widthFor(1440),
+        SideSheetPresentation.maxWidth,
+      );
+    });
+
+    test('the narrowest side-sheet window gets a narrower panel', () {
+      expect(
+        SideSheetPresentation.widthFor(LayoutBreakpoint.mediumMinWidth),
+        LayoutBreakpoint.mediumMinWidth -
+            SideSheetPresentation.minPageVisible,
+        reason: 'a 560 panel would leave a 40 px sliver of the page',
+      );
+    });
+
+    test('the panel stops growing once the page has room to spare', () {
+      const firstFullWidthWindow = SideSheetPresentation.maxWidth +
+          SideSheetPresentation.minPageVisible;
+      expect(
+        SideSheetPresentation.widthFor(firstFullWidthWindow),
+        SideSheetPresentation.maxWidth,
+      );
+      expect(
+        SideSheetPresentation.widthFor(firstFullWidthWindow - 1),
+        SideSheetPresentation.maxWidth - 1,
+        reason: 'just below it the panel gives the pixel back to the page',
+      );
+    });
+
+    test('every window that gets a side sheet gets a usable one', () {
+      // Swept rather than sampled: the two bounds are the whole contract, and
+      // a cap written the wrong way round still satisfies any single example.
+      for (var window = LayoutBreakpoint.mediumMinWidth;
+          window <= 2560;
+          window += 7) {
+        final panel = SideSheetPresentation.widthFor(window);
+        expect(
+          panel,
+          greaterThan(0),
+          reason: 'a $window px window got no panel at all',
+        );
+        expect(
+          window - panel,
+          greaterThanOrEqualTo(SideSheetPresentation.minPageVisible),
+          reason: 'the panel covered too much of a $window px window',
+        );
+      }
+    });
+  });
 }
