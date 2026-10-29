@@ -202,48 +202,53 @@ class OnboardingProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final vertical = context.layoutBreakpoint == LayoutBreakpoint.expanded;
     final labels = ['Peran Akun', 'Profil Diri', lastStepLabel];
-    final steps = List.generate(labels.length, (index) {
-      final done = index < currentStep;
-      final active = index == currentStep;
-      final color = active || done ? AppColors.greenDark : AppColors.grey100;
-      final badge = CircleAvatar(
-        radius: 16,
-        backgroundColor: active ? AppColors.greenDark : AppColors.fill,
-        child: done
-            ? const Icon(Icons.check, size: 20, color: AppColors.greenDark)
-            : Text('${index + 1}',
-                style: AppTextStyle.small.copyWith(
-                    color: active ? Colors.white : AppColors.grey100,
-                    fontWeight: FontWeight.w600)),
-      );
-      final label = Text(labels[index],
-          textAlign: vertical ? TextAlign.start : TextAlign.center,
-          style: AppTextStyle.small
-              .copyWith(color: color, fontWeight: FontWeight.w600));
-      return Semantics(
-        label:
-            'Langkah ${index + 1} dari 3. ${labels[index]}. ${done ? 'Selesai' : active ? 'Sedang diisi' : 'Berikutnya'}',
-        excludeSemantics: true,
-        child: vertical
-            ? Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-                child: Row(children: [
-                  badge,
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(child: label)
-                ]))
-            : Column(children: [
-                badge,
-                const SizedBox(height: AppSpacing.sm),
-                label
-              ]),
-      );
-    });
+    final steps = List.generate(
+        labels.length, (index) => _buildStep(index, labels[index], vertical));
     return vertical
         ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: steps)
         : Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [for (final step in steps) Expanded(child: step)]);
+  }
+
+  Widget _buildStep(int index, String text, bool vertical) {
+    final done = index < currentStep;
+    final active = index == currentStep;
+    final color = active || done ? AppColors.greenDark : AppColors.grey100;
+    final numberColor = active ? Colors.white : AppColors.grey100;
+    var status = 'Berikutnya';
+    if (done) {
+      status = 'Selesai';
+    } else if (active) {
+      status = 'Sedang diisi';
+    }
+    final badge = CircleAvatar(
+      radius: 16,
+      backgroundColor: active ? AppColors.greenDark : AppColors.fill,
+      child: done
+          ? const Icon(Icons.check, size: 20, color: AppColors.greenDark)
+          : Text('${index + 1}',
+              style: AppTextStyle.small
+                  .copyWith(color: numberColor, fontWeight: FontWeight.w600)),
+    );
+    final label = Text(text,
+        textAlign: vertical ? TextAlign.start : TextAlign.center,
+        style: AppTextStyle.small
+            .copyWith(color: color, fontWeight: FontWeight.w600));
+    return Semantics(
+      label: 'Langkah ${index + 1} dari 3. $text. $status',
+      excludeSemantics: true,
+      child: vertical
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+              child: Row(children: [
+                badge,
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: label)
+              ]))
+          : Column(
+              children: [badge, const SizedBox(height: AppSpacing.sm), label]),
+    );
   }
 }
 

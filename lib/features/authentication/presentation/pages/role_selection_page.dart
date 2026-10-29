@@ -112,6 +112,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     }
 
     final isLoading = state is GoogleRegistrationSubmitting;
+    final isBusy = isLoading || _isChangingAccount;
     final roleOptions = _roleOptions
         .where((option) => isRoleSupportedOnPlatform(
               option.value.wireValue,
@@ -123,7 +124,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
       body: OnboardingFlowLayout(
         title: 'Daftar Akun',
         subtitle: 'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
-        onExit: isLoading || _isChangingAccount ? null : _changeAccount,
+        onExit: isBusy ? null : _changeAccount,
         progress: const OnboardingProgress(currentStep: 0),
         actions: OnboardingActions(
             primary: AppButton(
@@ -142,8 +143,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
             _VerifiedIdentity(
               name: registration.name,
               email: registration.email,
-              onChangeAccount:
-                  isLoading || _isChangingAccount ? null : _changeAccount,
+              onChangeAccount: isBusy ? null : _changeAccount,
             ),
             const SizedBox(height: 24),
             Text('Saya ingin mendaftar sebagai', style: AppTextStyle.title1),
@@ -164,7 +164,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                       child: _RoleCard(
                         option: option,
                         selected: _selectedRole == option.value,
-                        enabled: !isLoading && !_isChangingAccount,
+                        enabled: !isBusy,
                         onTap: () =>
                             setState(() => _selectedRole = option.value),
                       ),

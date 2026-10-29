@@ -1,10 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 
 void main() {
+  for (final width in [375.0, 1440.0]) {
+    for (var currentStep = 0; currentStep < 3; currentStep++) {
+      testWidgets('preserves step states at $width px, step $currentStep',
+          (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = Size(width, 900);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(MaterialApp(
+            home: Scaffold(
+          body: OnboardingProgress(currentStep: currentStep),
+        )));
+        const labels = ['Peran Akun', 'Profil Diri', 'Data Bank Sampah'];
+        final badges =
+            tester.widgetList<CircleAvatar>(find.byType(CircleAvatar)).toList();
+        for (var index = 0; index < labels.length; index++) {
+          var status = 'Berikutnya';
+          if (index < currentStep) status = 'Selesai';
+          if (index == currentStep) status = 'Sedang diisi';
+          final expected =
+              'Langkah ${index + 1} dari 3. ${labels[index]}. $status';
+          expect(
+              find.byWidgetPredicate((widget) =>
+                  widget is Semantics && widget.properties.label == expected),
+              findsOneWidget);
+          expect(badges[index].backgroundColor,
+              index == currentStep ? AppColors.greenDark : AppColors.fill);
+        }
+        expect(find.byIcon(Icons.check), findsNWidgets(currentStep));
+        final first = tester.getRect(find.byType(CircleAvatar).first);
+        final second = tester.getRect(find.byType(CircleAvatar).at(1));
+        if (width >= 840) {
+          expect(second.top, greaterThan(first.bottom));
+        } else {
+          expect(second.left, greaterThan(first.right));
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
   for (final size in [
     const Size(375, 812),
     const Size(768, 1024),
