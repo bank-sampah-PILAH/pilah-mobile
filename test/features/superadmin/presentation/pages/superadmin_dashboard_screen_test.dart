@@ -249,6 +249,14 @@ void main() {
     expect(auth.calls, contains('logout'));
   });
 
+  testWidgets('shows account deletion requests in the dashboard header',
+      (tester) async {
+    stubTabs();
+    await openScreen(tester);
+
+    expect(find.text('Permintaan penghapusan akun'), findsOneWidget);
+  });
+
   testWidgets('leaves for the login page once signed out', (tester) async {
     stubTabs();
     await openScreen(tester);
