@@ -79,7 +79,8 @@ void main() {
 
     await cubit.loadNasabah();
 
-    expect(cubit.state, const NasabahError('Tidak diizinkan'));
+    expect(cubit.state,
+        const NasabahError('Anda tidak memiliki akses ke daftar nasabah ini.'));
   });
 
   test('load more appends the next page', () async {

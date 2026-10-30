@@ -230,64 +230,52 @@ class NetworkService {
 final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
   if (kDebugMode) {
     Logger().i({
-      'api': options.path,
-      'headers': options.headers,
-      'queryParams': options.queryParameters,
+      'event': 'http_request',
+      'method': _methodForLog(options.method),
+      'request': '[REDACTED]',
     });
   }
   return handler.next(options);
 }, onResponse: (resp, handler) {
   if (kDebugMode) {
-    final isBytes = resp.requestOptions.responseType == ResponseType.bytes;
     Logger().i({
-      'api': '''
-${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}''',
-      'headers': resp.requestOptions.headers,
-      'queryParams': resp.requestOptions.queryParameters,
-      'body': _requestBodyForLog(resp.requestOptions),
-      'response': isBytes ? 'bytes' : resp.data,
+      'event': 'http_response',
+      'method': _methodForLog(resp.requestOptions.method),
+      'status': resp.statusCode,
+      'response': '[REDACTED]',
     });
   }
   return handler.next(resp);
 }, onError: (err, handler) {
   if (kDebugMode) {
     Logger().e({
-      'api': '''
-${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOptions.path}''',
-      'headers': err.requestOptions.headers,
-      'queryParams': err.requestOptions.queryParameters,
-      'body': _requestBodyForLog(err.requestOptions),
-      'response': err.response?.data,
-      'type': err.type,
-      // `type` alone can't tell a dropped connection from a parse failure —
-      // both arrive as DioExceptionType.unknown. The wrapped error is the only
-      // thing that names the actual cause (e.g. HttpException: Connection
-      // closed before full header was received), so it must be logged.
-      //
-      // Stringified rather than passed raw: this map is JSON-encoded by the
-      // logger, and handing it an arbitrary non-encodable object risks throwing
-      // *inside* the error interceptor — which Dio would then re-wrap as
-      // another opaque `unknown`, hiding the very cause we're trying to see.
-      'error': err.error?.toString(),
+      'event': 'http_error',
+      'method': _methodForLog(err.requestOptions.method),
+      'status': err.response?.statusCode ?? 0,
+      'type': err.type.name,
+      'request': '[REDACTED]',
+      'response': '[REDACTED]',
+      // Keep the cause category for diagnosis, never its raw message: a
+      // decoder or server error may contain tokens or customer records.
       'errorType': err.error?.runtimeType.toString(),
-      'message': err.message,
     });
   }
   return handler.next(err);
 });
 
-Object? _requestBodyForLog(RequestOptions options) {
-  final data = options.data;
-  try {
-    final body = data is String ? jsonDecode(data) : data;
-    if (body is Map && body.containsKey('password')) {
-      return {...body, 'password': '[REDACTED]'};
-    }
-  } on FormatException {
-    if (data is String && data.contains('password')) return '[REDACTED]';
-  }
-  return data;
-}
+// URLs, headers, query values, bodies and response payloads are deliberately
+// absent from debug logs. Even their paths or exception text can carry PII.
+String _methodForLog(String method) => const {
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'HEAD',
+      'OPTIONS'
+    }.contains(method)
+        ? method
+        : 'OTHER';
 
 final options = Options(
   receiveTimeout: const Duration(milliseconds: 120000),
