@@ -134,6 +134,10 @@ class _SuperAdminDashboardScreenState
       body: Column(
         children: [
           _buildHeader(context),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: AccountDeletionRequestButton(),
+          ),
           Expanded(
             child: AppRefreshIndicator(
               onRefresh: () => ref
@@ -200,7 +204,6 @@ class _SuperAdminDashboardScreenState
               ),
             ],
           ),
-          const AccountDeletionRequestButton(onDarkBackground: true),
           const SizedBox(height: 24),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,

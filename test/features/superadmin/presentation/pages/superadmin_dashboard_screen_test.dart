@@ -249,7 +249,7 @@ void main() {
     expect(auth.calls, contains('logout'));
   });
 
-  testWidgets('shows account deletion requests in the dashboard header',
+  testWidgets('shows account deletion requests above the dashboard list',
       (tester) async {
     stubTabs();
     await openScreen(tester);

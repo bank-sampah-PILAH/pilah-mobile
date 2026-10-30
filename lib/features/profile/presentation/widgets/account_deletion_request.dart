@@ -4,14 +4,11 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AccountDeletionRequestButton extends StatelessWidget {
-  const AccountDeletionRequestButton(
-      {super.key, this.onDarkBackground = false});
+  const AccountDeletionRequestButton({super.key});
 
   static final _requestUrl = Uri.parse(
     'https://sites.google.com/view/pilah-privacy-policy',
   );
-
-  final bool onDarkBackground;
 
   Future<void> _open(BuildContext context) async {
     try {
@@ -33,14 +30,6 @@ class AccountDeletionRequestButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (onDarkBackground) {
-      return TextButton.icon(
-        onPressed: () => _open(context),
-        icon: const Icon(Icons.delete_outline),
-        label: const Text('Permintaan penghapusan akun'),
-        style: TextButton.styleFrom(foregroundColor: Colors.white),
-      );
-    }
     return AppButton(
       label: 'Permintaan penghapusan akun',
       variant: AppButtonVariant.outlined,
