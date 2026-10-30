@@ -217,6 +217,7 @@ void main() {
     await openPage(tester);
 
     expect(find.text('siti@example.test'), findsOneWidget);
+    expect(find.text('Permintaan penghapusan akun'), findsOneWidget);
   });
 
   group('on a phone', () {
