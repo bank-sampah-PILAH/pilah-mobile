@@ -17,7 +17,7 @@ List<String> _scan() {
   final found = <String>[];
   for (final entity in Directory('lib').listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final path = entity.path;
+    final path = entity.path.replaceAll(r'\', '/');
     if (path == 'lib/design/constants/font_weight.dart') continue;
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
     final count = _stock.allMatches(entity.readAsStringSync()).length;

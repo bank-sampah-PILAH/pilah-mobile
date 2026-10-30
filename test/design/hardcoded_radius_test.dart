@@ -17,7 +17,7 @@ Map<String, int> _scan([Directory? root]) {
   final dir = root ?? Directory('lib');
   for (final entity in dir.listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final path = entity.path;
+    final path = entity.path.replaceAll(r'\', '/');
     final relative = path.substring(dir.path.length + 1);
     if (relative == 'design/constants/radius.dart') continue;
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
@@ -47,7 +47,8 @@ void main() {
         ..writeAsStringSync('final r = BorderRadius.circular(10);');
     }
 
-    expect(_scan(root).keys, ['${root.path}/features/radius.dart']);
+    expect(_scan(root).keys,
+        ['${root.path.replaceAll(r'\', '/')}/features/radius.dart']);
   });
 
   test('no file writes a corner radius as a bare number', () {
