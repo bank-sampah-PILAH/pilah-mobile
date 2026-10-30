@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
 
@@ -26,6 +27,7 @@ import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_d
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Membership eligibility comes from the API, not the login bank status.
 class BerandaNasabahPage extends ConsumerWidget {
@@ -116,8 +118,8 @@ class _HomeSessionState extends State<_HomeSession>
       builder: (context, _) => SingleChildScrollView(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(title,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: AppFontSize.xxl, fontWeight: AppFontWeight.bold)),
           guardedBody,
           TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -144,7 +146,8 @@ class _HomeSessionState extends State<_HomeSession>
                       ? 'N'
                       : widget.name.characters.first.toUpperCase(),
                   style: _text(14,
-                      weight: FontWeight.w600, color: NasabahStyle.emeraldDark),
+                      weight: AppFontWeight.semibold,
+                      color: NasabahStyle.emeraldDark),
                 ),
               ),
             ),
@@ -269,7 +272,8 @@ class _HomeSessionState extends State<_HomeSession>
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: _text(14,
-                                                    weight: FontWeight.w600),
+                                                    weight:
+                                                        AppFontWeight.semibold),
                                               ),
                                               Text(
                                                 '${nasabahDate(start)} · ${_scheduleTime(start)}',
@@ -388,7 +392,7 @@ const _ink = NasabahStyle.ink;
 const _muted = NasabahStyle.muted;
 TextStyle _text(
   double size, {
-  FontWeight weight = FontWeight.w400,
+  FontWeight weight = AppFontWeight.regular,
   Color color = _ink,
   double height = 1.45,
 }) =>
@@ -430,7 +434,7 @@ class _BalanceCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: _text(
                           11,
-                          weight: FontWeight.w600,
+                          weight: AppFontWeight.semibold,
                           color: NasabahStyle.emeraldLight,
                         ),
                       ),
@@ -454,7 +458,7 @@ class _BalanceCard extends StatelessWidget {
                   nasabahRupiah(balance.amount),
                   style: _text(
                     28,
-                    weight: FontWeight.w700,
+                    weight: AppFontWeight.bold,
                     color: Colors.white,
                     height: 1.22,
                   ),
@@ -498,7 +502,7 @@ class _BankUnitCard extends StatelessWidget {
                     'BS',
                     style: _text(
                       11,
-                      weight: FontWeight.w600,
+                      weight: AppFontWeight.semibold,
                       color: _emerald,
                     ),
                   ),
@@ -510,12 +514,12 @@ class _BankUnitCard extends StatelessWidget {
                     children: [
                       Text('KEANGGOTAAN AKTIF',
                           style: _text(10,
-                              weight: FontWeight.w500, color: _muted)),
+                              weight: AppFontWeight.medium, color: _muted)),
                       Text(
                         unitName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: _text(14, weight: FontWeight.w500),
+                        style: _text(14, weight: AppFontWeight.medium),
                       ),
                     ],
                   ),
@@ -553,7 +557,7 @@ class _HomeGreeting extends StatelessWidget {
             name.isEmpty ? 'Nasabah' : name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: _text(18, weight: FontWeight.w600),
+            style: _text(18, weight: AppFontWeight.semibold),
           ),
         ],
       );
@@ -645,7 +649,7 @@ class _PengumumanSection extends StatelessWidget {
                               item.judul,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: _text(14, weight: FontWeight.w600),
+                              style: _text(14, weight: AppFontWeight.semibold),
                             ),
                           ),
                           if (!item.dibaca)
@@ -686,7 +690,8 @@ class _SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         children: [
           Expanded(
-              child: Text(title, style: _text(17, weight: FontWeight.w600))),
+              child: Text(title,
+                  style: _text(17, weight: AppFontWeight.semibold))),
           if (onAll != null)
             TextButton(onPressed: onAll, child: const Text('Semua')),
         ],

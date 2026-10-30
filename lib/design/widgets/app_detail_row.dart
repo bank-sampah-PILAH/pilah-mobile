@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// A label on the left and its value on the right, one line of a detail sheet
 /// such as "Metode  Tunai". A long value wraps.
@@ -27,7 +28,7 @@ class AppDetailRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: NasabahStyle.text(13, weight: FontWeight.w500),
+              style: NasabahStyle.text(13, weight: AppFontWeight.medium),
             ),
           ),
         ],

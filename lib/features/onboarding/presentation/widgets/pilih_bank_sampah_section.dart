@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/selection_field_frame.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The tappable field on [RegisterNasabahScreen] that opens
 /// [PilihBankSampahBottomSheet] and shows the picked bank sampah.
@@ -50,7 +51,7 @@ class PilihBankSampahSection extends StatelessWidget {
       hasError: hasError,
       hasSelection: selectedBank != null,
       backgroundColor: enabled ? Colors.white : AppColors.fill,
-      defaultBorderColor: Colors.grey[300]!,
+      defaultBorderColor: AppColors.border,
       errorText: errorText,
       child: selectedBank == null
           ? Row(
@@ -62,19 +63,19 @@ class PilihBankSampahSection extends StatelessWidget {
                     color: AppColors.fill,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.recycling_outlined,
-                      color: Colors.grey[500], size: 20),
+                  child: const Icon(Icons.recycling_outlined,
+                      color: AppColors.grey100, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Tap untuk pilih bank sampah',
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
+                const Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
               ],
             )
           : Row(
@@ -98,8 +99,8 @@ class PilihBankSampahSection extends StatelessWidget {
                       Text(
                         selectedBank!.nama,
                         style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.black,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                       if (selectedBank!.kota.trim().isNotEmpty) ...[
@@ -107,14 +108,14 @@ class PilihBankSampahSection extends StatelessWidget {
                         Text(
                           selectedBank!.kota,
                           style: AppTextStyle.small.copyWith(
-                            color: Colors.grey[500],
+                            color: AppColors.grey100,
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                Icon(Icons.edit_outlined, color: Colors.grey[400]),
+                const Icon(Icons.edit_outlined, color: AppColors.grey200),
               ],
             ),
     );

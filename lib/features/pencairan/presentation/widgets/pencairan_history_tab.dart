@@ -10,6 +10,7 @@ import 'package:pilah_mobile/features/pencairan/presentation/states/riwayat_penc
 
 import '../../domain/model/riwayat_pencairan_filter.dart';
 import 'pencairan_detail_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class PencairanHistoryTab extends ConsumerStatefulWidget {
   const PencairanHistoryTab({super.key});
@@ -47,7 +48,7 @@ class _PencairanHistoryTabState extends ConsumerState<PencairanHistoryTab> {
               Expanded(
                 child: Text(
                   'Riwayat Pencairan',
-                  style: NasabahStyle.text(20, weight: FontWeight.w600),
+                  style: NasabahStyle.text(20, weight: AppFontWeight.semibold),
                 ),
               ),
               IconButton(
@@ -97,7 +98,7 @@ class _PencairanHistoryTabState extends ConsumerState<PencairanHistoryTab> {
                       'Coba Lagi',
                       style: NasabahStyle.text(
                         13,
-                        weight: FontWeight.w600,
+                        weight: AppFontWeight.semibold,
                         color: NasabahStyle.emerald,
                       ),
                     ),

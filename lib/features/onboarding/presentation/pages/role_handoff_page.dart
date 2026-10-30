@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -57,11 +59,7 @@ class RoleHandoffPage extends ConsumerWidget {
     });
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        title: const Text('PILAH'),
-      ),
+      appBar: const NasabahPageAppBar(title: 'PILAH'),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -99,7 +97,7 @@ class RoleHandoffPage extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.grey100,
-                      fontSize: 14,
+                      fontSize: AppFontSize.md,
                     ),
                   ),
                   const SizedBox(height: 24),

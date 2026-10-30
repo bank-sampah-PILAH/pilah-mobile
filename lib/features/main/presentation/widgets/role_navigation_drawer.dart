@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/bank_sampah_labe
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Bentuk navigasi untuk browser yang terlalu sempit untuk rail.
 ///
@@ -91,7 +92,7 @@ class RoleNavigationDrawer extends StatelessWidget {
                 'MENU',
                 style: AppTextStyle.extraSmall.copyWith(
                   color: AppColors.grey100,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                   letterSpacing: 0.8,
                 ),
               ),
@@ -154,7 +155,7 @@ class _BrandHeader extends StatelessWidget {
                     'PILAH',
                     style: AppTextStyle.headline1.copyWith(
                       color: AppColors.black,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                 ],
@@ -183,7 +184,7 @@ class _BankHeader extends StatelessWidget {
                 initials,
                 style: AppTextStyle.extraSmall.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
             ),
@@ -193,7 +194,8 @@ class _BankHeader extends StatelessWidget {
                 label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w500),
+                style: AppTextStyle.small
+                    .copyWith(fontWeight: AppFontWeight.medium),
               ),
             ),
           ],
@@ -258,8 +260,8 @@ class _Destination extends StatelessWidget {
                               ? AppColors.greenDark
                               : AppColors.inkSoft,
                       fontWeight: selected && onTap != null
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                          ? AppFontWeight.semibold
+                          : AppFontWeight.medium,
                     ),
                   ),
                 ],
@@ -313,7 +315,7 @@ class _ProfileFooter extends StatelessWidget {
                         initialsOf(name),
                         style: AppTextStyle.extraSmall.copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         ),
                       ),
                     ),
@@ -328,7 +330,7 @@ class _ProfileFooter extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle.small.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: AppFontWeight.semibold,
                               color: AppColors.black,
                             ),
                           ),

@@ -61,4 +61,12 @@ class AppColors {
   // List Avatars
   static const Color avatarYellow = Color(0xFFFFF8D6);
   static const Color avatarYellowText = Color(0xFFD4A017);
+  static const Color avatarBlue = Color(0xFFDBEAFE);
+  static const Color avatarBlueText = Color(0xFF1E40AF);
+  static const Color avatarPurple = Color(0xFFF3E8FF);
+  static const Color avatarPurpleText = Color(0xFF6B21A8);
+  static const Color avatarOrange = Color(0xFFFFEDD5);
+  static const Color avatarOrangeText = Color(0xFF9A3412);
+  static const Color avatarTeal = Color(0xFFCCFBF1);
+  static const Color avatarTealText = Color(0xFF0F766E);
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The totals of a draft, pinned above the action buttons so they stay in view
 /// while the nasabah list scrolls and is edited. Closed it shows only what is
@@ -55,7 +58,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
               key: const Key('total-dibayar'),
               style: AppTextStyle.headline1.copyWith(
                 color: AppColors.greenDark,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -72,10 +75,11 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
       key: const Key('ringkasan-panel'),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: AppColors.black.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, -4),
           ),
@@ -112,7 +116,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                               Text(
                                 'Total dibayar',
                                 style: AppTextStyle.small
-                                    .copyWith(color: Colors.grey[600]),
+                                    .copyWith(color: AppColors.grey100),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -124,8 +128,8 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                                     key: const Key('total-dibayar'),
                                     style: AppTextStyle.headline1.copyWith(
                                       color: AppColors.greenDark,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
+                                      fontWeight: AppFontWeight.bold,
+                                      fontSize: AppFontSize.xxl,
                                     ),
                                   ),
                                 ),
@@ -135,7 +139,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                                 _terbuka
                                     ? Icons.keyboard_arrow_down
                                     : Icons.keyboard_arrow_up,
-                                color: Colors.grey[600],
+                                color: AppColors.grey100,
                               ),
                             ],
                           ),
@@ -214,7 +218,7 @@ class _Baris extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+            style: AppTextStyle.small.copyWith(color: AppColors.grey100),
           ),
         ),
         // Tight, so the FittedBox spans its half and puts the amount at the
@@ -228,9 +232,9 @@ class _Baris extends StatelessWidget {
               nilai,
               key: nilaiKey,
               style: AppTextStyle.title1.copyWith(
-                color: warna ?? Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+                color: warna ?? AppColors.black,
+                fontWeight: AppFontWeight.bold,
+                fontSize: AppFontSize.md,
               ),
             ),
           ),

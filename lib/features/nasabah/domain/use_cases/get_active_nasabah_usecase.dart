@@ -5,10 +5,10 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/domain/repositories/nasabah_repository.dart';
 
-/// Seluruh nasabah aktif dalam satu panggilan, untuk picker Transaksi Baru.
+/// Legacy one-page snapshot of active nasabah.
 ///
-/// Halaman daftar nasabah memakai [GetNasabahUseCase] yang berpaginasi; picker
-/// sengaja dipisah karena ia membutuhkan semua pilihan sekaligus (PIL-214).
+/// Paginated consumers, including the setoran picker, should use
+/// [GetNasabahUseCase] with `status: 'aktif'`.
 @lazySingleton
 class GetActiveNasabahUseCase implements UseCase<HalamanNasabah, void> {
   final NasabahRepository repository;
