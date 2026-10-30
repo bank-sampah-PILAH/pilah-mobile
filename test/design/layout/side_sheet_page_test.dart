@@ -21,6 +21,12 @@ void main() {
 
   /// What the panel answered, so a caller's `await` is observable.
   String? result;
+
+  /// The guard the panel was opened with, so the browser-back path — which
+  /// goes through `GoRoute.onExit` and never through `PopScope` — can be
+  /// exercised the way go_router exercises it.
+  late SideSheetGuard guard;
+
   setUp(() => result = null);
 
   /// Opens the panel as a route on top of a page that stays identifiable, so
@@ -30,6 +36,7 @@ void main() {
     Size window, {
     bool Function()? hasUnsavedInput,
   }) async {
+    guard = SideSheetGuard(hasUnsavedInput: hasUnsavedInput ?? () => false);
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -41,7 +48,7 @@ void main() {
           builder: (pageContext) => TextButton(
             onPressed: () async {
               final page = SideSheetPage<String>(
-                hasUnsavedInput: hasUnsavedInput,
+                guard: guard,
                 child: Builder(
                   builder: (sheetContext) => SizedBox.expand(
                     key: contentKey,
@@ -49,8 +56,10 @@ void main() {
                       children: [
                         const Text('isi panel'),
                         TextButton(
-                          onPressed: () =>
-                              Navigator.of(sheetContext).pop('tersimpan'),
+                          onPressed: () {
+                            guard.allowNextExit();
+                            Navigator.of(sheetContext).pop('tersimpan');
+                          },
                           child: const Text('selesai'),
                         ),
                       ],
@@ -134,7 +143,11 @@ void main() {
           reason: 'a keyboard user on the web expects escape to work');
     });
 
-    testWidgets('a system back closes the panel, not the page beneath it',
+    /// The platform back gesture, which goes through `Navigator.maybePop` and
+    /// so through `PopScope`. The browser's back button does **not** — see the
+    /// `onExit` group below. Keeping both is the point: they are different
+    /// paths and only one of them was ever covered.
+    testWidgets('a platform back closes the panel, not the page beneath it',
         (tester) async {
       await open(tester, const Size(1440, 900));
 
@@ -233,10 +246,7 @@ void main() {
       expect(find.text(question), findsOneWidget);
     });
 
-    /// The case the browser actually hit. A `showGeneralDialog` panel never
-    /// reached this guard on a back press at all, because it was not a route
-    /// the browser knew about.
-    testWidgets('is asked about on a system back as well', (tester) async {
+    testWidgets('is asked about on a platform back as well', (tester) async {
       await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
 
       await tester.binding.handlePopRoute();
@@ -273,6 +283,79 @@ void main() {
               'asking there would block the save it just made');
       expect(find.byKey(contentKey), findsNothing);
       expect(result, 'tersimpan');
+    });
+  });
+
+  /// The browser back button, which is the path the first fix missed.
+  ///
+  /// It never pops anything: the history entry changes, go_router rebuilds its
+  /// page list and the route is removed declaratively. `PopScope` is a
+  /// `PopEntry` and only `Navigator.maybePop` reads one, so that exit skipped
+  /// the guard entirely and destroyed a setoran in a real browser. go_router
+  /// offers `GoRoute.onExit` for exactly this, and [SideSheetGuard.confirmExit]
+  /// is what goes there.
+  group('leaving through the browser history', () {
+    const question = 'Buang isi formulir?';
+
+    testWidgets('a dirty panel is not left without asking', (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      final exit = guard.confirmExit(tester.element(find.byKey(contentKey)));
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsOneWidget);
+      await tester.tap(find.text('Lanjut mengisi'));
+      await tester.pumpAndSettle();
+
+      expect(await exit, isFalse,
+          reason: 'false aborts the history navigation, so the panel and the '
+              'setoran in it both stay');
+    });
+
+    testWidgets('a dirty panel is left once discarding is confirmed',
+        (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      final exit = guard.confirmExit(tester.element(find.byKey(contentKey)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Buang'));
+      await tester.pumpAndSettle();
+
+      expect(await exit, isTrue);
+    });
+
+    testWidgets('a clean panel is left without a question', (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => false);
+
+      final left = await guard.confirmExit(
+        tester.element(find.byKey(contentKey)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(left, isTrue);
+      expect(find.text(question), findsNothing);
+    });
+
+    /// With `onExit` mounted, go_router runs it for *every* pop, including the
+    /// one the scrim just asked about. Without the one-shot key that single
+    /// click would be questioned twice.
+    testWidgets('a close that was already answered is not asked again',
+        (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+      final context = tester.element(find.byKey(contentKey));
+
+      guard.allowNextExit();
+      expect(await guard.confirmExit(context), isTrue);
+      await tester.pumpAndSettle();
+      expect(find.text(question), findsNothing);
+
+      // One shot only: the next attempt is a fresh one and asks again.
+      final exit = guard.confirmExit(context);
+      await tester.pumpAndSettle();
+      expect(find.text(question), findsOneWidget);
+      await tester.tap(find.text('Lanjut mengisi'));
+      await tester.pumpAndSettle();
+      expect(await exit, isFalse);
     });
   });
 

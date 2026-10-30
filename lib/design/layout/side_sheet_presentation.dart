@@ -112,7 +112,7 @@ enum SideSheetPresentation {
 class SideSheetPage<T> extends Page<T> {
   const SideSheetPage({
     required this.child,
-    this.hasUnsavedInput,
+    this.guard,
     super.key,
     super.name,
     super.arguments,
@@ -122,12 +122,12 @@ class SideSheetPage<T> extends Page<T> {
   /// Isi panel, tanpa chrome wadah apa pun.
   final Widget child;
 
-  /// Dibaca saat panel hendak ditutup, bukan saat dibangun.
+  /// Penjaga isian yang belum tersimpan, bila panel ini perlu menjaganya.
   ///
-  /// Bila ia menjawab true, pengguna ditanya lebih dulu sebelum isinya dibuang.
-  /// Pertanyaannya milik wadah, bukan milik formulir, supaya setiap panel
-  /// bertanya dengan kalimat yang sama.
-  final bool Function()? hasUnsavedInput;
+  /// Objek yang sama harus dipasang pada `GoRoute.onExit` route panel, karena
+  /// kedua jalan keluar berbeda melewati jalur yang berbeda dan hanya satu
+  /// objek yang tahu pertanyaan mana yang sudah dijawab.
+  final SideSheetGuard? guard;
 
   @override
   Route<T> createRoute(BuildContext context) => _SideSheetRoute<T>(this);
@@ -175,7 +175,7 @@ class _SideSheetRoute<T> extends PageRoute<T> {
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
           if (didPop) return;
-          await _confirmSideSheetClose(context, _page.hasUnsavedInput);
+          await _page.guard?.handlePopAttempt(context);
         },
         // LayoutBuilder, bukan MediaQuery sekali baca: lebar panel harus ikut
         // berubah ketika jendela peramban diseret sementara panel terbuka, dan
@@ -220,37 +220,89 @@ class _SideSheetRoute<T> extends PageRoute<T> {
       );
 }
 
-/// Menanyakan konfirmasi sebelum panel yang isinya belum tersimpan ditutup,
-/// lalu menutupnya bila pengguna setuju.
+/// Penjaga isian yang belum tersimpan pada panel samping.
 ///
-/// Hanya jalan untuk jalan keluar yang **tidak disengaja** — klik di luar
-/// panel, tombol Esc, tombol kembali peramban — karena hanya itu yang lewat
-/// `Navigator.maybePop`, satu-satunya jalan yang menghormati PopScope.
-/// `Navigator.pop` dari dalam panel, yaitu tombol simpan formulir, tidak ikut
-/// tertahan, dan memang tidak boleh: di sana pengguna sudah memutuskan, dan
-/// bertanya justru akan menghalangi simpan yang baru saja ia minta.
-Future<void> _confirmSideSheetClose(
-  BuildContext sheetContext,
-  bool Function()? hasUnsavedInput,
-) async {
-  // Navigator diambil sebelum await. Sesudahnya element pemanggil bisa sudah
-  // tidak terpasang, dan membacanya dari context yang sudah mati adalah kelas
-  // bug yang sama dengan yang pernah muncul pada panel harga dan jadwal.
-  final navigator = Navigator.of(sheetContext);
+/// Satu objek memegang **dua** jalan keluar, karena Flutter dan go_router
+/// memakai jalur yang berbeda dan tidak saling tahu:
+///
+/// * [handlePopAttempt] untuk `PopScope` di dalam panel. Itu yang dilewati
+///   klik di luar panel dan tombol Esc, yang keduanya memanggil
+///   `Navigator.maybePop`.
+/// * [confirmExit] untuk `GoRoute.onExit`. Itu yang dilewati **tombol kembali
+///   peramban**, yang tidak mem-pop apa pun: riwayat peramban berpindah,
+///   go_router membangun ulang daftar halaman, dan route dicabut secara
+///   deklaratif. `PopScope` adalah sebuah `PopEntry` dan hanya `maybePop` yang
+///   membacanya, jadi jalan itu melewatkan penjaganya sama sekali — diukur di
+///   peramban pada 30 Oktober 2026: panel tertutup dan satu item setoran
+///   hilang tanpa pertanyaan apa pun, sementara klik pada scrim pada formulir
+///   yang sama tetap bertanya.
+///
+/// Keduanya memakai satu kunci sekali-pakai, karena begitu `onExit` terpasang
+/// go_router menjalankannya untuk **setiap** pop, termasuk pop dari dalam
+/// panel (`delegate.dart:150`). Tanpa kunci itu, satu klik pada scrim akan
+/// ditanyai dua kali: sekali oleh `PopScope`, sekali lagi oleh `onExit` atas
+/// pop yang baru saja disetujui.
+class SideSheetGuard {
+  SideSheetGuard({required this.hasUnsavedInput});
 
-  if (!(hasUnsavedInput?.call() ?? false)) {
+  /// Dibaca saat panel hendak ditutup, bukan saat dibangun.
+  ///
+  /// Formulir baru menjadi kotor jauh setelah panel dibangun, jadi nilai yang
+  /// dihitung saat build selalu basi.
+  final bool Function() hasUnsavedInput;
+
+  bool _answered = false;
+
+  /// Melewatkan pertanyaan untuk satu penutupan berikutnya.
+  ///
+  /// Dipakai isi panel ketika ia menutup dirinya sendiri sesudah berhasil
+  /// menyimpan. Di sana pengguna sudah memutuskan, dan bertanya justru akan
+  /// menahan simpan yang baru saja ia minta.
+  void allowNextExit() => _answered = true;
+
+  /// Jalan keluar lewat `Navigator.maybePop`: scrim dan Esc.
+  Future<void> handlePopAttempt(BuildContext context) async {
+    // Navigator diambil sebelum await. Sesudahnya element pemanggil bisa sudah
+    // tidak terpasang, dan membacanya dari context yang sudah mati adalah
+    // kelas bug yang sama dengan yang pernah muncul pada panel harga dan
+    // jadwal.
+    final navigator = Navigator.of(context);
+
+    if (!hasUnsavedInput()) {
+      allowNextExit();
+      navigator.pop();
+      return;
+    }
+
+    if (!await _askDiscard(context)) return;
+
+    allowNextExit();
     navigator.pop();
-    return;
   }
 
-  final discard = await showAppConfirmDialog(
-    sheetContext,
-    title: 'Buang isi formulir?',
-    message: 'Isi formulir ini belum tersimpan dan akan hilang.',
-    confirmLabel: 'Buang',
-    cancelLabel: 'Lanjut mengisi',
-    destructive: true,
-  );
-
-  if (discard) navigator.pop();
+  /// Jalan keluar lewat riwayat peramban: dipasang sebagai `GoRoute.onExit`.
+  ///
+  /// Mengembalikan true bila panel boleh ditinggalkan. Sengaja tidak menerima
+  /// `GoRouterState`: `lib/design/` tidak perlu ikut terikat pada paket router
+  /// yang kebetulan dipakai aplikasi, dan pemanggilnya tinggal mengabaikan
+  /// argumen kedua.
+  Future<bool> confirmExit(BuildContext context) async {
+    if (_answered) {
+      _answered = false;
+      return true;
+    }
+    if (!hasUnsavedInput()) return true;
+    return _askDiscard(context);
+  }
 }
+
+/// Pertanyaannya milik wadah, bukan milik formulir, supaya setiap panel
+/// bertanya dengan kalimat yang sama.
+Future<bool> _askDiscard(BuildContext context) => showAppConfirmDialog(
+      context,
+      title: 'Buang isi formulir?',
+      message: 'Isi formulir ini belum tersimpan dan akan hilang.',
+      confirmLabel: 'Buang',
+      cancelLabel: 'Lanjut mengisi',
+      destructive: true,
+    );
