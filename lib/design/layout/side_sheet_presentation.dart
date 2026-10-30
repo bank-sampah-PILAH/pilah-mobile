@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 
 import 'layout_breakpoint.dart';
@@ -78,85 +79,145 @@ enum SideSheetPresentation {
           : sideSheet;
 }
 
-/// Membuka [builder] sebagai panel di tepi kanan jendela, di atas halaman yang
+/// Halaman route untuk panel di tepi kanan jendela, di atas halaman yang
 /// sedang terbuka.
 ///
-/// Seluruh chrome wadah — tempat, lebar, sudut, warna latar, scrim, dan animasi
-/// masuk — ada di sini, bukan di dalam [builder]. Itulah yang membuat isi
-/// formulir dapat dipakai pada panel maupun pada halaman penuh: ia hanya tahu
-/// cara menampilkan dirinya.
+/// Sebuah [Page] yang dideklarasikan sebagai route, **bukan**
+/// `showGeneralDialog`. Dialog yang dibuka langsung pada navigator tidak
+/// pernah masuk ke daftar route go_router dan karena itu tidak menambah entri
+/// riwayat peramban: `history.length` tidak berubah dan URL tetap sama. Akibat
+/// yang sebenarnya diukur di peramban pada 30 Oktober 2026: dengan panel
+/// terbuka dan formulir sudah terisi, tombol kembali peramban tidak menutup
+/// panel dan tidak bertanya apa pun, melainkan mem-pop *halaman di belakang*
+/// panel — `#/dashboard` berpindah ke `#/login` dan setoran yang belum
+/// tersimpan hilang begitu saja. Justru jalan keluar yang paling mudah
+/// tertekan tanpa sengaja yang paling tidak terlindungi.
 ///
-/// Dibuka pada **root navigator**. Formulir setoran dapat dijangkau dari
-/// dashboard, dari rail web, dan dari route-nya sendiri, dan shell tempat
-/// ketiganya duduk punya navigator bercabang; panel yang di-push ke navigator
-/// cabang akan terpotong oleh cabang itu dan ikut hilang ketika cabangnya
-/// berganti.
+/// Sebagai route sungguhan, panel ini punya URL-nya sendiri, sehingga tombol
+/// kembali mem-pop panel lebih dulu, `PopScope` di bawah ini berjalan, dan
+/// pertanyaan sebelum isi dibuang ikut berlaku untuk tombol kembali — sama
+/// seperti untuk klik di luar panel.
 ///
-/// Sebuah route sungguhan, bukan [OverlayEntry]: dengan begitu tombol kembali
-/// peramban, tombol Esc, dan `Navigator.pop` menutupnya tanpa kode tambahan,
-/// dan halaman di belakangnya tidak dapat dinavigasi sementara formulir masih
-/// berjalan.
+/// Sengaja sebuah [Page] polos dengan [PageRoute] sendiri, bukan
+/// `CustomTransitionPage` milik go_router: `lib/design/` tidak perlu ikut
+/// terikat pada paket router yang kebetulan dipakai aplikasi, dan sebuah
+/// [Page] framework tetap dapat dipakai baik oleh go_router maupun oleh
+/// `Navigator.push` biasa — yang juga membuatnya dapat diuji tanpa membangun
+/// router.
 ///
-/// [hasUnsavedInput] dibaca saat panel hendak ditutup, bukan saat dibangun:
-/// bila ia menjawab true, pengguna ditanya lebih dulu sebelum isinya dibuang.
-/// Pertanyaannya milik wadah, bukan milik formulir, supaya setiap panel
-/// bertanya dengan kalimat yang sama.
+/// Seluruh chrome wadah — tempat, lebar, sudut, warna latar, scrim, dan
+/// animasi masuk — ada di sini, bukan di dalam [child]. Itulah yang membuat
+/// isi formulir dapat dipakai pada panel maupun pada halaman penuh: ia hanya
+/// tahu cara menampilkan dirinya.
+class SideSheetPage<T> extends Page<T> {
+  const SideSheetPage({
+    required this.child,
+    this.hasUnsavedInput,
+    super.key,
+    super.name,
+    super.arguments,
+    super.restorationId,
+  });
+
+  /// Isi panel, tanpa chrome wadah apa pun.
+  final Widget child;
+
+  /// Dibaca saat panel hendak ditutup, bukan saat dibangun.
+  ///
+  /// Bila ia menjawab true, pengguna ditanya lebih dulu sebelum isinya dibuang.
+  /// Pertanyaannya milik wadah, bukan milik formulir, supaya setiap panel
+  /// bertanya dengan kalimat yang sama.
+  final bool Function()? hasUnsavedInput;
+
+  @override
+  Route<T> createRoute(BuildContext context) => _SideSheetRoute<T>(this);
+}
+
+/// Route milik [SideSheetPage]: tembus pandang, ber-scrim, dan masuk dari tepi
+/// kanan.
 ///
-/// Mengembalikan nilai yang di-pop oleh isi panel, atau null bila ditutup tanpa
-/// hasil.
-Future<T?> showSideSheet<T>({
-  required BuildContext context,
-  required WidgetBuilder builder,
-  bool Function()? hasUnsavedInput,
-}) {
-  return showGeneralDialog<T>(
-    context: context,
-    useRootNavigator: true,
-    barrierDismissible: true,
-    barrierLabel: 'Tutup panel',
-    transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (sheetContext, animation, secondaryAnimation) => PopScope(
-      // Selalu false, lalu diputuskan di dalam callback. PopScope menilai
-      // canPop saat build, sedangkan formulir baru menjadi kotor jauh setelah
-      // panel dibangun, jadi nilai yang dihitung saat build selalu basi.
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        await _confirmSideSheetClose(sheetContext, hasUnsavedInput);
-      },
-      // LayoutBuilder, bukan MediaQuery sekali baca: lebar panel harus ikut
-      // berubah ketika jendela peramban diseret sementara panel terbuka, dan
-      // membangun ulang dari constraint menjaga state isi tetap hidup.
-      child: LayoutBuilder(
-        builder: (layoutContext, constraints) => Align(
-          alignment: Alignment.centerRight,
-          child: SizedBox(
-            width: SideSheetPresentation.widthFor(constraints.maxWidth),
-            height: double.infinity,
-            child: Material(
-              color: Colors.white,
-              clipBehavior: Clip.antiAlias,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.horizontal(
-                  left: Radius.circular(AppRadius.xl),
+/// [opaque] false adalah syaratnya: halaman di belakang panel harus tetap
+/// terpasang dan tetap tergambar, karena seluruh alasan panel ini ada adalah
+/// agar halaman itu tidak hilang.
+class _SideSheetRoute<T> extends PageRoute<T> {
+  _SideSheetRoute(SideSheetPage<T> page) : super(settings: page);
+
+  SideSheetPage<T> get _page => settings as SideSheetPage<T>;
+
+  @override
+  bool get opaque => false;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  bool get barrierDismissible => true;
+
+  @override
+  String get barrierLabel => 'Tutup panel';
+
+  @override
+  Color get barrierColor => AppColors.black.withValues(alpha: 0.54);
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 220);
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) =>
+      PopScope(
+        // Selalu false, lalu diputuskan di dalam callback. PopScope menilai
+        // canPop saat build, sedangkan formulir baru menjadi kotor jauh setelah
+        // panel dibangun, jadi nilai yang dihitung saat build selalu basi.
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          await _confirmSideSheetClose(context, _page.hasUnsavedInput);
+        },
+        // LayoutBuilder, bukan MediaQuery sekali baca: lebar panel harus ikut
+        // berubah ketika jendela peramban diseret sementara panel terbuka, dan
+        // membangun ulang dari constraint menjaga state isi tetap hidup.
+        child: LayoutBuilder(
+          builder: (layoutContext, constraints) => Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: SideSheetPresentation.widthFor(constraints.maxWidth),
+              height: double.infinity,
+              child: Material(
+                color: Colors.white,
+                clipBehavior: Clip.antiAlias,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.horizontal(
+                    left: Radius.circular(AppRadius.xl),
+                  ),
                 ),
+                // Di bawah bilah sistem pada jendela yang punya inset.
+                child: SafeArea(child: _page.child),
               ),
-              // Di bawah bilah sistem pada jendela yang punya inset.
-              child: SafeArea(child: Builder(builder: builder)),
             ),
           ),
         ),
-      ),
-    ),
-    transitionBuilder: (transitionContext, animation, secondary, child) =>
-        SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(1, 0),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-      child: child,
-    ),
-  );
+      );
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) =>
+      SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        ),
+        child: child,
+      );
 }
 
 /// Menanyakan konfirmasi sebelum panel yang isinya belum tersimpan ditutup,

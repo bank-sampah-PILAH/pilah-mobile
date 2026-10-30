@@ -3,26 +3,28 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/side_sheet_presentation.dart';
 
-/// `showSideSheet` is the one way a long form opens as a panel at the edge of a
-/// wide window. All of the container — where it sits, how wide it is, the
-/// scrim, the slide — lives in the helper rather than at the call site, for the
-/// same reason `showAdaptivePicker` does it: four call sites answering the
+/// `SideSheetPage` is the one way a long form opens as a panel at the edge of a
+/// wide window. All of the container — where it sits, how wide it is at this
+/// window width, the scrim, the slide, and the question it asks before unsaved
+/// input is thrown away — lives in the page rather than at the call site, for
+/// the same reason `showAdaptivePicker` does it: four call sites answering the
 /// question separately is four chances to answer it differently.
 ///
-/// It opens on the **root** navigator. The setoran form is reachable from the
-/// dashboard, from the web rail and from its own route, and the shell those
-/// sit in has nested navigators of its own; a panel pushed onto a nested one
-/// would be clipped to that branch and would vanish when the branch changed.
+/// It is a **route**, declared like any other, not a dialog opened on the
+/// navigator by hand. That distinction is the whole point and it was paid for:
+/// as a `showGeneralDialog` the panel added no browser history entry, so the
+/// browser back button popped the page *underneath* it and a half-typed
+/// setoran was destroyed with no question asked. Measured in a real browser on
+/// 30 October 2026: `history.length` unchanged, `#/dashboard` → `#/login`.
 void main() {
   const contentKey = Key('side-sheet-content');
-  final nestedNavigatorKey = GlobalKey<NavigatorState>();
 
   /// What the panel answered, so a caller's `await` is observable.
   String? result;
   setUp(() => result = null);
 
-  /// Opens the sheet from a context inside a *nested* navigator, so where the
-  /// route actually lands is observable.
+  /// Opens the panel as a route on top of a page that stays identifiable, so
+  /// whether the page beneath survives is observable.
   Future<void> open(
     WidgetTester tester,
     Size window, {
@@ -35,14 +37,12 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-        body: Navigator(
-          key: nestedNavigatorKey,
-          onGenerateRoute: (settings) => MaterialPageRoute<void>(
-            builder: (nestedContext) => TextButton(
-              onPressed: () async {
-                result = await showSideSheet<String>(
-                  context: nestedContext,
-                  hasUnsavedInput: hasUnsavedInput,
+        body: Builder(
+          builder: (pageContext) => TextButton(
+            onPressed: () async {
+              final page = SideSheetPage<String>(
+                hasUnsavedInput: hasUnsavedInput,
+                child: Builder(
                   builder: (sheetContext) => SizedBox.expand(
                     key: contentKey,
                     child: Column(
@@ -56,10 +56,12 @@ void main() {
                       ],
                     ),
                   ),
-                );
-              },
-              child: const Text('buka'),
-            ),
+                ),
+              );
+              result = await Navigator.of(pageContext)
+                  .push(page.createRoute(pageContext));
+            },
+            child: const Text('buka'),
           ),
         ),
       ),
@@ -96,25 +98,21 @@ void main() {
     expect(panel.right, 600);
   });
 
-  testWidgets('the panel opens on the root navigator, not the nested one',
-      (tester) async {
+  testWidgets('the page underneath stays mounted and visible', (tester) async {
     await open(tester, const Size(1440, 900));
 
     expect(find.byKey(contentKey), findsOneWidget);
     expect(
-      find.descendant(
-        of: find.byKey(nestedNavigatorKey),
-        matching: find.byKey(contentKey),
-      ),
-      findsNothing,
-      reason: 'a panel inside the nested navigator would go with its branch',
+      find.text('buka'),
+      findsOneWidget,
+      reason: 'an opaque route would take the page beneath off the tree, and '
+          'a page left visible behind the panel is the entire point',
     );
   });
 
-  /// Three ways out, all of them in the acceptance criteria. They are pinned
+  /// Four ways out, all of them in the acceptance criteria. They are pinned
   /// here because they are the reason the panel is a route at all: an
-  /// `OverlayEntry` would have to re-implement each one, and the browser back
-  /// button could not be made to work at all.
+  /// `OverlayEntry` would have to re-implement each one.
   group('closing it', () {
     testWidgets('tapping the page beside the panel closes it', (tester) async {
       await open(tester, const Size(1440, 900));
@@ -134,6 +132,19 @@ void main() {
 
       expect(find.byKey(contentKey), findsNothing,
           reason: 'a keyboard user on the web expects escape to work');
+    });
+
+    testWidgets('a system back closes the panel, not the page beneath it',
+        (tester) async {
+      await open(tester, const Size(1440, 900));
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+      expect(find.text('buka'), findsOneWidget,
+          reason: 'this is the browser back button: it must take the panel '
+              'and leave the page the Pengurus was working on');
     });
 
     testWidgets('popping the panel closes it and answers its value',
@@ -166,7 +177,7 @@ void main() {
   });
 
   /// The full-screen page never needed this guard: you leave it by pressing
-  /// back, which is deliberate. A panel adds a way out that is not — the scrim
+  /// back, which is deliberate. A panel adds ways out that are not — the scrim
   /// is most of a wide window, and a mis-aimed click on it would throw away a
   /// half-typed setoran with no way to get it back.
   ///
@@ -222,6 +233,21 @@ void main() {
       expect(find.text(question), findsOneWidget);
     });
 
+    /// The case the browser actually hit. A `showGeneralDialog` panel never
+    /// reached this guard on a back press at all, because it was not a route
+    /// the browser knew about.
+    testWidgets('is asked about on a system back as well', (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsOneWidget);
+      expect(find.byKey(contentKey), findsOneWidget,
+          reason: 'back must not destroy the form before the question is '
+              'answered');
+    });
+
     testWidgets('is read again on each attempt, not cached', (tester) async {
       var dirty = false;
       await open(tester, const Size(1440, 900), hasUnsavedInput: () => dirty);
@@ -258,6 +284,5 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(contentKey), findsNothing);
-    expect(find.text('Buang isi formulir?'), findsNothing);
   });
 }

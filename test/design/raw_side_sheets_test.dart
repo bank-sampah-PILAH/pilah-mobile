@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Keeps a side sheet from being opened by hand outside `lib/design/`.
 ///
-/// `showSideSheet` owns the whole container: where the panel sits, how wide it
+/// `SideSheetPage` owns the whole container: where the panel sits, how wide it
 /// is at this window width, the scrim, the slide, and the question it asks
 /// before unsaved input is thrown away. A screen that reaches for
 /// `showGeneralDialog` itself gets none of that, and the guard that matters
@@ -26,7 +26,7 @@ void main() {
     expect(_raw.hasMatch('await showGeneralDialog<void>(context: c)'), isTrue);
     expect(_raw.hasMatch('Scaffold(endDrawer: Drawer())'), isTrue);
     expect(
-      _raw.hasMatch('showSideSheet<void>(context: c, builder: b)'),
+      _raw.hasMatch('SideSheetPage<void>(child: form)'),
       isFalse,
     );
   });
@@ -45,7 +45,7 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: 'Use showSideSheet (lib/design/layout/).',
+      reason: 'Use SideSheetPage (lib/design/layout/) as a declared route.',
     );
   });
 }
