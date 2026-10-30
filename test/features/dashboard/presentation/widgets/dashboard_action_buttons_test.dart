@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 void main() {
   testWidgets('two main buttons, side by side, and no Pengumuman entry',
@@ -67,6 +68,7 @@ void main() {
           path: DraftListPage.route,
           builder: (_, __) => const Scaffold(body: Text('Daftar Pencairan')),
         ),
+        setoranSideSheetRoute(),
       ],
     );
     addTearDown(router.dispose);

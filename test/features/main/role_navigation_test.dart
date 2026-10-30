@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/n
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 import '../../support/auth_support.dart';
 import '../../support/setoran_form_support.dart';
 import '../../support/nasabah_approval_support.dart';
@@ -91,6 +92,7 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
         path: TransaksiBaruPage.route,
         builder: (_, __) => const Scaffold(body: Text('Form Setoran')),
       ),
+      setoranSideSheetRoute(),
       GoRoute(
         path: '/approval-bank-sampah/detail',
         builder: (_, __) => const Text('application details'),

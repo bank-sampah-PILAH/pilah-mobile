@@ -73,6 +73,9 @@ void main() {
       // Rendered as plain `route:/transaksi-baru` text, so navigating to the
       // page is observable without building the real one.
       extraRoutes: [TransaksiBaruPage.route],
+      // The app's own panel route, so the test drives the declared route
+      // rather than a stand-in that could drift from it.
+      realRoutes: [setoranSideSheetRoute()],
       wrap: (app) => ProviderScope(
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
