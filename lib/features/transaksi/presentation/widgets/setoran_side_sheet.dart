@@ -34,10 +34,7 @@ String? redirectSetoranSideSheet(GoRouterState state) =>
 /// menjadi urusan fitur transaksi.
 Page<void> setoranSideSheetPage(LocalKey pageKey) => SideSheetPage<void>(
       key: pageKey,
-      // Ditarik pada saat panel hendak ditutup, jadi yang terbaca adalah
-      // keadaan formulir saat itu dan bukan saat panel dibuka — yang selalu
-      // kosong.
-      hasUnsavedInput: () => _formKey.currentState?.hasUnsavedInput ?? false,
+      guard: _guard,
       child: Builder(
         builder: (sheetContext) => SetoranFormView(
           key: _formKey,
@@ -49,11 +46,16 @@ Page<void> setoranSideSheetPage(LocalKey pageKey) => SideSheetPage<void>(
             // sengaja.
             onClose: () => Navigator.of(sheetContext).maybePop(),
           ),
-          // pop, bukan maybePop: jalan ini hanya dilalui setelah setoran
-          // berhasil tersimpan. Di sana memang tidak ada lagi yang perlu
-          // diselamatkan, dan bertanya justru akan menahan penutupan yang
-          // pengguna sudah minta.
-          onClose: () => Navigator.of(sheetContext).pop(),
+          // Jalan ini hanya dilalui setelah setoran berhasil tersimpan. Di
+          // sana memang tidak ada lagi yang perlu diselamatkan, dan bertanya
+          // justru akan menahan penutupan yang pengguna sudah minta — jadi
+          // penjaganya diberi tahu lebih dulu. Sejak onExit terpasang,
+          // `Navigator.pop` saja tidak lagi cukup untuk melewatinya: go_router
+          // menjalankan onExit untuk setiap pop.
+          onClose: () {
+            _guard.allowNextExit();
+            Navigator.of(sheetContext).pop();
+          },
         ),
       ),
     );
@@ -68,6 +70,10 @@ GoRoute setoranSideSheetRoute() => GoRoute(
       name: setoranSideSheetPath,
       redirect: (context, state) => redirectSetoranSideSheet(state),
       pageBuilder: (context, state) => setoranSideSheetPage(state.pageKey),
+      // Tombol kembali peramban tidak mem-pop apa pun, jadi ia tidak pernah
+      // sampai ke PopScope di dalam panel. Hanya lewat sini isian yang belum
+      // tersimpan ikut terjaga pada jalan keluar itu.
+      onExit: (context, state) => _guard.confirmExit(context),
     );
 
 /// Satu kunci untuk satu panel.
@@ -78,6 +84,17 @@ GoRoute setoranSideSheetRoute() => GoRoute(
 /// membangun ulang dan kunci baru pada tiap build akan membuang state formulir
 /// yang sedang diisi.
 final _formKey = GlobalKey<SetoranFormViewState>();
+
+/// Penjaga isian panel, dipakai bersama oleh halaman panel dan `onExit`
+/// route-nya.
+///
+/// Satu objek untuk keduanya, karena hanya satu objek yang tahu pertanyaan
+/// mana yang sudah dijawab; dua objek akan bertanya dua kali untuk satu
+/// penutupan yang sama. Dibaca dari [_formKey] pada saat ditanya, bukan saat
+/// panel dibangun — saat itu formulir selalu masih kosong.
+final _guard = SideSheetGuard(
+  hasUnsavedInput: () => _formKey.currentState?.hasUnsavedInput ?? false,
+);
 
 /// Membuka formulir setoran sebagaimana jendela ini seharusnya menampilkannya.
 ///
