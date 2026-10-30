@@ -33,6 +33,7 @@ import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/account_deletion_request.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -649,6 +650,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     accountCard,
+                    const SizedBox(height: AppSpacing.md),
+                    const AccountDeletionRequestButton(),
                     const SizedBox(height: 32),
                     if (isDesktop)
                       Row(
