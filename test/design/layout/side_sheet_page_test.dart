@@ -35,6 +35,7 @@ void main() {
     WidgetTester tester,
     Size window, {
     bool Function()? hasUnsavedInput,
+    bool guarded = true,
   }) async {
     guard = SideSheetGuard(hasUnsavedInput: hasUnsavedInput ?? () => false);
     tester.view.physicalSize = window;
@@ -48,7 +49,7 @@ void main() {
           builder: (pageContext) => TextButton(
             onPressed: () async {
               final page = SideSheetPage<String>(
-                guard: guard,
+                guard: guarded ? guard : null,
                 child: Builder(
                   builder: (sheetContext) => SizedBox.expand(
                     key: contentKey,
@@ -284,6 +285,49 @@ void main() {
       expect(find.byKey(contentKey), findsNothing);
       expect(result, 'tersimpan');
     });
+
+    /// The bypass has to hold on **both** exits.
+    ///
+    /// A form that saved and then leaves through `maybePop` — a platform back,
+    /// or its own `maybePop` rather than a bare `pop` — is exactly what
+    /// [SideSheetGuard.allowNextExit] exists for, and `handlePopAttempt` read
+    /// only `hasUnsavedInput`, so it asked anyway and blocked the save.
+    /// Reported on review of PR #186.
+    testWidgets('is not questioned once the form allowed the next exit',
+        (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      guard.allowNextExit();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsNothing,
+          reason: 'the form has already decided; asking here blocks the save '
+              'it just made, which is the whole reason for the bypass');
+      expect(find.byKey(contentKey), findsNothing);
+    });
+
+    /// And the key must be handed on, not spent: go_router runs `onExit` for
+    /// the pop that just happened, so a bypass consumed by `handlePopAttempt`
+    /// would leave `onExit` to ask about the very pop the form allowed.
+    testWidgets('hands the one-shot key on to the onExit of the same pop',
+        (tester) async {
+      await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+
+      guard.allowNextExit();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text(question), findsNothing);
+
+      // The page beneath the panel is still mounted, so it can stand in for
+      // the context go_router would call `onExit` with.
+      final context = tester.element(find.text('buka'));
+      expect(await guard.confirmExit(context), isTrue);
+      await tester.pumpAndSettle();
+
+      expect(find.text(question), findsNothing,
+          reason: 'onExit must not question the pop the form allowed');
+    });
   });
 
   /// The browser back button, which is the path the first fix missed.
@@ -356,6 +400,57 @@ void main() {
       await tester.tap(find.text('Lanjut mengisi'));
       await tester.pumpAndSettle();
       expect(await exit, isFalse);
+    });
+  });
+
+  /// `guard` is optional, and a panel with nothing to lose must not be harder
+  /// to close than one that guards its input.
+  ///
+  /// The container blocks the pop so that a guard can answer it. With no guard
+  /// there is nobody to answer, so the pop has to go through on its own — and
+  /// it did not: `canPop` was false unconditionally and the callback was
+  /// null-aware, so the scrim, Esc and the platform back each did nothing at
+  /// all and the panel could not be dismissed by any means. Found on review of
+  /// PR #186, by two reviewers independently.
+  group('a panel opened without a guard', () {
+    testWidgets('closes on a click beside it', (tester) async {
+      await open(tester, const Size(1440, 900), guarded: false);
+      expect(find.byKey(contentKey), findsOneWidget);
+
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+    });
+
+    testWidgets('closes on escape', (tester) async {
+      await open(tester, const Size(1440, 900), guarded: false);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+    });
+
+    testWidgets('closes on a platform back, leaving the page beneath it',
+        (tester) async {
+      await open(tester, const Size(1440, 900), guarded: false);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+      expect(find.text('buka'), findsOneWidget);
+    });
+
+    testWidgets('still answers the value the form popped with', (tester) async {
+      await open(tester, const Size(1440, 900), guarded: false);
+
+      await tester.tap(find.text('selesai'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsNothing);
+      expect(result, 'tersimpan');
     });
   });
 

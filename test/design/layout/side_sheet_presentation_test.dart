@@ -7,30 +7,34 @@ import 'package:pilah_mobile/design/layout/side_sheet_presentation.dart';
 /// On a phone that is unavoidable and right. On a wide window it is a choice,
 /// and the better one is a panel at the edge with the page still behind it.
 ///
-/// Which of the two a window gets is a rule about width, so it is decided in
-/// one pure function here rather than with a `MediaQuery` check at each call
-/// site — the same split `PickerPresentation.resolve` already makes for modal
-/// pickers, and for the same reason: a native phone is always compact, so the
-/// width rule and the platform rule agree everywhere it matters.
+/// Which of the two a window gets is decided in one pure function here rather
+/// than with a `MediaQuery` check at each call site — the same split
+/// `PickerPresentation.resolve` already makes for modal pickers.
+///
+/// It takes **two** facts, not one. Width says whether there is enough page
+/// worth leaving behind; the platform says whether there is a browser shell to
+/// leave behind at all. The native app keeps the full-screen route at every
+/// width, so every width case below states the platform it is testing instead
+/// of leaning on `kIsWeb` being false under the VM.
 void main() {
   group('SideSheetPresentation.resolve', () {
     test('a phone keeps the full-screen page', () {
       expect(
-        SideSheetPresentation.resolve(width: 390),
+        SideSheetPresentation.resolve(width: 390, isWebOverride: true),
         SideSheetPresentation.fullScreen,
       );
     });
 
     test('a tablet-width window gets a side sheet', () {
       expect(
-        SideSheetPresentation.resolve(width: 768),
+        SideSheetPresentation.resolve(width: 768, isWebOverride: true),
         SideSheetPresentation.sideSheet,
       );
     });
 
     test('a desktop browser window gets a side sheet', () {
       expect(
-        SideSheetPresentation.resolve(width: 1440),
+        SideSheetPresentation.resolve(width: 1440, isWebOverride: true),
         SideSheetPresentation.sideSheet,
       );
     });
@@ -40,6 +44,7 @@ void main() {
         expect(
           SideSheetPresentation.resolve(
             width: LayoutBreakpoint.mediumMinWidth - 1,
+            isWebOverride: true,
           ),
           SideSheetPresentation.fullScreen,
         );
@@ -49,6 +54,7 @@ void main() {
         expect(
           SideSheetPresentation.resolve(
             width: LayoutBreakpoint.mediumMinWidth,
+            isWebOverride: true,
           ),
           SideSheetPresentation.sideSheet,
           reason: 'the boundary belongs to the wider block, as in '
@@ -58,7 +64,7 @@ void main() {
 
       test('a zero width is a full-screen page rather than a crash', () {
         expect(
-          SideSheetPresentation.resolve(width: 0),
+          SideSheetPresentation.resolve(width: 0, isWebOverride: true),
           SideSheetPresentation.fullScreen,
           reason: 'the first frame can run before the size is known',
         );
@@ -66,8 +72,50 @@ void main() {
 
       test('a negative width is a full-screen page too', () {
         expect(
-          SideSheetPresentation.resolve(width: -1),
+          SideSheetPresentation.resolve(width: -1, isWebOverride: true),
           SideSheetPresentation.fullScreen,
+        );
+      });
+    });
+
+    /// Width is not the whole rule, and the comment above was wrong to say it
+    /// was. PIL-432 is a **web** ticket: in the native app a long form keeps
+    /// its own full-screen route at every width. A phone is always compact, so
+    /// the width rule agreed with the platform rule there by accident — but a
+    /// native tablet is 768 wide and is not compact, and the width-only
+    /// resolver handed it a panel it was never meant to get.
+    ///
+    /// Raised on review of PR #186.
+    group('the platform', () {
+      test('a native tablet keeps the full-screen page', () {
+        expect(
+          SideSheetPresentation.resolve(width: 768, isWebOverride: false),
+          SideSheetPresentation.fullScreen,
+          reason: 'a tablet is not compact, so width alone said side sheet; '
+              'the native app has no browser shell to leave behind',
+        );
+      });
+
+      test('a native window as wide as a desktop keeps it too', () {
+        expect(
+          SideSheetPresentation.resolve(width: 1440, isWebOverride: false),
+          SideSheetPresentation.fullScreen,
+        );
+      });
+
+      test('the same tablet width on the web gets a side sheet', () {
+        expect(
+          SideSheetPresentation.resolve(width: 768, isWebOverride: true),
+          SideSheetPresentation.sideSheet,
+        );
+      });
+
+      test('a narrow web window still keeps the full-screen page', () {
+        expect(
+          SideSheetPresentation.resolve(width: 390, isWebOverride: true),
+          SideSheetPresentation.fullScreen,
+          reason: 'the width rule still applies on the web; the platform gate '
+              'only removes a case, it does not replace the rule',
         );
       });
     });

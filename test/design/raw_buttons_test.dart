@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 
 /// Ban on Material's filled and outlined buttons outside `lib/design/`.
 ///
@@ -15,12 +15,10 @@ final _stock = RegExp(
 
 List<String> _scan() {
   final found = <String>[];
-  for (final entity in Directory('lib').listSync(recursive: true)) {
-    if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final path = entity.path.replaceAll(r'\', '/');
-    if (path.startsWith('lib/design/')) continue;
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
-    final count = _stock.allMatches(entity.readAsStringSync()).length;
+  for (final source in designSources()) {
+    final path = source.path;
+    if (source.inDesignKit || source.isGenerated) continue;
+    final count = _stock.allMatches(source.read()).length;
     if (count > 0) found.add('$path: $count');
   }
   return found;

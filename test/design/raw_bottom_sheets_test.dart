@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 
 /// Keeps a bottom sheet from being opened by hand outside `lib/design/`.
 ///
@@ -28,11 +28,10 @@ void main() {
 
   test('no screen opens a bottom sheet by hand', () {
     final offenders = <String>[];
-    for (final entity in Directory('lib').listSync(recursive: true)) {
-      if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      final path = entity.path.replaceAll(r'\', '/');
-      if (path.startsWith('lib/design/') || _exempt.contains(path)) continue;
-      if (_raw.hasMatch(entity.readAsStringSync())) offenders.add(path);
+    for (final source in designSources()) {
+      final path = source.path;
+      if (source.inDesignKit || _exempt.contains(path)) continue;
+      if (_raw.hasMatch(source.read())) offenders.add(path);
     }
 
     expect(

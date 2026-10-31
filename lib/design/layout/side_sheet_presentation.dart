@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -19,11 +20,18 @@ import 'layout_breakpoint.dart';
 /// pilihan, dan pilihan yang lebih baik adalah panel di tepi dengan halaman
 /// yang tetap terlihat di belakangnya.
 ///
-/// Pembedanya adalah **lebar**, bukan platform, sama seperti
-/// `PickerPresentation`. Aturan lead dev — bottom bar di aplikasi, navigasi
-/// kiri di peramban — berbicara tentang navigasi yang menetap. Formulir
-/// bersifat sementara, dan kedua aturan toh sepakat di tempat yang penting,
-/// karena telepon native selalu compact.
+/// Pembedanya adalah **lebar di peramban**: lebar menentukan apakah ada
+/// halaman yang layak disisakan, dan platform menentukan apakah ada shell
+/// peramban untuk disisakan sama sekali. PIL-432 adalah tiket web, dan di
+/// aplikasi native formulir panjang tetap memakai route halaman penuhnya pada
+/// setiap lebar.
+///
+/// Semula ini diputuskan dari lebar saja, dengan alasan telepon native selalu
+/// compact. Itu benar untuk telepon dan bungkam soal tablet: tablet native
+/// selebar 768 bukan compact, jadi ia ikut diberi panel yang tidak pernah
+/// dimaksudkan untuknya. Aturan lead dev — bottom bar di aplikasi, navigasi
+/// kiri di peramban — sejak awal berbicara tentang platform, bukan hanya
+/// lebar.
 enum SideSheetPresentation {
   /// Halaman penuh dengan route-nya sendiri. Benar pada telepon: di lebar itu
   /// tidak ada ruang untuk menyisakan halaman di belakang formulir.
@@ -70,13 +78,22 @@ enum SideSheetPresentation {
 
   /// Mengklasifikasikan [width] logical pixel ke dalam satu wadah.
   ///
-  /// Lebar non-positif menjadi [fullScreen], mengikuti
-  /// [LayoutBreakpoint.fromWidth], karena frame pertama bisa berjalan sebelum
-  /// ukuran diketahui.
-  static SideSheetPresentation resolve({required double width}) =>
-      LayoutBreakpoint.fromWidth(width) == LayoutBreakpoint.compact
-          ? fullScreen
-          : sideSheet;
+  /// Hanya peramban yang mendapat panel: di aplikasi native hasilnya selalu
+  /// [fullScreen], berapa pun lebarnya, termasuk pada tablet. Lebar non-positif
+  /// juga menjadi [fullScreen], mengikuti [LayoutBreakpoint.fromWidth], karena
+  /// frame pertama bisa berjalan sebelum ukuran diketahui.
+  ///
+  /// [isWebOverride] hanya untuk pengujian: `kIsWeb` adalah konstanta saat
+  /// kompilasi, jadi test VM tidak punya cara lain untuk menguji cabang web —
+  /// pola yang sama dipakai `App.isWebOverride` dan `LoginButton`.
+  static SideSheetPresentation resolve({
+    required double width,
+    @visibleForTesting bool? isWebOverride,
+  }) =>
+      (isWebOverride ?? kIsWeb) &&
+              LayoutBreakpoint.fromWidth(width) != LayoutBreakpoint.compact
+          ? sideSheet
+          : fullScreen;
 }
 
 /// Halaman route untuk panel di tepi kanan jendela, di atas halaman yang
@@ -169,10 +186,17 @@ class _SideSheetRoute<T> extends PageRoute<T> {
     Animation<double> secondaryAnimation,
   ) =>
       PopScope(
-        // Selalu false, lalu diputuskan di dalam callback. PopScope menilai
-        // canPop saat build, sedangkan formulir baru menjadi kotor jauh setelah
-        // panel dibangun, jadi nilai yang dihitung saat build selalu basi.
-        canPop: false,
+        // Diblokir hanya bila ada penjaga yang akan menjawabnya.
+        //
+        // Ketika ada, nilainya selalu false dan keputusannya diambil di dalam
+        // callback: PopScope menilai canPop saat build, sedangkan formulir baru
+        // menjadi kotor jauh setelah panel dibangun, jadi nilai yang dihitung
+        // saat build selalu basi. Ketika tidak ada penjaga, tidak ada yang
+        // akan menjawab pop yang diblokir — memblokirnya berarti panel tidak
+        // dapat ditutup sama sekali, tidak oleh scrim, tidak oleh Esc, tidak
+        // oleh tombol kembali. guard bersifat final pada [SideSheetPage], jadi
+        // keberadaannya tidak berubah sesudah build dan aman dinilai di sini.
+        canPop: _page.guard == null,
         onPopInvokedWithResult: (didPop, _) async {
           if (didPop) return;
           await _page.guard?.handlePopAttempt(context);
@@ -268,7 +292,15 @@ class SideSheetGuard {
     // jadwal.
     final navigator = Navigator.of(context);
 
-    if (!hasUnsavedInput()) {
+    // [allowNextExit] berlaku untuk jalan keluar ini juga. Formulir yang baru
+    // berhasil menyimpan lalu keluar lewat maybePop — tombol kembali platform,
+    // atau maybePop-nya sendiri — justru keadaan yang kunci itu ada untuk itu.
+    //
+    // Kuncinya tidak dihabiskan di sini, melainkan diteruskan: go_router
+    // menjalankan `onExit` untuk pop yang baru saja terjadi, jadi kunci yang
+    // dibelanjakan di sini akan membuat `onExit` bertanya tentang pop yang
+    // sudah disetujui formulir.
+    if (_answered || !hasUnsavedInput()) {
       allowNextExit();
       navigator.pop();
       return;
