@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 import '../../../../support/auth_support.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 
 class _MockGoogleSignInPlatform extends Mock
     with MockPlatformInterfaceMixin
@@ -47,6 +49,50 @@ void main() {
     google_sign_in.GoogleSignInPlatform.instance = originalPlatform;
   });
 
+  for (final size in [
+    const Size(1440, 900),
+    const Size(768, 1024),
+    const Size(375, 812)
+  ]) {
+    testWidgets('adapts role choices at ${size.width}px', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(ProviderScope(
+        overrides: [authenticationProvider.overrideWith(() => auth)],
+        child: const MaterialApp(home: RoleSelectionPage()),
+      ));
+
+      expect(find.byKey(const ValueKey('onboarding-sidebar')),
+          size.width >= 840 ? findsOneWidget : findsNothing);
+      expect(find.byType(OnboardingFlowLayout), findsOneWidget);
+      final firstTitle = kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah';
+      final secondTitle =
+          kIsWeb ? 'Pengelola Bank Sampah Induk' : 'Pengurus Bank Sampah';
+      final first = tester.getRect(find.text(firstTitle));
+      final second = tester.getRect(find.text(secondTitle));
+      if (size.width >= 600) {
+        expect(second.left, greaterThan(first.right));
+        Finder cardFor(String title) => find
+            .ancestor(
+              of: find.text(title),
+              matching: find.byWidgetPredicate((widget) =>
+                  widget is Semantics &&
+                  widget.properties.inMutuallyExclusiveGroup == true),
+            )
+            .first;
+        expect(tester.getSize(cardFor(firstTitle)).height,
+            tester.getSize(cardFor(secondTitle)).height);
+      } else {
+        expect(second.top, greaterThan(first.bottom));
+      }
+      expect(find.text('Daftar Akun'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('offers roles supported by the platform and submits selection',
       (tester) async {
     tester.view.physicalSize = const Size(375, 812);
@@ -60,7 +106,7 @@ void main() {
     ));
 
     expect(find.text('Daftar Akun'), findsOneWidget);
-    expect(find.text('Langkah 1'), findsOneWidget);
+    expect(find.text('Peran Akun'), findsOneWidget);
     expect(find.text('ayu@example.com'), findsOneWidget);
     expect(find.text('Nasabah'), kIsWeb ? findsNothing : findsOneWidget);
     expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
@@ -68,7 +114,9 @@ void main() {
     expect(find.text('Superadmin'), findsNothing);
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text(kIsWeb ? 'Pengelola Bank Sampah' : 'Nasabah'));
+    await tester
+        .ensureVisible(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
+    await tester.tap(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
     await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
 
@@ -78,6 +126,38 @@ void main() {
           ? GoogleRegistrationRole.pengelola
           : GoogleRegistrationRole.nasabah,
     );
+  });
+
+  testWidgets('supports keyboard selection without a pointer', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authenticationProvider.overrideWith(() => auth)],
+      child: const MaterialApp(home: RoleSelectionPage()),
+    ));
+    // Exit, change account, then the first available role.
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    final option = tester.widget<Semantics>(find.byWidgetPredicate((widget) =>
+        widget is Semantics &&
+        widget.properties.label ==
+            (kIsWeb
+                ? 'Pengurus Bank Sampah. Mengelola transaksi dan anggota bank sampah.'
+                : 'Nasabah. Menabung sampah dan memantau saldo.')));
+    expect(option.properties.checked, isTrue);
+    expect(option.properties.inMutuallyExclusiveGroup, isTrue);
+    await tester.tap(find.text('Lanjutkan'));
+    expect(
+        auth.lastRole,
+        kIsWeb
+            ? GoogleRegistrationRole.pengelola
+            : GoogleRegistrationRole.nasabah);
   });
 
   testWidgets('signs out of Google before changing accounts', (tester) async {
