@@ -4,7 +4,38 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
+
+ActivitasEntity _setoran(String name, String id) =>
+    ActivitasEntity.fromTransaksi(TransaksiEntity(
+      id: id,
+      initials: 'AB',
+      avatarColor: Colors.green.shade100,
+      textColor: Colors.green,
+      name: name,
+      subtitle: '2 jenis sampah',
+      amount: '+Rp 5.000',
+      isWaSuccess: true,
+      balance: '',
+      items: const [],
+      tanggal: DateTime(2026, 10, 5, 12),
+    ));
+
+TransaksiDetailEntity _detail(String item) => TransaksiDetailEntity(
+      name: 'Nasabah',
+      amountFormatted: 'Rp 5.000',
+      balanceFormatted: 'Rp 10.000',
+      waStatus: 'sent',
+      items: [
+        ItemSetoranEntity(
+          jenis: item,
+          berat: '2 kg',
+          harga: 'Rp 1.000',
+          subtotal: 'Rp 2.000',
+        ),
+      ],
+    );
 
 ActivitasEntity _pencairan(String name) =>
     ActivitasEntity.fromPencairan(Pencairan(
@@ -29,6 +60,7 @@ void main() {
     List<Widget> footer = const [],
     Widget? toolbar,
     Widget? pagination,
+    Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail,
   }) async {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1;
@@ -39,6 +71,7 @@ void main() {
         body: AktivitasTable(
           items: items,
           onTap: onTap ?? (_) {},
+          loadSetoranDetail: loadSetoranDetail,
           footer: footer,
           toolbar: toolbar,
           pagination: pagination,
@@ -46,6 +79,40 @@ void main() {
       ),
     ));
   }
+
+  testWidgets('setoran rows expand and collapse their own details',
+      (tester) async {
+    final items = [_setoran('Ani', 't1'), _setoran('Budi', 't2')];
+    final tapped = <ActivitasEntity>[];
+    final loaded = <String>[];
+    await pumpTable(
+      tester,
+      items: items,
+      onTap: tapped.add,
+      loadSetoranDetail: (id) async {
+        loaded.add(id);
+        return _detail(id == 't1' ? 'Plastik' : 'Kardus');
+      },
+    );
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik'), findsOneWidget);
+    expect(find.text('Kardus'), findsNothing);
+    expect(loaded, ['t1']);
+    expect(tapped, isEmpty);
+
+    await tester.tap(find.text('Budi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik'), findsOneWidget);
+    expect(find.text('Kardus'), findsOneWidget);
+    expect(loaded, ['t1', 't2']);
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik'), findsNothing);
+    expect(find.text('Kardus'), findsOneWidget);
+  });
 
   testWidgets('shows column headings and one row per activity', (tester) async {
     await pumpTable(tester, items: [_pencairan('Ani'), _pencairan('Budi')]);
