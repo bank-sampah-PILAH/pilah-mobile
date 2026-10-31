@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 
 /// Rupiah amounts are formatted by `CurrencyFormatter` only. About twenty
 /// copies of the thousands-grouping loop used to live in screens, and one of
@@ -13,14 +13,13 @@ void main() {
       RegExp(r'String\s+formatRupiahId'),
     ];
     final offenders = <String>[];
-    for (final entity in Directory('lib').listSync(recursive: true)) {
-      if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      final path = entity.path.replaceAll(r'\', '/');
+    for (final source in designSources()) {
+      final path = source.path;
       if (path == 'lib/core/utils/formatter/currency_formatter.dart') {
         continue;
       }
-      final source = entity.readAsStringSync();
-      if (grouping.any((re) => re.hasMatch(source))) offenders.add(path);
+      final text = source.read();
+      if (grouping.any((re) => re.hasMatch(text))) offenders.add(path);
     }
 
     expect(offenders, isEmpty,

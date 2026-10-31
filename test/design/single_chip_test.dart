@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 
 /// A filter or choice pill is `AppChip`. The stock `ChoiceChip` and
 /// `FilterChip` have their own shape, colours and 32 dp hit area, and two forms
@@ -21,11 +21,10 @@ void main() {
 
   test('no screen builds a stock Material chip', () {
     final offenders = <String>[];
-    for (final entity in Directory('lib').listSync(recursive: true)) {
-      if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      final path = entity.path.replaceAll(r'\', '/');
-      if (path.startsWith('lib/design/')) continue;
-      if (stock.hasMatch(entity.readAsStringSync())) offenders.add(path);
+    for (final source in designSources()) {
+      final path = source.path;
+      if (source.inDesignKit) continue;
+      if (stock.hasMatch(source.read())) offenders.add(path);
     }
 
     expect(offenders, isEmpty,

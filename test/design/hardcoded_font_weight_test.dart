@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 
 /// Ban on stock `FontWeight` values outside the font weight scale.
 ///
@@ -15,12 +15,11 @@ final _stock = RegExp(r'(?<![A-Za-z_])FontWeight\.(w[1-9]00|bold|normal)\b');
 
 List<String> _scan() {
   final found = <String>[];
-  for (final entity in Directory('lib').listSync(recursive: true)) {
-    if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final path = entity.path.replaceAll(r'\', '/');
+  for (final source in designSources()) {
+    final path = source.path;
     if (path == 'lib/design/constants/font_weight.dart') continue;
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
-    final count = _stock.allMatches(entity.readAsStringSync()).length;
+    if (source.isGenerated) continue;
+    final count = _stock.allMatches(source.read()).length;
     if (count > 0) found.add('$path: $count stock font weights');
   }
   return found;
