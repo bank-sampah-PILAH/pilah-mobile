@@ -169,10 +169,17 @@ class _SideSheetRoute<T> extends PageRoute<T> {
     Animation<double> secondaryAnimation,
   ) =>
       PopScope(
-        // Selalu false, lalu diputuskan di dalam callback. PopScope menilai
-        // canPop saat build, sedangkan formulir baru menjadi kotor jauh setelah
-        // panel dibangun, jadi nilai yang dihitung saat build selalu basi.
-        canPop: false,
+        // Diblokir hanya bila ada penjaga yang akan menjawabnya.
+        //
+        // Ketika ada, nilainya selalu false dan keputusannya diambil di dalam
+        // callback: PopScope menilai canPop saat build, sedangkan formulir baru
+        // menjadi kotor jauh setelah panel dibangun, jadi nilai yang dihitung
+        // saat build selalu basi. Ketika tidak ada penjaga, tidak ada yang
+        // akan menjawab pop yang diblokir — memblokirnya berarti panel tidak
+        // dapat ditutup sama sekali, tidak oleh scrim, tidak oleh Esc, tidak
+        // oleh tombol kembali. guard bersifat final pada [SideSheetPage], jadi
+        // keberadaannya tidak berubah sesudah build dan aman dinilai di sini.
+        canPop: _page.guard == null,
         onPopInvokedWithResult: (didPop, _) async {
           if (didPop) return;
           await _page.guard?.handlePopAttempt(context);
@@ -268,7 +275,15 @@ class SideSheetGuard {
     // jadwal.
     final navigator = Navigator.of(context);
 
-    if (!hasUnsavedInput()) {
+    // [allowNextExit] berlaku untuk jalan keluar ini juga. Formulir yang baru
+    // berhasil menyimpan lalu keluar lewat maybePop — tombol kembali platform,
+    // atau maybePop-nya sendiri — justru keadaan yang kunci itu ada untuk itu.
+    //
+    // Kuncinya tidak dihabiskan di sini, melainkan diteruskan: go_router
+    // menjalankan `onExit` untuk pop yang baru saja terjadi, jadi kunci yang
+    // dibelanjakan di sini akan membuat `onExit` bertanya tentang pop yang
+    // sudah disetujui formulir.
+    if (_answered || !hasUnsavedInput()) {
       allowNextExit();
       navigator.pop();
       return;
