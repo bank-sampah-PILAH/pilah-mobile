@@ -83,7 +83,7 @@ void main() {
 
   /// Opens the real page with its controllers, over the stubbed API.
   Future<void> open(WidgetTester tester,
-      {Size window = const Size(800, 2600)}) async {
+      {Size window = const Size(800, 2600), bool closeTutorial = true}) async {
     final harga = buildHargaNotifier(api);
     final profile = buildProfileNotifier(api);
     final transaksi = buildTransaksiNotifier(api);
@@ -121,6 +121,10 @@ void main() {
       size: window,
     );
     await tester.pumpAndSettle();
+    if (closeTutorial && find.text('Lewati').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Lewati'));
+      await tester.pumpAndSettle();
+    }
   }
 
   Future<void> pickNasabah(WidgetTester tester) async {
@@ -146,6 +150,20 @@ void main() {
     await tester.tap(find.text('Simpan Transaksi'));
     await pumpToast(tester);
   }
+
+  testWidgets('shows the setoran tutorial on first visit and can replay it',
+      (tester) async {
+    await open(tester, closeTutorial: false);
+
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+
+    await tester.tap(find.text('Lewati'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Panduan setoran'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+  });
 
   testWidgets('loads the price list and the WhatsApp template on open',
       (tester) async {
