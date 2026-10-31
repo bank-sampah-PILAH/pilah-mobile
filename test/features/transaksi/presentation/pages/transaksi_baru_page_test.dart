@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,8 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setora
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../support/dashboard_support.dart';
@@ -35,6 +38,28 @@ class _MockUrlLauncher extends Mock
     implements UrlLauncherPlatform {}
 
 class _FakeLaunchOptions extends Fake implements LaunchOptions {}
+
+class _FailingSharedPreferencesStore extends SharedPreferencesStorePlatform {
+  _FailingSharedPreferencesStore({this.failRead = true});
+
+  final bool failRead;
+
+  @override
+  Future<bool> clear() async => true;
+
+  @override
+  Future<Map<String, Object>> getAll() async {
+    if (failRead) throw PlatformException(code: 'storage-unavailable');
+    return {};
+  }
+
+  @override
+  Future<bool> remove(String key) async => true;
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async =>
+      throw PlatformException(code: 'storage-unavailable');
+}
 
 Map<String, dynamic> _jenis(String id, String nama, String harga,
         {String kategori = 'plastik', bool active = true}) =>
@@ -58,6 +83,7 @@ void main() {
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     api = StubApi();
     launcher = _MockUrlLauncher();
     UrlLauncherPlatform.instance = launcher;
@@ -153,6 +179,33 @@ void main() {
     await pumpToast(tester);
   }
 
+  test('tutorial progress stays in memory on mobile', () async {
+    final progress = SetoranTutorialProgress(isWeb: false);
+    expect(await progress.hasSeen(), isFalse);
+    await progress.markSeen();
+    expect(await progress.hasSeen(), isTrue);
+  });
+
+  test('web tutorial progress handles failed preference reads and writes',
+      () async {
+    final progress = SetoranTutorialProgress(isWeb: true);
+    SharedPreferences.setMockInitialValues({});
+    expect(await progress.hasSeen(), isFalse);
+    await progress.markSeen();
+    expect(await progress.hasSeen(), isTrue);
+
+    SharedPreferencesStorePlatform.instance =
+        _FailingSharedPreferencesStore(failRead: true);
+    SharedPreferences.resetStatic();
+    expect(await progress.hasSeen(), isFalse);
+
+    SharedPreferencesStorePlatform.instance =
+        _FailingSharedPreferencesStore(failRead: false);
+    SharedPreferences.resetStatic();
+    expect(await progress.hasSeen(), isFalse);
+    await progress.markSeen();
+  });
+
   testWidgets('shows the setoran tutorial on first visit and can replay it',
       (tester) async {
     await open(tester, closeTutorial: false);
@@ -165,6 +218,44 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pilih nasabah'), findsOneWidget);
+  });
+
+  testWidgets('tutorial covers item actions and uses white action labels',
+      (tester) async {
+    await open(tester, closeTutorial: false);
+
+    final skipButton = tester.widget<AppButton>(
+      find.ancestor(
+        of: find.text('Lewati'),
+        matching: find.byType(AppButton),
+      ),
+    );
+    expect(skipButton.variant, AppButtonVariant.primary);
+    expect(skipButton.expand, isFalse);
+    expect(
+      Theme.of(tester.element(find.text('Lewati'))).colorScheme.onPrimary,
+      Colors.white,
+    );
+
+    for (final title in [
+      'Tambah item setoran',
+      'Atur item setoran',
+      'Periksa total',
+      'Simpan transaksi',
+    ]) {
+      await tester.tap(find.text('Lanjut'));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+    }
+
+    await tester.tap(find.text('Sebelumnya'));
+    await tester.pumpAndSettle();
+    expect(find.text('Periksa total'), findsOneWidget);
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Simpan transaksi'), findsNothing);
   });
 
   testWidgets('shows automatically once but can be reopened with help',

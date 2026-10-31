@@ -40,15 +40,19 @@ import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _setoranTutorialSeenKey = 'pilah.setoran_tutorial_seen';
 
-final _setoranTutorialProgressProvider = Provider<_SetoranTutorialProgress>(
-  (ref) => _SetoranTutorialProgress(),
+final _setoranTutorialProgressProvider = Provider<SetoranTutorialProgress>(
+  (ref) => SetoranTutorialProgress(),
 );
 
-class _SetoranTutorialProgress {
+@visibleForTesting
+class SetoranTutorialProgress {
+  SetoranTutorialProgress({bool? isWeb}) : _isWeb = isWeb ?? kIsWeb;
+
+  final bool _isWeb;
   bool _seenInMemory = false;
 
   Future<bool> hasSeen() async {
-    if (!kIsWeb) return _seenInMemory;
+    if (!_isWeb) return _seenInMemory;
     try {
       return (await SharedPreferences.getInstance())
               .getBool(_setoranTutorialSeenKey) ??
@@ -59,12 +63,12 @@ class _SetoranTutorialProgress {
     }
   }
 
-  void markSeen() {
-    if (!kIsWeb) {
+  Future<void> markSeen() {
+    if (!_isWeb) {
       _seenInMemory = true;
-      return;
+      return Future<void>.value();
     }
-    unawaited(_persistSeen());
+    return _persistSeen();
   }
 
   Future<void> _persistSeen() async {
@@ -118,16 +122,44 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
   bool _hasSubmitted = false;
   bool _isSaving = false;
   String? _idempotencyKey;
-  late final _SetoranTutorialProgress _tutorialProgress;
+  late final SetoranTutorialProgress _tutorialProgress;
   final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
-  final _itemsTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _addItemTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _itemDetailsTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _summaryTutorialKey = GlobalKey<State<StatefulWidget>>();
   final _saveTutorialKey = GlobalKey<State<StatefulWidget>>();
 
   List<GlobalKey<State<StatefulWidget>>> get _tutorialKeys => [
         _customerTutorialKey,
-        _itemsTutorialKey,
+        _addItemTutorialKey,
+        _itemDetailsTutorialKey,
+        _summaryTutorialKey,
         _saveTutorialKey,
       ];
+
+  TooltipActionButton _tutorialAction({
+    required TooltipDefaultActionType type,
+    required String name,
+    List<GlobalKey> hideActionWidgetForShowcase = const [],
+  }) =>
+      TooltipActionButton.custom(
+        hideActionWidgetForShowcase: hideActionWidgetForShowcase,
+        button: AppButton(
+          label: name,
+          variant: AppButtonVariant.primary,
+          expand: false,
+          onPressed: () {
+            switch (type) {
+              case TooltipDefaultActionType.previous:
+                ShowcaseView.get().previous();
+              case TooltipDefaultActionType.skip:
+                ShowcaseView.get().dismiss();
+              case TooltipDefaultActionType.next:
+                ShowcaseView.get().next();
+            }
+          },
+        ),
+      );
 
   @override
   void initState() {
@@ -136,23 +168,23 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     ShowcaseView.register(
       enableAutoScroll: true,
       disableMovingAnimation: true,
-      onFinish: _tutorialProgress.markSeen,
-      onDismiss: (_) => _tutorialProgress.markSeen(),
+      onFinish: () => unawaited(_tutorialProgress.markSeen()),
+      onDismiss: (_) => unawaited(_tutorialProgress.markSeen()),
       globalTooltipActionConfig: const TooltipActionConfig(
         alignment: MainAxisAlignment.spaceBetween,
         position: TooltipActionPosition.inside,
       ),
       globalTooltipActions: [
-        TooltipActionButton(
+        _tutorialAction(
           type: TooltipDefaultActionType.previous,
           name: 'Sebelumnya',
           hideActionWidgetForShowcase: [_customerTutorialKey],
         ),
-        TooltipActionButton(
+        _tutorialAction(
           type: TooltipDefaultActionType.skip,
           name: 'Lewati',
         ),
-        TooltipActionButton(
+        _tutorialAction(
           type: TooltipDefaultActionType.next,
           name: 'Lanjut',
         ),
@@ -205,10 +237,19 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
 
   /// Tombol simpan. Satu definisi dipakai dua layout: di telepon ia menjadi
   /// bottomNavigationBar, di layar lebar ia duduk di panel samping.
+  Widget _summaryTutorialStep() => _tutorialStep(
+        key: _summaryTutorialKey,
+        title: 'Periksa total',
+        description:
+            'Harga mengikuti jenis sampah; subtotal dan grand total mengikuti berat.',
+        child: TransactionSummarySection(grandTotal: grandTotal),
+      );
+
   Widget _saveButton() => _tutorialStep(
         key: _saveTutorialKey,
         title: 'Simpan transaksi',
-        description: 'Periksa total setoran, lalu simpan transaksi.',
+        description:
+            'Pastikan nasabah, item, dan total sudah benar sebelum menyimpan.',
         child: AppButton(
           label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
           icon: Icons.save_outlined,
@@ -536,7 +577,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                                 key: _customerTutorialKey,
                                 title: 'Pilih nasabah',
                                 description:
-                                    'Pilih nasabah yang melakukan setoran.',
+                                    'Pilih nasabah yang menyetor. Ketuk lagi untuk mengganti pilihan.',
                                 child: PilihNasabahSection(
                                   selectedCustomer: selectedCustomer,
                                   onCustomerSelected: (customer) {
@@ -552,18 +593,24 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                               const SizedBox(height: 24),
 
                               // Section 2: DAFTAR SETORAN
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const AppFieldLabel('DAFTAR SETORAN'),
-                                  Text(
-                                    '${setoranItems.length} item',
-                                    style: AppTextStyle.small.copyWith(
-                                      color: AppColors.grey100,
+                              _tutorialStep(
+                                key: _itemDetailsTutorialKey,
+                                title: 'Atur item setoran',
+                                description:
+                                    'Pilih jenis sampah dan isi berat (kg). Hapus item lewat tombol silang.',
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const AppFieldLabel('DAFTAR SETORAN'),
+                                    Text(
+                                      '${setoranItems.length} item',
+                                      style: AppTextStyle.small.copyWith(
+                                        color: AppColors.grey100,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 12),
 
@@ -572,10 +619,10 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
 
                               // Add Item Button
                               _tutorialStep(
-                                key: _itemsTutorialKey,
+                                key: _addItemTutorialKey,
                                 title: 'Tambah item setoran',
                                 description:
-                                    'Pilih jenis sampah dan masukkan beratnya.',
+                                    'Tambahkan satu item untuk tiap jenis sampah yang disetor.',
                                 child: AppButton(
                                   label: 'Tambah Item Setoran',
                                   variant: AppButtonVariant.outlined,
@@ -586,8 +633,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                               const SizedBox(height: 24),
 
                               if (!sideBySide) ...[
-                                TransactionSummarySection(
-                                    grandTotal: grandTotal),
+                                _summaryTutorialStep(),
                                 const SizedBox(height: 24),
                               ],
                             ],
@@ -597,7 +643,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                       if (sideBySide) ...[
                         const SizedBox(width: 24),
                         _SummaryPanel(
-                          grandTotal: grandTotal,
+                          summary: _summaryTutorialStep(),
                           saveButton: _saveButton(),
                           rightInset: inset.right,
                         ),
@@ -725,12 +771,12 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
 /// sementara daftar item di kiri digulir.
 class _SummaryPanel extends StatelessWidget {
   const _SummaryPanel({
-    required this.grandTotal,
+    required this.summary,
     required this.saveButton,
     this.rightInset = 0,
   });
 
-  final int grandTotal;
+  final Widget summary;
   final Widget saveButton;
 
   /// Room a wide window leaves right of the content column; the panel grows
@@ -746,7 +792,7 @@ class _SummaryPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TransactionSummarySection(grandTotal: grandTotal),
+            summary,
             const SizedBox(height: 16),
             saveButton,
           ],
