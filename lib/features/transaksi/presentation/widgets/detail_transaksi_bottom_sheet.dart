@@ -136,11 +136,18 @@ class _DetailTransaksiBottomSheetState
         children: [
           const BottomSheetHeader(title: 'Detail Transaksi'),
           const SizedBox(height: 8),
-          const CustomStatusBadge(
-            statusText: 'Selesai',
-            backgroundColor: mintTint,
-            textColor: AppColors.greenDark,
-          ),
+          if (_detail?.isDibatalkan ?? false)
+            const CustomStatusBadge(
+              statusText: 'Dibatalkan',
+              backgroundColor: AppColors.fill,
+              textColor: AppColors.grey100,
+            )
+          else
+            const CustomStatusBadge(
+              statusText: 'Selesai',
+              backgroundColor: mintTint,
+              textColor: AppColors.greenDark,
+            ),
           const SizedBox(height: 24),
 
           // Customer Info Box
@@ -379,6 +386,12 @@ class _DetailTransaksiBottomSheetState
             ),
           ),
 
+          if (_detail?.isDibatalkan ?? false) ...[
+            const SizedBox(height: 24),
+            const AppFieldLabel('PEMBATALAN'),
+            const SizedBox(height: 12),
+            _PembatalanCard(detail: _detail!),
+          ],
           if (_detail != null && _detail!.catatan.trim().isNotEmpty) ...[
             const SizedBox(height: 24),
             const AppFieldLabel('CATATAN'),
@@ -545,7 +558,7 @@ class _RevisiCard extends StatelessWidget {
           Text(
             [
               'Diubah oleh ${revisi.diubahOlehNama}',
-              if (waktu != null) _formatWaktu(waktu),
+              if (waktu != null) _waktu(waktu),
             ].join(' • '),
             style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
           ),
@@ -569,9 +582,43 @@ class _RevisiCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  static String _formatWaktu(DateTime d) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}.${two(d.minute)}';
+/// Siapa yang membatalkan setoran ini (PIL-428), kapan, dan mengapa.
+class _PembatalanCard extends StatelessWidget {
+  const _PembatalanCard({required this.detail});
+
+  final TransaksiDetailEntity detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final waktu = detail.dibatalkanPada;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            [
+              'Dibatalkan oleh ${detail.dibatalkanOlehNama}',
+              if (waktu != null) _waktu(waktu),
+            ].join(' • '),
+            style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+          ),
+          const SizedBox(height: 8),
+          Text('Alasan: ${detail.alasanBatal}', style: AppTextStyle.small),
+        ],
+      ),
+    );
   }
+}
+
+String _waktu(DateTime d) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}.${two(d.minute)}';
 }
