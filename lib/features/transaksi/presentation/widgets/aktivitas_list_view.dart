@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
-import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -20,16 +19,14 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/hold_to_select.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Renders the merged setoran + pencairan feed (PIL-282), grouped by day.
-/// Tapping a row opens that type's own detail sheet — setoran's
-/// [DetailTransaksiBottomSheet], pencairan's [showPencairanDetailSheet] with
-/// its Pengurus-only edit/riwayat-perubahan entry points.
+/// Setoran rows expand inline; pencairan rows open their detail sheet with
+/// Pengurus-only edit/riwayat-perubahan entry points.
 /// Jarak area gulir daftar kartu di telepon: batas lebar dari `ContentFrame`
 /// (nol di telepon) dan ruang di bawah baris terakhir.
 EdgeInsetsGeometry _scrollPadding(BuildContext context,
@@ -146,7 +143,11 @@ class AktivitasListView extends StatelessWidget {
         padding: side.add(const EdgeInsets.only(bottom: AppSpacing.xl)),
         child: AktivitasTable(
           items: state.items,
-          onTap: (item) => _openDetail(context, item),
+          onTap: (item) => _openPencairanDetail(context, item),
+          loadSetoranDetail: (id) => ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(transaksiProvider.notifier).fetchTransaksiDetail(id),
           onEdit: (item) => _editItem(context, item),
           footer: footer,
           toolbar: const AktivitasSummaryStrip(),
@@ -275,43 +276,15 @@ class AktivitasListView extends StatelessWidget {
   }
 }
 
-/// Membuka detail sebuah aktivitas: lembar setoran atau lembar pencairan.
-void _openDetail(BuildContext context, ActivitasEntity item) {
-  if (item.tipe == ActivitasTipe.setoran) {
-    final t = item.transaksi!;
-    showAdaptiveSurface<void>(
-      context,
-      builder: (context) => DetailTransaksiBottomSheet(
-        transactionData: {
-          'id': t.id,
-          'initials': t.initials,
-          'avatarColor': t.avatarColor,
-          'textColor': t.textColor,
-          'name': t.name,
-          'time': t.time ?? 'Hari ini',
-          'amount': t.amount,
-          'balance': t.balance,
-          'waStatus': t.isWaSuccess ? 'sent' : 'failed',
-          'items': t.items
-              .map((i) => {
-                    'jenis': i.jenis,
-                    'berat': i.berat,
-                    'harga': i.harga,
-                    'subtotal': i.subtotal,
-                  })
-              .toList(),
-        },
-      ),
-    );
-  } else {
-    showPencairanDetailSheet(
-      context,
-      item.pencairan!,
-      onChanged: () => ProviderScope.containerOf(context, listen: false)
-          .read(riwayatAktivitasProvider.notifier)
-          .load(silent: true),
-    );
-  }
+/// Opens a payout's detail sheet with its Pengurus-only edit actions.
+void _openPencairanDetail(BuildContext context, ActivitasEntity item) {
+  showPencairanDetailSheet(
+    context,
+    item.pencairan!,
+    onChanged: () => ProviderScope.containerOf(context, listen: false)
+        .read(riwayatAktivitasProvider.notifier)
+        .load(silent: true),
+  );
 }
 
 class _AktivitasRow extends ConsumerStatefulWidget {
@@ -373,7 +346,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
                     if (expandable) {
                       setState(() => _expanded = !_expanded);
                     } else {
-                      _openDetail(context, item);
+                      _openPencairanDetail(context, item);
                     }
                   },
                   child: Row(
