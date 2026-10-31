@@ -22,6 +22,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_b
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../support/dashboard_support.dart';
@@ -214,10 +215,17 @@ void main() {
 
     await tester.tap(find.text('Lewati'));
     await tester.pumpAndSettle();
+    await pickNasabah(tester);
     await tester.tap(find.byTooltip('Panduan setoran'));
     await tester.pumpAndSettle();
 
     expect(find.text('Pilih nasabah'), findsOneWidget);
+    expect(
+      find.text('Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+          'ketuk lagi nama nasabah yang tampil.'),
+      findsOneWidget,
+    );
+    expect(find.text('Budi Santoso'), findsOneWidget);
   });
 
   testWidgets('tutorial covers item actions and uses white action labels',
@@ -246,6 +254,13 @@ void main() {
       await tester.tap(find.text('Lanjut'));
       await tester.pumpAndSettle();
       expect(find.text(title), findsOneWidget);
+      if (title == 'Atur item setoran') {
+        expect(
+          find.text('Setelah menambah item, pilih jenis sampah dan isi berat '
+              '(kg). Harga/kg dan subtotal dihitung otomatis.'),
+          findsOneWidget,
+        );
+      }
     }
 
     await tester.tap(find.text('Sebelumnya'));
@@ -256,6 +271,33 @@ void main() {
     await tester.tap(find.text('Lanjut'));
     await tester.pumpAndSettle();
     expect(find.text('Simpan transaksi'), findsNothing);
+  });
+
+  testWidgets('item tutorial highlights the first item card', (tester) async {
+    await open(tester);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+
+    await tester.tap(find.byTooltip('Panduan setoran'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Atur item setoran'), findsOneWidget);
+    expect(
+      find.text('Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+          'otomatis; tekan × untuk menghapus item.'),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: find.byType(ItemSetoranCard),
+        matching: find.byType(Showcase),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows automatically once but can be reopened with help',

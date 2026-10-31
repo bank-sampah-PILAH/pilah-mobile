@@ -577,7 +577,8 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                                 key: _customerTutorialKey,
                                 title: 'Pilih nasabah',
                                 description:
-                                    'Pilih nasabah yang menyetor. Ketuk lagi untuk mengganti pilihan.',
+                                    'Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+                                    'ketuk lagi nama nasabah yang tampil.',
                                 child: PilihNasabahSection(
                                   selectedCustomer: selectedCustomer,
                                   onCustomerSelected: (customer) {
@@ -593,24 +594,18 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                               const SizedBox(height: 24),
 
                               // Section 2: DAFTAR SETORAN
-                              _tutorialStep(
-                                key: _itemDetailsTutorialKey,
-                                title: 'Atur item setoran',
-                                description:
-                                    'Pilih jenis sampah dan isi berat (kg). Hapus item lewat tombol silang.',
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const AppFieldLabel('DAFTAR SETORAN'),
-                                    Text(
-                                      '${setoranItems.length} item',
-                                      style: AppTextStyle.small.copyWith(
-                                        color: AppColors.grey100,
-                                      ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const AppFieldLabel('DAFTAR SETORAN'),
+                                  Text(
+                                    '${setoranItems.length} item',
+                                    style: AppTextStyle.small.copyWith(
+                                      color: AppColors.grey100,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 12),
 
@@ -622,7 +617,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                                 key: _addItemTutorialKey,
                                 title: 'Tambah item setoran',
                                 description:
-                                    'Tambahkan satu item untuk tiap jenis sampah yang disetor.',
+                                    'Tekan tombol ini untuk menambahkan satu item per jenis sampah.',
                                 child: AppButton(
                                   label: 'Tambah Item Setoran',
                                   variant: AppButtonVariant.outlined,
@@ -671,9 +666,26 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
   }
 
   Widget _buildItemsSection() {
-    if (setoranItems.isEmpty) return _buildEmptyItems();
+    final isEmpty = setoranItems.isEmpty;
+    final itemDetails = _tutorialStep(
+      key: _itemDetailsTutorialKey,
+      title: 'Atur item setoran',
+      description: isEmpty
+          ? 'Setelah menambah item, pilih jenis sampah dan isi berat (kg). '
+              'Harga/kg dan subtotal dihitung otomatis.'
+          : 'Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+              'otomatis; tekan × untuk menghapus item.',
+      child: isEmpty ? _buildEmptyItems() : _buildItemCard(0),
+    );
+    if (isEmpty) return itemDetails;
     return Column(
-      children: List.generate(setoranItems.length, _buildItemCard),
+      children: [
+        itemDetails,
+        ...List.generate(
+          setoranItems.length - 1,
+          (index) => _buildItemCard(index + 1),
+        ),
+      ],
     );
   }
 
