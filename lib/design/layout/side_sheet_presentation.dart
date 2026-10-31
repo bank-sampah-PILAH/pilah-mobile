@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -83,14 +83,18 @@ enum SideSheetPresentation {
   /// juga menjadi [fullScreen], mengikuti [LayoutBreakpoint.fromWidth], karena
   /// frame pertama bisa berjalan sebelum ukuran diketahui.
   ///
-  /// [isWebOverride] hanya untuk pengujian: `kIsWeb` adalah konstanta saat
-  /// kompilasi, jadi test VM tidak punya cara lain untuk menguji cabang web —
-  /// pola yang sama dipakai `App.isWebOverride` dan `LoginButton`.
+  /// [isWeb] boleh diisi oleh pemanggil yang sudah tahu jawabannya, dan
+  /// jatuh kembali ke `kIsWeb` bila tidak. Sengaja bukan sekadar pintu
+  /// belakang untuk pengujian: `kIsWeb` adalah konstanta saat kompilasi, jadi
+  /// bukan hanya test VM yang perlu menyuntikkannya — shell aplikasi sudah
+  /// membawa jawabannya sendiri (`MainPage.isWebOverride`, `DashboardPage`),
+  /// dan jalan masuk formulir meneruskannya ke sini alih-alih menyusun ulang
+  /// aturannya di tempatnya sendiri.
   static SideSheetPresentation resolve({
     required double width,
-    @visibleForTesting bool? isWebOverride,
+    bool? isWeb,
   }) =>
-      (isWebOverride ?? kIsWeb) &&
+      (isWeb ?? kIsWeb) &&
               LayoutBreakpoint.fromWidth(width) != LayoutBreakpoint.compact
           ? sideSheet
           : fullScreen;
