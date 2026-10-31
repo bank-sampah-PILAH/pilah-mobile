@@ -28,7 +28,8 @@ class AktivitasFilterBar extends ConsumerWidget {
     AktivitasTipeFilter.pencairan: 'Pencairan',
   };
 
-  /// Tipe yang bisa dipilih Pengurus, dalam urutan [tipeLabels].
+  /// Tipe yang bisa dipilih Pengurus, dalam urutan [tipeLabels]. Dengan satu
+  /// tipe saja tidak ada yang bisa dipilih, jadi pemilihnya disembunyikan.
   final Set<AktivitasTipeFilter> tipeTersedia;
 
   static bool _bukanBawaan(RiwayatAktivitasState s) =>
@@ -39,7 +40,9 @@ class AktivitasFilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(riwayatAktivitasProvider);
-    final tipe = _TipeSegments(state: state, tipeTersedia: tipeTersedia);
+    final tipe = tipeTersedia.length > 1
+        ? _TipeSegments(state: state, tipeTersedia: tipeTersedia)
+        : null;
     final periode = _PeriodeButton(state: state);
     final reset = _bukanBawaan(state)
         ? AppButton(
@@ -61,7 +64,11 @@ class AktivitasFilterBar extends ConsumerWidget {
                 spacing: AppSpacing.md,
                 runSpacing: AppSpacing.sm,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                children: [tipe, periode, if (reset != null) reset],
+                children: [
+                  if (tipe != null) tipe,
+                  periode,
+                  if (reset != null) reset,
+                ],
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -78,8 +85,10 @@ class AktivitasFilterBar extends ConsumerWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          tipe,
-          const SizedBox(height: AppSpacing.sm),
+          if (tipe != null) ...[
+            tipe,
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Row(
             children: [
               Expanded(child: _PeriodeField(state: state)),

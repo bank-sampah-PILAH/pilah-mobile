@@ -8,15 +8,14 @@ enum AktivitasStatus { initial, loading, loaded, failure }
 /// Type filtering is applied before pagination in the ledger endpoint.
 enum AktivitasTipeFilter { semua, setoran, pencairan }
 
-/// Tipe yang bisa dipilih Pengurus di Riwayat.
-const aktivitasTipeTersedia = {
-  AktivitasTipeFilter.semua,
-  AktivitasTipeFilter.setoran,
-  AktivitasTipeFilter.pencairan,
-};
+/// Tipe yang bisa dipilih Pengurus di Riwayat. Pencairan ditutup dulu
+/// (CPBI-31), jadi hanya setoran dan pemilih tipe tidak ditampilkan. Membuka
+/// kembali Semua dan Pencairan berarti menambahkannya di sini, mengembalikan
+/// [aktivitasTipeBawaan] ke semua, lalu merilis ulang aplikasi.
+const aktivitasTipeTersedia = {AktivitasTipeFilter.setoran};
 
 /// Tipe saat Riwayat dibuka dan setelah Reset.
-const aktivitasTipeBawaan = AktivitasTipeFilter.semua;
+const aktivitasTipeBawaan = AktivitasTipeFilter.setoran;
 
 class RiwayatAktivitasState extends Equatable {
   final AktivitasStatus status;
