@@ -43,7 +43,7 @@ void main() {
 
     await cubit.loadNasabah();
 
-    expect(api.last.query, {'status': 'aktif', 'page': '1'});
+    expect(api.last.query, {'status': 'aktif', 'page': '1', 'urutan': 'nomor'});
     final loaded = cubit.state as NasabahLoaded;
     expect(loaded.nasabahList.single.name, 'Budi Santoso');
     expect(loaded.nasabahList.single.balance, 'Rp 25.000');
@@ -79,7 +79,8 @@ void main() {
 
     await cubit.loadNasabah();
 
-    expect(cubit.state, const NasabahError('Tidak diizinkan'));
+    expect(cubit.state,
+        const NasabahError('Anda tidak memiliki akses ke daftar nasabah ini.'));
   });
 
   test('load more appends the next page', () async {

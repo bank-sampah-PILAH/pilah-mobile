@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -18,16 +21,53 @@ class NasabahRepositoryImpl implements NasabahRepository {
     int? pageSize,
     String status = 'aktif',
     String? search,
-  }) {
-    return apiCall<HalamanNasabah>(
-      func: remoteDataSource.getNasabah(
+    String urutan = 'nomor',
+  }) async {
+    try {
+      return Right(await remoteDataSource.getNasabah(
         page: page,
         pageSize: pageSize,
         status: status,
         search: search,
-      ),
-      mapper: (result) => result as HalamanNasabah,
-    );
+        urutan: urutan,
+      ));
+    } catch (error) {
+      // List errors can include HTML error pages, decoder source text or
+      // backend diagnostics. Only fixed messages cross into presentation.
+      return Left(GeneralException(message: _listErrorMessage(error)));
+    }
+  }
+
+  static String _listErrorMessage(Object error) {
+    const failed = 'Daftar nasabah gagal dimuat. Silakan coba lagi.';
+    const timeout =
+        'Permintaan daftar nasabah terlalu lama. Silakan coba lagi.';
+    if (error is TimeoutException) return timeout;
+    if (error is! DioException) return failed;
+    if (error.error is TimeoutException) return timeout;
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.transformTimeout:
+        return timeout;
+      case DioExceptionType.connectionError:
+        return 'Tidak dapat terhubung. Periksa koneksi lalu coba lagi.';
+      case DioExceptionType.cancel:
+        return 'Permintaan dibatalkan.';
+      case DioExceptionType.badCertificate:
+        return 'Koneksi aman tidak dapat diverifikasi.';
+      case DioExceptionType.badResponse:
+        return switch (error.response?.statusCode) {
+          401 => 'Sesi Anda telah berakhir. Silakan masuk kembali.',
+          403 => 'Anda tidak memiliki akses ke daftar nasabah ini.',
+          400 || 422 => 'Pencarian atau filter nasabah tidak valid.',
+          429 => 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
+          _ => failed,
+        };
+      case DioExceptionType.unknown:
+        return failed;
+    }
   }
 
   @override

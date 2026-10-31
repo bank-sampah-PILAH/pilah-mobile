@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -21,6 +21,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_order_controls.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
@@ -81,10 +82,7 @@ class _Header extends ConsumerWidget {
     return AppPageHeader(
       title: 'Daftar Nasabah',
       subtitle: Text('${notifier.activeCount} nasabah aktif'),
-      search: CustomSearchField(
-        hintText: 'Cari nama nasabah...',
-        onChanged: notifier.searchNasabah,
-      ),
+      search: const NasabahSearchField(),
       actions: [
         AppButton(
           label: 'Tambah Nasabah',
@@ -112,12 +110,19 @@ class _Toolbar extends ConsumerWidget {
         : state is NasabahLoading
             ? state.isActiveTab
             : notifier.isActiveTab;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: NasabahFilterChips(
-        activeTab: activeTab,
-        onTabChanged: notifier.setActiveTab,
-      ),
+    return Wrap(
+      spacing: AppSpacing.xl,
+      runSpacing: AppSpacing.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        IntrinsicWidth(
+          child: NasabahFilterChips(
+            activeTab: activeTab,
+            onTabChanged: notifier.setActiveTab,
+          ),
+        ),
+        const NasabahOrderControls(),
+      ],
     );
   }
 }

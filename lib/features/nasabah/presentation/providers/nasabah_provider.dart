@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_urutan.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
@@ -66,6 +67,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
 
   bool? _isActiveTab = true;
   String _searchQuery = '';
+  NasabahUrutan _urutan = NasabahUrutan.nomor;
 
   /// Jeda ketik sebelum pencarian dikirim, supaya satu kata tidak memicu
   /// satu panggilan API per huruf.
@@ -93,6 +95,9 @@ class NasabahNotifier extends Notifier<NasabahState> {
   /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
   bool? get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
+  NasabahUrutan get urutan => _urutan;
+  bool get hasActiveFilters =>
+      _searchQuery.isNotEmpty || _urutan != NasabahUrutan.nomor;
 
   /// Jumlah nasabah aktif menurut server, bukan sebanyak yang sudah dimuat.
   ///
@@ -219,6 +224,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
         status: _statusParam,
         // Server mengabaikan kata kunci di bawah dua huruf, jadi jangan dikirim.
         search: _searchQuery.length >= 2 ? _searchQuery : null,
+        urutan: _urutan.apiValue,
       );
 
   String get _statusParam {
@@ -265,6 +271,19 @@ class NasabahNotifier extends Notifier<NasabahState> {
     await loadNasabah();
   }
 
+  Future<void> setUrutan(NasabahUrutan value) async {
+    if (_urutan == value) return;
+    _urutan = value;
+    await loadNasabah();
+  }
+
+  /// Memulihkan pencarian dan urutan saja; tab status tetap dipilih.
+  Future<void> resetFilters() async {
+    _searchQuery = '';
+    _urutan = NasabahUrutan.nomor;
+    await loadNasabah();
+  }
+
   /// Mengirim kata kunci ke server setelah pengurus berhenti mengetik.
   ///
   /// Pencarian harus dilakukan server karena menyaring di aplikasi hanya akan
@@ -277,6 +296,11 @@ class NasabahNotifier extends Notifier<NasabahState> {
     _isLoadingMore = false;
     _jedaCari?.cancel();
     _jedaCari = Timer(jedaPencarian, loadNasabah);
+    if (state is NasabahLoaded) {
+      _emitLoaded(isReloading: true);
+    } else {
+      state = NasabahLoading(isActiveTab: _isActiveTab);
+    }
   }
 
   /// Creates a nasabah. Returns `null` on success (list reloaded), otherwise the
@@ -361,6 +385,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
     _totalAktif = 0;
     _isActiveTab = true;
     _searchQuery = '';
+    _urutan = NasabahUrutan.nomor;
     state = NasabahInitial();
   }
 
@@ -369,6 +394,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
       nasabahList: _items,
       isActiveTab: _isActiveTab,
       searchQuery: _searchQuery,
+      urutan: _urutan,
       hasMore: _hasMore,
       isLoadingMore: _isLoadingMore,
       isReloading: isReloading,
