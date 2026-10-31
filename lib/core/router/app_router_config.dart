@@ -36,6 +36,9 @@ import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_k
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
+import 'package:pilah_mobile/features/legal/presentation/pages/legal_document_page.dart';
+import 'package:pilah_mobile/features/legal/presentation/pages/legal_information_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
@@ -91,6 +94,11 @@ class AppRouterConfig {
     // the invite outranks wherever the user was headed.
     redirect: (context, state) {
       final path = state.uri.path;
+      // Registration must be able to open these without a session or redeeming an invite.
+      if (path == LegalInformationPage.route ||
+          LegalDocument.values.any((document) => document.path == path)) {
+        return null;
+      }
 
       final restore = sessionRestoreRedirect(
         sessionChecked: ProviderScope.containerOf(context, listen: false)
@@ -139,6 +147,15 @@ class AppRouterConfig {
       return target;
     },
     routes: <RouteBase>[
+      GoRoute(
+        path: LegalInformationPage.route,
+        builder: (context, state) => const LegalInformationPage(),
+      ),
+      for (final document in LegalDocument.values)
+        GoRoute(
+          path: document.path,
+          builder: (context, state) => LegalDocumentPage(document: document),
+        ),
       GoRoute(
         path: SplashPage.route,
         name: SplashPage.route,

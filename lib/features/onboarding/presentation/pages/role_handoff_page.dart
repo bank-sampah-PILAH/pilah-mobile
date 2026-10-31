@@ -13,7 +13,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/features/profile/presentation/widgets/account_deletion_request.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
 
 class RoleHandoffPage extends ConsumerWidget {
   final String title;
@@ -114,7 +114,7 @@ class RoleHandoffPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  const AccountDeletionRequestButton(),
+                  const LegalInformationButton(),
                   const SizedBox(height: 12),
                   AppButton(
                     label: 'Keluar dan ganti akun',

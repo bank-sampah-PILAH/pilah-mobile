@@ -14,7 +14,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
-import 'package:pilah_mobile/features/profile/presentation/widgets/account_deletion_request.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
@@ -35,6 +35,8 @@ const List<String> _monthsId = [
   'Nov',
   'Des'
 ];
+
+enum _DashboardMenuAction { legalInformation, logout }
 
 String _formatDate(DateTime? date, {String prefix = ''}) {
   if (date == null) return '$prefix-';
@@ -134,10 +136,6 @@ class _SuperAdminDashboardScreenState
       body: Column(
         children: [
           _buildHeader(context),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: AccountDeletionRequestButton(),
-          ),
           Expanded(
             child: AppRefreshIndicator(
               onRefresh: () => ref
@@ -187,20 +185,45 @@ class _SuperAdminDashboardScreenState
                   ),
                 ],
               ),
-              InkWell(
-                onTap: () => ProviderScope.containerOf(context, listen: false)
-                    .read(authenticationProvider.notifier)
-                    .logout(),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+              PopupMenuButton<_DashboardMenuAction>(
+                tooltip: 'Menu akun',
+                iconColor: Colors.white,
+                onSelected: (action) {
+                  if (action == _DashboardMenuAction.legalInformation) {
+                    openLegalInformation(context);
+                  } else {
+                    ProviderScope.containerOf(context, listen: false)
+                        .read(authenticationProvider.notifier)
+                        .logout();
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: _DashboardMenuAction.legalInformation,
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Informasi & legal',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child:
-                      const Icon(Icons.logout, color: Colors.white, size: 20),
-                ),
+                  const PopupMenuItem(
+                    value: _DashboardMenuAction.logout,
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout),
+                        SizedBox(width: 12),
+                        Expanded(child: Text('Keluar')),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
