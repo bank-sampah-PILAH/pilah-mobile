@@ -46,8 +46,9 @@ class _MockExportTransaksi extends Mock implements ExportTransaksiUseCase {}
 
 final _now = DateTime(2026, 10, 5, 12);
 
-ActivitasEntity _setoran(String name, DateTime? at) =>
+ActivitasEntity _setoran(String name, DateTime? at, {String id = ''}) =>
     ActivitasEntity.fromTransaksi(TransaksiEntity(
+      id: id,
       initials: 'AB',
       avatarColor: Colors.green.shade100,
       textColor: Colors.green,
@@ -85,9 +86,11 @@ ActivitasEntity _pencairan(String name, DateTime at) =>
 void main() {
   late _TestRiwayatNotifier feedNotifier;
   late TransaksiNotifier transaksi;
+  late StubApi api;
 
   setUp(() {
-    transaksi = buildTransaksiNotifier(StubApi());
+    api = StubApi();
+    transaksi = buildTransaksiNotifier(api);
   });
 
   Future<void> pumpList(WidgetTester tester, RiwayatAktivitasState state,
@@ -195,16 +198,64 @@ void main() {
         reason: 'a setoran opens as a dialog on a wide window');
   });
 
-  testWidgets('tapping a setoran opens its detail sheet', (tester) async {
+  testWidgets('a setoran expands inline without repeating row details',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    api.on('GET', '/api/v1/transaksi/t1', json: {
+      'nasabah_nama': 'Ani',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '42000',
+      'catatan': 'Ditimbang ulang',
+      'items': [
+        {
+          'nama_sampah_snapshot': 'Aluminium',
+          'berat': '1.5',
+          'harga_snapshot': '3000',
+          'subtotal': '4500',
+        },
+      ],
+      'revisi': [
+        {
+          'versi': 1,
+          'total_nilai': '4000',
+          'catatan': '',
+          'alasan': 'Salah timbang',
+          'diubah_oleh_nama': 'Ibu Sari',
+          'items': [],
+        },
+      ],
+    });
+    api.latency = const Duration(milliseconds: 300);
     await pumpList(
-        tester,
-        RiwayatAktivitasState(
-            status: AktivitasStatus.loaded, items: [_setoran('Ani', _now)]));
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        items: [_setoran('Ani', _now, id: 't1')],
+      ),
+    );
+
+    await tester.tap(find.text('Ani'));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ani'), findsOneWidget);
+    expect(find.text('+Rp 5.000'), findsOneWidget);
+    expect(find.text('Aluminium'), findsOneWidget);
+    expect(find.text('Rp 42.000'), findsOneWidget);
+    expect(find.text('Ditimbang ulang'), findsOneWidget);
+    expect(find.text('RIWAYAT PERUBAHAN'), findsOneWidget);
+    expect(find.text('Alasan: Salah timbang'), findsOneWidget);
+    expect(find.text('Total Setoran'), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(Dialog), findsNothing);
 
     await tester.tap(find.text('Ani'));
     await tester.pumpAndSettle();
-
-    expect(find.text('Plastik'), findsWidgets);
+    expect(find.text('Aluminium'), findsNothing);
   });
 
   testWidgets('a saved pencairan edit refreshes the feed silently',
