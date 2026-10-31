@@ -7,14 +7,18 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pengurus dashboard action area: the two things done most, side by side.
 /// Pencairan remains visible but disabled in the Transaksi Baru chooser per
 /// PIL-379. Everything else is a destination in the navigation, not a button.
 class DashboardActionButtons extends StatelessWidget {
-  const DashboardActionButtons({super.key});
+  const DashboardActionButtons({super.key, this.isWeb});
+
+  /// Diteruskan ke [openSetoranBaru], yang memutuskan panel atau halaman
+  /// penuh. Null berarti pakai `kIsWeb`.
+  final bool? isWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +28,7 @@ class DashboardActionButtons extends StatelessWidget {
           child: AppButton(
             label: 'Transaksi Baru',
             icon: Icons.add,
-            onPressed: () => _openTransaksiChooser(context),
+            onPressed: () => _openTransaksiChooser(context, isWeb),
           ),
         ),
         const SizedBox(width: 12),
@@ -53,7 +57,7 @@ class DashboardActionButtons extends StatelessWidget {
     );
   }
 
-  Future<void> _openTransaksiChooser(BuildContext context) async {
+  Future<void> _openTransaksiChooser(BuildContext context, bool? isWeb) async {
     final choice = await showAdaptiveSurface<_TransaksiChoice>(
       context,
       builder: (context) => const _TransaksiChooserSheet(),
@@ -61,7 +65,7 @@ class DashboardActionButtons extends StatelessWidget {
     if (choice == null || !context.mounted) return;
     switch (choice) {
       case _TransaksiChoice.setoran:
-        context.push(TransaksiBaruPage.route);
+        await openSetoranBaru(context, isWeb: isWeb);
     }
   }
 }
