@@ -14,9 +14,11 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_setoran_detail.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
@@ -312,80 +314,143 @@ void _openDetail(BuildContext context, ActivitasEntity item) {
   }
 }
 
-class _AktivitasRow extends ConsumerWidget {
-  /// Seberapa jauh warna baris terpilih keluar dari isi barisnya, agar isi
-  /// tidak menempel di tepi.
-  static const _selectedBleed = 10.0;
+class _AktivitasRow extends ConsumerStatefulWidget {
+  const _AktivitasRow({required this.item});
 
   final ActivitasEntity item;
 
-  const _AktivitasRow({required this.item});
+  @override
+  ConsumerState<_AktivitasRow> createState() => _AktivitasRowState();
+}
+
+class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
+  static const _selectedBleed = 10.0;
+
+  bool _expanded = false;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final item = widget.item;
     final id = item.transaksi?.id ?? '';
-    final selectable = item.tipe == ActivitasTipe.setoran && id.isNotEmpty;
+    final expandable = item.tipe == ActivitasTipe.setoran;
+    final selectable = expandable && id.isNotEmpty;
     final selection = ref.watch(aktivitasSelectionProvider);
     final selecting = selection != null;
     final selected = selectable && selection == id;
     final notifier = ref.read(aktivitasSelectionProvider.notifier);
+
     return HoldToSelect(
       enabled: selectable && !selecting,
       bleed: _selectedBleed,
-      onSelected: () => notifier.select(id),
-      child: InkWell(
-        key: selected ? const ValueKey('aktivitas-row-selected') : null,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: () {
-          if (!selecting) return _openDetail(context, item);
-          if (selectable) notifier.toggle(id);
-        },
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            ActivityItem(
-              avatarText: item.avatarText,
-              avatarColor: item.avatarColor,
-              avatarTextColor: item.avatarTextColor,
-              title: item.title,
-              subtitleLines: item.subtitleLines,
-              amount: item.amount,
-              amountColor: item.amountColor,
-              trailingCaptions: item.trailingCaptions,
-              badge: item.badge,
-            ),
-            // In front of the card, whose own white background would hide a
-            // tint behind it.
-            if (selected)
-              Positioned(
-                top: 0,
-                bottom: 0,
-                left: -_selectedBleed,
-                right: -_selectedBleed,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    key: const ValueKey('aktivitas-row-selected-tint'),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenDark.withValues(alpha: 0.12),
-                      border:
-                          Border.all(color: AppColors.greenDark, width: 1.5),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
+      onSelected: () {
+        setState(() => _expanded = false);
+        notifier.select(id);
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Semantics(
+                button: true,
+                expanded: expandable && _expanded,
+                hint: selecting || !expandable
+                    ? null
+                    : _expanded
+                        ? 'Ketuk untuk menutup rincian'
+                        : 'Ketuk untuk melihat rincian',
+                child: InkWell(
+                  key: selected
+                      ? const ValueKey('aktivitas-row-selected')
+                      : null,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  onTap: () {
+                    if (selecting) {
+                      if (selectable) notifier.toggle(id);
+                      return;
+                    }
+                    if (expandable) {
+                      setState(() => _expanded = !_expanded);
+                    } else {
+                      _openDetail(context, item);
+                    }
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ActivityItem(
+                          avatarText: item.avatarText,
+                          avatarColor: item.avatarColor,
+                          avatarTextColor: item.avatarTextColor,
+                          title: item.title,
+                          subtitleLines: item.subtitleLines,
+                          amount: item.amount,
+                          amountColor: item.amountColor,
+                          trailingCaptions: item.trailingCaptions,
+                          badge: item.badge,
+                        ),
+                      ),
+                      if (expandable)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Icon(
+                            _expanded ? Icons.expand_less : Icons.expand_more,
+                            color: AppColors.grey100,
+                            size: 20,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-            if (selected)
-              const Positioned(
-                top: 6,
-                left: 6 - _selectedBleed,
-                child: CircleAvatar(
-                  radius: 10,
-                  backgroundColor: AppColors.greenDark,
-                  child: Icon(Icons.check, color: Colors.white, size: 14),
+              if (expandable)
+                AnimatedSize(
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 180),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _expanded
+                      ? AktivitasSetoranDetail(
+                          key: ValueKey('setoran-details-$id'),
+                          transactionId: id,
+                          loadDetail: (id) => ref
+                              .read(transaksiProvider.notifier)
+                              .fetchTransaksiDetail(id),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+            ],
+          ),
+          if (selected)
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: -_selectedBleed,
+              right: -_selectedBleed,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  key: const ValueKey('aktivitas-row-selected-tint'),
+                  decoration: BoxDecoration(
+                    color: AppColors.greenDark.withValues(alpha: 0.12),
+                    border: Border.all(color: AppColors.greenDark, width: 1.5),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
                 ),
               ),
-          ],
-        ),
+            ),
+          if (selected)
+            const Positioned(
+              top: 6,
+              left: 6 - _selectedBleed,
+              child: CircleAvatar(
+                radius: 10,
+                backgroundColor: AppColors.greenDark,
+                child: Icon(Icons.check, color: Colors.white, size: 14),
+              ),
+            ),
+        ],
       ),
     );
   }
