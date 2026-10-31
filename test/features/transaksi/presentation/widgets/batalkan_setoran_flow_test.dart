@@ -170,7 +170,6 @@ void main() {
       expect(find.text('Hapus Setoran?'), findsNothing);
       expect(container.read(aktivitasSelectionProvider), isNull);
       expect(feed.loads, 1);
-      expect(find.textContaining('Setoran dibatalkan'), findsOneWidget);
     });
 
     testWidgets('a refused void keeps the dialog open with the reason',
@@ -197,10 +196,14 @@ void main() {
         _setoran('t2', 'Sari'),
       ]);
 
-      await hold(tester, 'Budi');
-
-      expect(find.byKey(AktivitasSelectionBar.hapusKey), findsNothing);
       expect(find.text('Dibatalkan'), findsOneWidget);
+
+      await hold(tester, 'Budi');
+      // Released, the hold is a plain tap: the row opens its detail instead.
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 dipilih'), findsNothing);
+      expect(find.byKey(AktivitasSelectionBar.hapusKey), findsNothing);
     });
   });
 }

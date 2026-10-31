@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
@@ -131,6 +132,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
           if (selecting)
             AktivitasSelectionBar(
               onEdit: (id) => showEditSetoranSheet(context, id),
+              onHapus: (id) => showBatalkanSetoranDialog(context, id),
             ),
           Expanded(child: _phoneList()),
         ],

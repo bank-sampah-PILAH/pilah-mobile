@@ -324,7 +324,10 @@ class _AktivitasRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final id = item.transaksi?.id ?? '';
-    final selectable = item.tipe == ActivitasTipe.setoran && id.isNotEmpty;
+    // A voided setoran is final: nothing to edit or cancel again.
+    final selectable = item.tipe == ActivitasTipe.setoran &&
+        id.isNotEmpty &&
+        !item.transaksi!.isDibatalkan;
     final selection = ref.watch(aktivitasSelectionProvider);
     final selecting = selection != null;
     final selected = selectable && selection == id;
