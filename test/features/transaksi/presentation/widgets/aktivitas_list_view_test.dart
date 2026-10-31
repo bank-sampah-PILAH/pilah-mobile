@@ -177,25 +177,51 @@ void main() {
     expect(find.text('Ani'), findsOneWidget);
   });
 
-  testWidgets('a wide screen lists the activity as a table', (tester) async {
+  testWidgets('setoran details expand inline in the wide table',
+      (tester) async {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    api.on('GET', '/api/v1/transaksi/t1', json: {
+      'nasabah_nama': 'Ani',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '42000',
+      'items': [
+        {
+          'nama_sampah_snapshot': 'Botol Kaca',
+          'berat': '1',
+          'harga_snapshot': '5000',
+          'subtotal': '5000',
+        },
+      ],
+    });
     await pumpList(
-        tester,
-        RiwayatAktivitasState(
-            status: AktivitasStatus.loaded, items: [_setoran('Ani', _now)]));
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        items: [_setoran('Ani', _now, id: 't1')],
+      ),
+    );
 
     expect(find.byType(AktivitasTable), findsOneWidget);
     expect(find.text('HARI INI'), findsNothing);
+    expect(find.text('Botol Kaca'), findsNothing);
 
     await tester.tap(find.text('Ani'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Plastik'), findsWidgets);
-    expect(find.byType(Dialog), findsOneWidget,
-        reason: 'a setoran opens as a dialog on a wide window');
+    expect(find.text('Ani'), findsOneWidget);
+    expect(find.text('+Rp 5.000'), findsOneWidget);
+    expect(find.text('Botol Kaca'), findsOneWidget);
+    expect(find.text('Rp 42.000'), findsOneWidget);
+    expect(find.text('Total Setoran'), findsNothing);
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Botol Kaca'), findsNothing);
   });
 
   testWidgets('a setoran expands inline without repeating row details',
