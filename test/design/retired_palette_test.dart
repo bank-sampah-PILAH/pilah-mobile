@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 
 /// Raw colours that were folded into `AppColors` tokens. Screens must use the
 /// token, so the same grey or amber is not copied (and slightly changed) from
@@ -30,13 +30,13 @@ void main() {
   for (final group in _retired.entries) {
     test('no screen defines its own ${group.key}', () {
       final offenders = <String>[];
-      for (final entity in Directory('lib').listSync(recursive: true)) {
-        if (entity is! File || !entity.path.endsWith('.dart')) continue;
-        if (entity.path == 'lib/design/constants/colors.dart') continue;
-        final source = entity.readAsStringSync().toUpperCase();
+      for (final source in designSources()) {
+        final path = source.path;
+        if (path == 'lib/design/constants/colors.dart') continue;
+        final text = source.read().toUpperCase();
         for (final hex in group.value) {
-          if (source.contains('0XFF$hex')) {
-            offenders.add('${entity.path}: $hex');
+          if (text.contains('0XFF$hex')) {
+            offenders.add('$path: $hex');
           }
         }
       }

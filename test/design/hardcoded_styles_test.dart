@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 
 /// Ban on style values hard-coded outside `lib/design/`.
 ///
@@ -16,15 +16,14 @@ final _fontSize = RegExp(r'fontSize:\s*[0-9.]+');
 
 List<String> _scan() {
   final found = <String>[];
-  for (final entity in Directory('lib').listSync(recursive: true)) {
-    if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final path = entity.path;
+  for (final source in designSources()) {
+    final path = source.path;
     if (path == 'lib/design/constants/font_size.dart') continue;
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
-    final source = entity.readAsStringSync();
-    final inDesign = path.startsWith('lib/design/');
-    final colors = inDesign ? 0 : _color.allMatches(source).length;
-    final sizes = _fontSize.allMatches(source).length;
+    if (source.isGenerated) continue;
+    final text = source.read();
+    final inDesign = source.inDesignKit;
+    final colors = inDesign ? 0 : _color.allMatches(text).length;
+    final sizes = _fontSize.allMatches(text).length;
     if (colors > 0) found.add('$path: $colors hard-coded colours');
     if (sizes > 0) found.add('$path: $sizes hard-coded font sizes');
   }

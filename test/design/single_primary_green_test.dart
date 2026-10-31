@@ -1,7 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/design_ratchet.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// The app has one primary green, `AppColors.greenDark`. A second copy of it
@@ -13,11 +13,11 @@ void main() {
 
   test('only AppColors defines the primary green', () {
     final offenders = <String>[];
-    for (final entity in Directory('lib').listSync(recursive: true)) {
-      if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path == 'lib/design/constants/colors.dart') continue;
-      if (entity.readAsStringSync().toUpperCase().contains('0XFF006D44')) {
-        offenders.add(entity.path);
+    for (final source in designSources()) {
+      final path = source.path;
+      if (path == 'lib/design/constants/colors.dart') continue;
+      if (source.read().toUpperCase().contains('0XFF006D44')) {
+        offenders.add(path);
       }
     }
 
