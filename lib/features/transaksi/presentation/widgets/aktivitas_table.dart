@@ -20,6 +20,7 @@ class AktivitasTable extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.onEdit,
+    this.onHapus,
     this.footer = const [],
     this.toolbar,
     this.pagination,
@@ -31,6 +32,9 @@ class AktivitasTable extends StatelessWidget {
 
   /// Dipanggil dari kolom Aksi pada baris setoran. Null menyembunyikan kolom.
   final ValueChanged<ActivitasEntity>? onEdit;
+
+  /// Tombol Hapus di kolom Aksi, di samping Edit (PIL-428).
+  final ValueChanged<ActivitasEntity>? onHapus;
 
   /// Isi di bawah baris terakhir: indikator muat atau tombol "Muat Lagi".
   final List<Widget> footer;
@@ -82,6 +86,7 @@ class AktivitasTable extends StatelessWidget {
                 item: items[i],
                 onTap: () => onTap(items[i]),
                 onEdit: onEdit == null ? null : () => onEdit!(items[i]),
+                onHapus: onHapus == null ? null : () => onHapus!(items[i]),
               ),
       ),
       footer: pagination,
@@ -113,11 +118,13 @@ class _Row extends StatefulWidget {
     required this.item,
     required this.onTap,
     this.onEdit,
+    this.onHapus,
   });
 
   final ActivitasEntity item;
   final VoidCallback onTap;
   final VoidCallback? onEdit;
+  final VoidCallback? onHapus;
 
   @override
   State<_Row> createState() => _RowState();
@@ -127,6 +134,11 @@ class _RowState extends State<_Row> {
   bool _hover = false;
 
   ActivitasEntity get item => widget.item;
+
+  bool get _dibatalkan => item.transaksi?.isDibatalkan ?? false;
+
+  /// Only a setoran still tercatat can be edited or cancelled.
+  bool get _bisaDiubah => item.tipe == ActivitasTipe.setoran && !_dibatalkan;
 
   @override
   Widget build(BuildContext context) {
@@ -190,17 +202,23 @@ class _RowState extends State<_Row> {
                 2,
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: CustomStatusBadge(
-                    statusText: item.tipe == ActivitasTipe.setoran
-                        ? 'Setoran'
-                        : 'Pencairan',
-                    backgroundColor: item.tipe == ActivitasTipe.setoran
-                        ? AppColors.greenLight
-                        : AppColors.warningLight,
-                    textColor: item.tipe == ActivitasTipe.setoran
-                        ? AppColors.greenDark
-                        : AppColors.warning,
-                  ),
+                  child: _dibatalkan
+                      ? const CustomStatusBadge(
+                          statusText: 'Dibatalkan',
+                          backgroundColor: AppColors.fill,
+                          textColor: AppColors.grey100,
+                        )
+                      : CustomStatusBadge(
+                          statusText: item.tipe == ActivitasTipe.setoran
+                              ? 'Setoran'
+                              : 'Pencairan',
+                          backgroundColor: item.tipe == ActivitasTipe.setoran
+                              ? AppColors.greenLight
+                              : AppColors.warningLight,
+                          textColor: item.tipe == ActivitasTipe.setoran
+                              ? AppColors.greenDark
+                              : AppColors.warning,
+                        ),
                 ),
               ),
               AktivitasTable._cell(
@@ -227,15 +245,31 @@ class _RowState extends State<_Row> {
                 AktivitasTable._aksiCell(
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: item.tipe == ActivitasTipe.setoran
-                        ? AppButton(
-                            key: const ValueKey('aktivitas-edit'),
-                            label: 'Edit',
-                            icon: Icons.edit_outlined,
-                            variant: AppButtonVariant.outlined,
-                            size: AppButtonSize.compact,
-                            expand: false,
-                            onPressed: widget.onEdit,
+                    child: _bisaDiubah
+                        ? Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
+                            children: [
+                              AppButton(
+                                key: const ValueKey('aktivitas-edit'),
+                                label: 'Edit',
+                                icon: Icons.edit_outlined,
+                                variant: AppButtonVariant.outlined,
+                                size: AppButtonSize.compact,
+                                expand: false,
+                                onPressed: widget.onEdit,
+                              ),
+                              if (widget.onHapus != null)
+                                AppButton(
+                                  key: const ValueKey('aktivitas-hapus'),
+                                  label: 'Hapus',
+                                  icon: Icons.delete_outline,
+                                  variant: AppButtonVariant.destructiveOutlined,
+                                  size: AppButtonSize.compact,
+                                  expand: false,
+                                  onPressed: widget.onHapus,
+                                ),
+                            ],
                           )
                         : const SizedBox.shrink(),
                   ),

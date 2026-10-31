@@ -20,6 +20,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_a
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/hold_to_select.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
@@ -146,6 +147,9 @@ class AktivitasListView extends StatelessWidget {
           items: state.items,
           onTap: (item) => _openDetail(context, item),
           onEdit: (item) => _editItem(context, item),
+          // Hapus only shows on a tercatat setoran, which always has its record.
+          onHapus: (item) =>
+              showBatalkanSetoranDialog(context, item.transaksi!.id),
           footer: footer,
           toolbar: const AktivitasSummaryStrip(),
           page: state.currentPage,
@@ -324,7 +328,10 @@ class _AktivitasRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final id = item.transaksi?.id ?? '';
-    final selectable = item.tipe == ActivitasTipe.setoran && id.isNotEmpty;
+    // A voided setoran is final: nothing to edit or cancel again.
+    final selectable = item.tipe == ActivitasTipe.setoran &&
+        id.isNotEmpty &&
+        !item.transaksi!.isDibatalkan;
     final selection = ref.watch(aktivitasSelectionProvider);
     final selecting = selection != null;
     final selected = selectable && selection == id;

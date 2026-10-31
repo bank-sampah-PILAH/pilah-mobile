@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remot
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/batalkan_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
@@ -55,5 +56,6 @@ TransaksiNotifier buildTransaksiNotifier(StubApi api) {
     ExportTransaksiUseCase(repository),
     ResendWaUseCase(repository),
     EditTransaksiUseCase(repository),
+    BatalkanTransaksiUseCase(repository),
   );
 }

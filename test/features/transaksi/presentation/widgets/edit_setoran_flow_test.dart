@@ -365,6 +365,7 @@ void main() {
                   if (selecting)
                     AktivitasSelectionBar(
                       onEdit: (id) => showEditSetoranSheet(context, id),
+                      onHapus: (_) {},
                     ),
                   const Expanded(child: AktivitasListView(isWeb: false)),
                 ]),
