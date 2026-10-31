@@ -206,4 +206,51 @@ void main() {
       expect(find.byKey(AktivitasSelectionBar.hapusKey), findsNothing);
     });
   });
+
+  group('Aksi column on a wide screen', () {
+    Future<void> pumpTable(
+        WidgetTester tester, List<ActivitasEntity> items) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      feed = _Feed(RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        items: items,
+        totalCount: items.length,
+      ));
+      await tester.pumpWidget(withTransaksiProviders(
+        transaksi: buildTransaksiNotifier(api),
+        riwayat: feed,
+        child: const MaterialApp(
+          home: Scaffold(body: AktivitasListView(isWeb: true)),
+        ),
+      ));
+      await tester.pump();
+    }
+
+    testWidgets('a setoran row has a Hapus button that asks for an alasan',
+        (tester) async {
+      await pumpTable(tester, [_setoran('t1', 'Budi')]);
+
+      final button = find.byKey(const ValueKey('aktivitas-hapus'));
+      expect(tester.widget(button), isA<AppButton>());
+      expect(find.descendant(of: button, matching: find.text('Hapus')),
+          findsOneWidget);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hapus Setoran?'), findsOneWidget);
+      expect(find.byKey(BatalkanSetoranDialog.alasanKey), findsOneWidget);
+    });
+
+    testWidgets('a voided row is labelled and offers no action',
+        (tester) async {
+      await pumpTable(tester, [_setoran('t1', 'Budi', dibatalkan: true)]);
+
+      expect(find.text('Dibatalkan'), findsOneWidget);
+      expect(find.byKey(const ValueKey('aktivitas-edit')), findsNothing);
+      expect(find.byKey(const ValueKey('aktivitas-hapus')), findsNothing);
+    });
+  });
 }
