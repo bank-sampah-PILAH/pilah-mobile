@@ -39,6 +39,7 @@ void main() {
     WidgetTester tester, {
     required double width,
     bool withRouter = false,
+    Set<AktivitasTipeFilter> tipeTersedia = aktivitasTipeTersedia,
   }) async {
     tester.view.physicalSize = Size(width, 900);
     tester.view.devicePixelRatio = 1;
@@ -46,10 +47,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final child = withTransaksiProviders(
       riwayat: notifier,
-      child: const Scaffold(
+      child: Scaffold(
         body: Padding(
-          padding: EdgeInsets.all(16),
-          child: AktivitasFilterBar(),
+          padding: const EdgeInsets.all(16),
+          child: AktivitasFilterBar(tipeTersedia: tipeTersedia),
         ),
       ),
     );
@@ -64,9 +65,12 @@ void main() {
     await tester.pump();
   }
 
+  // Semua and Pencairan are closed for now (PIL-435); these two tests keep
+  // the selector working for when they reopen.
   testWidgets('wide: type segments, period button and labeled export',
       (tester) async {
-    await pumpBar(tester, width: 1200);
+    await pumpBar(tester,
+        width: 1200, tipeTersedia: AktivitasTipeFilter.values.toSet());
 
     for (final label in ['Semua', 'Setoran', 'Pencairan', 'Bulan Ini']) {
       expect(find.text(label), findsOneWidget);
@@ -85,7 +89,8 @@ void main() {
   });
 
   testWidgets('choosing a type segment filters the feed', (tester) async {
-    await pumpBar(tester, width: 1200);
+    await pumpBar(tester,
+        width: 1200, tipeTersedia: AktivitasTipeFilter.values.toSet());
 
     await tester.tap(find.text('Pencairan'));
     await tester.pump();
