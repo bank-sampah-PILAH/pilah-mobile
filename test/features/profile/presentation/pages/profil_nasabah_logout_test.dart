@@ -53,6 +53,14 @@ void main() {
     expect(auth.calls, contains('logout'));
   });
 
+  testWidgets('shows legal information in the profile', (tester) async {
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, const MaterialApp(home: ProfilNasabahPage())));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Informasi & legal'), findsOneWidget);
+  });
+
   testWidgets('cancelling the logout keeps the session', (tester) async {
     await tester.pumpWidget(withAuthenticationProvider(
         auth, const MaterialApp(home: ProfilNasabahPage())));

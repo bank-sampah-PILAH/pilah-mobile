@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
 
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
@@ -330,6 +331,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
               style: NasabahStyle.text(17, weight: AppFontWeight.semibold)),
           const SizedBox(height: 12),
           _AccountCard(email: _identity.email.trim()),
+          const SizedBox(height: 12),
+          const LegalInformationButton(),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
