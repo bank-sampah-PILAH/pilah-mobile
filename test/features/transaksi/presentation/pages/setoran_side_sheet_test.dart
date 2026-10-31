@@ -43,7 +43,11 @@ void main() {
 
   /// A stand-in for the page a Pengurus opens the form from, with one button
   /// that asks for the form the way this window should show it.
-  Future<void> openHost(WidgetTester tester, Size window) async {
+  Future<void> openHost(
+    WidgetTester tester,
+    Size window, {
+    bool isWeb = true,
+  }) async {
     final harga = buildHargaNotifier(api);
     final profile = buildProfileNotifier(api);
     final transaksi = buildTransaksiNotifier(api);
@@ -64,7 +68,11 @@ void main() {
         builder: (context) => Scaffold(
           body: Center(
             child: TextButton(
-              onPressed: () => openSetoranBaru(context),
+              // Web by default, including for the narrow case: the phone
+              // this file pins is a *browser* at phone width. `kIsWeb` is a
+              // compile-time constant and false under the VM, so a test that
+              // means web has to say so.
+              onPressed: () => openSetoranBaru(context, isWeb: isWeb),
               child: const Text('Tambah Transaksi'),
             ),
           ),
@@ -129,5 +137,22 @@ void main() {
 
     expect(find.text('route:${TransaksiBaruPage.route}'), findsOneWidget,
         reason: 'the existing full-screen route is untouched on a phone');
+  });
+
+  /// The case the width rule alone got wrong. A native tablet is 768 or wider
+  /// and is not `compact`, so a resolver that only looked at width handed it a
+  /// panel — but PIL-432 is a web ticket and the app has no browser shell to
+  /// leave visible behind one. Raised on review of PR #186; this is the same
+  /// guarantee at the level a Pengurus would actually meet it.
+  testWidgets('a native tablet keeps the form as its own page', (tester) async {
+    await openHost(tester, const Size(1440, 900), isWeb: false);
+
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${TransaksiBaruPage.route}'), findsOneWidget,
+        reason: 'width said panel; the platform says page, and wins');
+    expect(find.text('PILIH NASABAH'), findsNothing,
+        reason: 'no panel is mounted on the native app at any width');
   });
 }

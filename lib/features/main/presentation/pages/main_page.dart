@@ -274,8 +274,9 @@ class _ShellContent extends ConsumerWidget {
           profileEmail: profileEmail,
           onProfile: () => navigationShell.goBranch(_profileBranch),
           onHome: () => navigationShell.goBranch(0, initialLocation: true),
-          onAddTransaction:
-              role == 'pengelola' ? () => openSetoranBaru(context) : null,
+          onAddTransaction: role == 'pengelola'
+              ? () => openSetoranBaru(context, isWeb: isWebOverride ?? kIsWeb)
+              : null,
           // Panel samping tidak mengubah path, jadi path saja tidak lagi
           // cukup untuk menyorot menunya.
           transactionSelected: currentPath == TransaksiBaruPage.route ||

@@ -14,7 +14,11 @@ import 'package:pilah_mobile/design/constants/font_weight.dart';
 /// Pencairan remains visible but disabled in the Transaksi Baru chooser per
 /// PIL-379. Everything else is a destination in the navigation, not a button.
 class DashboardActionButtons extends StatelessWidget {
-  const DashboardActionButtons({super.key});
+  const DashboardActionButtons({super.key, this.isWeb});
+
+  /// Diteruskan ke [openSetoranBaru], yang memutuskan panel atau halaman
+  /// penuh. Null berarti pakai `kIsWeb`.
+  final bool? isWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +28,7 @@ class DashboardActionButtons extends StatelessWidget {
           child: AppButton(
             label: 'Transaksi Baru',
             icon: Icons.add,
-            onPressed: () => _openTransaksiChooser(context),
+            onPressed: () => _openTransaksiChooser(context, isWeb),
           ),
         ),
         const SizedBox(width: 12),
@@ -53,7 +57,7 @@ class DashboardActionButtons extends StatelessWidget {
     );
   }
 
-  Future<void> _openTransaksiChooser(BuildContext context) async {
+  Future<void> _openTransaksiChooser(BuildContext context, bool? isWeb) async {
     final choice = await showAdaptiveSurface<_TransaksiChoice>(
       context,
       builder: (context) => const _TransaksiChooserSheet(),
@@ -61,7 +65,7 @@ class DashboardActionButtons extends StatelessWidget {
     if (choice == null || !context.mounted) return;
     switch (choice) {
       case _TransaksiChoice.setoran:
-        await openSetoranBaru(context);
+        await openSetoranBaru(context, isWeb: isWeb);
     }
   }
 }

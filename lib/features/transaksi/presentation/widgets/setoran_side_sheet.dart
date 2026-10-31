@@ -103,14 +103,21 @@ final _guard = SideSheetGuard(
 /// memilih sendiri, supaya ketiganya tidak menjawab pertanyaan yang sama
 /// dengan tiga cara berbeda.
 ///
+/// [isWeb] diteruskan oleh pemanggil yang sudah tahu jawabannya — shell
+/// membawanya sebagai `isWebOverride`, halaman dashboard sebagai `isWeb` —
+/// dan jatuh kembali ke `kIsWeb` bila tidak diisi. Diteruskan, bukan disusun
+/// ulang di sini: aturan wadahnya milik `SideSheetPresentation`, dan jalan
+/// masuk ini hanya menyampaikan apa yang sudah diketahui.
+///
 /// Pada jendela sempit dan di aplikasi, formulir tetap sebuah halaman penuh
 /// pada route-nya yang sudah ada: di lebar itu tidak ada ruang untuk
 /// menyisakan halaman di belakangnya, dan route itu sudah bekerja. Dari
 /// breakpoint medium ke atas ia menjadi panel di tepi kanan, dengan halaman
 /// yang sedang dibuka tetap terlihat di belakangnya.
-Future<void> openSetoranBaru(BuildContext context) async {
+Future<void> openSetoranBaru(BuildContext context, {bool? isWeb}) async {
   final presentation = SideSheetPresentation.resolve(
     width: MediaQuery.sizeOf(context).width,
+    isWeb: isWeb,
   );
 
   if (presentation == SideSheetPresentation.fullScreen) {

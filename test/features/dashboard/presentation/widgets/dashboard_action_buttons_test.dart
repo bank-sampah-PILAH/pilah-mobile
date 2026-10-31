@@ -58,7 +58,12 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (_, __) => const Scaffold(body: DashboardActionButtons()),
+          // On the web, because that is the only platform where the chooser
+          // leads to a panel rather than the form's own page. `kIsWeb` is a
+          // compile-time constant and false under the VM, so a test that
+          // means "web" has to say so.
+          builder: (_, __) =>
+              const Scaffold(body: DashboardActionButtons(isWeb: true)),
         ),
         GoRoute(
           path: TransaksiBaruPage.route,
