@@ -13,6 +13,7 @@ import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
@@ -95,6 +96,45 @@ void main() {
           tester.getRect(find.widgetWithText(AppButton, 'Simpan Pengaturan'));
       expect(save.right, 1440 - left,
           reason: 'the action bar stops at the content edge too');
+    });
+
+    testWidgets('compact web keeps long account details readable',
+        (tester) async {
+      const name = 'Siti Aminah dengan nama yang panjang sekali';
+      const email = 'siti.aminah.pengurus.bank@example.test';
+      await openPage(
+        tester,
+        size: const Size(390, 844),
+        isWeb: true,
+        authNotifier: authNotifierIn(
+          Authenticated(
+            authEntity: AuthEntity(
+              name: name,
+              email: email,
+              photoUrl: '',
+              token: 'tok',
+              role: 'pengelola',
+            ),
+          ),
+        ),
+      );
+
+      final emailText = find.text(email);
+      final logout = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
+      expect(emailText, findsOneWidget);
+      expect(tester.getSize(emailText).width, greaterThan(180));
+      expect(tester.getTopLeft(logout).dy,
+          greaterThan(tester.getBottomLeft(emailText).dy));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('opens the dedicated legal information page', (tester) async {
+      await openPage(tester, extraRoutes: ['/legal']);
+
+      await tester.tap(find.text('Informasi & legal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/legal'), findsOneWidget);
     });
 
     testWidgets('the settings scroll across the window, content in a column',
@@ -217,7 +257,7 @@ void main() {
     await openPage(tester);
 
     expect(find.text('siti@example.test'), findsOneWidget);
-    expect(find.text('Permintaan penghapusan akun'), findsOneWidget);
+    expect(find.text('Informasi & legal'), findsOneWidget);
   });
 
   group('on a phone', () {

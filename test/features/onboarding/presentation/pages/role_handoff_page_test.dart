@@ -21,7 +21,7 @@ class _MockGoogleSignInPlatform extends Mock
     implements google_sign_in.GoogleSignInPlatform {}
 
 void main() {
-  testWidgets('offers account deletion request from the Induk handoff page',
+  testWidgets('keeps legal information reachable from the Induk landing page',
       (tester) async {
     final auth = authNotifierIn(Authenticated(
       authEntity: const AuthEntity(
@@ -45,7 +45,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Permintaan penghapusan akun'), findsOneWidget);
+    expect(find.text('Informasi & legal'), findsOneWidget);
+    expect(find.text('Permintaan penghapusan akun'), findsNothing);
   });
 
   testWidgets('lets a role handoff user sign out and return to login',

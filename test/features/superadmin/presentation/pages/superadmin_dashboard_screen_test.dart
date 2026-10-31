@@ -30,7 +30,7 @@ void main() {
       // A non-const instance, so the widget's constructor itself runs.
       // ignore: prefer_const_constructors
       SuperAdminDashboardScreen(),
-      extraRoutes: ['/login'],
+      extraRoutes: ['/login', '/legal'],
       providerScopeBuilder: (app) => ProviderScope(
         overrides: [
           superadminProvider.overrideWith(() => buildSuperadminNotifier(api)),
@@ -243,18 +243,24 @@ void main() {
     stubTabs();
     await openScreen(tester);
 
-    await tester.tap(find.byIcon(Icons.logout));
+    await tester.tap(find.byTooltip('Menu akun'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keluar'));
     await tester.pump();
 
     expect(auth.calls, contains('logout'));
   });
 
-  testWidgets('shows account deletion requests above the dashboard list',
-      (tester) async {
+  testWidgets('opens legal information from the account menu', (tester) async {
     stubTabs();
     await openScreen(tester);
 
-    expect(find.text('Permintaan penghapusan akun'), findsOneWidget);
+    await tester.tap(find.byTooltip('Menu akun'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Informasi & legal'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:/legal'), findsOneWidget);
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {
