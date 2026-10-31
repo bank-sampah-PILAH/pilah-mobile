@@ -23,7 +23,7 @@ class AktivitasSetoranDetail extends StatefulWidget {
 }
 
 class _AktivitasSetoranDetailState extends State<AktivitasSetoranDetail> {
-  late final Future<TransaksiDetailEntity?> _detail;
+  late Future<TransaksiDetailEntity?> _detail;
 
   @override
   void initState() {
@@ -42,6 +42,13 @@ class _AktivitasSetoranDetailState extends State<AktivitasSetoranDetail> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.transactionId.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Text('Rincian setoran tidak tersedia.'),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -67,7 +74,19 @@ class _AktivitasSetoranDetailState extends State<AktivitasSetoranDetail> {
 
           final detail = snapshot.data;
           if (detail == null) {
-            return const Text('Rincian setoran tidak dapat dimuat.');
+            return Row(
+              children: [
+                const Expanded(
+                  child: Text('Rincian setoran tidak dapat dimuat.'),
+                ),
+                TextButton(
+                  onPressed: () => setState(() {
+                    _detail = _load();
+                  }),
+                  child: const Text('Coba Lagi'),
+                ),
+              ],
+            );
           }
 
           return _buildDetails(detail);
