@@ -258,6 +258,66 @@ void main() {
     expect(find.text('Aluminium'), findsNothing);
   });
 
+  testWidgets('a failed inline detail can be retried', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    api.on('GET', '/api/v1/transaksi/t1', status: 500, json: {});
+    await pumpList(
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        items: [_setoran('Ani', _now, id: 't1')],
+      ),
+    );
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rincian setoran tidak dapat dimuat.'), findsOneWidget);
+
+    api.on('GET', '/api/v1/transaksi/t1', json: {
+      'nasabah_nama': 'Ani',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '42000',
+      'items': [
+        {
+          'nama_sampah_snapshot': 'Botol Kaca',
+          'berat': '1',
+          'harga_snapshot': '5000',
+          'subtotal': '5000',
+        },
+      ],
+    });
+    expect(find.text('Coba Lagi'), findsOneWidget);
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Botol Kaca'), findsOneWidget);
+    expect(api.requests, hasLength(2));
+  });
+
+  testWidgets('a setoran without an id shows unavailable details',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpList(
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        items: [_setoran('Ani', _now)],
+      ),
+    );
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rincian setoran tidak tersedia.'), findsOneWidget);
+    expect(api.requests, isEmpty);
+  });
+
   testWidgets('a saved pencairan edit refreshes the feed silently',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
