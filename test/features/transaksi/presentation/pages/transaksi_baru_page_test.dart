@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
@@ -82,8 +83,8 @@ void main() {
   });
 
   /// Opens the real page with its controllers, over the stubbed API.
-  Future<void> open(WidgetTester tester,
-      {Size window = const Size(800, 2600)}) async {
+  Future<GoRouter> open(WidgetTester tester,
+      {Size window = const Size(800, 2600), bool closeTutorial = true}) async {
     final harga = buildHargaNotifier(api);
     final profile = buildProfileNotifier(api);
     final transaksi = buildTransaksiNotifier(api);
@@ -98,7 +99,7 @@ void main() {
         GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)), export);
     final nasabah = buildNasabahNotifier(api);
 
-    await pumpRouted(
+    final router = await pumpRouted(
       tester,
       // A non-const instance so the constructor itself runs.
       // ignore: prefer_const_constructors
@@ -121,6 +122,11 @@ void main() {
       size: window,
     );
     await tester.pumpAndSettle();
+    if (closeTutorial && find.text('Lewati').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Lewati'));
+      await tester.pumpAndSettle();
+    }
+    return router;
   }
 
   Future<void> pickNasabah(WidgetTester tester) async {
@@ -146,6 +152,38 @@ void main() {
     await tester.tap(find.text('Simpan Transaksi'));
     await pumpToast(tester);
   }
+
+  testWidgets('shows the setoran tutorial on first visit and can replay it',
+      (tester) async {
+    await open(tester, closeTutorial: false);
+
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+
+    await tester.tap(find.text('Lewati'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Panduan setoran'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+  });
+
+  testWidgets('shows automatically once but can be reopened with help',
+      (tester) async {
+    final router = await open(tester, closeTutorial: false);
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+
+    await tester.tap(find.text('Lewati'));
+    await tester.pumpAndSettle();
+    router.pop();
+    await tester.pumpAndSettle();
+    router.push('/page');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih nasabah'), findsNothing);
+    await tester.tap(find.byTooltip('Panduan setoran'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+  });
 
   testWidgets('loads the price list and the WhatsApp template on open',
       (tester) async {

@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
@@ -12,6 +16,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
@@ -32,6 +37,45 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+const _setoranTutorialSeenKey = 'pilah.setoran_tutorial_seen';
+
+final _setoranTutorialProgressProvider = Provider<_SetoranTutorialProgress>(
+  (ref) => _SetoranTutorialProgress(),
+);
+
+class _SetoranTutorialProgress {
+  bool _seenInMemory = false;
+
+  Future<bool> hasSeen() async {
+    if (!kIsWeb) return _seenInMemory;
+    try {
+      return (await SharedPreferences.getInstance())
+              .getBool(_setoranTutorialSeenKey) ??
+          false;
+    } on Exception catch (error) {
+      debugPrint('Failed to read setoran tutorial status: $error');
+      return false;
+    }
+  }
+
+  void markSeen() {
+    if (!kIsWeb) {
+      _seenInMemory = true;
+      return;
+    }
+    unawaited(_persistSeen());
+  }
+
+  Future<void> _persistSeen() async {
+    try {
+      await (await SharedPreferences.getInstance())
+          .setBool(_setoranTutorialSeenKey, true);
+    } on Exception catch (error) {
+      debugPrint('Failed to save setoran tutorial status: $error');
+    }
+  }
+}
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
 /// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
@@ -74,10 +118,50 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
   bool _hasSubmitted = false;
   bool _isSaving = false;
   String? _idempotencyKey;
+  late final _SetoranTutorialProgress _tutorialProgress;
+  final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _itemsTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _saveTutorialKey = GlobalKey<State<StatefulWidget>>();
+
+  List<GlobalKey<State<StatefulWidget>>> get _tutorialKeys => [
+        _customerTutorialKey,
+        _itemsTutorialKey,
+        _saveTutorialKey,
+      ];
 
   @override
   void initState() {
     super.initState();
+    _tutorialProgress = ref.read(_setoranTutorialProgressProvider);
+    ShowcaseView.register(
+      enableAutoScroll: true,
+      disableMovingAnimation: true,
+      onFinish: _tutorialProgress.markSeen,
+      onDismiss: (_) => _tutorialProgress.markSeen(),
+      globalTooltipActionConfig: const TooltipActionConfig(
+        alignment: MainAxisAlignment.spaceBetween,
+        position: TooltipActionPosition.inside,
+      ),
+      globalTooltipActions: [
+        TooltipActionButton(
+          type: TooltipDefaultActionType.previous,
+          name: 'Sebelumnya',
+          hideActionWidgetForShowcase: [_customerTutorialKey],
+        ),
+        TooltipActionButton(
+          type: TooltipDefaultActionType.skip,
+          name: 'Lewati',
+        ),
+        TooltipActionButton(
+          type: TooltipDefaultActionType.next,
+          name: 'Lanjut',
+        ),
+      ],
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_showTutorialIfNeeded());
+    });
+
     // The harga picker reads an app-scoped singleton that is otherwise only
     // populated by the Harga page. Load it here so the dropdown has options
     // even when arriving straight from the dashboard. The nasabah picker
@@ -121,10 +205,15 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
 
   /// Tombol simpan. Satu definisi dipakai dua layout: di telepon ia menjadi
   /// bottomNavigationBar, di layar lebar ia duduk di panel samping.
-  Widget _saveButton() => AppButton(
-        label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
-        icon: Icons.save_outlined,
-        onPressed: _isSaving ? null : _handleSubmit,
+  Widget _saveButton() => _tutorialStep(
+        key: _saveTutorialKey,
+        title: 'Simpan transaksi',
+        description: 'Periksa total setoran, lalu simpan transaksi.',
+        child: AppButton(
+          label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
+          icon: Icons.save_outlined,
+          onPressed: _isSaving ? null : _handleSubmit,
+        ),
       );
 
   /// Kartu mana yang ditandai merah saat ini.
@@ -356,6 +445,37 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     });
   }
 
+  Future<void> _showTutorialIfNeeded() async {
+    if (await _tutorialProgress.hasSeen() || !mounted) return;
+    ShowcaseView.get().startShowCase(_tutorialKeys);
+  }
+
+  Widget _tutorialStep({
+    required GlobalKey<State<StatefulWidget>> key,
+    required String title,
+    required String description,
+    required Widget child,
+  }) =>
+      Showcase(
+        key: key,
+        title: title,
+        description: description,
+        targetShapeBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        tooltipBackgroundColor: AppColors.greenDark,
+        textColor: Colors.white,
+        titleTextStyle: AppTextStyle.headline3.copyWith(color: Colors.white),
+        descTextStyle: AppTextStyle.small.copyWith(color: Colors.white),
+        child: child,
+      );
+
+  @override
+  void dispose() {
+    ShowcaseView.get().unregister();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Lebar jendela menentukan apakah ringkasan menemani isian atau
@@ -382,7 +502,17 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
               // Header
               ContentInset(
                 child: AppBackHeader(
-                    title: 'Transaksi Baru', onBack: () => context.pop()),
+                  title: 'Transaksi Baru',
+                  onBack: () => context.pop(),
+                  actions: [
+                    AppIconButton(
+                      icon: Icons.help_outline,
+                      tooltip: 'Panduan setoran',
+                      onPressed: () =>
+                          ShowcaseView.get().startShowCase(_tutorialKeys),
+                    ),
+                  ],
+                ),
               ),
 
               Expanded(
@@ -402,16 +532,22 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                               // Section 1: PILIH NASABAH
                               const AppFieldLabel('PILIH NASABAH'),
                               const SizedBox(height: 16),
-                              PilihNasabahSection(
-                                selectedCustomer: selectedCustomer,
-                                onCustomerSelected: (customer) {
-                                  setState(() {
-                                    selectedCustomer = customer;
-                                  });
-                                },
-                                hasError:
-                                    _hasSubmitted && selectedCustomer == null,
-                                errorText: 'Nasabah harus dipilih',
+                              _tutorialStep(
+                                key: _customerTutorialKey,
+                                title: 'Pilih nasabah',
+                                description:
+                                    'Pilih nasabah yang melakukan setoran.',
+                                child: PilihNasabahSection(
+                                  selectedCustomer: selectedCustomer,
+                                  onCustomerSelected: (customer) {
+                                    setState(() {
+                                      selectedCustomer = customer;
+                                    });
+                                  },
+                                  hasError:
+                                      _hasSubmitted && selectedCustomer == null,
+                                  errorText: 'Nasabah harus dipilih',
+                                ),
                               ),
                               const SizedBox(height: 24),
 
@@ -435,11 +571,17 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                               const SizedBox(height: 16),
 
                               // Add Item Button
-                              AppButton(
-                                label: 'Tambah Item Setoran',
-                                variant: AppButtonVariant.outlined,
-                                icon: Icons.add,
-                                onPressed: _addItem,
+                              _tutorialStep(
+                                key: _itemsTutorialKey,
+                                title: 'Tambah item setoran',
+                                description:
+                                    'Pilih jenis sampah dan masukkan beratnya.',
+                                child: AppButton(
+                                  label: 'Tambah Item Setoran',
+                                  variant: AppButtonVariant.outlined,
+                                  icon: Icons.add,
+                                  onPressed: _addItem,
+                                ),
                               ),
                               const SizedBox(height: 24),
 
