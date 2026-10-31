@@ -71,6 +71,48 @@ void main() {
         );
       });
     });
+
+    /// Width is not the whole rule, and the comment above was wrong to say it
+    /// was. PIL-432 is a **web** ticket: in the native app a long form keeps
+    /// its own full-screen route at every width. A phone is always compact, so
+    /// the width rule agreed with the platform rule there by accident — but a
+    /// native tablet is 768 wide and is not compact, and the width-only
+    /// resolver handed it a panel it was never meant to get.
+    ///
+    /// Raised on review of PR #186.
+    group('the platform', () {
+      test('a native tablet keeps the full-screen page', () {
+        expect(
+          SideSheetPresentation.resolve(width: 768, isWebOverride: false),
+          SideSheetPresentation.fullScreen,
+          reason: 'a tablet is not compact, so width alone said side sheet; '
+              'the native app has no browser shell to leave behind',
+        );
+      });
+
+      test('a native window as wide as a desktop keeps it too', () {
+        expect(
+          SideSheetPresentation.resolve(width: 1440, isWebOverride: false),
+          SideSheetPresentation.fullScreen,
+        );
+      });
+
+      test('the same tablet width on the web gets a side sheet', () {
+        expect(
+          SideSheetPresentation.resolve(width: 768, isWebOverride: true),
+          SideSheetPresentation.sideSheet,
+        );
+      });
+
+      test('a narrow web window still keeps the full-screen page', () {
+        expect(
+          SideSheetPresentation.resolve(width: 390, isWebOverride: true),
+          SideSheetPresentation.fullScreen,
+          reason: 'the width rule still applies on the web; the platform gate '
+              'only removes a case, it does not replace the rule',
+        );
+      });
+    });
   });
 
   /// The whole point of the panel is that the page stays behind it, so how wide
