@@ -8,6 +8,7 @@ import 'package:google_sign_in_platform_interface/google_sign_in_platform_interf
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
+import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
@@ -70,6 +71,12 @@ void main() {
 
     await tester.tap(find.text(kIsWeb ? 'Pengelola Bank Sampah' : 'Nasabah'));
     await tester.pump();
+    await tester.ensureVisible(find.byType(Checkbox).first);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.ensureVisible(find.byType(Checkbox).last);
+    await tester.tap(find.byType(Checkbox).last);
+    await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
 
     expect(
@@ -77,6 +84,92 @@ void main() {
       kIsWeb
           ? GoogleRegistrationRole.pengelola
           : GoogleRegistrationRole.nasabah,
+    );
+  });
+
+  testWidgets('requires both legal documents before continuing',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authenticationProvider.overrideWith(() => auth)],
+      child: const MaterialApp(home: RoleSelectionPage()),
+    ));
+
+    await tester.tap(find.text(kIsWeb ? 'Pengelola Bank Sampah' : 'Nasabah'));
+    await tester.pump();
+    await tester.tap(find.text('Lanjutkan'));
+    await tester.pump();
+    expect(auth.calls, isEmpty);
+
+    await tester.ensureVisible(find.byType(Checkbox).first);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.tap(find.text('Lanjutkan'));
+    await tester.pump();
+    expect(auth.calls, isEmpty);
+
+    await tester.ensureVisible(find.byType(Checkbox).last);
+    await tester.tap(find.byType(Checkbox).last);
+    await tester.pump();
+    await tester.tap(find.text('Lanjutkan'));
+
+    expect(auth.lastRole, isNotNull);
+    expect(auth.calls, ['registerGoogleRole']);
+  });
+
+  testWidgets('legal links open their pages and preserve consent on return',
+      (tester) async {
+    final router = GoRouter(
+      initialLocation: RoleSelectionPage.route,
+      routes: [
+        GoRoute(
+          path: RoleSelectionPage.route,
+          builder: (context, state) => ProviderScope(
+            overrides: [authenticationProvider.overrideWith(() => auth)],
+            child: const RoleSelectionPage(),
+          ),
+        ),
+        GoRoute(
+          path: LegalDocument.privacyPolicy.path,
+          builder: (context, state) =>
+              const Scaffold(body: Text('Privacy policy test page')),
+        ),
+        GoRoute(
+          path: LegalDocument.termsAndConditions.path,
+          builder: (context, state) =>
+              const Scaffold(body: Text('Terms test page')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).map((c) => c.value),
+      [false, false],
+    );
+
+    await tester.ensureVisible(find.text('Kebijakan Privasi'));
+    await tester.tap(find.text('Kebijakan Privasi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Privacy policy test page'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).map((c) => c.value),
+      [false, false],
+    );
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Syarat & Ketentuan'));
+    await tester.tap(find.text('Syarat & Ketentuan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Terms test page'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).map((c) => c.value),
+      [true, false],
     );
   });
 
