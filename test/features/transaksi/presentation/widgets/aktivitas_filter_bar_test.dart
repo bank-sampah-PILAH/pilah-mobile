@@ -80,6 +80,18 @@ void main() {
     expect(find.text('12 Bulan'), findsNothing);
   });
 
+  testWidgets('phone: the type segments sit above the period field',
+      (tester) async {
+    await pumpBar(tester,
+        width: 360, tipeTersedia: AktivitasTipeFilter.values.toSet());
+
+    final segments = find.byType(SegmentedButton<AktivitasTipeFilter>);
+    expect(segments, findsOneWidget);
+    expect(tester.getRect(segments).bottom,
+        lessThan(tester.getRect(find.text('Bulan Ini')).top));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('phone: export is an icon button with a tooltip', (tester) async {
     await pumpBar(tester, width: 360);
 
