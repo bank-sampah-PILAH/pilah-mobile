@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
@@ -123,5 +124,48 @@ void main() {
     final result = await AktivitasRepositoryImpl(network)
         .history(const TransaksiFilter.semua());
     expect(result.isLeft(), isTrue);
+  });
+
+  test(
+      'a voided setoran stays in the feed, marked Dibatalkan and muted (PIL-428)',
+      () async {
+    Map<String, dynamic> setoran(String id, String status) => {
+          'tipe': 'setoran',
+          'data': {
+            'id': id,
+            'nasabah_nama': 'Ani',
+            'tanggal': '2026-09-03T08:00:00+07:00',
+            'total_nilai': '5000.00',
+            'total_berat_kg': '1.5',
+            'status': status,
+          }
+        };
+    when(() => network.get('/api/v1/aktivitas',
+            queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => Response(
+              requestOptions: RequestOptions(path: '/api/v1/aktivitas'),
+              data: {
+                'count': 2,
+                'next': null,
+                'summary': null,
+                'results': [
+                  setoran('batal', 'dibatalkan'),
+                  setoran('tetap', 'tercatat'),
+                ],
+              },
+            ));
+
+    final result = await AktivitasRepositoryImpl(network)
+        .history(const TransaksiFilter.semua());
+
+    result.fold((error) => fail(error.toString()), (page) {
+      final [batal, tetap] = page.items;
+      expect(batal.transaksi!.isDibatalkan, isTrue);
+      expect(batal.badge, 'Dibatalkan');
+      expect(batal.amountColor, AppColors.grey100);
+      expect(tetap.transaksi!.isDibatalkan, isFalse);
+      expect(tetap.badge, isNull);
+      expect(tetap.amountColor, isNull);
+    });
   });
 }
