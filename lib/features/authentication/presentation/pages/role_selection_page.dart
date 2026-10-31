@@ -12,6 +12,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
+import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -31,6 +32,22 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
   GoogleRegistrationRole? _selectedRole;
   GoogleRegistrationRequired? _registration;
   bool _isChangingAccount = false;
+  bool _acceptedPrivacyPolicy = false;
+  bool _acceptedTermsAndConditions = false;
+
+  bool get _canContinue =>
+      _selectedRole != null &&
+      _acceptedPrivacyPolicy &&
+      _acceptedTermsAndConditions;
+
+  void _continueRegistration() {
+    final role = _selectedRole;
+    if (!_canContinue || role == null) return;
+    if (ref.read(authenticationProvider) is GoogleRegistrationSubmitting) {
+      return;
+    }
+    ref.read(authenticationProvider.notifier).registerGoogleRole(role);
+  }
 
   @override
   void initState() {
@@ -169,6 +186,29 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                       if (index < roleOptions.length - 1)
                         const SizedBox(height: 12),
                     ],
+                    const SizedBox(height: 24),
+                    Text('Persetujuan', style: AppTextStyle.title1),
+                    const SizedBox(height: 8),
+                    _legalConsent(
+                      context: context,
+                      document: LegalDocument.privacyPolicy,
+                      title: 'Kebijakan Privasi',
+                      accepted: _acceptedPrivacyPolicy,
+                      enabled: !isLoading,
+                      onChanged: (accepted) => setState(
+                        () => _acceptedPrivacyPolicy = accepted,
+                      ),
+                    ),
+                    _legalConsent(
+                      context: context,
+                      document: LegalDocument.termsAndConditions,
+                      title: 'Syarat & Ketentuan',
+                      accepted: _acceptedTermsAndConditions,
+                      enabled: !isLoading,
+                      onChanged: (accepted) => setState(
+                        () => _acceptedTermsAndConditions = accepted,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -188,11 +228,8 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
               child: AppButton(
                 label: 'Lanjutkan',
                 isLoading: isLoading,
-                onPressed: _selectedRole == null
-                    ? null
-                    : () => ref
-                        .read(authenticationProvider.notifier)
-                        .registerGoogleRole(_selectedRole!),
+                onPressed:
+                    _canContinue && !isLoading ? _continueRegistration : null,
               ),
             ),
           ],
@@ -200,6 +237,37 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
       ),
     );
   }
+}
+
+Widget _legalConsent({
+  required BuildContext context,
+  required LegalDocument document,
+  required String title,
+  required bool accepted,
+  required bool enabled,
+  required ValueChanged<bool> onChanged,
+}) {
+  return Row(
+    children: [
+      Checkbox(
+        value: accepted,
+        semanticLabel: 'Saya menyetujui $title',
+        onChanged: enabled ? (value) => onChanged(value ?? false) : null,
+      ),
+      Expanded(
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text('Saya menyetujui ', style: AppTextStyle.small),
+            TextButton(
+              onPressed: () => context.push(document.path),
+              child: Text(title),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 class _VerifiedIdentity extends StatelessWidget {
