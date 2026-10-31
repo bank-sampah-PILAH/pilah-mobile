@@ -152,23 +152,47 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
               final paired =
                   constraints.maxWidth >= LayoutBreakpoint.mediumMinWidth &&
                       MediaQuery.textScalerOf(context).scale(16) <= 24;
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
+              Widget roleCard(_RoleOption option) => _RoleCard(
+                    option: option,
+                    selected: _selectedRole == option.value,
+                    enabled: !isBusy,
+                    onTap: () => setState(() => _selectedRole = option.value),
+                  );
+
+              if (!paired) {
+                return Wrap(
+                  runSpacing: 16,
+                  children: [
+                    for (final option in roleOptions)
+                      SizedBox(
+                        width: constraints.maxWidth,
+                        child: roleCard(option),
+                      ),
+                  ],
+                );
+              }
+
+              return Column(
                 children: [
-                  for (final option in roleOptions)
-                    SizedBox(
-                      width: paired
-                          ? (constraints.maxWidth - 16) / 2
-                          : constraints.maxWidth,
-                      child: _RoleCard(
-                        option: option,
-                        selected: _selectedRole == option.value,
-                        enabled: !isBusy,
-                        onTap: () =>
-                            setState(() => _selectedRole = option.value),
+                  for (var index = 0;
+                      index < roleOptions.length;
+                      index += 2) ...[
+                    if (index > 0) const SizedBox(height: 16),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: roleCard(roleOptions[index])),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: index + 1 < roleOptions.length
+                                ? roleCard(roleOptions[index + 1])
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
                       ),
                     ),
+                  ],
                 ],
               );
             }),

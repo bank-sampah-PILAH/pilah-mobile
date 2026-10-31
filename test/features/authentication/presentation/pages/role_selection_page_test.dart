@@ -68,12 +68,23 @@ void main() {
       expect(find.byKey(const ValueKey('onboarding-sidebar')),
           size.width >= 840 ? findsOneWidget : findsNothing);
       expect(find.byType(OnboardingFlowLayout), findsOneWidget);
-      final first = tester
-          .getRect(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
-      final second = tester.getRect(find.text(
-          kIsWeb ? 'Pengelola Bank Sampah Induk' : 'Pengurus Bank Sampah'));
+      final firstTitle = kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah';
+      final secondTitle =
+          kIsWeb ? 'Pengelola Bank Sampah Induk' : 'Pengurus Bank Sampah';
+      final first = tester.getRect(find.text(firstTitle));
+      final second = tester.getRect(find.text(secondTitle));
       if (size.width >= 600) {
         expect(second.left, greaterThan(first.right));
+        Finder cardFor(String title) => find
+            .ancestor(
+              of: find.text(title),
+              matching: find.byWidgetPredicate((widget) =>
+                  widget is Semantics &&
+                  widget.properties.inMutuallyExclusiveGroup == true),
+            )
+            .first;
+        expect(tester.getSize(cardFor(firstTitle)).height,
+            tester.getSize(cardFor(secondTitle)).height);
       } else {
         expect(second.top, greaterThan(first.bottom));
       }
