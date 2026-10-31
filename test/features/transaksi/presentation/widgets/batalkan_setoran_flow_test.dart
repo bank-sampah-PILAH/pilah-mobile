@@ -190,6 +190,18 @@ void main() {
       expect(feed.loads, 0);
     });
 
+    testWidgets('Batal closes the dialog and sends nothing', (tester) async {
+      final container = await pumpFeed(tester);
+      await openHapus(tester);
+
+      await tester.tap(find.text('Batal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hapus Setoran?'), findsNothing);
+      expect(api.requests, isEmpty);
+      expect(container.read(aktivitasSelectionProvider), 't1');
+    });
+
     testWidgets('a voided row cannot be selected', (tester) async {
       await pumpFeed(tester, items: [
         _setoran('t1', 'Budi', dibatalkan: true),

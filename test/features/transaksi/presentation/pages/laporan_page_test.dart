@@ -466,6 +466,16 @@ void main() {
       expect(find.text('Edit Setoran'), findsOneWidget);
     });
 
+    testWidgets('the header Hapus asks for an alasan (PIL-428)',
+        (tester) async {
+      await pumpSelectable(tester);
+
+      await tester.tap(find.byKey(AktivitasSelectionBar.hapusKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hapus Setoran?'), findsOneWidget);
+    });
+
     testWidgets('Back leaves the selection before it leaves the page',
         (tester) async {
       final container = await pumpSelectable(tester);
