@@ -41,6 +41,10 @@ class TransaksiEntity {
   /// Aktivitas, PIL-282) aren't stuck re-parsing a display string.
   final DateTime? tanggal;
 
+  /// Setoran yang dibatalkan (PIL-428) tetap tampil di riwayat, tetapi tidak
+  /// lagi dihitung ke saldo maupun laporan.
+  final bool isDibatalkan;
+
   TransaksiEntity({
     this.id = '',
     required this.initials,
@@ -54,6 +58,7 @@ class TransaksiEntity {
     required this.balance,
     required this.items,
     this.tanggal,
+    this.isDibatalkan = false,
   });
 
   TransaksiEntity copyWith({bool? isWaSuccess}) {
@@ -70,6 +75,7 @@ class TransaksiEntity {
       balance: balance,
       items: items,
       tanggal: tanggal,
+      isDibatalkan: isDibatalkan,
     );
   }
 }

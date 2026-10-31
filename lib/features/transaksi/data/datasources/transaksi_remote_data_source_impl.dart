@@ -209,6 +209,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       balance: '',
       items: const [],
       tanggal: tanggal,
+      isDibatalkan: json['status']?.toString() == 'dibatalkan',
     );
   }
 

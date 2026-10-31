@@ -147,7 +147,13 @@ void main() {
               data: {
                 'count': 2,
                 'next': null,
-                'summary': null,
+                'summary': {
+                  'jumlah_transaksi': 1,
+                  'total_berat': '1.500',
+                  'total_setoran': 5000,
+                  'total_pencairan': 0,
+                  'saldo': 5000
+                },
                 'results': [
                   setoran('batal', 'dibatalkan'),
                   setoran('tetap', 'tercatat'),
