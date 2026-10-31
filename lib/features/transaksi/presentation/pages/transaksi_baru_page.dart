@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
@@ -34,6 +37,45 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+const _setoranTutorialSeenKey = 'pilah.setoran_tutorial_seen';
+
+final _setoranTutorialProgressProvider = Provider<_SetoranTutorialProgress>(
+  (ref) => _SetoranTutorialProgress(),
+);
+
+class _SetoranTutorialProgress {
+  bool _seenInMemory = false;
+
+  Future<bool> hasSeen() async {
+    if (!kIsWeb) return _seenInMemory;
+    try {
+      return (await SharedPreferences.getInstance())
+              .getBool(_setoranTutorialSeenKey) ??
+          false;
+    } on Exception catch (error) {
+      debugPrint('Failed to read setoran tutorial status: $error');
+      return false;
+    }
+  }
+
+  void markSeen() {
+    if (!kIsWeb) {
+      _seenInMemory = true;
+      return;
+    }
+    unawaited(_persistSeen());
+  }
+
+  Future<void> _persistSeen() async {
+    try {
+      await (await SharedPreferences.getInstance())
+          .setBool(_setoranTutorialSeenKey, true);
+    } on Exception catch (error) {
+      debugPrint('Failed to save setoran tutorial status: $error');
+    }
+  }
+}
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
 /// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
@@ -76,6 +118,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
   bool _hasSubmitted = false;
   bool _isSaving = false;
   String? _idempotencyKey;
+  late final _SetoranTutorialProgress _tutorialProgress;
   final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
   final _itemsTutorialKey = GlobalKey<State<StatefulWidget>>();
   final _saveTutorialKey = GlobalKey<State<StatefulWidget>>();
@@ -89,9 +132,12 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
   @override
   void initState() {
     super.initState();
+    _tutorialProgress = ref.read(_setoranTutorialProgressProvider);
     ShowcaseView.register(
       enableAutoScroll: true,
       disableMovingAnimation: true,
+      onFinish: _tutorialProgress.markSeen,
+      onDismiss: (_) => _tutorialProgress.markSeen(),
       globalTooltipActionConfig: const TooltipActionConfig(
         alignment: MainAxisAlignment.spaceBetween,
         position: TooltipActionPosition.inside,
@@ -113,7 +159,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
       ],
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ShowcaseView.get().startShowCase(_tutorialKeys);
+      unawaited(_showTutorialIfNeeded());
     });
 
     // The harga picker reads an app-scoped singleton that is otherwise only
@@ -399,6 +445,11 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     });
   }
 
+  Future<void> _showTutorialIfNeeded() async {
+    if (await _tutorialProgress.hasSeen() || !mounted) return;
+    ShowcaseView.get().startShowCase(_tutorialKeys);
+  }
+
   Widget _tutorialStep({
     required GlobalKey<State<StatefulWidget>> key,
     required String title,
@@ -493,8 +544,8 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                                       selectedCustomer = customer;
                                     });
                                   },
-                                  hasError: _hasSubmitted &&
-                                      selectedCustomer == null,
+                                  hasError:
+                                      _hasSubmitted && selectedCustomer == null,
                                   errorText: 'Nasabah harus dipilih',
                                 ),
                               ),
