@@ -224,6 +224,28 @@ void main() {
     expect(find.text('Botol Kaca'), findsNothing);
   });
 
+  testWidgets('a pencairan row still opens its detail in the wide table',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpList(
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        items: [_pencairan('Budi', _now)],
+      ),
+      isWeb: true,
+    );
+
+    await tester.tap(find.text('Budi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail Pencairan'), findsOneWidget);
+    expect(find.text('Rp 15.000'), findsNWidgets(2));
+  });
+
   testWidgets('a setoran expands inline without repeating row details',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -252,6 +274,22 @@ void main() {
           'diubah_oleh_nama': 'Ibu Sari',
           'items': [],
         },
+        {
+          'versi': 2,
+          'total_nilai': '4500',
+          'catatan': 'Catatan terdahulu',
+          'alasan': 'Penyesuaian',
+          'diubah_oleh_nama': 'Pak Budi',
+          'diubah_pada': '2026-10-04T12:34:00Z',
+          'items': [
+            {
+              'nama_sampah': 'Kardus',
+              'berat': '1.25',
+              'harga': '800',
+              'subtotal': '1000',
+            },
+          ],
+        },
       ],
     });
     api.latency = const Duration(milliseconds: 300);
@@ -275,6 +313,12 @@ void main() {
     expect(find.text('Ditimbang ulang'), findsOneWidget);
     expect(find.text('RIWAYAT PERUBAHAN'), findsOneWidget);
     expect(find.text('Alasan: Salah timbang'), findsOneWidget);
+    expect(
+      find.textContaining('Diubah oleh Pak Budi • 04/10/2026'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Kardus •'), findsOneWidget);
+    expect(find.text('Catatan: Catatan terdahulu'), findsOneWidget);
     expect(find.text('Total Setoran'), findsNothing);
     expect(find.byType(BottomSheet), findsNothing);
     expect(find.byType(Dialog), findsNothing);
