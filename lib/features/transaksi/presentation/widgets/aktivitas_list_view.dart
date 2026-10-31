@@ -310,121 +310,163 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     final selection = ref.watch(aktivitasSelectionProvider);
     final selecting = selection != null;
     final selected = selectable && selection == id;
-    final notifier = ref.read(aktivitasSelectionProvider.notifier);
 
     return HoldToSelect(
       enabled: selectable && !selecting,
       bleed: _selectedBleed,
-      onSelected: () {
-        setState(() => _expanded = false);
-        notifier.select(id);
-      },
+      onSelected: () => _select(id),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Semantics(
-                button: true,
-                expanded: expandable && _expanded,
-                hint: selecting || !expandable
-                    ? null
-                    : _expanded
-                        ? 'Ketuk untuk menutup rincian'
-                        : 'Ketuk untuk melihat rincian',
-                child: InkWell(
-                  key: selected
-                      ? const ValueKey('aktivitas-row-selected')
-                      : null,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  onTap: () {
-                    if (selecting) {
-                      if (selectable) notifier.toggle(id);
-                      return;
-                    }
-                    if (expandable) {
-                      setState(() => _expanded = !_expanded);
-                    } else {
-                      _openPencairanDetail(context, item);
-                    }
-                  },
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ActivityItem(
-                          avatarText: item.avatarText,
-                          avatarColor: item.avatarColor,
-                          avatarTextColor: item.avatarTextColor,
-                          title: item.title,
-                          subtitleLines: item.subtitleLines,
-                          amount: item.amount,
-                          amountColor: item.amountColor,
-                          trailingCaptions: item.trailingCaptions,
-                          badge: item.badge,
-                        ),
-                      ),
-                      if (expandable)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Icon(
-                            _expanded ? Icons.expand_less : Icons.expand_more,
-                            color: AppColors.grey100,
-                            size: 20,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+              _buildActivityRow(
+                context,
+                item,
+                id,
+                expandable,
+                selectable,
+                selecting,
+                selected,
               ),
-              if (expandable)
-                AnimatedSize(
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : const Duration(milliseconds: 180),
-                  curve: Curves.easeInOut,
-                  alignment: Alignment.topCenter,
-                  child: _expanded
-                      ? AktivitasSetoranDetail(
-                          key: ValueKey('setoran-details-$id'),
-                          transactionId: id,
-                          loadDetail: (id) => ref
-                              .read(transaksiProvider.notifier)
-                              .fetchTransaksiDetail(id),
-                        )
-                      : const SizedBox.shrink(),
-                ),
+              if (expandable) _buildDetails(id),
             ],
           ),
-          if (selected)
-            Positioned(
-              top: 0,
-              bottom: 0,
-              left: -_selectedBleed,
-              right: -_selectedBleed,
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  key: const ValueKey('aktivitas-row-selected-tint'),
-                  decoration: BoxDecoration(
-                    color: AppColors.greenDark.withValues(alpha: 0.12),
-                    border: Border.all(color: AppColors.greenDark, width: 1.5),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-              ),
-            ),
-          if (selected)
-            const Positioned(
-              top: 6,
-              left: 6 - _selectedBleed,
-              child: CircleAvatar(
-                radius: 10,
-                backgroundColor: AppColors.greenDark,
-                child: Icon(Icons.check, color: Colors.white, size: 14),
-              ),
-            ),
+          if (selected) _selectedTint(),
+          if (selected) _selectionIndicator(),
         ],
       ),
     );
   }
+
+  void _select(String id) {
+    setState(() => _expanded = false);
+    ref.read(aktivitasSelectionProvider.notifier).select(id);
+  }
+
+  Widget _buildActivityRow(
+    BuildContext context,
+    ActivitasEntity item,
+    String id,
+    bool expandable,
+    bool selectable,
+    bool selecting,
+    bool selected,
+  ) =>
+      Semantics(
+        button: true,
+        expanded: expandable && _expanded,
+        hint: _tapHint(selecting, expandable),
+        child: InkWell(
+          key: selected ? const ValueKey('aktivitas-row-selected') : null,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          onTap: () => _handleTap(
+            context,
+            item,
+            id,
+            expandable,
+            selectable,
+            selecting,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: ActivityItem(
+                  avatarText: item.avatarText,
+                  avatarColor: item.avatarColor,
+                  avatarTextColor: item.avatarTextColor,
+                  title: item.title,
+                  subtitleLines: item.subtitleLines,
+                  amount: item.amount,
+                  amountColor: item.amountColor,
+                  trailingCaptions: item.trailingCaptions,
+                  badge: item.badge,
+                ),
+              ),
+              if (expandable)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: AppColors.grey100,
+                    size: 20,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+
+  String? _tapHint(bool selecting, bool expandable) {
+    if (selecting || !expandable) return null;
+    return _expanded
+        ? 'Ketuk untuk menutup rincian'
+        : 'Ketuk untuk melihat rincian';
+  }
+
+  void _handleTap(
+    BuildContext context,
+    ActivitasEntity item,
+    String id,
+    bool expandable,
+    bool selectable,
+    bool selecting,
+  ) {
+    if (selecting) {
+      if (selectable) {
+        ref.read(aktivitasSelectionProvider.notifier).toggle(id);
+      }
+      return;
+    }
+    if (expandable) {
+      setState(() => _expanded = !_expanded);
+    } else {
+      _openPencairanDetail(context, item);
+    }
+  }
+
+  Widget _buildDetails(String id) => AnimatedSize(
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: _expanded
+            ? AktivitasSetoranDetail(
+                key: ValueKey('setoran-details-$id'),
+                transactionId: id,
+                loadDetail: (id) => ref
+                    .read(transaksiProvider.notifier)
+                    .fetchTransaksiDetail(id),
+              )
+            : const SizedBox.shrink(),
+      );
+
+  Widget _selectedTint() => Positioned(
+        top: 0,
+        bottom: 0,
+        left: -_selectedBleed,
+        right: -_selectedBleed,
+        child: IgnorePointer(
+          child: DecoratedBox(
+            key: const ValueKey('aktivitas-row-selected-tint'),
+            decoration: BoxDecoration(
+              color: AppColors.greenDark.withValues(alpha: 0.12),
+              border: Border.all(color: AppColors.greenDark, width: 1.5),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
+        ),
+      );
+
+  Widget _selectionIndicator() => const Positioned(
+        top: 6,
+        left: 6 - _selectedBleed,
+        child: CircleAvatar(
+          radius: 10,
+          backgroundColor: AppColors.greenDark,
+          child: Icon(Icons.check, color: Colors.white, size: 14),
+        ),
+      );
 }
