@@ -236,6 +236,8 @@ void main() {
             '${two(waktu.hour)}.${two(waktu.minute)}'),
         findsOneWidget);
     expect(find.text('Alasan: Salah nasabah'), findsOneWidget);
+    // Computed without the voided setoran, the saldo "after" it would mislead.
+    expect(find.text('Saldo Setelah Transaksi'), findsNothing);
   });
 
   testWidgets('a tercatat setoran shows no pembatalan', (tester) async {

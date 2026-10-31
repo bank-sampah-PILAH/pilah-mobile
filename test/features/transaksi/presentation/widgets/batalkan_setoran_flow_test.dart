@@ -256,6 +256,16 @@ void main() {
       expect(find.byKey(BatalkanSetoranDialog.alasanKey), findsOneWidget);
     });
 
+    testWidgets('the dialog stays narrow on a wide screen', (tester) async {
+      await pumpTable(tester, [_setoran('t1', 'Budi')]);
+
+      await tester.tap(find.byKey(const ValueKey('aktivitas-hapus')));
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(find.byType(AlertDialog)).width,
+          lessThanOrEqualTo(520));
+    });
+
     testWidgets('a voided row is labelled and offers no action',
         (tester) async {
       await pumpTable(tester, [_setoran('t1', 'Budi', dibatalkan: true)]);
