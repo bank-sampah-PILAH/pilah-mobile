@@ -74,6 +74,7 @@ dependencies:
   another_flushbar: ^2.2.4
   path_provider: ^2.1.5
   share_plus: ^13.3.0
+  showcaseview: ^5.1.0
   image_cropper: ^12.2.1
   url_launcher: ^6.3.2
   pdfrx: ^2.4.4
