@@ -20,21 +20,21 @@ void main() {
   group('SideSheetPresentation.resolve', () {
     test('a phone keeps the full-screen page', () {
       expect(
-        SideSheetPresentation.resolve(width: 390, isWebOverride: true),
+        SideSheetPresentation.resolve(width: 390, isWeb: true),
         SideSheetPresentation.fullScreen,
       );
     });
 
     test('a tablet-width window gets a side sheet', () {
       expect(
-        SideSheetPresentation.resolve(width: 768, isWebOverride: true),
+        SideSheetPresentation.resolve(width: 768, isWeb: true),
         SideSheetPresentation.sideSheet,
       );
     });
 
     test('a desktop browser window gets a side sheet', () {
       expect(
-        SideSheetPresentation.resolve(width: 1440, isWebOverride: true),
+        SideSheetPresentation.resolve(width: 1440, isWeb: true),
         SideSheetPresentation.sideSheet,
       );
     });
@@ -44,7 +44,7 @@ void main() {
         expect(
           SideSheetPresentation.resolve(
             width: LayoutBreakpoint.mediumMinWidth - 1,
-            isWebOverride: true,
+            isWeb: true,
           ),
           SideSheetPresentation.fullScreen,
         );
@@ -54,7 +54,7 @@ void main() {
         expect(
           SideSheetPresentation.resolve(
             width: LayoutBreakpoint.mediumMinWidth,
-            isWebOverride: true,
+            isWeb: true,
           ),
           SideSheetPresentation.sideSheet,
           reason: 'the boundary belongs to the wider block, as in '
@@ -64,7 +64,7 @@ void main() {
 
       test('a zero width is a full-screen page rather than a crash', () {
         expect(
-          SideSheetPresentation.resolve(width: 0, isWebOverride: true),
+          SideSheetPresentation.resolve(width: 0, isWeb: true),
           SideSheetPresentation.fullScreen,
           reason: 'the first frame can run before the size is known',
         );
@@ -72,7 +72,7 @@ void main() {
 
       test('a negative width is a full-screen page too', () {
         expect(
-          SideSheetPresentation.resolve(width: -1, isWebOverride: true),
+          SideSheetPresentation.resolve(width: -1, isWeb: true),
           SideSheetPresentation.fullScreen,
         );
       });
@@ -89,7 +89,7 @@ void main() {
     group('the platform', () {
       test('a native tablet keeps the full-screen page', () {
         expect(
-          SideSheetPresentation.resolve(width: 768, isWebOverride: false),
+          SideSheetPresentation.resolve(width: 768, isWeb: false),
           SideSheetPresentation.fullScreen,
           reason: 'a tablet is not compact, so width alone said side sheet; '
               'the native app has no browser shell to leave behind',
@@ -98,21 +98,21 @@ void main() {
 
       test('a native window as wide as a desktop keeps it too', () {
         expect(
-          SideSheetPresentation.resolve(width: 1440, isWebOverride: false),
+          SideSheetPresentation.resolve(width: 1440, isWeb: false),
           SideSheetPresentation.fullScreen,
         );
       });
 
       test('the same tablet width on the web gets a side sheet', () {
         expect(
-          SideSheetPresentation.resolve(width: 768, isWebOverride: true),
+          SideSheetPresentation.resolve(width: 768, isWeb: true),
           SideSheetPresentation.sideSheet,
         );
       });
 
       test('a narrow web window still keeps the full-screen page', () {
         expect(
-          SideSheetPresentation.resolve(width: 390, isWebOverride: true),
+          SideSheetPresentation.resolve(width: 390, isWeb: true),
           SideSheetPresentation.fullScreen,
           reason: 'the width rule still applies on the web; the platform gate '
               'only removes a case, it does not replace the rule',
