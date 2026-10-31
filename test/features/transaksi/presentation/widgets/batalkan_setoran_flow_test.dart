@@ -262,8 +262,12 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('aktivitas-hapus')));
       await tester.pumpAndSettle();
 
-      expect(tester.getSize(find.byType(AlertDialog)).width,
-          lessThanOrEqualTo(520));
+      // The dialog's card, not the full-screen box around it.
+      final card = find
+          .descendant(
+              of: find.byType(AlertDialog), matching: find.byType(Material))
+          .first;
+      expect(tester.getSize(card).width, lessThanOrEqualTo(520));
     });
 
     testWidgets('a voided row is labelled and offers no action',

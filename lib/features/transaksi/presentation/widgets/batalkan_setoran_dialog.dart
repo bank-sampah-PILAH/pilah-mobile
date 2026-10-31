@@ -78,30 +78,34 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
   Widget build(BuildContext context) {
     return AppDialog(
       title: 'Hapus Setoran?',
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Setoran tetap tampil di riwayat dengan label "Dibatalkan", '
-            'tetapi tidak lagi dihitung ke saldo nasabah maupun laporan. '
-            'Saldo nasabah dihitung ulang.',
-            style: AppTextStyle.small,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            key: BatalkanSetoranDialog.alasanKey,
-            controller: _alasan,
-            enabled: !_saving,
-            maxLines: 2,
-            maxLength: 255,
-            decoration: appInputDecoration(
-              hintText: 'Alasan pembatalan',
-              errorText: _error,
-              focusColor: AppColors.danger,
+      // A short form: on a wide window the message would stretch it edge to edge.
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Setoran tetap tampil di riwayat dengan label "Dibatalkan", '
+              'tetapi tidak lagi dihitung ke saldo nasabah maupun laporan. '
+              'Saldo nasabah dihitung ulang.',
+              style: AppTextStyle.small,
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextField(
+              key: BatalkanSetoranDialog.alasanKey,
+              controller: _alasan,
+              enabled: !_saving,
+              maxLines: 2,
+              maxLength: 255,
+              decoration: appInputDecoration(
+                hintText: 'Alasan pembatalan',
+                errorText: _error,
+                focusColor: AppColors.danger,
+              ),
+            ),
+          ],
+        ),
       ),
       confirmLabel: 'Hapus',
       destructive: true,

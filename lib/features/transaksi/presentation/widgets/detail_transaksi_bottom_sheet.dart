@@ -351,40 +351,43 @@ class _DetailTransaksiBottomSheetState
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          // A voided setoran left the saldo; a saldo "after" it would mislead.
+          if (!(_detail?.isDibatalkan ?? false)) ...[
+            const SizedBox(height: 16),
 
-          // Saldo Box
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: mintTint,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Row(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Saldo Setelah Transaksi',
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.grey100,
+            // Saldo Box
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: mintTint,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Saldo Setelah Transaksi',
+                        style: AppTextStyle.small.copyWith(
+                          color: AppColors.grey100,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      balance,
-                      style: AppTextStyle.headline1.copyWith(
-                        color: AppColors.greenDark,
-                        fontWeight: AppFontWeight.bold,
-                        fontSize: AppFontSize.xl,
+                      const SizedBox(height: 4),
+                      Text(
+                        balance,
+                        style: AppTextStyle.headline1.copyWith(
+                          color: AppColors.greenDark,
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.xl,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
 
           if (_detail?.isDibatalkan ?? false) ...[
             const SizedBox(height: 24),
