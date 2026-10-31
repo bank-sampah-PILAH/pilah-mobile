@@ -143,6 +143,15 @@ class TransaksiEditRequest {
   });
 }
 
+/// Write model for POST /transaksi/{id}/batalkan (PIL-428). "Hapus" is a void:
+/// the setoran stays in the riwayat, marked dibatalkan; [alasan] is required.
+class TransaksiBatalRequest {
+  final String id;
+  final String alasan;
+
+  TransaksiBatalRequest({required this.id, required this.alasan});
+}
+
 /// A replaced version of a setoran, shown as "Riwayat perubahan" in the detail.
 class TransaksiRevisiEntity {
   final int versi;
@@ -181,6 +190,12 @@ class TransaksiDetailEntity {
   /// Waktu setoran dicatat.
   final DateTime? tanggal;
 
+  /// Pembatalan (PIL-428): siapa, kapan, dan alasannya. Kosong bila tercatat.
+  final bool isDibatalkan;
+  final String alasanBatal;
+  final String dibatalkanOlehNama;
+  final DateTime? dibatalkanPada;
+
   TransaksiDetailEntity({
     required this.name,
     required this.amountFormatted,
@@ -191,5 +206,9 @@ class TransaksiDetailEntity {
     this.revisi = const [],
     this.hargaPadaTanggal = const {},
     this.tanggal,
+    this.isDibatalkan = false,
+    this.alasanBatal = '',
+    this.dibatalkanOlehNama = '',
+    this.dibatalkanPada,
   });
 }

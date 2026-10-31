@@ -54,6 +54,15 @@ class TransaksiRepositoryImpl implements TransaksiRepository {
   }
 
   @override
+  Future<Either<NetworkException, TransaksiDetailEntity>> batalkanTransaksi(
+      TransaksiBatalRequest request) {
+    return apiCall<TransaksiDetailEntity>(
+      func: remoteDataSource.batalkanTransaksi(request),
+      mapper: (result) => result as TransaksiDetailEntity,
+    );
+  }
+
+  @override
   Future<Either<NetworkException, String>> resendWa(String id) {
     return apiCall<String>(
       func: remoteDataSource.resendWa(id),

@@ -127,6 +127,16 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     return _mapDetail(response.data as Map<String, dynamic>);
   }
 
+  @override
+  Future<TransaksiDetailEntity> batalkanTransaksi(
+      TransaksiBatalRequest request) async {
+    final response = await networkService.post(
+      '$_path/${request.id}/batalkan',
+      data: {'alasan': request.alasan.trim()},
+    );
+    return _mapDetail(response.data as Map<String, dynamic>);
+  }
+
   TransaksiDetailEntity _mapDetail(Map<String, dynamic> json) {
     final items = (json['items'] as List? ?? []).map((raw) {
       final item = raw as Map<String, dynamic>;
@@ -175,6 +185,12 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
           e.key.toString(): _toInt(e.value),
       },
       tanggal: DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal(),
+      isDibatalkan: json['status']?.toString() == 'dibatalkan',
+      alasanBatal: json['alasan_batal']?.toString() ?? '',
+      dibatalkanOlehNama: json['dibatalkan_oleh_nama']?.toString() ?? '',
+      dibatalkanPada:
+          DateTime.tryParse(json['dibatalkan_pada']?.toString() ?? '')
+              ?.toLocal(),
     );
   }
 

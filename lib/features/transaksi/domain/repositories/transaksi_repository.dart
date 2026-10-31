@@ -13,6 +13,8 @@ abstract class TransaksiRepository {
       String id);
   Future<Either<NetworkException, TransaksiDetailEntity>> editTransaksi(
       TransaksiEditRequest request);
+  Future<Either<NetworkException, TransaksiDetailEntity>> batalkanTransaksi(
+      TransaksiBatalRequest request);
   Future<Either<NetworkException, TransaksiExport>> exportTransaksi(
     TransaksiFilter filter,
   );
