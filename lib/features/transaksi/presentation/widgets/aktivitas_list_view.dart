@@ -226,7 +226,7 @@ class AktivitasListView extends StatelessWidget {
       }
       children.add(Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        child: _AktivitasRow(item: item),
+        child: _AktivitasRow(key: AktivitasTable.rowKey(item), item: item),
       ));
     }
     return [...children, ...footer];
@@ -288,7 +288,7 @@ void _openPencairanDetail(BuildContext context, ActivitasEntity item) {
 }
 
 class _AktivitasRow extends ConsumerStatefulWidget {
-  const _AktivitasRow({required this.item});
+  const _AktivitasRow({super.key, required this.item});
 
   final ActivitasEntity item;
 

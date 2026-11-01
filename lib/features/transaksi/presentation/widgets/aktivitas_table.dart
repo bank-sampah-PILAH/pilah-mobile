@@ -59,7 +59,12 @@ class AktivitasTable extends StatelessWidget {
     letterSpacing: 0.3,
   );
 
-  static Key rowKey(int index) => ValueKey('aktivitas-row-$index');
+  static Key rowKey(ActivitasEntity item) {
+    final id = item.transaksi?.id ?? item.pencairan?.id;
+    return id == null || id.isEmpty
+        ? ObjectKey(item)
+        : ValueKey('aktivitas-row-${item.tipe.name}-$id');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +89,7 @@ class AktivitasTable extends StatelessWidget {
         itemBuilder: (context, i) => i == items.length
             ? Column(children: footer)
             : _Row(
-                key: rowKey(i),
+                key: rowKey(items[i]),
                 item: items[i],
                 onTap: () => onTap(items[i]),
                 onEdit: onEdit == null ? null : () => onEdit!(items[i]),

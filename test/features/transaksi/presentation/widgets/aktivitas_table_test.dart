@@ -39,7 +39,7 @@ TransaksiDetailEntity _detail(String item) => TransaksiDetailEntity(
 
 ActivitasEntity _pencairan(String name) =>
     ActivitasEntity.fromPencairan(Pencairan(
-      id: 'p-1',
+      id: 'p-$name',
       nasabahId: 'n-1',
       nasabahNama: name,
       nominal: 15000,
@@ -80,6 +80,19 @@ void main() {
     ));
   }
 
+  test('row keys follow record identity', () {
+    expect(
+      AktivitasTable.rowKey(_setoran('Ani', 't1')),
+      AktivitasTable.rowKey(_setoran('Budi', 't1')),
+    );
+    final withoutId = _setoran('Ani', '');
+    expect(AktivitasTable.rowKey(withoutId), AktivitasTable.rowKey(withoutId));
+    expect(
+      AktivitasTable.rowKey(withoutId),
+      isNot(AktivitasTable.rowKey(_setoran('Ani', ''))),
+    );
+  });
+
   testWidgets('setoran rows expand and collapse their own details',
       (tester) async {
     final items = [_setoran('Ani', 't1'), _setoran('Budi', 't2')];
@@ -114,8 +127,38 @@ void main() {
     expect(find.text('Kardus'), findsOneWidget);
   });
 
+  testWidgets('replacing an expanded activity does not reuse its details',
+      (tester) async {
+    final loaded = <String>[];
+    Future<TransaksiDetailEntity?> loadDetail(String id) async {
+      loaded.add(id);
+      return _detail(id == 't1' ? 'Plastik' : 'Kardus');
+    }
+
+    await pumpTable(
+      tester,
+      items: [_setoran('Ani', 't1')],
+      loadSetoranDetail: loadDetail,
+    );
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik'), findsOneWidget);
+
+    await pumpTable(
+      tester,
+      items: [_setoran('Citra', 't2')],
+      loadSetoranDetail: loadDetail,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Citra'), findsOneWidget);
+    expect(find.text('Kardus'), findsNothing);
+    expect(loaded, ['t1']);
+  });
+
   testWidgets('shows column headings and one row per activity', (tester) async {
-    await pumpTable(tester, items: [_pencairan('Ani'), _pencairan('Budi')]);
+    final items = [_pencairan('Ani'), _pencairan('Budi')];
+    await pumpTable(tester, items: items);
 
     for (final heading in ['WAKTU', 'NASABAH', 'TIPE', 'RINCIAN', 'NOMINAL']) {
       expect(find.text(heading), findsOneWidget);
@@ -123,9 +166,10 @@ void main() {
     expect(find.text('Ani'), findsOneWidget);
     expect(find.text('Budi'), findsOneWidget);
     expect(find.text('Pencairan'), findsNWidgets(2));
-    expect(find.byKey(AktivitasTable.rowKey(0)), findsOneWidget);
-    expect(find.byKey(AktivitasTable.rowKey(1)), findsOneWidget);
-    expect(find.byKey(AktivitasTable.rowKey(2)), findsNothing);
+    expect(find.byKey(AktivitasTable.rowKey(items[0])), findsOneWidget);
+    expect(find.byKey(AktivitasTable.rowKey(items[1])), findsOneWidget);
+    expect(
+        find.byKey(AktivitasTable.rowKey(_pencairan('Citra'))), findsNothing);
   });
 
   testWidgets('a pencairan amount is red', (tester) async {
@@ -157,11 +201,12 @@ void main() {
   });
 
   testWidgets('hovering a row tints it like the nasabah table', (tester) async {
-    await pumpTable(tester, items: [_pencairan('Ani'), _pencairan('Budi')]);
+    final items = [_pencairan('Ani'), _pencairan('Budi')];
+    await pumpTable(tester, items: items);
     Color? tint(int i) => tester
         .widget<Container>(find
             .descendant(
-                of: find.byKey(AktivitasTable.rowKey(i)),
+                of: find.byKey(AktivitasTable.rowKey(items[i])),
                 matching: find.byType(Container))
             .first)
         .color;
@@ -170,7 +215,8 @@ void main() {
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     addTearDown(mouse.removePointer);
     await mouse.addPointer(location: Offset.zero);
-    await mouse.moveTo(tester.getCenter(find.byKey(AktivitasTable.rowKey(0))));
+    await mouse
+        .moveTo(tester.getCenter(find.byKey(AktivitasTable.rowKey(items[0]))));
     await tester.pump();
 
     expect(tint(0), AppColors.greenLight.withValues(alpha: 0.45));

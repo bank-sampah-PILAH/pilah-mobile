@@ -26,6 +26,8 @@ class _TestRiwayatNotifier extends RiwayatAktivitasNotifier {
   final RiwayatAktivitasState initialState;
   final calls = <String>[];
 
+  void updateState(RiwayatAktivitasState value) => state = value;
+
   @override
   RiwayatAktivitasState build() => initialState;
 
@@ -326,6 +328,64 @@ void main() {
     await tester.tap(find.text('Ani'));
     await tester.pumpAndSettle();
     expect(find.text('Aluminium'), findsNothing);
+  });
+
+  testWidgets('replacing an expanded feed item does not reuse its details',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    api.on('GET', '/api/v1/transaksi/t1', json: {
+      'nasabah_nama': 'Ani',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '42000',
+      'items': [
+        {
+          'nama_sampah_snapshot': 'Plastik',
+          'berat': '1',
+          'harga_snapshot': '5000',
+          'subtotal': '5000',
+        },
+      ],
+    });
+    api.on('GET', '/api/v1/transaksi/t2', json: {
+      'nasabah_nama': 'Citra',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '42000',
+      'items': [
+        {
+          'nama_sampah_snapshot': 'Kardus',
+          'berat': '1',
+          'harga_snapshot': '5000',
+          'subtotal': '5000',
+        },
+      ],
+    });
+    await pumpList(
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        items: [_setoran('Ani', _now, id: 't1')],
+      ),
+    );
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik'), findsOneWidget);
+
+    feedNotifier.updateState(RiwayatAktivitasState(
+      status: AktivitasStatus.loaded,
+      search: 'Citra',
+      items: [_setoran('Citra', _now, id: 't2')],
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Citra'), findsOneWidget);
+    expect(find.text('Kardus'), findsNothing);
+    expect(api.requests.map((request) => request.path), [
+      '/api/v1/transaksi/t1',
+    ]);
   });
 
   testWidgets('a failed inline detail can be retried', (tester) async {
