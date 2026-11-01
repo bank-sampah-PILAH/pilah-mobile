@@ -45,6 +45,7 @@ void main() {
                       'tanggal': '2026-09-03T08:00:00+07:00',
                       'total_nilai': '5000.00',
                       'total_berat_kg': '1.5',
+                      'jumlah_item': 2,
                     }
                   },
                   {
@@ -78,6 +79,7 @@ void main() {
       expect(page.items.map((item) => item.tipe),
           [ActivitasTipe.setoran, ActivitasTipe.pencairan]);
       expect(page.items.first.transaksi!.id, 'setoran-1');
+      expect(page.items.first.subtitleLines, ['2 jenis • 1,5 kg']);
       expect(page.items.last.pencairan!.diperbarui, isTrue);
     });
     verify(() => network.get('/api/v1/aktivitas', queryParams: params))
