@@ -33,7 +33,8 @@ void main() {
             'no dead menu is left for Pengurus to see',
       );
       expect(staff.map((d) => d.branchIndex), isNot(contains(8)));
-      expect(staff.map((d) => d.icon), isNot(contains(Icons.campaign_outlined)));
+      expect(
+          staff.map((d) => d.icon), isNot(contains(Icons.campaign_outlined)));
     });
 
     test('the bottom bar keeps all five staff destinations', () {

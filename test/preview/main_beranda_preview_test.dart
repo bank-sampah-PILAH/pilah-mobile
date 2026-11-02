@@ -36,8 +36,7 @@ void main() {
     expect(result.fold((_) => true, (_) => false), isTrue);
   });
 
-  testWidgets('the preview registers no pengumuman repository',
-      (tester) async {
+  testWidgets('the preview registers no pengumuman repository', (tester) async {
     await tester.pumpWidget(preview.buildPreviewApp());
 
     expect(di.isRegistered<NasabahPengumumanRepository>(), isFalse,
