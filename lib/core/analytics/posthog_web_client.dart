@@ -32,17 +32,39 @@ class PosthogWebClient implements AnalyticsClient {
       '${host.replaceFirst('.i.', '-assets.i.')}/static/array.js';
 
   Future<void>? _starting;
+  bool _stopped = false;
 
   /// Starts the client. Throws a [StateError] when the library cannot be
   /// loaded, so a caller has to handle that. A failed start is not remembered:
   /// the next call tries again.
   @override
-  Future<void> start() {
+  bool get isAvailable => true;
+
+  @override
+  Future<void> start() async {
     final starting = _starting ??= _load();
     starting.then<void>((_) {}, onError: (Object _) {
       if (identical(_starting, starting)) _starting = null;
     });
-    return starting;
+    await starting;
+    if (!_stopped) return;
+    // Started again after a stop: the library is already loaded and set up,
+    // so it only has to be switched back on.
+    _stopped = false;
+    final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
+    posthog.callMethod('opt_in_capturing'.toJS);
+  }
+
+  @override
+  Future<void> stop() async {
+    final starting = _starting;
+    // Never started, so there is nothing to stop and nothing to load.
+    if (starting == null) return;
+    await starting;
+
+    final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
+    posthog.callMethod('opt_out_capturing'.toJS);
+    _stopped = true;
   }
 
   Future<void> _load() async {
