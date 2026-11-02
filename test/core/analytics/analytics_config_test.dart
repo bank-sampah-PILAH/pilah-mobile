@@ -30,7 +30,7 @@ POSTHOG_ENVIRONMENT=staging
     test('is off, instead of failing, when the env file was never loaded', () {
       dotenv.clean();
 
-      expect(AnalyticsConfig.fromSecrets(), isNull);
+      expect(analyticsConfigFromSecrets(), isNull);
     });
 
     test('stays off when it is enabled but the key is missing', () {
