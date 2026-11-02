@@ -29,7 +29,6 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
-import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
@@ -200,32 +199,31 @@ class AppRouterConfig {
         name: PilihNasabahPencairanPage.route,
         builder: (context, state) => const PilihNasabahPencairanPage(),
       ),
+      // Pengumuman is locked for handover (PIL-436). The paths stay declared
+      // as pure redirects instead of being deleted: an unknown route renders
+      // go_router's "page not found" screen, and PIL-392 forbids a visible
+      // error as firmly as it forbids the page. AppLocations.dashboard then
+      // passes back through the global role redirect, so a nasabah following
+      // an old link is forwarded to their own home rather than a staff page.
+      //
+      // lib/features/pengumuman/ is deliberately untouched, so re-enabling the
+      // feature is restoring these four builders, not rebuilding it. The route
+      // constants stay the source of the paths for the same reason.
       GoRoute(
         path: PengumumanPage.route,
-        name: PengumumanPage.route,
-        builder: (context, state) => PengumumanPage(
-          membershipId: state.uri.queryParameters['keanggotaan_id'],
-        ),
+        redirect: (_, __) => AppLocations.dashboard,
       ),
       GoRoute(
         path: PengumumanDetailPage.route,
-        name: PengumumanDetailPage.route,
-        // Without the row (a stale link) there is nothing to show.
-        redirect: (context, state) =>
-            state.extra is PengumumanEntity ? null : PengumumanPage.route,
-        builder: (context, state) => PengumumanDetailPage(
-          pengumuman: state.extra! as PengumumanEntity,
-        ),
+        redirect: (_, __) => AppLocations.dashboard,
+      ),
+      GoRoute(
+        path: PengumumanKelolaPage.route,
+        redirect: (_, __) => AppLocations.dashboard,
       ),
       GoRoute(
         path: PengumumanFormPage.route,
-        name: PengumumanFormPage.route,
-        // Without args (a stale link, or a router restored on its own) there
-        // is nothing to edit, so fall back to the dashboard.
-        redirect: (context, state) =>
-            state.extra is PengumumanFormArgs ? null : AppLocations.dashboard,
-        builder: (context, state) =>
-            PengumumanFormPage(args: state.extra! as PengumumanFormArgs),
+        redirect: (_, __) => AppLocations.dashboard,
       ),
       GoRoute(
         path: DraftEditorPage.route,
@@ -468,15 +466,6 @@ class AppRouterConfig {
                 path: ProfilePage.route,
                 name: ProfilePage.route,
                 builder: (_, __) => const ProfilePage()),
-          ]),
-          // Kelola Pengumuman: destinasi rail dan drawer staff (branch 8). Di
-          // aplikasi dibuka dari Profil.
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: PengumumanKelolaPage.route,
-              name: PengumumanKelolaPage.route,
-              builder: (context, state) => const PengumumanKelolaPage(),
-            ),
           ]),
         ],
       ),
