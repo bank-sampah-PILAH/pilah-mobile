@@ -6,16 +6,38 @@ import sys
 from urllib.parse import urlsplit
 
 
+ANALYTICS_KEYS = ("ENABLE_ANALYTICS", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
+
+
+def analytics_lines(flavor, values):
+    """Analytics settings to ship, or nothing: it stays off unless explicitly enabled."""
+    if values.get("ENABLE_ANALYTICS", "").lower() != "true":
+        return ""
+    api_key = values.get("POSTHOG_API_KEY", "")
+    host = values.get("POSTHOG_HOST") or "https://us.i.posthog.com"
+    environment = values.get("POSTHOG_ENVIRONMENT", "")
+    # Project keys start with phc_; phx_ is a personal key and must never ship.
+    if not re.fullmatch(r"phc_[A-Za-z0-9]{20,}", api_key):
+        raise ValueError("POSTHOG_API_KEY must be a PostHog project key")
+    if host != "https://us.i.posthog.com":
+        raise ValueError("POSTHOG_HOST must be https://us.i.posthog.com")
+    if environment != flavor:
+        raise ValueError("POSTHOG_ENVIRONMENT must be " + flavor)
+    return (f"ENABLE_ANALYTICS=true\nPOSTHOG_API_KEY={api_key}\n"
+            f"POSTHOG_HOST={host}\nPOSTHOG_ENVIRONMENT={environment}\n")
+
+
 def prepare(flavor, target):
     if flavor not in ("staging", "production"):
         raise ValueError("expected staging or production")
     key = "BASE_URL_DEV" if flavor == "staging" else "BASE_URL_PROD"
     required = {key, "GOOGLE_SERVER_CLIENT_ID"}
+    allowed = required | set(ANALYTICS_KEYS)
     values = {}
     for line in os.environ.get("APP_ENV_FILE", "").splitlines():
         name, separator, value = line.partition("=")
         name = name.strip()
-        if not separator or name not in required:
+        if not separator or name not in allowed:
             continue
         if name in values:
             raise ValueError("duplicate " + name)
@@ -39,7 +61,9 @@ def prepare(flavor, target):
     if not re.fullmatch(r"[0-9]+-[a-zA-Z0-9-]+\.apps\.googleusercontent\.com", client):
         raise ValueError("GOOGLE_SERVER_CLIENT_ID must be a Web OAuth client ID")
     # .env is an asset, not a secret store: discard every other supplied value.
-    pathlib.Path(target).write_text(f"{key}={api_origin}\nGOOGLE_SERVER_CLIENT_ID={client}\nENABLE_DEMO_LOGIN=false\n")
+    pathlib.Path(target).write_text(
+        f"{key}={api_origin}\nGOOGLE_SERVER_CLIENT_ID={client}\nENABLE_DEMO_LOGIN=false\n"
+        + analytics_lines(flavor, values))
 
 
 if __name__ == "__main__":
