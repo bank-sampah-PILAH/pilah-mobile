@@ -16,18 +16,27 @@ Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
     barrierDismissible: false,
     builder: (dialogContext) => PopScope(
       canPop: false,
-      child: AppDialog(
-        title: 'Bantu kami memperbaiki PILAH',
-        message: 'Kami ingin merekam layar dan gerakan Anda saat memakai '
-            'PILAH, untuk melihat di mana pengurus merasa kesulitan. '
-            'Nama nasabah, saldo, foto, email, dan nomor telepon akan ditutup. '
-            'Rekaman hanya dilihat tim PILAH.\n\n'
-            'Anda boleh menolak dan tetap memakai aplikasi seperti biasa, dan '
-            'bisa mengubah pilihan kapan saja di Profil.',
-        confirmLabel: 'Setuju',
-        cancelLabel: 'Tolak',
-        onConfirm: () => Navigator.of(dialogContext).pop(true),
-        onCancel: () => Navigator.of(dialogContext).pop(false),
+      // A long paragraph would stretch the dialog across a wide window and make
+      // its lines too long to read. The limit has to sit outside the dialog:
+      // the Center loosens the window's fixed size so the limit can apply, and
+      // on a phone the screen is narrower than the limit and still wins.
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: AppDialog(
+            title: 'Bantu kami memperbaiki PILAH',
+            message: 'Kami ingin merekam layar dan gerakan Anda saat memakai '
+                'PILAH, untuk melihat di mana pengurus merasa kesulitan. '
+                'Nama nasabah, saldo, foto, email, dan nomor telepon akan '
+                'ditutup. Rekaman hanya dilihat tim PILAH.\n\n'
+                'Anda boleh menolak dan tetap memakai aplikasi seperti biasa, '
+                'dan bisa mengubah pilihan kapan saja di Profil.',
+            confirmLabel: 'Setuju',
+            cancelLabel: 'Tolak',
+            onConfirm: () => Navigator.of(dialogContext).pop(true),
+            onCancel: () => Navigator.of(dialogContext).pop(false),
+          ),
+        ),
       ),
     ),
   );
