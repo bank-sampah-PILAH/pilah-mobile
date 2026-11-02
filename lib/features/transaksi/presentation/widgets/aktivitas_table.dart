@@ -268,24 +268,25 @@ class _RowState extends State<_Row> {
 
   Widget _typeCell(bool expandable) => AktivitasTable._cell(
         2,
-        Align(
-          alignment: Alignment.centerLeft,
-          child: _dibatalkan
-              ? const CustomStatusBadge(
-                  statusText: 'Dibatalkan',
-                  backgroundColor: AppColors.fill,
-                  textColor: AppColors.grey100,
-                )
-              : CustomStatusBadge(
-                  statusText: expandable ? 'Setoran' : 'Pencairan',
-                  backgroundColor: expandable
-                      ? AppColors.greenLight
-                      : AppColors.warningLight,
-                  textColor:
-                      expandable ? AppColors.greenDark : AppColors.warning,
-                ),
-        ),
+        Align(alignment: Alignment.centerLeft, child: _typeBadge(expandable)),
       );
+
+  /// A voided setoran reads Dibatalkan in place of its type (PIL-428).
+  Widget _typeBadge(bool expandable) {
+    if (_dibatalkan) {
+      return const CustomStatusBadge(
+        statusText: 'Dibatalkan',
+        backgroundColor: AppColors.fill,
+        textColor: AppColors.grey100,
+      );
+    }
+    return CustomStatusBadge(
+      statusText: expandable ? 'Setoran' : 'Pencairan',
+      backgroundColor:
+          expandable ? AppColors.greenLight : AppColors.warningLight,
+      textColor: expandable ? AppColors.greenDark : AppColors.warning,
+    );
+  }
 
   Widget _detailCell(TextStyle muted, bool expandable) => AktivitasTable._cell(
         3,
