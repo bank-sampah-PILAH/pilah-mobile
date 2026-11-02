@@ -43,6 +43,24 @@ void main() {
     expect(find.text('Tolak'), findsOneWidget);
   });
 
+  testWidgets('stays a readable width on a wide window', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await open(tester);
+
+    // The long paragraph used to stretch the white surface across the window.
+    // The AlertDialog widget itself always fills it, so the Material inside is
+    // what is measured.
+    final surface = find
+        .descendant(
+            of: find.byType(AlertDialog), matching: find.byType(Material))
+        .first;
+    expect(tester.getSize(surface).width, lessThanOrEqualTo(480));
+  });
+
   testWidgets('agreeing answers true', (tester) async {
     await open(tester);
 
