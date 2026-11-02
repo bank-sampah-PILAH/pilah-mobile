@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
+import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
 import 'package:pilah_mobile/core/analytics/analytics_config.dart';
 
 void main() {
