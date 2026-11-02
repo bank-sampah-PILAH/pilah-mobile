@@ -1,7 +1,12 @@
+import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +16,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
@@ -30,6 +36,50 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.da
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+const _setoranTutorialSeenKey = 'pilah.setoran_tutorial_seen';
+
+final _setoranTutorialProgressProvider = Provider<SetoranTutorialProgress>(
+  (ref) => SetoranTutorialProgress(),
+);
+
+@visibleForTesting
+class SetoranTutorialProgress {
+  SetoranTutorialProgress({bool? isWeb}) : _isWeb = isWeb ?? kIsWeb;
+
+  final bool _isWeb;
+  bool _seenInMemory = false;
+
+  Future<bool> hasSeen() async {
+    if (!_isWeb) return _seenInMemory;
+    try {
+      return (await SharedPreferences.getInstance())
+              .getBool(_setoranTutorialSeenKey) ??
+          false;
+    } on Exception catch (error) {
+      debugPrint('Failed to read setoran tutorial status: $error');
+      return false;
+    }
+  }
+
+  Future<void> markSeen() {
+    if (!_isWeb) {
+      _seenInMemory = true;
+      return Future<void>.value();
+    }
+    return _persistSeen();
+  }
+
+  Future<void> _persistSeen() async {
+    try {
+      await (await SharedPreferences.getInstance())
+          .setBool(_setoranTutorialSeenKey, true);
+    } on Exception catch (error) {
+      debugPrint('Failed to save setoran tutorial status: $error');
+    }
+  }
+}
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
 /// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
@@ -72,10 +122,78 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
   bool _hasSubmitted = false;
   bool _isSaving = false;
   String? _idempotencyKey;
+  late final SetoranTutorialProgress _tutorialProgress;
+  final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _addItemTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _itemDetailsTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _summaryTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _saveTutorialKey = GlobalKey<State<StatefulWidget>>();
+
+  List<GlobalKey<State<StatefulWidget>>> get _tutorialKeys => [
+        _customerTutorialKey,
+        _addItemTutorialKey,
+        _itemDetailsTutorialKey,
+        _summaryTutorialKey,
+        _saveTutorialKey,
+      ];
+
+  TooltipActionButton _tutorialAction({
+    required TooltipDefaultActionType type,
+    required String name,
+    List<GlobalKey> hideActionWidgetForShowcase = const [],
+  }) =>
+      TooltipActionButton.custom(
+        hideActionWidgetForShowcase: hideActionWidgetForShowcase,
+        button: AppButton(
+          label: name,
+          variant: AppButtonVariant.primary,
+          expand: false,
+          onPressed: () {
+            switch (type) {
+              case TooltipDefaultActionType.previous:
+                ShowcaseView.get().previous();
+              case TooltipDefaultActionType.skip:
+                ShowcaseView.get().dismiss();
+              case TooltipDefaultActionType.next:
+                ShowcaseView.get().next();
+            }
+          },
+        ),
+      );
 
   @override
   void initState() {
     super.initState();
+    _tutorialProgress = ref.read(_setoranTutorialProgressProvider);
+    ShowcaseView.register(
+      enableAutoScroll: true,
+      disableMovingAnimation: true,
+      onFinish: () => unawaited(_tutorialProgress.markSeen()),
+      onDismiss: (_) => unawaited(_tutorialProgress.markSeen()),
+      globalTooltipActionConfig: const TooltipActionConfig(
+        alignment: MainAxisAlignment.spaceBetween,
+        position: TooltipActionPosition.inside,
+      ),
+      globalTooltipActions: [
+        _tutorialAction(
+          type: TooltipDefaultActionType.previous,
+          name: 'Sebelumnya',
+          hideActionWidgetForShowcase: [_customerTutorialKey],
+        ),
+        _tutorialAction(
+          type: TooltipDefaultActionType.skip,
+          name: 'Lewati',
+        ),
+        _tutorialAction(
+          type: TooltipDefaultActionType.next,
+          name: 'Lanjut',
+        ),
+      ],
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_showTutorialIfNeeded());
+    });
+
     // The harga picker reads an app-scoped singleton that is otherwise only
     // populated by the Harga page. Load it here so the dropdown has options
     // even when arriving straight from the dashboard. The nasabah picker
@@ -119,10 +237,24 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
 
   /// Tombol simpan. Satu definisi dipakai dua layout: di telepon ia menjadi
   /// bottomNavigationBar, di layar lebar ia duduk di panel samping.
-  Widget _saveButton() => AppButton(
-        label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
-        icon: Icons.save_outlined,
-        onPressed: _isSaving ? null : _handleSubmit,
+  Widget _summaryTutorialStep() => _tutorialStep(
+        key: _summaryTutorialKey,
+        title: 'Periksa total',
+        description:
+            'Harga mengikuti jenis sampah; subtotal dan grand total mengikuti berat.',
+        child: TransactionSummarySection(grandTotal: grandTotal),
+      );
+
+  Widget _saveButton() => _tutorialStep(
+        key: _saveTutorialKey,
+        title: 'Simpan transaksi',
+        description:
+            'Pastikan nasabah, item, dan total sudah benar sebelum menyimpan.',
+        child: AppButton(
+          label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
+          icon: Icons.save_outlined,
+          onPressed: _isSaving ? null : _handleSubmit,
+        ),
       );
 
   /// Kartu mana yang ditandai merah saat ini.
@@ -354,6 +486,37 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     });
   }
 
+  Future<void> _showTutorialIfNeeded() async {
+    if (await _tutorialProgress.hasSeen() || !mounted) return;
+    ShowcaseView.get().startShowCase(_tutorialKeys);
+  }
+
+  Widget _tutorialStep({
+    required GlobalKey<State<StatefulWidget>> key,
+    required String title,
+    required String description,
+    required Widget child,
+  }) =>
+      Showcase(
+        key: key,
+        title: title,
+        description: description,
+        targetShapeBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        tooltipBackgroundColor: AppColors.greenDark,
+        textColor: Colors.white,
+        titleTextStyle: AppTextStyle.headline3.copyWith(color: Colors.white),
+        descTextStyle: AppTextStyle.small.copyWith(color: Colors.white),
+        child: child,
+      );
+
+  @override
+  void dispose() {
+    ShowcaseView.get().unregister();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Lebar jendela menentukan apakah ringkasan menemani isian atau
@@ -380,7 +543,17 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
               // Header
               ContentInset(
                 child: AppBackHeader(
-                    title: 'Transaksi Baru', onBack: () => context.pop()),
+                  title: 'Transaksi Baru',
+                  onBack: () => context.pop(),
+                  actions: [
+                    AppIconButton(
+                      icon: Icons.help_outline,
+                      tooltip: 'Panduan setoran',
+                      onPressed: () =>
+                          ShowcaseView.get().startShowCase(_tutorialKeys),
+                    ),
+                  ],
+                ),
               ),
 
               Expanded(
@@ -400,16 +573,23 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                               // Section 1: PILIH NASABAH
                               const AppFieldLabel('PILIH NASABAH'),
                               const SizedBox(height: 16),
-                              PilihNasabahSection(
-                                selectedCustomer: selectedCustomer,
-                                onCustomerSelected: (customer) {
-                                  setState(() {
-                                    selectedCustomer = customer;
-                                  });
-                                },
-                                hasError:
-                                    _hasSubmitted && selectedCustomer == null,
-                                errorText: 'Nasabah harus dipilih',
+                              _tutorialStep(
+                                key: _customerTutorialKey,
+                                title: 'Pilih nasabah',
+                                description:
+                                    'Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+                                    'ketuk lagi nama nasabah yang tampil.',
+                                child: PilihNasabahSection(
+                                  selectedCustomer: selectedCustomer,
+                                  onCustomerSelected: (customer) {
+                                    setState(() {
+                                      selectedCustomer = customer;
+                                    });
+                                  },
+                                  hasError:
+                                      _hasSubmitted && selectedCustomer == null,
+                                  errorText: 'Nasabah harus dipilih',
+                                ),
                               ),
                               const SizedBox(height: 24),
 
@@ -422,140 +602,33 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                                   Text(
                                     '${setoranItems.length} item',
                                     style: AppTextStyle.small.copyWith(
-                                      color: Colors.grey[500],
+                                      color: AppColors.grey100,
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 12),
 
-                              // Items or Empty State
-                              if (setoranItems.isEmpty)
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(24),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius:
-                                            BorderRadius.circular(AppRadius.lg),
-                                        border: Border.all(
-                                            color: (_hasSubmitted &&
-                                                    setoranItems.isEmpty)
-                                                ? AppColors.danger
-                                                : Colors.grey[300]!,
-                                            width: 1.5),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[50],
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      AppRadius.lg),
-                                            ),
-                                            child: Icon(Icons.add,
-                                                color: Colors.grey[400],
-                                                size: 24),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'Belum Ada Item Setoran',
-                                            style: AppTextStyle.title1.copyWith(
-                                              color: Colors.grey[500],
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Tap tombol di bawah untuk menambah item.',
-                                            style: AppTextStyle.small.copyWith(
-                                              color: Colors.grey[400],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (_hasSubmitted &&
-                                        setoranItems.isEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Padding(
-                                        padding: const EdgeInsets.only(left: 8),
-                                        child: Text(
-                                          'Daftar setoran tidak boleh kosong',
-                                          style: AppTextStyle.small.copyWith(
-                                            color: AppColors.danger,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                )
-                              else
-                                Column(
-                                  children: List.generate(setoranItems.length,
-                                      (index) {
-                                    return ItemSetoranCard(
-                                      index: index,
-                                      itemData: setoranItems[index],
-                                      hasError:
-                                          _flaggedItemIndexes.contains(index),
-                                      errorText: _itemErrorText(index),
-                                      onChanged: (updatedItem) {
-                                        final newId =
-                                            updatedItem['jenis_sampah_id']
-                                                as String?;
-                                        final bool duplicateExists =
-                                            jenisSampahSudahAda(
-                                                setoranItems, index, newId);
-                                        if (duplicateExists) {
-                                          AppNotification.showWarning(
-                                            context,
-                                            title: 'Jenis Sudah Dipilih',
-                                            message:
-                                                'Jenis sampah ini sudah ada di daftar item. Ubah berat pada item yang sudah ada.',
-                                          );
-                                          return;
-                                        }
-                                        setState(() {
-                                          setoranItems[index] = updatedItem;
-                                        });
-                                      },
-                                      onSubmitted: _handleSubmit,
-                                      onDelete: () {
-                                        setState(() {
-                                          setoranItems.removeAt(index);
-                                        });
-                                        AppNotification.showSuccess(
-                                          context,
-                                          title: 'Item Dihapus',
-                                          message:
-                                              'Item setoran berhasil dihapus.',
-                                        );
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
+                              _buildItemsSection(),
                               const SizedBox(height: 16),
 
                               // Add Item Button
-                              AppButton(
-                                label: 'Tambah Item Setoran',
-                                variant: AppButtonVariant.outlined,
-                                icon: Icons.add,
-                                onPressed: _addItem,
+                              _tutorialStep(
+                                key: _addItemTutorialKey,
+                                title: 'Tambah item setoran',
+                                description:
+                                    'Tekan tombol ini untuk menambahkan satu item per jenis sampah.',
+                                child: AppButton(
+                                  label: 'Tambah Item Setoran',
+                                  variant: AppButtonVariant.outlined,
+                                  icon: Icons.add,
+                                  onPressed: _addItem,
+                                ),
                               ),
                               const SizedBox(height: 24),
 
                               if (!sideBySide) ...[
-                                TransactionSummarySection(
-                                    grandTotal: grandTotal),
+                                _summaryTutorialStep(),
                                 const SizedBox(height: 24),
                               ],
                             ],
@@ -565,7 +638,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                       if (sideBySide) ...[
                         const SizedBox(width: 24),
                         _SummaryPanel(
-                          grandTotal: grandTotal,
+                          summary: _summaryTutorialStep(),
                           saveButton: _saveButton(),
                           rightInset: inset.right,
                         ),
@@ -591,18 +664,131 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
             ),
     );
   }
+
+  Widget _buildItemsSection() {
+    final isEmpty = setoranItems.isEmpty;
+    final itemDetails = _tutorialStep(
+      key: _itemDetailsTutorialKey,
+      title: 'Atur item setoran',
+      description: isEmpty
+          ? 'Setelah menambah item, pilih jenis sampah dan isi berat (kg). '
+              'Harga/kg dan subtotal dihitung otomatis.'
+          : 'Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+              'otomatis; tekan × untuk menghapus item.',
+      child: isEmpty ? _buildEmptyItems() : _buildItemCard(0),
+    );
+    if (isEmpty) return itemDetails;
+    return Column(
+      children: [
+        itemDetails,
+        ...List.generate(
+          setoranItems.length - 1,
+          (index) => _buildItemCard(index + 1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyItems() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: _hasSubmitted ? AppColors.danger : AppColors.border,
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child:
+                    const Icon(Icons.add, color: AppColors.grey200, size: 24),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Belum Ada Item Setoran',
+                style: AppTextStyle.title1.copyWith(
+                  color: AppColors.grey100,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.lg,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap tombol di bawah untuk menambah item.',
+                style: AppTextStyle.small.copyWith(color: AppColors.grey200),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        if (_hasSubmitted) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              'Daftar setoran tidak boleh kosong',
+              style: AppTextStyle.small.copyWith(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildItemCard(int index) {
+    return ItemSetoranCard(
+      index: index,
+      itemData: setoranItems[index],
+      hasError: _flaggedItemIndexes.contains(index),
+      errorText: _itemErrorText(index),
+      onChanged: (updatedItem) {
+        final newId = updatedItem['jenis_sampah_id'] as String?;
+        if (jenisSampahSudahAda(setoranItems, index, newId)) {
+          AppNotification.showWarning(
+            context,
+            title: 'Jenis Sudah Dipilih',
+            message:
+                'Jenis sampah ini sudah ada di daftar item. Ubah berat pada item yang sudah ada.',
+          );
+          return;
+        }
+        setState(() => setoranItems[index] = updatedItem);
+      },
+      onSubmitted: _handleSubmit,
+      onDelete: () {
+        setState(() => setoranItems.removeAt(index));
+        AppNotification.showSuccess(
+          context,
+          title: 'Item Dihapus',
+          message: 'Item setoran berhasil dihapus.',
+        );
+      },
+    );
+  }
 }
 
 /// Panel kanan pada layar lebar: ringkasan dan tombol simpan tetap terlihat
 /// sementara daftar item di kiri digulir.
 class _SummaryPanel extends StatelessWidget {
   const _SummaryPanel({
-    required this.grandTotal,
+    required this.summary,
     required this.saveButton,
     this.rightInset = 0,
   });
 
-  final int grandTotal;
+  final Widget summary;
   final Widget saveButton;
 
   /// Room a wide window leaves right of the content column; the panel grows
@@ -618,7 +804,7 @@ class _SummaryPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TransactionSummarySection(grandTotal: grandTotal),
+            summary,
             const SizedBox(height: 16),
             saveButton,
           ],

@@ -105,14 +105,16 @@ void main() {
       expect(find.text('Setoran'), findsOneWidget);
       expect(find.text('Pencairan'), findsOneWidget);
       expect(find.text('Tambah Transaksi'), findsNothing);
-      final transactionMenu =
-          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
-      expect(transactionMenu.shape, const Border());
-      expect(transactionMenu.collapsedShape, const Border());
-      expect(transactionMenu.iconColor, AppColors.inkSoft);
-      expect(transactionMenu.collapsedIconColor, AppColors.inkSoft);
-      expect(transactionMenu.textColor, AppColors.inkSoft);
-      expect(transactionMenu.collapsedTextColor, AppColors.inkSoft);
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.headerKey))
+            .selected,
+        isFalse,
+      );
+      expect(
+        tester.widget<Text>(find.text('Transaksi')).style?.color,
+        AppColors.inkSoft,
+      );
       expect(
         tester.widget<Icon>(find.byIcon(Icons.receipt_long_outlined)).color,
         AppColors.inkSoft,
@@ -121,15 +123,15 @@ void main() {
         tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
-      final setoran =
-          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      final setoran = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.setoranKey));
       expect(setoran.selected, isFalse);
       expect(
         tester.widget<Text>(find.text('Setoran')).style?.color,
         AppColors.inkSoft,
       );
-      final pencairan =
-          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.pencairanKey));
+      final pencairan = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.pencairanKey));
       expect(pencairan.enabled, isFalse);
       expect(pencairan.onTap, isNull);
 
@@ -147,12 +149,12 @@ void main() {
         onAddTransaction: () {},
       );
 
-      final transactionMenu =
-          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
-      expect(transactionMenu.iconColor, AppColors.greenDark);
-      expect(transactionMenu.collapsedIconColor, AppColors.greenDark);
-      expect(transactionMenu.textColor, AppColors.greenDark);
-      expect(transactionMenu.collapsedTextColor, AppColors.greenDark);
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.headerKey))
+            .selected,
+        isTrue,
+      );
       expect(
         tester.widget<Icon>(find.byIcon(Icons.receipt_long_outlined)).color,
         AppColors.greenDark,
@@ -161,8 +163,8 @@ void main() {
         tester.widget<Text>(find.text('Transaksi')).style?.color,
         AppColors.greenDark,
       );
-      final setoran =
-          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      final setoran = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.setoranKey));
       expect(setoran.selected, isTrue);
       expect(
         tester.widget<Text>(find.text('Setoran')).style?.color,
@@ -284,6 +286,291 @@ void main() {
     testWidgets('renders nothing when there is no session', (tester) async {
       await taps(tester, role: null);
       expect(find.byType(NavigationRail), findsNothing);
+    });
+  });
+
+  group('RoleNavigationRail: Riwayat in the Transaksi accordion', () {
+    testWidgets('moves Aktivitas under Transaksi as Riwayat for a pengurus',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.destinations.length, 5);
+      expect(
+        rail.destinations.take(4).map((d) => (d.label as Text).data),
+        ['Dashboard', 'Nasabah', 'Harga', 'Jadwal'],
+      );
+      expect(find.text('Aktivitas'), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.riwayatKey), findsOneWidget);
+      expect(find.text('Riwayat'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Riwayat')).dy,
+        lessThan(tester.getTopLeft(find.text('Setoran')).dy),
+      );
+    });
+
+    testWidgets('tapping Riwayat reports the Aktivitas menu index',
+        (tester) async {
+      final selected =
+          await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      await tester.tap(find.byKey(RoleTransactionMenu.riwayatKey));
+      await tester.pumpAndSettle();
+
+      expect(selected, [3]);
+    });
+
+    testWidgets('the destinations after it still report their own index',
+        (tester) async {
+      final selected =
+          await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      await tester.tap(find.text('Jadwal'));
+      await tester.pumpAndSettle();
+
+      expect(selected, [4]);
+    });
+
+    testWidgets('on the history page Riwayat is selected, not a destination',
+        (tester) async {
+      await taps(tester,
+          role: 'pengelola', currentIndex: 3, onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.selectedIndex, isNull);
+      final riwayat = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.riwayatKey));
+      expect(riwayat.selected, isTrue);
+    });
+
+    testWidgets('a destination after it keeps its highlight', (tester) async {
+      await taps(tester,
+          role: 'pengelola', currentIndex: 4, onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.selectedIndex, 3, reason: 'Jadwal is the fourth entry now');
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.riwayatKey))
+            .selected,
+        isFalse,
+      );
+    });
+
+    testWidgets('the collapsed rail keeps Aktivitas as its own destination',
+        (tester) async {
+      await taps(tester,
+          role: 'pengelola',
+          window: const Size(720, 900),
+          onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.destinations.length, 6);
+      expect(find.text('Aktivitas'), findsOneWidget);
+    });
+
+    testWidgets('Pengelola Induk keeps Aktivitas', (tester) async {
+      await taps(tester, role: 'pengelola_induk', onAddTransaction: () {});
+
+      expect(find.text('Aktivitas'), findsOneWidget);
+      expect(find.text('Riwayat'), findsNothing);
+    });
+  });
+
+  group('RoleNavigationRail: Transaksi rows look like the destinations', () {
+    ShapeDecoration pillOf(WidgetTester tester, Key key) {
+      final pill = find
+          .descendant(of: find.byKey(key), matching: find.byType(Container))
+          .first;
+      return tester.widget<Container>(pill).decoration! as ShapeDecoration;
+    }
+
+    testWidgets('every row is at least 48dp tall to tap', (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      for (final key in [
+        RoleTransactionMenu.headerKey,
+        RoleTransactionMenu.riwayatKey,
+        RoleTransactionMenu.setoranKey,
+        RoleTransactionMenu.pencairanKey,
+      ]) {
+        expect(
+          tester.getSize(find.byKey(key)).height,
+          greaterThanOrEqualTo(kMinInteractiveDimension),
+          reason: '$key',
+        );
+      }
+    });
+
+    testWidgets('each row keeps its icon in a 56x32 rounded pill',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      for (final key in [
+        RoleTransactionMenu.headerKey,
+        RoleTransactionMenu.riwayatKey,
+        RoleTransactionMenu.setoranKey,
+        RoleTransactionMenu.pencairanKey,
+      ]) {
+        final pill = find
+            .descendant(of: find.byKey(key), matching: find.byType(Container))
+            .first;
+        expect(tester.getSize(pill), const Size(56, 32), reason: '$key');
+        expect(pillOf(tester, key).shape, isA<StadiumBorder>());
+      }
+    });
+
+    testWidgets('the pill fills green only when selected', (tester) async {
+      await taps(tester,
+          role: 'pengelola', currentIndex: 3, onAddTransaction: () {});
+
+      expect(
+        pillOf(tester, RoleTransactionMenu.riwayatKey).color,
+        AppColors.greenLight,
+      );
+      expect(pillOf(tester, RoleTransactionMenu.setoranKey).color,
+          Colors.transparent);
+    });
+
+    testWidgets('hover and ripple are the rail\'s own, on the pill only',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+      final railInk = tester
+          .widgetList<InkResponse>(find.descendant(
+              of: find.byType(NavigationRail),
+              matching: find.bySubtype<InkResponse>()))
+          .firstWhere((ink) => ink.hoverColor != null);
+
+      for (final key in [
+        RoleTransactionMenu.headerKey,
+        RoleTransactionMenu.riwayatKey,
+        RoleTransactionMenu.setoranKey,
+      ]) {
+        final ink = tester.widget<InkResponse>(find
+            .descendant(
+                of: find.byKey(key), matching: find.bySubtype<InkResponse>())
+            .first);
+        expect(ink.hoverColor, railInk.hoverColor, reason: '$key hover');
+        expect(ink.splashColor, railInk.splashColor, reason: '$key splash');
+        expect(ink.customBorder, isA<StadiumBorder>());
+        expect(ink.containedInkWell, isTrue);
+        final box = tester.renderObject<RenderBox>(find
+            .descendant(
+                of: find.byKey(key), matching: find.bySubtype<InkResponse>())
+            .first);
+        final rect = ink.getRectCallback(box)!();
+        expect(rect.size, const Size(56, 32), reason: '$key ripple area');
+      }
+    });
+
+    testWidgets('a disabled row is greyed like a disabled destination',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+      final grey = Theme.of(tester.element(find.byType(NavigationRail)))
+          .colorScheme
+          .onSurface
+          .withValues(alpha: 0.38);
+
+      expect(
+        tester
+            .widget<Icon>(find.descendant(
+                of: find.byKey(RoleTransactionMenu.pencairanKey),
+                matching: find.byIcon(Icons.payments_outlined)))
+            .color,
+        grey,
+      );
+      expect(
+        tester.widget<Text>(find.text('Pencairan')).style?.color,
+        grey,
+      );
+      final ink = tester.widget<InkResponse>(find
+          .descendant(
+              of: find.byKey(RoleTransactionMenu.pencairanKey),
+              matching: find.bySubtype<InkResponse>())
+          .first);
+      expect(ink.onTap, isNull);
+    });
+
+    testWidgets('the Transaksi label lines up with the destination labels',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      expect(
+        tester.getTopLeft(find.text('Transaksi')).dx,
+        tester.getTopLeft(find.text('Dashboard')).dx,
+      );
+      expect(
+        tester.getTopLeft(find.text('Setoran')).dx,
+        greaterThan(tester.getTopLeft(find.text('Transaksi')).dx),
+        reason: 'the children are indented under the group',
+      );
+    });
+
+    testWidgets('the Transaksi header tells screen readers if it is open',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      Tristate expanded() => tester
+          .getSemantics(find.byKey(RoleTransactionMenu.headerKey))
+          .getSemanticsData()
+          .flagsCollection
+          .isExpanded;
+
+      expect(expanded(), Tristate.isTrue);
+      await tester.tap(find.text('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(expanded(), Tristate.isFalse);
+      handle.dispose();
+    });
+
+    testWidgets('rows other than the header carry no expanded state',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      final setoran = tester
+          .getSemantics(find.byKey(RoleTransactionMenu.setoranKey))
+          .getSemanticsData()
+          .flagsCollection;
+
+      expect(setoran.isExpanded, Tristate.none);
+      handle.dispose();
+    });
+
+    testWidgets('the destinations follow Transaksi without a wide gap',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+      double centerY(Finder finder) => tester.getCenter(finder).dy;
+      // A row is 48dp; only a few dp of separation on top of it, so the
+      // Transaksi group sits next to the destinations like any other item.
+      const oneRowAndASeparation = kMinInteractiveDimension + 8;
+
+      expect(
+        centerY(find.text('Dashboard')) - centerY(find.text('Pencairan')),
+        lessThanOrEqualTo(oneRowAndASeparation),
+      );
+
+      await tester.tap(find.text('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(
+        centerY(find.text('Dashboard')) - centerY(find.text('Transaksi')),
+        lessThanOrEqualTo(oneRowAndASeparation),
+      );
+    });
+
+    testWidgets('tapping Transaksi folds and unfolds its rows', (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      await tester.tap(find.text('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Setoran'), findsNothing);
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      await tester.tap(find.text('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
     });
   });
 }

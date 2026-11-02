@@ -42,7 +42,8 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
-    final submit = find.byType(ElevatedButton);
+    // The form is the top route, so its button is the last one in the tree.
+    final submit = find.byType(ElevatedButton).last;
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pump();

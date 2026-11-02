@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 void main() {
@@ -30,7 +31,7 @@ void main() {
         .widget<Container>(find.byKey(AppSheetHandle.barKey))
         .decoration! as BoxDecoration;
     expect(box.color, AppColors.border);
-    expect(box.borderRadius, BorderRadius.circular(2));
+    expect(box.borderRadius, BorderRadius.circular(AppRadius.xs));
   });
 
   testWidgets('is decoration only, so a screen reader skips it',

@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/bank_sampah_labe
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Bentuk navigasi untuk browser yang terlalu sempit untuk rail.
 ///
@@ -32,6 +33,36 @@ class RoleNavigationDrawer extends StatelessWidget {
   static ValueKey<String> destinationKey(int index) =>
       ValueKey('drawer-destination-$index');
 
+  /// Akordeon Transaksi (untuk pengurus), lalu destinasi. Aktivitas ikut
+  /// akordeon sebagai Riwayat, jadi ia tidak digambar lagi sebagai destinasi.
+  List<Widget> _menuRows(
+      BuildContext context, List<RoleDestination> destinations) {
+    final riwayat = navigation.riwayatIndex(destinations);
+    return [
+      if (navigation.hasTransactionMenu)
+        RoleTransactionMenu(
+          onSetoran: navigation.onAddTransaction!,
+          onClose: () => Navigator.maybeOf(context)?.maybePop(),
+          selected: navigation.transactionSelected,
+          onRiwayat: navigation.riwayatOpener(riwayat),
+          riwayatSelected: navigation.riwayatIsCurrent(riwayat),
+        ),
+      for (var index = 0; index < destinations.length; index++)
+        if (index != riwayat)
+          _Destination(
+            key: destinationKey(index),
+            destination: destinations[index],
+            selected: navigation.currentIndex == index,
+            onTap: destinations[index].disabled
+                ? null
+                : () {
+                    Navigator.maybeOf(context)?.maybePop();
+                    navigation.onSelected(index);
+                  },
+          ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final destinations = RoleDestinations.forRole(
@@ -39,7 +70,6 @@ class RoleNavigationDrawer extends StatelessWidget {
       limitedNasabah: navigation.limitedNasabah,
     );
     if (destinations.isEmpty) return const SizedBox.shrink();
-
     final name = navigation.profileName?.trim() ?? '';
     return Drawer(
       backgroundColor: Colors.white,
@@ -62,7 +92,7 @@ class RoleNavigationDrawer extends StatelessWidget {
                 'MENU',
                 style: AppTextStyle.extraSmall.copyWith(
                   color: AppColors.grey100,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                   letterSpacing: 0.8,
                 ),
               ),
@@ -70,27 +100,7 @@ class RoleNavigationDrawer extends StatelessWidget {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: [
-                  if (navigation.role == 'pengelola' &&
-                      navigation.onAddTransaction != null)
-                    RoleTransactionMenu(
-                      onSetoran: navigation.onAddTransaction!,
-                      onClose: () => Navigator.maybeOf(context)?.maybePop(),
-                      selected: navigation.transactionSelected,
-                    ),
-                  for (var index = 0; index < destinations.length; index++)
-                    _Destination(
-                      key: destinationKey(index),
-                      destination: destinations[index],
-                      selected: navigation.currentIndex == index,
-                      onTap: destinations[index].disabled
-                          ? null
-                          : () {
-                              Navigator.maybeOf(context)?.maybePop();
-                              navigation.onSelected(index);
-                            },
-                    ),
-                ],
+                children: _menuRows(context, destinations),
               ),
             ),
             if (name.isNotEmpty)
@@ -145,7 +155,7 @@ class _BrandHeader extends StatelessWidget {
                     'PILAH',
                     style: AppTextStyle.headline1.copyWith(
                       color: AppColors.black,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                 ],
@@ -174,7 +184,7 @@ class _BankHeader extends StatelessWidget {
                 initials,
                 style: AppTextStyle.extraSmall.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
             ),
@@ -184,7 +194,8 @@ class _BankHeader extends StatelessWidget {
                 label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w500),
+                style: AppTextStyle.small
+                    .copyWith(fontWeight: AppFontWeight.medium),
               ),
             ),
           ],
@@ -249,8 +260,8 @@ class _Destination extends StatelessWidget {
                               ? AppColors.greenDark
                               : AppColors.inkSoft,
                       fontWeight: selected && onTap != null
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                          ? AppFontWeight.semibold
+                          : AppFontWeight.medium,
                     ),
                   ),
                 ],
@@ -304,7 +315,7 @@ class _ProfileFooter extends StatelessWidget {
                         initialsOf(name),
                         style: AppTextStyle.extraSmall.copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         ),
                       ),
                     ),
@@ -319,7 +330,7 @@ class _ProfileFooter extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyle.small.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: AppFontWeight.semibold,
                               color: AppColors.black,
                             ),
                           ),

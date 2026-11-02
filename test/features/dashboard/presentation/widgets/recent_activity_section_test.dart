@@ -186,6 +186,40 @@ void main() {
       expect(find.text('Laporan'), findsOneWidget);
     });
   });
+  testWidgets('labels yesterday separately from older activity',
+      (tester) async {
+    final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
+      ActivitasEntity(
+        tipe: ActivitasTipe.setoran,
+        tanggal: DateTime(2026, 9, 21),
+        avatarText: 'AB',
+        avatarColor: Colors.green,
+        avatarTextColor: Colors.white,
+        title: 'Yesterday',
+        subtitleLines: const [],
+        amount: '+Rp 1.000',
+        searchTerm: 'Yesterday',
+      ),
+      ActivitasEntity(
+        tipe: ActivitasTipe.setoran,
+        tanggal: DateTime(2026, 9, 19),
+        avatarText: 'CD',
+        avatarColor: Colors.green,
+        avatarTextColor: Colors.white,
+        title: 'Older',
+        subtitleLines: const [],
+        amount: '+Rp 1.000',
+        searchTerm: 'Older',
+      ),
+    ]));
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(_host(cubit));
+
+    expect(find.text('Kemarin'), findsOneWidget);
+    expect(find.text('3 hari lalu'), findsOneWidget);
+  });
+
   testWidgets('legacy activity without captions uses its day label',
       (tester) async {
     final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([

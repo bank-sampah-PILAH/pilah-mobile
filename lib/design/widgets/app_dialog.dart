@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The question dialog of the app: a title, a message (or any [content], such
 /// as a text field), a quiet cancel and a confirm button.
@@ -50,7 +51,7 @@ class AppDialog extends StatelessWidget {
             cancelLabel,
             style: AppTextStyle.small.copyWith(
               color: AppColors.grey100,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
             ),
           ),
         ),

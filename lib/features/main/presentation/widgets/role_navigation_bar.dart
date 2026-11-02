@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Bentuk navigasi untuk layar sempit.
 ///
@@ -43,7 +44,7 @@ class RoleNavigationBar extends StatelessWidget {
         showUnselectedLabels: true,
         selectedLabelStyle: AppTextStyle.extraSmall.copyWith(
           color: AppColors.greenDark,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
         unselectedLabelStyle: AppTextStyle.extraSmall,
         currentIndex: currentIndex,

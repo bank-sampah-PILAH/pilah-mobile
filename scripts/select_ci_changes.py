@@ -111,12 +111,28 @@ def mirror_test_path(path):
     return candidates
 
 
-def is_full_suite(event_name, ref):
-    return event_name == "push" and ref in {"refs/heads/staging", "refs/heads/main"}
+def is_full_suite(event_name, ref, paths=()):
+    if event_name == "push" and ref in {"refs/heads/staging", "refs/heads/main"}:
+        return True
+    return event_name == "pull_request" and any(
+        path.startswith("lib/") and path.endswith(".dart") for path in paths
+    )
 
 
 def is_coverage_gate(event_name, ref):
     return event_name == "push" and ref == "refs/heads/staging"
+
+
+def _commit_exists(sha):
+    try:
+        subprocess.run(
+            ["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError:
+        return False
+    return True
 
 
 def _base_and_head():
@@ -127,7 +143,8 @@ def _base_and_head():
         return os.environ["PR_BASE_SHA"], os.environ["PR_HEAD_SHA"], event_name, ref
     if event_name == "push":
         base = os.environ["PUSH_BEFORE_SHA"]
-        if not base or set(base) == {"0"}:
+        # A force-push replaces the old tip, so `before` may no longer exist.
+        if not base or set(base) == {"0"} or not _commit_exists(base):
             try:
                 base = subprocess.run(
                     ["git", "merge-base", "origin/staging", head],
@@ -137,7 +154,7 @@ def _base_and_head():
                 ).stdout.strip()
             except subprocess.CalledProcessError as error:
                 raise RuntimeError(
-                    "Cannot find a merge base with origin/staging for the first branch push."
+                    "Cannot find a merge base with origin/staging for a first or force push."
                 ) from error
         return base, head, event_name, ref
     raise ValueError(f"Unsupported event for test selection: {event_name}")
@@ -159,7 +176,7 @@ def main():
         "base_sha": base,
         "browser_test_files": json.dumps(select_browser_tests(paths), separators=(",", ":")),
         "coverage_gates": str(is_coverage_gate(event_name, ref)).lower(),
-        "full_suite": str(is_full_suite(event_name, ref)).lower(),
+        "full_suite": str(is_full_suite(event_name, ref, paths)).lower(),
         "has_vm_tests": str(bool(vm_tests)).lower(),
         "test_files": json.dumps(vm_tests, separators=(",", ":")),
         "unit_test_shards": str(UNIT_TEST_SHARDS),

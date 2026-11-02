@@ -18,6 +18,7 @@ import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_enti
 import 'package:pilah_mobile/features/pengumuman/presentation/states/nasabah_pengumuman_state.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The nasabah's announcement list (PIL-244). Latest first, one card per
 /// announcement, unread rows carry a dot; tap marks it read and opens the
@@ -197,7 +198,8 @@ class _PengumumanRow extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         pengumuman.judul,
-                        style: NasabahStyle.text(15, weight: FontWeight.w600),
+                        style: NasabahStyle.text(15,
+                            weight: AppFontWeight.semibold),
                       ),
                     ),
                     if (!pengumuman.dibaca)

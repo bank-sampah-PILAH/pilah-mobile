@@ -51,6 +51,7 @@ class CiPipelineTest(unittest.TestCase):
         browser = ci["jobs"]["browser_tests"]
         self.assertIn("needs.changes.outputs.web_changed", browser["if"])
         self.assertIn("needs.changes.outputs.full_suite", browser["if"])
+        self.assertIn("github.event_name == 'pull_request'", browser["if"])
         self.assertIn("browser_test_files", str(browser["steps"]))
 
     def test_staging_runs_all_shards_and_owns_coverage_gates(self):
@@ -110,6 +111,7 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("FULL_SUITE", check)
         self.assertIn("HAS_VM_TESTS", check)
         self.assertIn("WEB_CHANGED", check)
+        self.assertIn("EVENT_NAME", check)
 
     def test_sonar_consumes_same_run_coverage_without_rerunning_tests(self):
         ci = workflow("ci.yml")
@@ -117,6 +119,9 @@ class CiPipelineTest(unittest.TestCase):
         self.assertEqual(sonar["needs"], ["changes", "coverage", "verify"])
         self.assertIn("always()", sonar["if"])
         self.assertIn("needs.verify.result == 'success'", sonar["if"])
+        self.assertIn("github.event_name == 'pull_request'", sonar["if"])
+        self.assertIn("github.ref == 'refs/heads/staging'", sonar["if"])
+        self.assertIn("github.ref == 'refs/heads/main'", sonar["if"])
         download = next(step for step in sonar["steps"] if step.get("uses") == "actions/download-artifact@v4")
         self.assertEqual(download["with"]["name"], "sonar-coverage")
         self.assertEqual(download["if"], "needs.coverage.outputs.has_coverage == 'true'")

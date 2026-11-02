@@ -82,7 +82,7 @@ void main() {
     expect(
       tester.getSemantics(
           find.bySemanticsLabel(RegExp(r'^Pengurus Bank Sampah\.'))),
-      isSemantics(isSelected: true),
+      isSemantics(isChecked: true, isInMutuallyExclusiveGroup: true),
       reason: 'the role the account has now starts selected',
     );
 

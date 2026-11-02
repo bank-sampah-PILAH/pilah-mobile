@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:clock/clock.dart';
@@ -16,7 +17,6 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
@@ -27,6 +27,9 @@ import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calenda
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_months.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+const _createScheduleLabel = 'Buat Jadwal';
 
 class JadwalPage extends ConsumerStatefulWidget {
   static const route = '/jadwal';
@@ -305,19 +308,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
           ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
           : _webHeader
               ? null
-              : AppBar(
-                  title: Text(
-                    'Jadwal Kegiatan',
-                    style: AppTextStyle.headline1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
-                  ),
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  surfaceTintColor: Colors.transparent,
-                ),
+              : const NasabahPageAppBar(title: 'Jadwal Kegiatan'),
       floatingActionButton: widget.customerMode || _createInHeader
           ? null
           : Builder(
@@ -325,7 +316,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                 final state = ref.watch(jadwalProvider);
                 return FloatingActionButton(
                   heroTag: 'jadwal_page_fab',
-                  tooltip: 'Buat Jadwal',
+                  tooltip: _createScheduleLabel,
                   onPressed: state is JadwalLoaded &&
                           (state.isTransitioning || state.isSaving)
                       ? null
@@ -335,47 +326,46 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                 );
               },
             ),
-      body: Builder(
-        builder: (context) {
-          final state = ref.watch(jadwalProvider);
-          if (state is JadwalInitial || state is JadwalLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is JadwalError) {
-            return _RetryableMessage(
-              message: state.message,
-              buttonLabel: 'Coba Lagi',
-              onPressed: () => _loadAgenda(_selectedDate),
-            );
-          }
+      body: _buildAgendaBody(),
+    );
+  }
 
-          final loadedState = state as JadwalLoaded;
-          final visibleItems = widget.customerMode
-              ? loadedState.items
-                  .where(
-                    (item) =>
-                        item.status == 'diterbitkan' &&
-                        DateUtils.isSameDay(
-                          item.mulaiPada.toLocal(),
-                          _selectedDate,
-                        ),
-                  )
-                  .toList()
-              : loadedState.items;
-          final items = List<JadwalEntity>.of(visibleItems)
-            ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
-          return RefreshIndicator(
-            onRefresh: _refreshAgenda,
-            child: widget.customerMode
-                ? _buildCustomerAgenda(items, loadedState)
-                : MasterDetailLayout(
-                    masterScrolls: true,
-                    master: _buildPengurusAgenda(items, loadedState),
-                    detail: _buildFormPanel(),
-                  ),
-          );
-        },
-      ),
+  Widget _buildAgendaBody() {
+    final state = ref.watch(jadwalProvider);
+    if (state is JadwalInitial || state is JadwalLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state is JadwalError) {
+      return _RetryableMessage(
+        message: state.message,
+        buttonLabel: 'Coba Lagi',
+        onPressed: () => _loadAgenda(_selectedDate),
+      );
+    }
+    return _buildLoadedAgenda(state as JadwalLoaded);
+  }
+
+  Widget _buildLoadedAgenda(JadwalLoaded loadedState) {
+    final visibleItems = widget.customerMode
+        ? loadedState.items
+            .where(
+              (item) =>
+                  item.status == 'diterbitkan' &&
+                  DateUtils.isSameDay(item.mulaiPada.toLocal(), _selectedDate),
+            )
+            .toList()
+        : loadedState.items;
+    final items = List<JadwalEntity>.of(visibleItems)
+      ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
+    return RefreshIndicator(
+      onRefresh: _refreshAgenda,
+      child: widget.customerMode
+          ? _buildCustomerAgenda(items, loadedState)
+          : MasterDetailLayout(
+              masterScrolls: true,
+              master: _buildPengurusAgenda(items, loadedState),
+              detail: _buildFormPanel(),
+            ),
     );
   }
 
@@ -405,18 +395,18 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               child: Text(
                 formatJadwalDayHeading(_selectedDate),
                 style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+                  color: AppColors.black,
+                  fontSize: AppFontSize.xl,
+                  fontWeight: AppFontWeight.bold,
                 ),
               ),
             ),
             Text(
               '${loadedState.totalCount} jadwal',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+              style: const TextStyle(
+                color: AppColors.grey100,
+                fontSize: AppFontSize.sm,
+                fontWeight: AppFontWeight.medium,
               ),
             ),
           ],
@@ -428,8 +418,9 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
             child: Center(child: CircularProgressIndicator()),
           )
         else if (items.isEmpty)
-          _CustomerEmptyScheduleDay(
+          _EmptyScheduleDay(
             date: _selectedDate,
+            dateHint: 'Tanggal dengan jadwal ditandai titik.',
             onRefresh: () => _loadAgenda(_selectedDate),
           )
         else
@@ -519,7 +510,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
           actions: [
             if (_createInHeader)
               AppButton(
-                label: 'Buat Jadwal',
+                label: _createScheduleLabel,
                 icon: Icons.add,
                 expand: false,
                 onPressed: loadedState.isTransitioning || loadedState.isSaving
@@ -674,18 +665,18 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
             child: Text(
               formatJadwalDayHeading(day),
               style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+                color: AppColors.black,
+                fontSize: AppFontSize.xl,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
           Text(
             '$count jadwal',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+            style: const TextStyle(
+              color: AppColors.grey100,
+              fontSize: AppFontSize.sm,
+              fontWeight: AppFontWeight.medium,
             ),
           ),
         ],
@@ -694,6 +685,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
       if (dayItems.isEmpty)
         _EmptyScheduleDay(
           date: day,
+          dateHint: 'Jadwal di tanggal lain ditandai dengan titik.',
           onCreate: _openForm,
           onRefresh: () => _loadAgenda(_selectedDate),
         )
@@ -772,78 +764,29 @@ class _RetryableMessage extends StatelessWidget {
       );
 }
 
-class _CustomerEmptyScheduleDay extends StatelessWidget {
-  final DateTime date;
-  final VoidCallback onRefresh;
-
-  const _CustomerEmptyScheduleDay({
-    required this.date,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-        decoration: BoxDecoration(
-          color: AppColors.cardOffWhite,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.event_available_outlined,
-              size: 36,
-              color: AppColors.greenDark.withValues(alpha: 0.8),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Belum ada jadwal kegiatan',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. Tanggal dengan jadwal ditandai titik.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: onRefresh,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Muat Ulang'),
-            ),
-          ],
-        ),
-      );
-}
-
 class _EmptyScheduleDay extends StatelessWidget {
   final DateTime date;
-  final VoidCallback onCreate;
+  final String dateHint;
+  final VoidCallback? onCreate;
   final VoidCallback onRefresh;
 
   const _EmptyScheduleDay({
     required this.date,
-    required this.onCreate,
+    required this.dateHint,
     required this.onRefresh,
+    this.onCreate,
   });
 
   @override
   Widget build(BuildContext context) {
+    final onCreate = this.onCreate;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -856,31 +799,37 @@ class _EmptyScheduleDay extends StatelessWidget {
           const Text(
             'Belum ada jadwal kegiatan',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold),
           ),
           const SizedBox(height: 6),
           Text(
-            'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. Jadwal di tanggal lain ditandai dengan titik.',
+            'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 13,
+            style: const TextStyle(
+              color: AppColors.grey100,
+              fontSize: AppFontSize.sm,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 18),
-          // Penuh lebar di ponsel, tetapi tidak melebar di agenda web.
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 280),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onCreate,
-                icon: const Icon(Icons.add),
-                label: const Text('Buat Jadwal'),
+          if (onCreate == null)
+            const SizedBox(height: 12)
+          else ...[
+            const SizedBox(height: 18),
+            // Penuh lebar di ponsel, tetapi tidak melebar di agenda web.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 280),
+              child: SizedBox(
+                width: double.infinity,
+                child: AppButton(
+                  key: const Key('jadwal-empty-create'),
+                  label: _createScheduleLabel,
+                  icon: Icons.add,
+                  onPressed: onCreate,
+                ),
               ),
             ),
-          ),
+          ],
           TextButton.icon(
             onPressed: onRefresh,
             icon: const Icon(Icons.refresh, size: 18),
@@ -933,9 +882,9 @@ class _ScheduleCard extends StatelessWidget {
               Text(
                 _activityLabel(item.jenisKegiatan),
                 style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                  color: AppColors.black,
+                  fontSize: AppFontSize.lg,
+                  fontWeight: AppFontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
@@ -967,7 +916,7 @@ class _ScheduleCard extends StatelessWidget {
                       message: 'Jadwal bertumpuk di lokasi yang sama',
                       child: Icon(
                         Icons.warning_amber_rounded,
-                        color: Colors.orange,
+                        color: AppColors.warning,
                         size: 20,
                       ),
                     ),
@@ -1009,9 +958,10 @@ class _ScheduleCard extends StatelessWidget {
             onPressed: onCancel,
             child: Text(action.label),
           ),
-        JadwalAction.terbitkan => FilledButton(
+        JadwalAction.terbitkan => AppButton(
+            label: action.label,
+            expand: false,
             onPressed: onPublish,
-            child: Text(action.label),
           ),
         JadwalAction.selesaikan => AppButton(
             label: action.label,
@@ -1032,14 +982,14 @@ class _ScheduleInfoLine extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.grey.shade600, size: 18),
+          Icon(icon, color: AppColors.grey100, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontSize: 13,
+              style: const TextStyle(
+                color: AppColors.inkSoft,
+                fontSize: AppFontSize.sm,
                 height: 1.35,
               ),
             ),
@@ -1061,21 +1011,21 @@ class _ScheduleStatus extends StatelessWidget {
       JadwalStatus.diterbitkan => (AppColors.greenLight, AppColors.greenDark),
       JadwalStatus.dibatalkan => (AppColors.dangerLight, AppColors.danger),
       JadwalStatus.selesai => (AppColors.fill, AppColors.inkSoft),
-      null => (AppColors.cardOffWhite, Colors.grey.shade700),
+      null => (AppColors.cardOffWhite, AppColors.inkSoft),
     };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         resolved?.label ?? status,
         style: TextStyle(
           color: foreground,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
+          fontSize: AppFontSize.sm,
+          fontWeight: AppFontWeight.bold,
         ),
       ),
     );
@@ -1287,7 +1237,9 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 BottomSheetHeader(
-                  title: widget.initial == null ? 'Buat Jadwal' : 'Ubah Jadwal',
+                  title: widget.initial == null
+                      ? _createScheduleLabel
+                      : 'Ubah Jadwal',
                   showDragHandle: !widget.isPanel,
                   onClose: widget.onClose,
                 ),

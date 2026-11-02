@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -19,8 +20,14 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
+
+const _genderMaleApiValue = 'laki-laki';
+const _genderMaleLabel = 'Laki-laki';
+const _registerBankSampahRoute = '/register-bank-sampah';
+const _dashboardRoute = '/dashboard';
 
 class CompleteProfileScreen extends ConsumerStatefulWidget {
   final bool isInviteMode;
@@ -104,7 +111,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     _nameController.text = draft.nama;
     _phoneController.text = draft.noHp;
     _alamatController.text = draft.alamat;
-    _gender = draft.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+    _gender = draft.jenisKelamin == _genderMaleApiValue
+        ? _genderMaleLabel
+        : 'Perempuan';
 
     // Stored as the ISO string the API wants; the picker and the field need a
     // DateTime and dd/MM/yyyy back.
@@ -137,7 +146,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       _alamatController.text = auth.alamat;
     }
     if (auth.jenisKelamin.isNotEmpty) {
-      _gender = auth.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+      _gender = auth.jenisKelamin == _genderMaleApiValue
+          ? _genderMaleLabel
+          : 'Perempuan';
     }
 
     final tanggalLahir = auth.tanggalLahir;
@@ -228,7 +239,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
   Future<void> _onSaveAndContinue() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!validateOnboardingForm(_formKey)) return;
 
     // Latched for the whole submit: redeeming the invite clears the token,
     // which would otherwise flip [_isInviteMode] halfway through.
@@ -236,7 +247,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
 
     final request = CompleteProfileRequest(
       nama: _nameController.text.trim(),
-      jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
+      jenisKelamin:
+          _gender == _genderMaleLabel ? _genderMaleApiValue : 'perempuan',
       tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
       noHp: _phoneController.text.trim(),
       alamat: _isNasabah ? _alamatController.text.trim() : '',
@@ -258,7 +270,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     // there is none.
     if (!isInvite && _startsNewRegistration) {
       notifier.saveProfileDraft(request);
-      context.push('/register-bank-sampah');
+      context.push(_registerBankSampahRoute);
       return;
     }
 
@@ -338,7 +350,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         // On the inviting bank sampah, which is active by the time an invite for
         // it exists — so onboarding ends here, at the dashboard, never at the
         // registration form the non-invite flow continues to.
-        context.go('/dashboard');
+        context.go(_dashboardRoute);
         break;
       case InviteAcceptance.otherBank:
       case InviteAcceptance.rejected:
@@ -373,10 +385,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   void _routeByNextStep(String? nextStep, {required bool isInvite}) {
     switch (nextStep) {
       case 'dashboard':
-        context.go('/dashboard');
+        context.go(_dashboardRoute);
         break;
       case 'register_bank_sampah':
-        context.go('/register-bank-sampah');
+        context.go(_registerBankSampahRoute);
         break;
       case 'approval_pending':
         context.go('/pending-approval');
@@ -399,7 +411,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       default:
         // Fallback preserves prior behaviour: invited managers join an existing
         // bank sampah (dashboard), new managers continue to registration.
-        context.go(isInvite ? '/dashboard' : '/register-bank-sampah');
+        context.go(isInvite ? _dashboardRoute : _registerBankSampahRoute);
     }
   }
 
@@ -438,63 +450,73 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
       child: Scaffold(
         backgroundColor: AppColors.surface, // Light gray background
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              // 1. Header Section
-              OnboardingHeader(
-                title: 'Lengkapi Profil Anda',
-                subtitle: 'Data ini digunakan untuk verifikasi akun Anda.',
-                onExit: () => confirmExitOnboarding(context,
-                    title: 'Batal Lengkapi Profil?'),
-              ),
-
-              // The stepper shows only when profile completion leads to the
-              // bank sampah registration form, pengelola or nasabah.
-              if (!_isInviteMode &&
-                  (_startsNewRegistration || _startsNasabahRegistration))
-                OnboardingStepper(
+        body: OnboardingFlowLayout(
+          title: 'Lengkapi Profil Anda',
+          subtitle: 'Pastikan data diri Anda sesuai untuk verifikasi akun.',
+          onExit: _isLoading
+              ? null
+              : () => confirmExitOnboarding(context,
+                  title: 'Batal Lengkapi Profil?'),
+          progress: !_isInviteMode &&
+                  (_startsNewRegistration || _startsNasabahRegistration)
+              ? OnboardingProgress(
                   currentStep: 1,
-                  secondStepLabel:
-                      _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
+                  lastStepLabel:
+                      _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah')
+              : null,
+          actions: OnboardingActions(
+            primary: AppButton(
+              label: _isInviteMode
+                  ? 'Simpan & Masuk Dashboard'
+                  : 'Simpan Profil & Lanjut',
+              trailingIcon: Icons.arrow_forward,
+              isLoading: _isLoading,
+              onPressed: _onSaveAndContinue,
+            ),
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (roleTitle != null) _RoleNote(roleTitle: roleTitle),
+                Text('Data diri', style: AppTextStyle.title1),
+                const SizedBox(height: 8),
+                Text('Semua kolom bertanda * wajib diisi.',
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100)),
+                const SizedBox(height: 24),
+                OnboardingNameField(
+                  controller: _nameController,
+                  label: 'NAMA LENGKAP',
+                  hintText: 'Contoh: Siti Rahayu',
                 ),
 
-              if (roleTitle != null) _RoleNote(roleTitle: roleTitle),
-
-              const SizedBox(height: 24),
-              OnboardingFormCard(
-                formKey: _formKey,
-                children: [
-                  OnboardingNameField(
-                    controller: _nameController,
-                    label: 'NAMA LENGKAP',
-                    hintText: 'Contoh: Siti Rahayu',
-                  ),
-
-                  // Field 2: Jenis Kelamin
-                  OnboardingFormField(
+                OnboardingFieldPair(
+                  first: OnboardingFormField(
                     label: 'JENIS KELAMIN',
                     child: DropdownButtonFormField<String>(
                       borderRadius: BorderRadius.circular(AppRadius.md),
+                      isExpanded: true,
                       initialValue: _gender,
-                      hint: Text(
+                      hint: const Text(
                         'Pilih jenis kelamin',
                         style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontWeight: FontWeight.normal,
+                          color: AppColors.grey200,
+                          fontWeight: AppFontWeight.regular,
                         ),
                       ),
                       icon: const Icon(Icons.keyboard_arrow_down,
-                          color: Colors.grey),
+                          color: AppColors.grey100),
                       items: const [
                         DropdownMenuItem(
-                          value: 'Laki-laki',
+                          value: _genderMaleLabel,
                           child: Row(
                             children: [
                               Icon(Icons.male,
                                   size: 20, color: AppColors.inkSoft),
                               SizedBox(width: 8),
-                              Text('Laki-laki'),
+                              Text(_genderMaleLabel),
                             ],
                           ),
                         ),
@@ -524,9 +546,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       },
                     ),
                   ),
-
-                  // Field 3: Tanggal Lahir
-                  OnboardingFormField(
+                  second: OnboardingFormField(
                     label: 'TANGGAL LAHIR',
                     child: TextFormField(
                       controller: _dobController,
@@ -535,7 +555,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       decoration: appInputDecoration(
                           hintText: 'dd/mm/yyyy',
                           suffixIcon: const Icon(Icons.calendar_today_outlined,
-                              color: Colors.black87)),
+                              color: AppColors.black)),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Tanggal lahir wajib diisi';
@@ -544,49 +564,22 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       },
                     ),
                   ),
-
-                  OnboardingPhoneField(
-                    controller: _phoneController,
-                    label: 'NOMOR HP / WHATSAPP',
-                    requiredMessage: 'Nomor HP wajib diisi',
-                  ),
-
-                  // Alamat: nasabah accounts only.
-                  if (_isNasabah)
-                    OnboardingAddressField(controller: _alamatController),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // 4. Action Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: AppButton(
-                  label: _isInviteMode
-                      ? 'Simpan & Masuk Dashboard'
-                      : 'Simpan Profil & Lanjut',
-                  trailingIcon: Icons.arrow_forward,
-                  isLoading: _isLoading,
-                  onPressed: _onSaveAndContinue,
                 ),
-              ),
-
-              // 5. Footer Text
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    height: 1.5,
-                  ),
+                OnboardingPhoneField(
+                  controller: _phoneController,
+                  label: 'NOMOR HP / WHATSAPP',
+                  requiredMessage: 'Nomor HP wajib diisi',
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+
+                // Alamat: nasabah accounts only.
+                if (_isNasabah)
+                  OnboardingAddressField(controller: _alamatController),
+                Text(
+                    'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100)),
+              ],
+            ),
           ),
         ),
       ),

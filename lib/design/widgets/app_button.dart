@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Which of the app's button looks to use.
 enum AppButtonVariant {
@@ -120,7 +121,7 @@ class AppButton extends StatelessWidget {
         ? MaterialTapTargetSize.shrinkWrap
         : MaterialTapTargetSize.padded;
     final textStyle = compact
-        ? AppTextStyle.small.copyWith(fontWeight: FontWeight.w600)
+        ? AppTextStyle.small.copyWith(fontWeight: AppFontWeight.semibold)
         : null;
     final padding = EdgeInsets.symmetric(
       horizontal: expand ? 12 : (compact ? 16 : 24),
@@ -229,7 +230,8 @@ class AppButton extends StatelessWidget {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             alignment: Alignment.centerLeft,
             foregroundColor: AppColors.greenDark,
-            textStyle: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+            textStyle:
+                AppTextStyle.small.copyWith(fontWeight: AppFontWeight.semibold),
           ),
           child: child,
         ),

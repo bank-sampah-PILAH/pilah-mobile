@@ -40,6 +40,17 @@ abstract final class RoleDestinations {
   static bool isStaff(String? role) =>
       role == 'pengelola' || role == 'pengelola_induk';
 
+  /// Branch Aktivitas. Pengurus di web membukanya sebagai "Riwayat" dari
+  /// akordeon Transaksi, bukan sebagai destinasi tersendiri.
+  static const riwayatBranch = 3;
+
+  /// Posisi Aktivitas pada [destinations], atau null bila tidak ada.
+  static int? riwayatIndex(List<RoleDestination> destinations) {
+    final index = destinations
+        .indexWhere((destination) => destination.branchIndex == riwayatBranch);
+    return index < 0 ? null : index;
+  }
+
   /// `true` bila [role] memiliki navigasi sama sekali.
   static bool supports(String? role) => role == 'nasabah' || isStaff(role);
 

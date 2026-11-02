@@ -11,6 +11,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_a
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_export_action.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/periode_picker_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Semua penyaring Riwayat Aktivitas dalam satu baris: tipe, periode, dan
 /// ekspor. Menggantikan tiga chip tipe, sembilan chip periode, tombol rentang
@@ -176,7 +177,7 @@ class _PeriodeField extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle.small.copyWith(
                         color: AppColors.black,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.semibold,
                       ),
                     ),
                   ),

@@ -101,17 +101,27 @@ void main() {
           reason: 'picking closes the dialog');
     });
 
-    testWidgets('search still filters inside the dialog', (tester) async {
-      api.on('GET', '/api/v1/nasabah',
-          json: nasabahPage([
-            nasabahRow('1', nama: 'Budi Santoso'),
-            nasabahRow('2', nama: 'Siti Aminah'),
-          ]));
+    testWidgets('search uses server results inside the dialog', (tester) async {
+      final rows = [
+        nasabahRow('1', nama: 'Budi Santoso'),
+        nasabahRow('2', nama: 'Siti Aminah'),
+      ];
+      api.onRequest('GET', '/api/v1/nasabah', json: (options) {
+        final search = options.uri.queryParameters['search']?.toLowerCase();
+        final matches = rows.where((row) {
+          return search == null ||
+              (row['nama'] as String).toLowerCase().contains(search);
+        }).toList();
+        return nasabahPage(matches, count: matches.length);
+      });
       await open(tester, const Size(1280, 800));
+      await pumpUntilFound(tester, find.text('Budi Santoso'));
 
       await tester.enterText(find.byType(TextField), 'siti');
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await pumpUntilFound(tester, find.text('Siti Aminah'));
 
+      expect(api.last.query['search'], 'siti');
       expect(find.text('Budi Santoso'), findsNothing);
       expect(find.text('Siti Aminah'), findsOneWidget);
     });

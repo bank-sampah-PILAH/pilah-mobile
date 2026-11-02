@@ -4,7 +4,7 @@ import pathlib
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 from scripts.select_ci_changes import (
     _base_and_head,
@@ -40,6 +40,59 @@ class SelectCiChangesTest(unittest.TestCase):
             check=True,
             capture_output=True,
             text=True,
+        )
+
+    def test_force_pushed_branch_falls_back_to_merge_base_when_before_sha_is_gone(self):
+        before = "a" * 40
+        with patch.dict(
+            os.environ,
+            {
+                "GITHUB_EVENT_NAME": "push",
+                "GITHUB_REF": "refs/heads/feature/rebased",
+                "GITHUB_SHA": "head-sha",
+                "PUSH_BEFORE_SHA": before,
+            },
+            clear=True,
+        ), patch("scripts.select_ci_changes.subprocess.run") as run:
+            run.side_effect = [
+                subprocess.CalledProcessError(1, "git cat-file"),
+                Mock(stdout="base-sha\n"),
+            ]
+            self.assertEqual(
+                _base_and_head(),
+                ("base-sha", "head-sha", "push", "refs/heads/feature/rebased"),
+            )
+        self.assertEqual(
+            run.call_args_list,
+            [
+                call(["git", "cat-file", "-e", f"{before}^{{commit}}"], check=True, capture_output=True),
+                call(
+                    ["git", "merge-base", "origin/staging", "head-sha"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ),
+            ],
+        )
+
+    def test_push_keeps_the_before_sha_when_it_still_exists(self):
+        before = "b" * 40
+        with patch.dict(
+            os.environ,
+            {
+                "GITHUB_EVENT_NAME": "push",
+                "GITHUB_REF": "refs/heads/feature/new",
+                "GITHUB_SHA": "head-sha",
+                "PUSH_BEFORE_SHA": before,
+            },
+            clear=True,
+        ), patch("scripts.select_ci_changes.subprocess.run") as run:
+            self.assertEqual(
+                _base_and_head(),
+                (before, "head-sha", "push", "refs/heads/feature/new"),
+            )
+        run.assert_called_once_with(
+            ["git", "cat-file", "-e", f"{before}^{{commit}}"], check=True, capture_output=True
         )
 
     def test_changed_paths_omits_deleted_files(self):
@@ -142,13 +195,32 @@ class SelectCiChangesTest(unittest.TestCase):
             )
         )
 
-    def test_only_staging_and_existing_main_pushes_run_the_full_suite(self):
+    def test_staging_and_main_pushes_always_run_the_full_suite(self):
         self.assertTrue(is_full_suite("push", "refs/heads/staging"))
         self.assertTrue(is_coverage_gate("push", "refs/heads/staging"))
         self.assertFalse(is_coverage_gate("push", "refs/heads/main"))
         self.assertTrue(is_full_suite("push", "refs/heads/main"))
         self.assertFalse(is_full_suite("push", "refs/heads/feature/mobile-ci-speed"))
         self.assertFalse(is_full_suite("pull_request", "refs/pull/164/merge"))
+
+    def test_source_diffs_run_full_suite_on_pr_but_not_feature_push(self):
+        self.assertTrue(
+            is_full_suite(
+                "pull_request",
+                "refs/pull/175/merge",
+                ["lib/features/harga/presentation/pages/harga_page.dart"],
+            )
+        )
+        self.assertFalse(
+            is_full_suite(
+                "push",
+                "refs/heads/feature/quality-gates",
+                ["lib/features/jadwal/presentation/pages/jadwal_page.dart"],
+            )
+        )
+        self.assertFalse(
+            is_full_suite("pull_request", "refs/pull/175/merge", ["README.md"])
+        )
 
     def test_mirror_candidates_cover_direct_and_directory_mirror(self):
         self.assertEqual(
