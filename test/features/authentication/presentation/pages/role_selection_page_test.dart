@@ -100,9 +100,13 @@ void main() {
     await tester.pump();
     expect(auth.calls, isEmpty);
 
-    await tester.ensureVisible(find.byType(Checkbox).first);
-    await tester.tap(find.byType(Checkbox).first);
+    await tester.ensureVisible(find.text('Saya menyetujui ').first);
+    await tester.tap(find.text('Saya menyetujui ').first);
     await tester.pump();
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).first.value,
+      isTrue,
+    );
     await tester.tap(find.text('Lanjutkan'));
     await tester.pump();
     expect(auth.calls, isEmpty);

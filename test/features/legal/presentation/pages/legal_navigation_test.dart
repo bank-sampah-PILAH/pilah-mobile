@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 import 'package:pilah_mobile/features/legal/presentation/pages/legal_document_page.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/legal/presentation/pages/legal_information_page.dart';
 
+import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
 
 void main() {
@@ -17,6 +22,50 @@ void main() {
 
     expect(find.text('route:/'), findsOneWidget);
     expect(find.byType(LegalInformationPage), findsNothing);
+  });
+
+  testWidgets('back from a legal deep link returns an authenticated user home',
+      (tester) async {
+    final router = GoRouter(
+      initialLocation: LegalInformationPage.route,
+      routes: [
+        GoRoute(
+          path: LegalInformationPage.route,
+          builder: (_, __) => const LegalInformationPage(),
+        ),
+        GoRoute(
+          path: '/superadmin-dashboard',
+          builder: (_, __) => const Scaffold(body: Text('Superadmin home')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        authenticationProvider.overrideWith(
+          () => TestAuthenticationNotifier(
+            initialState: Authenticated(
+              authEntity: AuthEntity(
+                name: 'Admin',
+                email: 'admin@example.com',
+                photoUrl: '',
+                token: 'token',
+                nextStep: 'superadmin_dashboard',
+                role: 'superadmin',
+              ),
+            ),
+          ),
+        ),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('Kembali'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Superadmin home'), findsOneWidget);
   });
 
   testWidgets('back from a document deep link returns through the hub to login',
@@ -40,7 +89,14 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        authenticationProvider.overrideWith(
+          () => TestAuthenticationNotifier(initialState: Unauthenticated()),
+        ),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ));
     await tester.pumpAndSettle();
     expect(find.byType(LegalDocumentPage), findsOneWidget);
     expect(router.canPop(), isFalse);

@@ -14,6 +14,19 @@ class _MockUrlLauncher extends Mock
 class _FakeLaunchOptions extends Fake implements LaunchOptions {}
 
 void main() {
+  test('privacy policy omits generator credit and terms have a version date',
+      () {
+    final privacyText = LegalDocument.privacyPolicy.sections
+        .map((section) => '${section.title} ${section.body}')
+        .join(' ');
+    final termsText = LegalDocument.termsAndConditions.sections
+        .map((section) => section.body)
+        .join(' ');
+
+    expect(privacyText, isNot(contains('App Privacy Policy Generator')));
+    expect(termsText, contains('Terakhir diperbarui: 31/10/2026.'));
+  });
+
   late UrlLauncherPlatform original;
   late _MockUrlLauncher launcher;
 

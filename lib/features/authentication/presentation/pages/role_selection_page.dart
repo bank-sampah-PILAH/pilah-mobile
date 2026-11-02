@@ -258,7 +258,13 @@ Widget _legalConsent({
         child: Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text('Saya menyetujui ', style: AppTextStyle.small),
+            InkWell(
+              onTap: enabled ? () => onChanged(!accepted) : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('Saya menyetujui ', style: AppTextStyle.small),
+              ),
+            ),
             TextButton(
               onPressed: () => context.push(document.path),
               child: Text(title),

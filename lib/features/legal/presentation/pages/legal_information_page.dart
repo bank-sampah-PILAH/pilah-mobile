@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 
 class LegalInformationPage extends StatelessWidget {
@@ -22,8 +27,22 @@ class LegalInformationPage extends StatelessWidget {
               ContentInset(
                 child: AppBackHeader(
                   title: 'Informasi & legal',
-                  onBack: () =>
-                      context.canPop() ? context.pop() : context.go('/login'),
+                  onBack: () {
+                    if (context.canPop()) {
+                      context.pop();
+                      return;
+                    }
+                    final auth = ProviderScope.containerOf(
+                      context,
+                      listen: false,
+                    ).read(authenticationProvider);
+                    context.go(auth is Authenticated
+                        ? locationForAuthStep(
+                            auth.authEntity.nextStep,
+                            role: auth.authEntity.role,
+                          )
+                        : LoginPage.route);
+                  },
                 ),
               ),
               Expanded(
