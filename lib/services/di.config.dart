@@ -171,6 +171,8 @@ import '../features/transaksi/domain/repositories/transaksi_repository.dart'
     as _i1031;
 import '../features/transaksi/domain/use_cases/add_transaksi_usecase.dart'
     as _i839;
+import '../features/transaksi/domain/use_cases/edit_transaksi_usecase.dart'
+    as _i526;
 import '../features/transaksi/domain/use_cases/export_transaksi_usecase.dart'
     as _i67;
 import '../features/transaksi/domain/use_cases/get_aktivitas_usecase.dart'
@@ -340,6 +342,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i839.AddTransaksiUseCase>(
         () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i526.EditTransaksiUseCase>(
+        () => _i526.EditTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i67.ExportTransaksiUseCase>(
         () => _i67.ExportTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i218.GetTransaksiDetailUseCase>(() =>

@@ -4,6 +4,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
@@ -17,6 +18,7 @@ final transaksiProvider = NotifierProvider<TransaksiNotifier, TransaksiState>(
     di<AddTransaksiUseCase>(),
     di<ExportTransaksiUseCase>(),
     di<ResendWaUseCase>(),
+    di<EditTransaksiUseCase>(),
   ),
 );
 
@@ -26,6 +28,7 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
   final AddTransaksiUseCase addTransaksiUseCase;
   final ExportTransaksiUseCase exportTransaksiUseCase;
   final ResendWaUseCase resendWaUseCase;
+  final EditTransaksiUseCase editTransaksiUseCase;
 
   List<TransaksiGroupEntity> _allTransaksi = [];
   String _periode = 'bulan_ini';
@@ -39,6 +42,7 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
     this.addTransaksiUseCase,
     this.exportTransaksiUseCase,
     this.resendWaUseCase,
+    this.editTransaksiUseCase,
   );
 
   @override
@@ -107,6 +111,18 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
     return result.fold(
       (failure) => (created: null, error: failure),
       (created) => (created: created, error: null),
+    );
+  }
+
+  /// Corrects a recorded setoran (PIL-427). On failure the message is the
+  /// backend's own, so a refused edit such as "saldo menjadi negatif" reaches
+  /// the pengurus as written.
+  Future<({TransaksiDetailEntity? detail, String? error})> editTransaksi(
+      TransaksiEditRequest request) async {
+    final result = await editTransaksiUseCase.execute(request);
+    return result.fold(
+      (failure) => (detail: null, error: failure.displayMessage),
+      (detail) => (detail: detail, error: null),
     );
   }
 

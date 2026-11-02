@@ -113,7 +113,7 @@ class _ErrorView extends StatelessWidget {
                   Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: AppTextStyle.small.copyWith(color: Colors.black87),
+                    style: AppTextStyle.small.copyWith(color: AppColors.black),
                   ),
                   if (onRetry != null) ...[
                     const SizedBox(height: 16),

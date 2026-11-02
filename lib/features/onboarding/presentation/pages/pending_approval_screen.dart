@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class PendingApprovalScreen extends ConsumerWidget {
   const PendingApprovalScreen({super.key});
@@ -32,7 +34,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                   border: isCompleted
                       ? null
-                      : Border.all(color: Colors.grey.shade400, width: 3),
+                      : Border.all(color: AppColors.grey200, width: 3),
                 ),
                 child: Center(
                   child: isCompleted
@@ -40,8 +42,8 @@ class PendingApprovalScreen extends ConsumerWidget {
                       : Container(
                           width: 12,
                           height: 12,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade400,
+                          decoration: const BoxDecoration(
+                            color: AppColors.grey200,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -55,7 +57,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                         ? AppColors.greenDark
                         // Only reachable for an incomplete step that is not last;
                         // the screen's fixed steps never include one.
-                        : Colors.grey.shade300, // coverage:ignore-line
+                        : AppColors.border, // coverage:ignore-line
                   ),
                 ),
             ],
@@ -70,17 +72,17 @@ class PendingApprovalScreen extends ConsumerWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: AppFontSize.md,
+                      color: AppColors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                    style: const TextStyle(
+                      fontSize: AppFontSize.sm,
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -116,8 +118,8 @@ class PendingApprovalScreen extends ConsumerWidget {
                   const Text(
                     'Pendaftaran Terkirim!',
                     style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
+                      fontSize: AppFontSize.display,
+                      fontWeight: AppFontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
@@ -125,7 +127,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   Text(
                     'Menunggu tinjauan dari Admin.',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.md,
                       color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
@@ -136,26 +138,26 @@ class PendingApprovalScreen extends ConsumerWidget {
             const SizedBox(height: 40),
 
             // 2. Central Icon and Title
-            Icon(
+            const Icon(
               Icons.access_time_filled,
               size: 64,
-              color: Colors.grey.shade400,
+              color: AppColors.grey200,
             ),
             const SizedBox(height: 16),
             const Text(
               'Sedang Diproses',
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontSize: AppFontSize.xxl,
+                fontWeight: AppFontWeight.bold,
+                color: AppColors.black,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Admin sedang meninjau data institusi Anda.',
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
+                fontSize: AppFontSize.md,
+                color: AppColors.grey100,
               ),
             ),
 
@@ -171,7 +173,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: AppColors.black.withValues(alpha: 0.04),
                       blurRadius: 15,
                       offset: const Offset(0, 4),
                     ),
@@ -211,21 +213,21 @@ class PendingApprovalScreen extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: AppColors.fill,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Row(
+                child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.info_outline,
-                        color: Colors.grey.shade600, size: 20),
-                    const SizedBox(width: 12),
+                        color: AppColors.grey100, size: 20),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Silakan periksa halaman ini secara berkala. Status pendaftaran Anda akan otomatis diperbarui di layar ini.',
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade700,
+                          fontSize: AppFontSize.sm,
+                          color: AppColors.inkSoft,
                           height: 1.4,
                         ),
                       ),

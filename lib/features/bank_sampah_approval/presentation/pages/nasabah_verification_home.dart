@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/ap
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Replaces unavailable savings content while a membership needs a decision.
 class NasabahVerificationHome extends ConsumerWidget {
@@ -52,7 +53,7 @@ class NasabahVerificationHome extends ConsumerWidget {
                   name.isEmpty ? 'Halo, Nasabah' : 'Halo, $name',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: NasabahStyle.text(20, weight: FontWeight.w600),
+                  style: NasabahStyle.text(20, weight: AppFontWeight.semibold),
                 ),
                 const SizedBox(height: 24),
                 if (state is NasabahApprovalInitial ||
@@ -101,7 +102,8 @@ class NasabahVerificationHome extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
                   Text('Perjalanan pengajuan',
-                      style: NasabahStyle.text(17, weight: FontWeight.w600)),
+                      style: NasabahStyle.text(17,
+                          weight: AppFontWeight.semibold)),
                   const SizedBox(height: 12),
                   MembershipApprovalTimeline(membership: membership),
                   const SizedBox(height: 16),
@@ -156,11 +158,12 @@ class _StatusCard extends StatelessWidget {
             child: Icon(icon, color: tint),
           ),
           const SizedBox(height: 16),
-          Text(title, style: NasabahStyle.text(20, weight: FontWeight.w600)),
+          Text(title,
+              style: NasabahStyle.text(20, weight: AppFontWeight.semibold)),
           const SizedBox(height: 8),
           Text(membership.bankSampahNama,
               style: NasabahStyle.text(15,
-                  weight: FontWeight.w600, color: NasabahStyle.emerald)),
+                  weight: AppFontWeight.semibold, color: NasabahStyle.emerald)),
           const SizedBox(height: 8),
           Text(message,
               style: NasabahStyle.text(13, color: NasabahStyle.muted)),
@@ -193,7 +196,8 @@ class _Notice extends StatelessWidget {
           children: [
             Icon(icon, size: 32, color: NasabahStyle.emerald),
             const SizedBox(height: 16),
-            Text(title, style: NasabahStyle.text(20, weight: FontWeight.w600)),
+            Text(title,
+                style: NasabahStyle.text(20, weight: AppFontWeight.semibold)),
             const SizedBox(height: 8),
             Text(message,
                 style: NasabahStyle.text(13, color: NasabahStyle.muted)),

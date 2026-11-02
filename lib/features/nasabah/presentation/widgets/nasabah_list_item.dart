@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_appro
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class NasabahListItem extends ConsumerWidget {
   /// Satu nasabah sebagaimana dikembalikan API, dipakai apa adanya.
@@ -104,7 +106,8 @@ class NasabahListItem extends ConsumerWidget {
               onTap: () => Navigator.of(sheetContext).pop(false),
             ),
             ListTile(
-              leading: const Icon(Icons.cancel_outlined, color: Colors.red),
+              leading:
+                  const Icon(Icons.cancel_outlined, color: AppColors.danger),
               title: const Text('Tolak'),
               onTap: () => Navigator.of(sheetContext).pop(true),
             ),
@@ -149,7 +152,7 @@ class NasabahListItem extends ConsumerWidget {
               initials,
               style: AppTextStyle.title1.copyWith(
                 color: textColor,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -164,9 +167,9 @@ class NasabahListItem extends ConsumerWidget {
                       child: Text(
                         name,
                         style: AppTextStyle.title1.copyWith(
-                          color: isActive ? Colors.black87 : Colors.grey[600],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          color: isActive ? AppColors.black : AppColors.grey100,
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.lg,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -191,7 +194,7 @@ class NasabahListItem extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   phone,
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey200),
                 ),
               ],
             ),
@@ -204,16 +207,16 @@ class NasabahListItem extends ConsumerWidget {
               Text(
                 balance,
                 style: AppTextStyle.title1.copyWith(
-                  color: isActive ? AppColors.greenDark : Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                  color: isActive ? AppColors.greenDark : AppColors.grey100,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.md,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'saldo',
                 style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[400],
+                  color: AppColors.grey200,
                 ),
               ),
             ],
@@ -237,7 +240,7 @@ class _PendingBadge extends StatelessWidget {
         'Menunggu',
         style: AppTextStyle.extraSmall.copyWith(
           color: AppColors.warning,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );

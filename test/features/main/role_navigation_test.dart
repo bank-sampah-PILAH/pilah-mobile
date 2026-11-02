@@ -8,7 +8,6 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
@@ -186,12 +185,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Form Setoran'), findsOneWidget);
-    final transactionMenu = tester.widget<ExpansionTile>(find.byKey(
-      RoleTransactionMenu.menuKey,
+    final transactionMenu = tester.widget<RoleMenuRow>(find.byKey(
+      RoleTransactionMenu.headerKey,
       skipOffstage: false,
     ));
-    expect(transactionMenu.textColor, AppColors.greenDark);
-    final setoran = tester.widget<ListTile>(find.byKey(
+    expect(transactionMenu.selected, isTrue);
+    final setoran = tester.widget<RoleMenuRow>(find.byKey(
       RoleTransactionMenu.setoranKey,
       skipOffstage: false,
     ));
@@ -200,11 +199,11 @@ void main() {
     router.pop();
     await tester.pumpAndSettle();
     final inactiveMenu =
-        tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
-    expect(inactiveMenu.textColor, AppColors.inkSoft);
+        tester.widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.headerKey));
+    expect(inactiveMenu.selected, isFalse);
     expect(
       tester
-          .widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey))
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.setoranKey))
           .selected,
       isFalse,
     );

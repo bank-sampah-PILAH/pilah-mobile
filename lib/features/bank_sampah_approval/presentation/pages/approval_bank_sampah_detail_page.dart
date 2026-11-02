@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
@@ -14,7 +14,9 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_appeal_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_appeal_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_status_badge.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_bank_identity.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Detail view for one membership, pushed from [ApprovalBankSampahListView]
 /// with the tapped [NasabahMembershipEntity] passed directly via GoRouter's
@@ -89,7 +91,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
               ],
               Text(
                 'Riwayat Persetujuan',
-                style: AppTextStyle.title1.copyWith(fontSize: 16),
+                style: AppTextStyle.title1.copyWith(fontSize: AppFontSize.lg),
               ),
               const SizedBox(height: 16),
               MembershipApprovalTimeline(membership: membership),
@@ -106,8 +108,8 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,69 +122,35 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             },
             style: AppTextStyle.title1.copyWith(
               color: AppColors.greenDark,
-              fontSize: 18,
+              fontSize: AppFontSize.xl,
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.greenDark.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.recycling, color: AppColors.greenDark),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      membership.bankSampahNama,
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      [membership.bankSampahKota, membership.bankSampahAlamat]
-                          .where((part) => part.trim().isNotEmpty)
-                          .join(' · '),
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              MembershipStatusBadge(status: membership.status),
-            ],
+          MembershipBankIdentity(
+            membership: membership,
+            nameStyle: AppTextStyle.title1.copyWith(
+              color: AppColors.black,
+              fontWeight: AppFontWeight.bold,
+              fontSize: AppFontSize.lg,
+            ),
+            locationStyle: AppTextStyle.small.copyWith(
+              color: AppColors.grey100,
+            ),
           ),
           if (membership.status == MembershipStatus.rejected) ...[
             const SizedBox(height: 16),
             Text(
               'Alasan Penolakan',
               style: AppTextStyle.extraSmall.copyWith(
-                color: Colors.grey[500],
-                fontWeight: FontWeight.bold,
+                color: AppColors.grey100,
+                fontWeight: AppFontWeight.bold,
                 letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 4),
             ExpandableText(
               text: membership.alasanPenolakan ?? '-',
-              style: AppTextStyle.small.copyWith(color: Colors.black87),
+              style: AppTextStyle.small.copyWith(color: AppColors.black),
             ),
           ],
         ],

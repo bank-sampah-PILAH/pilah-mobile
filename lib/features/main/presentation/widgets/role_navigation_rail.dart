@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Bentuk navigasi untuk layar lebar.
 ///
@@ -37,6 +38,14 @@ class RoleNavigationRail extends StatelessWidget {
   static const profileKey = ValueKey('rail-profile');
   static const profileCardKey = ValueKey('rail-profile-card');
 
+  /// Posisi destinasi yang sedang terbuka di antara yang digambar, atau null
+  /// bila halaman terbuka bukan salah satunya (mis. Riwayat di akordeon).
+  int? _selectedPosition(List<int> listed) {
+    final current = navigation.currentIndex;
+    final position = current == null ? -1 : listed.indexOf(current);
+    return position < 0 ? null : position;
+  }
+
   /// Label bank sampah, atau label umum bila namanya tidak diketahui.
   @override
   Widget build(BuildContext context) {
@@ -46,6 +55,14 @@ class RoleNavigationRail extends StatelessWidget {
     );
     if (destinations.isEmpty) return const SizedBox.shrink();
     final extended = context.layoutBreakpoint == LayoutBreakpoint.expanded;
+    // Pengurus di rail lebar membuka Aktivitas sebagai Riwayat dari akordeon
+    // Transaksi, jadi ia tidak lagi menjadi destinasi sendiri. `listed` memuat
+    // indeks menu (pada daftar penuh) dari destinasi yang tetap digambar.
+    final riwayat = extended ? navigation.riwayatIndex(destinations) : null;
+    final listed = [
+      for (var i = 0; i < destinations.length; i++)
+        if (i != riwayat) i,
+    ];
     final labelStyle = AppTextStyle.small;
     final name = navigation.profileName?.trim() ?? '';
     return DecoratedBox(
@@ -71,11 +88,14 @@ class RoleNavigationRail extends StatelessWidget {
                   ? navigation.onAddTransaction
                   : null,
               transactionSelected: navigation.transactionSelected,
+              onRiwayat: navigation.riwayatOpener(riwayat),
+              riwayatSelected: navigation.riwayatIsCurrent(riwayat),
             ),
             backgroundColor: Colors.white,
             indicatorColor: AppColors.greenLight,
-            selectedIndex: navigation.currentIndex,
-            onDestinationSelected: navigation.onSelected,
+            selectedIndex: _selectedPosition(listed),
+            onDestinationSelected: (position) =>
+                navigation.onSelected(listed[position]),
             // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
             // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
             labelType: extended
@@ -85,11 +105,11 @@ class RoleNavigationRail extends StatelessWidget {
             unselectedIconTheme: const IconThemeData(color: AppColors.inkSoft),
             selectedLabelTextStyle: labelStyle.copyWith(
               color: AppColors.greenDark,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
             ),
             unselectedLabelTextStyle: labelStyle.copyWith(
               color: AppColors.inkSoft,
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
             trailing: name.isEmpty
                 ? null
@@ -108,19 +128,19 @@ class RoleNavigationRail extends StatelessWidget {
                     ),
                   ),
             destinations: [
-              for (final destination in destinations)
+              for (final index in listed)
                 NavigationRailDestination(
-                  icon: Icon(destination.icon),
-                  label: destination.disabled
+                  icon: Icon(destinations[index].icon),
+                  label: destinations[index].disabled
                       ? Semantics(
                           button: true,
                           enabled: false,
-                          label: destination.label,
+                          label: destinations[index].label,
                           excludeSemantics: true,
-                          child: Text(destination.label),
+                          child: Text(destinations[index].label),
                         )
-                      : Text(destination.label),
-                  disabled: destination.disabled,
+                      : Text(destinations[index].label),
+                  disabled: destinations[index].disabled,
                 ),
             ],
           ),
@@ -149,11 +169,15 @@ class _RailHeader extends StatelessWidget {
     this.onHome,
     this.onAddTransaction,
     this.transactionSelected = false,
+    this.onRiwayat,
+    this.riwayatSelected = false,
   });
 
   final VoidCallback? onHome;
   final VoidCallback? onAddTransaction;
   final bool transactionSelected;
+  final VoidCallback? onRiwayat;
+  final bool riwayatSelected;
   final String label;
   final String initials;
   final bool extended;
@@ -172,7 +196,7 @@ class _RailHeader extends StatelessWidget {
         initials,
         style: AppTextStyle.extraSmall.copyWith(
           color: Colors.white,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );
@@ -202,7 +226,7 @@ class _RailHeader extends StatelessWidget {
                   child: Text(
                     label,
                     style: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -218,7 +242,11 @@ class _RailHeader extends StatelessWidget {
     final headerWidth = extended ? _leadingMaxWidth : 48.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      // Dengan menu Transaksi, baris terakhirnya langsung disusul destinasi:
+      // NavigationRail sudah memberi jarak atas sendiri, jadi tidak ada
+      // jarak bawah tambahan di sini.
+      padding:
+          EdgeInsets.fromLTRB(12, 16, 12, onAddTransaction == null ? 16 : 0),
       child: Column(
         crossAxisAlignment:
             extended ? CrossAxisAlignment.start : CrossAxisAlignment.center,
@@ -242,7 +270,7 @@ class _RailHeader extends StatelessWidget {
                           Text('PILAH',
                               style: AppTextStyle.headline1.copyWith(
                                 color: AppColors.black,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: AppFontWeight.bold,
                               )),
                         ])
                       : logo,
@@ -265,7 +293,7 @@ class _RailHeader extends StatelessWidget {
             Text('MENU',
                 style: AppTextStyle.extraSmall.copyWith(
                   color: AppColors.grey100,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                   letterSpacing: 0.8,
                 )),
           ],
@@ -275,8 +303,10 @@ class _RailHeader extends StatelessWidget {
               width: headerWidth,
               child: RoleTransactionMenu(
                 onSetoran: onAddTransaction!,
+                onRiwayat: onRiwayat,
                 compact: !extended,
                 selected: transactionSelected,
+                riwayatSelected: riwayatSelected,
               ),
             ),
           ],
@@ -313,7 +343,7 @@ class _ProfileFooter extends StatelessWidget {
         initialsOf(name),
         style: AppTextStyle.extraSmall.copyWith(
           color: Colors.white,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );
@@ -355,7 +385,7 @@ class _ProfileFooter extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle.small.copyWith(
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: AppFontWeight.semibold,
                                       color: AppColors.black)),
                               if (email.isNotEmpty)
                                 Text(email,

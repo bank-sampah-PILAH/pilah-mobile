@@ -54,6 +54,47 @@ void main() {
     ]);
   });
 
+  test('payout equality includes all fields and reports net payout', () {
+    final tanggal = DateTime(2026, 9, 22, 10, 30);
+    final tanggalEditMinimum = DateTime(2026, 9, 1);
+    final actual = Pencairan(
+      id: 'p-2',
+      nasabahId: 'n-1',
+      nasabahNama: 'Ayu',
+      bankSampahNama: 'Melati',
+      nominal: 150000,
+      potongan: 10000,
+      metode: MetodePencairan.transfer,
+      tanggal: tanggal,
+      keterangan: 'Transfer',
+      status: 'tercatat',
+      saldoSebelum: 200000,
+      saldoSesudah: 50000,
+      dicatatOlehNama: 'Budi',
+      diperbarui: true,
+      tanggalEditMinimum: tanggalEditMinimum,
+    );
+
+    expect(actual.dibayar, 140000);
+    expect(actual.props, [
+      'p-2',
+      'n-1',
+      'Ayu',
+      'Melati',
+      150000,
+      10000,
+      MetodePencairan.transfer,
+      tanggal,
+      'Transfer',
+      'tercatat',
+      200000,
+      50000,
+      'Budi',
+      true,
+      tanggalEditMinimum,
+    ]);
+  });
+
   test('revision history equality includes current and replaced payouts', () {
     const pencairan = Pencairan(
       id: 'p-1',

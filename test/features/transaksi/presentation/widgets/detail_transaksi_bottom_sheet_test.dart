@@ -164,4 +164,52 @@ void main() {
     expect(find.text('Hari ini'), findsOneWidget);
     expect(find.text('Rp 0'), findsOneWidget);
   });
+
+  testWidgets(
+      'shows the note and each replaced version under Riwayat Perubahan',
+      (tester) async {
+    api.on('GET', _path, json: {
+      ..._row(),
+      'catatan': 'titip ke Bu RT',
+      'revisi': [
+        {
+          'versi': 1,
+          'total_nilai': '4000',
+          'catatan': 'catatan lama',
+          'alasan': 'Salah timbang',
+          'diubah_oleh_nama': 'Ibu Sari',
+          'diubah_pada': '2026-10-24T03:00:00Z',
+          'items': [
+            {
+              'nama_sampah': 'Botol',
+              'harga': '2000',
+              'berat': '2.000',
+              'subtotal': '4000',
+            },
+          ],
+        },
+      ],
+    });
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('titip ke Bu RT'), findsOneWidget);
+    expect(find.text('RIWAYAT PERUBAHAN'), findsOneWidget);
+    expect(find.byKey(const ValueKey('revisi-1')), findsOneWidget);
+    expect(find.text('Alasan: Salah timbang'), findsOneWidget);
+    expect(find.text('Catatan: catatan lama'), findsOneWidget);
+    expect(find.textContaining('Diubah oleh Ibu Sari'), findsOneWidget);
+    expect(find.text('Botol • 2 kg • Rp 4.000'), findsOneWidget);
+    expect(find.text('Total: Rp 4.000'), findsOneWidget);
+  });
+
+  testWidgets('a setoran that was never edited shows no history',
+      (tester) async {
+    api.on('GET', _path, json: {..._row(), 'revisi': []});
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('RIWAYAT PERUBAHAN'), findsNothing);
+    expect(find.text('CATATAN'), findsNothing);
+  });
 }

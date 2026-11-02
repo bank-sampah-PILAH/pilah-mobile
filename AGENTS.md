@@ -31,6 +31,19 @@
   `test/services/di_registrations.dart`. `di_graph_test` resolves each one in
   dev and prod, and fails when the list and the generated file disagree.
 
+- For quick iteration, run the affected test file with
+  `flutter test test/path/to/feature_test.dart`, or one named test with
+  `flutter test test/path/to/feature_test.dart --plain-name "test description"`.
+  Before shipping, run full `flutter analyze` and `flutter test`; mobile changes
+  also need the Android debug APK and web release builds listed below. PRs and
+  feature-branch pushes run only changed VM test files under `test/` (none when
+  none changed) plus the sibling `test/` mirrors of any changed `lib/` source
+  file, with browser tests only for web-code or browser-test diffs.
+  Pushes to `staging` run the full sharded Flutter and browser suites. After LCOV
+  merge, the existing 25% global and diff-coverage gates run only on `staging`;
+  diff coverage compares the push with its previous SHA. Sonar reuses same-run
+  coverage when available and never reruns tests.
+
 ## Validation
 
 - For Flutter code or behavior changes, run `flutter analyze` and `flutter test`.

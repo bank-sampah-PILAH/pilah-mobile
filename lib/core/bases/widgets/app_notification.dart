@@ -1,9 +1,11 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class AppNotification {
   /// Warning tone: a light amber tint carrying dark amber content.
@@ -19,7 +21,7 @@ class AppNotification {
   /// component wearing different colours.
   static final List<BoxShadow> _shadow = List.unmodifiable([
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.1),
+      color: AppColors.black.withValues(alpha: 0.1),
       offset: const Offset(0, 4),
       blurRadius: 10,
     ),
@@ -73,11 +75,14 @@ class AppNotification {
       titleText: Text(
         title,
         style: AppTextStyle.title1.copyWith(
-            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            color: Colors.white,
+            fontWeight: AppFontWeight.bold,
+            fontSize: AppFontSize.md),
       ),
       messageText: Text(
         message,
-        style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
+        style: AppTextStyle.small
+            .copyWith(color: Colors.white, fontSize: AppFontSize.sm),
       ),
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.greenDark,
@@ -94,8 +99,8 @@ class AppNotification {
               },
               child: Text(
                 actionLabel,
-                style: AppTextStyle.small
-                    .copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                style: AppTextStyle.small.copyWith(
+                    color: Colors.white, fontWeight: AppFontWeight.bold),
               ),
             )
           : null,
@@ -117,11 +122,14 @@ class AppNotification {
       titleText: Text(
         title,
         style: AppTextStyle.title1.copyWith(
-            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            color: Colors.white,
+            fontWeight: AppFontWeight.bold,
+            fontSize: AppFontSize.md),
       ),
       messageText: Text(
         message,
-        style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
+        style: AppTextStyle.small
+            .copyWith(color: Colors.white, fontSize: AppFontSize.sm),
       ),
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.greenDark,
@@ -148,11 +156,14 @@ class AppNotification {
       titleText: Text(
         title,
         style: AppTextStyle.title1.copyWith(
-            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            color: Colors.white,
+            fontWeight: AppFontWeight.bold,
+            fontSize: AppFontSize.md),
       ),
       messageText: Text(
         message,
-        style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
+        style: AppTextStyle.small
+            .copyWith(color: Colors.white, fontSize: AppFontSize.sm),
       ),
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.danger, // error red
@@ -178,13 +189,13 @@ class AppNotification {
         title,
         style: AppTextStyle.title1.copyWith(
             color: _warningForeground,
-            fontWeight: FontWeight.bold,
-            fontSize: 14),
+            fontWeight: AppFontWeight.bold,
+            fontSize: AppFontSize.md),
       ),
       messageText: Text(
         message,
         style: AppTextStyle.small
-            .copyWith(color: _warningForeground, fontSize: 12),
+            .copyWith(color: _warningForeground, fontSize: AppFontSize.sm),
       ),
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: _warningBackground,

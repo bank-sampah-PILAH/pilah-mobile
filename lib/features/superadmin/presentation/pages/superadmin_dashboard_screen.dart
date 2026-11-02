@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const List<String> _monthsId = [
   'Jan',
@@ -31,6 +35,8 @@ const List<String> _monthsId = [
   'Nov',
   'Des'
 ];
+
+enum _DashboardMenuAction { legalInformation, logout }
 
 String _formatDate(DateTime? date, {String prefix = ''}) {
   if (date == null) return '$prefix-';
@@ -75,7 +81,8 @@ class _LocationLine extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+        style:
+            const TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey100),
       ),
     );
   }
@@ -166,32 +173,57 @@ class _SuperAdminDashboardScreenState
                     'SuperAdmin PILAH',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 13),
+                        fontSize: AppFontSize.sm),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     'Manajemen Bank Sampah',
                     style: TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold),
+                        fontSize: AppFontSize.xxl,
+                        fontWeight: AppFontWeight.bold),
                   ),
                 ],
               ),
-              InkWell(
-                onTap: () => ProviderScope.containerOf(context, listen: false)
-                    .read(authenticationProvider.notifier)
-                    .logout(),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+              PopupMenuButton<_DashboardMenuAction>(
+                tooltip: 'Menu akun',
+                iconColor: Colors.white,
+                onSelected: (action) {
+                  if (action == _DashboardMenuAction.legalInformation) {
+                    openLegalInformation(context);
+                  } else {
+                    ProviderScope.containerOf(context, listen: false)
+                        .read(authenticationProvider.notifier)
+                        .logout();
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: _DashboardMenuAction.legalInformation,
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Informasi & legal',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child:
-                      const Icon(Icons.logout, color: Colors.white, size: 20),
-                ),
+                  const PopupMenuItem(
+                    value: _DashboardMenuAction.logout,
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout),
+                        SizedBox(width: 12),
+                        Expanded(child: Text('Keluar')),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -345,23 +377,34 @@ class _PendingBankCardState extends State<PendingBankCard> {
         ? await widget.actions.approve(bank.id)
         : await widget.actions.reject(bank.id);
 
+    if (error != null && mounted) {
+      setState(() => _isProcessing = false);
+    }
+    if (!overlayContext.mounted) return;
+    _showActionResult(overlayContext, bank, approve, error);
+  }
+
+  void _showActionResult(
+    BuildContext context,
+    BankSampahEntity bank,
+    bool approve,
+    NetworkException? error,
+  ) {
     if (error != null) {
-      if (mounted) setState(() => _isProcessing = false);
-      if (overlayContext.mounted) {
-        AppNotification.showError(overlayContext,
-            title: 'Gagal', message: error.displayMessage);
-      }
+      AppNotification.showError(
+        context,
+        title: 'Gagal',
+        message: error.displayMessage,
+      );
       return;
     }
-    if (overlayContext.mounted) {
-      AppNotification.showSuccess(
-        overlayContext,
-        title: approve ? 'Disetujui' : 'Ditolak',
-        message: approve
-            ? '${bank.nama} berhasil disetujui.'
-            : 'Pendaftaran ${bank.nama} telah ditolak.',
-      );
-    }
+    AppNotification.showSuccess(
+      context,
+      title: approve ? 'Disetujui' : 'Ditolak',
+      message: approve
+          ? '${bank.nama} berhasil disetujui.'
+          : 'Pendaftaran ${bank.nama} telah ditolak.',
+    );
   }
 
   @override
@@ -460,7 +503,7 @@ class ApprovedBankCard extends StatelessWidget {
           _CardHeader(
             title: bank.nama,
             badgeText: 'AKTIF',
-            badgeBg: Colors.green.shade100,
+            badgeBg: AppColors.greenLight,
             badgeFg: AppColors.greenDark,
             badgeIcon: Icons.check_box,
           ),
@@ -488,15 +531,15 @@ class RejectedBankCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CardShell(
-      accentColor: Colors.red.shade400,
+      accentColor: AppColors.danger,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CardHeader(
             title: bank.nama,
             badgeText: 'DITOLAK',
-            badgeBg: Colors.red.shade50,
-            badgeFg: Colors.red.shade600,
+            badgeBg: AppColors.dangerLight,
+            badgeFg: AppColors.danger,
           ),
           _LocationLine(bank),
           const SizedBox(height: 12),
@@ -525,7 +568,7 @@ class _CardShell extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4)),
         ],
@@ -579,9 +622,9 @@ class _CardHeader extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87),
+                fontSize: AppFontSize.lg,
+                fontWeight: AppFontWeight.bold,
+                color: AppColors.black),
           ),
         ),
         const SizedBox(width: 8),
@@ -600,7 +643,9 @@ class _CardHeader extends StatelessWidget {
               Text(
                 badgeText,
                 style: TextStyle(
-                    color: badgeFg, fontSize: 10, fontWeight: FontWeight.bold),
+                    color: badgeFg,
+                    fontSize: AppFontSize.xs,
+                    fontWeight: AppFontWeight.bold),
               ),
             ],
           ),
@@ -614,16 +659,15 @@ Widget _infoRow(IconData icon, String text, {bool isBold = false}) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon,
-          size: 16, color: isBold ? Colors.black87 : Colors.grey.shade500),
+      Icon(icon, size: 16, color: isBold ? AppColors.black : AppColors.grey100),
       const SizedBox(width: 8),
       Expanded(
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 13,
-            color: isBold ? Colors.black87 : Colors.grey.shade600,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            fontSize: AppFontSize.sm,
+            color: isBold ? AppColors.black : AppColors.grey100,
+            fontWeight: isBold ? AppFontWeight.bold : AppFontWeight.regular,
           ),
         ),
       ),

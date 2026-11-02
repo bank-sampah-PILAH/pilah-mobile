@@ -4,6 +4,19 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 
+/// The sticky submit can be tapped from anywhere in the form. Reveal the first
+/// invalid field rather than leaving its error outside the viewport.
+bool validateOnboardingForm(GlobalKey<FormState> formKey) {
+  final errors = formKey.currentState?.validateGranularly();
+  if (errors == null) return false;
+  if (errors.isEmpty) return true;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final field = errors.first;
+    if (field.mounted) Scrollable.ensureVisible(field.context, alignment: 0.1);
+  });
+  return false;
+}
+
 /// A name of a person or of a bank sampah, at least three characters.
 class OnboardingNameField extends StatelessWidget {
   const OnboardingNameField({

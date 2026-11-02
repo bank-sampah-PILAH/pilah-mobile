@@ -1,0 +1,35 @@
+# Shared setup for every CI job that needs a Flutter toolchain:
+# SDK, dependencies, .env and build_runner-generated sources.
+#
+# .env is gitignored but declared as an asset, so analyze and tests need it
+# present; generated sources are gitignored and must exist for the same reason.
+name: "Setup Flutter"
+description: "Install Flutter, dependencies, .env and build_runner output"
+inputs:
+  run-build-runner:
+    description: "Run build_runner code generation"
+    required: false
+    default: "true"
+runs:
+  using: "composite"
+  steps:
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: stable
+        cache: true
+
+    - name: Install dependencies
+      shell: bash
+      run: flutter pub get --enforce-lockfile
+
+    # .env is gitignored but declared as an asset, so analyze/tests need it present.
+    - name: Prepare .env
+      shell: bash
+      run: cp .env.example .env
+
+    # Generated sources are gitignored and must exist for analyze/tests.
+    - name: Generate code (build_runner)
+      if: inputs.run-build-runner == 'true'
+      shell: bash
+      run: dart run build_runner build --delete-conflicting-outputs

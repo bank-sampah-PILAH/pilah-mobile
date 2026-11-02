@@ -8,7 +8,10 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
@@ -32,6 +35,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        ref.read(aktivitasSelectionProvider.notifier).clear();
         ref
             .read(riwayatAktivitasProvider.notifier)
             .load(pageSize: widget.isWeb ? 10 : null);
@@ -112,8 +116,29 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
         ],
       );
 
-  /// Telepon: header, penyaring, dan ringkasan bergulir bersama daftar.
-  Widget _phonePage() => NestedScrollView(
+  /// Telepon: header, penyaring, dan ringkasan bergulir bersama daftar. Saat
+  /// ada setoran terpilih, header mode pilih menumpuk di atasnya dan tombol
+  /// kembali melepas pilihan lebih dulu.
+  Widget _phonePage() {
+    final selecting = ref.watch(aktivitasSelectionProvider) != null;
+    return PopScope(
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) ref.read(aktivitasSelectionProvider.notifier).clear();
+      },
+      child: Column(
+        children: [
+          if (selecting)
+            AktivitasSelectionBar(
+              onEdit: (id) => showEditSetoranSheet(context, id),
+            ),
+          Expanded(child: _phoneList()),
+        ],
+      ),
+    );
+  }
+
+  Widget _phoneList() => NestedScrollView(
         // Let filters and totals scroll away on short screens or with a keyboard.
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverToBoxAdapter(

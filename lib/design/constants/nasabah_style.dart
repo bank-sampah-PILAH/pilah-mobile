@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Shared visual tokens for the nasabah screens.
 abstract final class NasabahStyle {
@@ -20,7 +21,7 @@ abstract final class NasabahStyle {
 
   static TextStyle text(
     double size, {
-    FontWeight weight = FontWeight.w400,
+    FontWeight weight = AppFontWeight.regular,
     Color color = ink,
     double height = 1.45,
     bool tabularFigures = false,

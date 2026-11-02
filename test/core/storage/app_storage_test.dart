@@ -104,7 +104,7 @@ void main() {
   group('SecureDatabaseImpl', () {
     test('writes, reads and deletes through secure storage', () async {
       FlutterSecureStorage.setMockInitialValues({});
-      const db = SecureDatabaseImpl();
+      final db = SecureDatabaseImpl();
 
       await db.write(key: 'token', value: 'abc');
       expect(await db.getString('token'), 'abc');

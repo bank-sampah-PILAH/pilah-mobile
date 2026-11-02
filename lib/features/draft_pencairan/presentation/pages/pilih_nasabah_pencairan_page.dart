@@ -23,6 +23,7 @@ import '../widgets/pencairan_sort_button.dart';
 import '../widgets/saldo_min_sheet.dart';
 import '../widgets/pencairan_ui.dart';
 import 'draft_list_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// First step of a pencairan: choose who is paid. Search, sort, filters and
 /// picking in bulk make a long list manageable; picks survive them all.
@@ -213,7 +214,7 @@ class _BulkRow extends StatelessWidget {
     };
     final teks = AppTextStyle.small.copyWith(
       color: AppColors.greenDark,
-      fontWeight: FontWeight.w600,
+      fontWeight: AppFontWeight.semibold,
     );
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
@@ -239,7 +240,7 @@ class _BulkRow extends StatelessWidget {
                     child: Text(
                       'Pilih semua ($dapat)',
                       style: AppTextStyle.small
-                          .copyWith(fontWeight: FontWeight.w600),
+                          .copyWith(fontWeight: AppFontWeight.semibold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -395,9 +396,9 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final terpilih = state.terpilih;
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         child: ContentBounds(
@@ -419,7 +420,7 @@ class _Footer extends StatelessWidget {
                       if (state.kelebihan)
                         Text('Maksimal 1.000 nasabah per draft',
                             style: AppTextStyle.small
-                                .copyWith(color: Colors.red[700])),
+                                .copyWith(color: AppColors.danger)),
                     ],
                   ),
                 ),
