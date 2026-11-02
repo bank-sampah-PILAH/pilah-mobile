@@ -3,6 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -18,6 +21,8 @@ import 'package:pilah_mobile/features/profile/presentation/providers/profile_pro
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 import '../../../../support/auth_support.dart';
+import '../../../../support/fake_analytics_client.dart';
+import '../../../../support/fake_app_storage.dart';
 import '../../../../support/image_picker_channel.dart';
 import '../../../../support/profile_support.dart';
 import '../../../../support/pump_app.dart';
@@ -52,6 +57,7 @@ void main() {
     bool? isWeb,
     bool pushed = true,
     List<String> extraRoutes = const [],
+    List<Override> extraOverrides = const [],
   }) async {
     await pumpRouted(
       tester,
@@ -63,6 +69,7 @@ void main() {
         overrides: [
           profileProvider.overrideWith(() => notifier),
           authenticationProvider.overrideWith(() => authNotifier ?? auth),
+          ...extraOverrides,
         ],
         child: app,
       ),
@@ -71,6 +78,68 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  group('recording consent', () {
+    late FakeAppStorage storage;
+    late FakeAnalyticsClient client;
+
+    setUp(() {
+      storage = FakeAppStorage();
+      client = FakeAnalyticsClient();
+    });
+
+    List<Override> analytics() => [
+          analyticsClientProvider.overrideWithValue(client),
+          analyticsConsentStoreProvider
+              .overrideWithValue(AnalyticsConsentStore(storage)),
+        ];
+
+    testWidgets('a pengurus can switch recording on and off from the profile',
+        (tester) async {
+      await openPage(tester,
+          size: const Size(1440, 900),
+          isWeb: true,
+          extraOverrides: analytics());
+
+      expect(find.text('Perekaman sesi'), findsOneWidget);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(client.calls, ['start']);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(client.calls, ['start', 'stop']);
+    });
+
+    testWidgets('sits below the bank profile and above Keluar on a phone',
+        (tester) async {
+      await openPage(tester,
+          size: const Size(390, 2400),
+          isWeb: false,
+          extraOverrides: analytics());
+
+      final card = tester.getTopLeft(find.text('Perekaman sesi')).dy;
+      expect(card,
+          greaterThan(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dy));
+      expect(
+          card,
+          lessThan(tester
+              .getTopLeft(
+                  find.widgetWithText(AppButton, 'Keluar dari Aplikasi'))
+              .dy));
+    });
+
+    testWidgets('is not on the profile where nothing can record',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      expect(find.text('Perekaman sesi'), findsNothing);
+      expect(find.byType(Switch), findsNothing);
+    });
+  });
 
   group('in the web shell', () {
     testWidgets('there is no back button: the rail is the way out',
