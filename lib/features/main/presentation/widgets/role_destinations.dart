@@ -8,7 +8,6 @@ class RoleDestination {
     this.icon,
     this.label, {
     this.inBottomBar = true,
-    this.disabled = false,
   });
 
   /// Indeks branch pada StatefulShellRoute, bukan posisi pada menu. Keduanya
@@ -21,9 +20,6 @@ class RoleDestination {
   /// tidak nyaman dengan lebih dari lima. Tujuannya tetap dapat dicapai di
   /// aplikasi lewat jalan lain (Profil).
   final bool inBottomBar;
-
-  /// A disabled destination stays visible but cannot be selected.
-  final bool disabled;
 }
 
 /// Sumber tunggal daftar destinasi per role.
