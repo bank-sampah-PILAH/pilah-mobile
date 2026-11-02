@@ -30,6 +30,7 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pengumuman_routes.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
@@ -206,23 +207,21 @@ class AppRouterConfig {
       // passes back through the global role redirect, so a nasabah following
       // an old link is forwarded to their own home rather than a staff page.
       //
-      // lib/features/pengumuman/ is deliberately untouched, so re-enabling the
-      // feature is restoring these four builders, not rebuilding it. The route
-      // constants stay the source of the paths for the same reason.
-      GoRoute(
-        path: PengumumanPage.route,
-        redirect: (_, __) => AppLocations.dashboard,
-      ),
-      GoRoute(
-        path: PengumumanDetailPage.route,
-        redirect: (_, __) => AppLocations.dashboard,
-      ),
+      // The paths come from [pengumumanRoutes] rather than being retyped here,
+      // so the locked set cannot drift from the real one: that list holds the
+      // routes as they were, guards included, compiled and tested but not
+      // registered. Re-enabling the feature is registering it in place of this
+      // loop.
+      for (final route in pengumumanRoutes)
+        GoRoute(
+          path: route.path,
+          redirect: (_, __) => AppLocations.dashboard,
+        ),
+      // Kelola Pengumuman is not in that list because it was a shell branch,
+      // not a top-level route, so its lock is declared here on its own and
+      // restoring it means bringing the branch and its rail destination back.
       GoRoute(
         path: PengumumanKelolaPage.route,
-        redirect: (_, __) => AppLocations.dashboard,
-      ),
-      GoRoute(
-        path: PengumumanFormPage.route,
         redirect: (_, __) => AppLocations.dashboard,
       ),
       GoRoute(
