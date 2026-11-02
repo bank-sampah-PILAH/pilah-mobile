@@ -467,12 +467,19 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     confirmExitOnboarding(context, title: 'Batal Lengkapi Profil?');
   }
 
+  /// A logout sends the user to login; a role changed from the role page
+  /// starts the form over for the new role.
+  void _onAuthChanged(
+    AuthenticationStates? previous,
+    AuthenticationStates current,
+  ) {
+    if (current is Unauthenticated) context.go(LoginPage.route);
+    if (_roleChanged(previous, current)) _resetForNewRole();
+  }
+
   @override
   Widget build(BuildContext context) {
-    ref.listen(authenticationProvider, (previous, current) {
-      if (current is Unauthenticated) context.go(LoginPage.route);
-      if (_roleChanged(previous, current)) _resetForNewRole();
-    });
+    ref.listen(authenticationProvider, _onAuthChanged);
     // Watched, not only listened to: a role changed from the role page comes
     // back to this same screen, which must then draw the new role's form.
     final roleTitle = _changeableRoleTitle(ref.watch(authenticationProvider));
