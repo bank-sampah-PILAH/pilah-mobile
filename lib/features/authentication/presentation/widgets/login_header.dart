@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class LoginHeader extends StatelessWidget {
   const LoginHeader({super.key, this.large = false});
@@ -31,7 +32,7 @@ class LoginHeader extends StatelessWidget {
         Text(
           'PILAH',
           style: AppTextStyle.headline1.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             fontSize: large ? 48 : 32,
           ),
         ),

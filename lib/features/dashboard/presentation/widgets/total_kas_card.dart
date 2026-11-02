@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/states/dashboard_state.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class TotalKasCard extends ConsumerWidget {
   const TotalKasCard({super.key});
@@ -29,7 +32,7 @@ class TotalKasCard extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.greenDark,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +41,7 @@ class TotalKasCard extends ConsumerWidget {
             'TOTAL KAS BULAN INI',
             style: AppTextStyle.extraSmall.copyWith(
               color: AppColors.greenLight,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
               letterSpacing: 1.0,
             ),
           ),
@@ -47,8 +50,8 @@ class TotalKasCard extends ConsumerWidget {
             _display(state),
             style: AppTextStyle.headline1.copyWith(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 28,
+              fontWeight: AppFontWeight.bold,
+              fontSize: AppFontSize.figure,
             ),
           ),
           const SizedBox(height: 8),
@@ -56,7 +59,7 @@ class TotalKasCard extends ConsumerWidget {
             'Total nilai transaksi bulan ini',
             style: AppTextStyle.small.copyWith(
               color: AppColors.greenLight,
-              fontSize: 12,
+              fontSize: AppFontSize.sm,
             ),
           ),
         ],

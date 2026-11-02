@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -14,6 +15,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The nasabah half of PIL-204: a calon nasabah, having already completed
 /// their profile (including address) on the shared complete_profile step,
@@ -138,12 +140,12 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Text(
+            child: const Text(
               'Saat ini Anda hanya dapat terdaftar di 1 '
               'bank sampah.',
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.brown[700],
+                fontSize: AppFontSize.sm,
+                color: AppColors.inkSoft,
               ),
             ),
           ),
@@ -166,12 +168,12 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
         ),
         if (_memberships.isNotEmpty) ...[
           const SizedBox(height: 20),
-          Text(
+          const Text(
             'BANK SAMPAH YANG SUDAH TERGABUNG',
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              fontSize: AppFontSize.sm,
+              fontWeight: AppFontWeight.bold,
+              color: AppColors.inkSoft,
             ),
           ),
           const SizedBox(height: 8),
@@ -184,15 +186,15 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
                     child: Text(
                       membership.bankSampahNama,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeight.semibold,
                       ),
                     ),
                   ),
                   Text(
                     _membershipStatusLabel(membership),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                    style: const TextStyle(
+                      fontSize: AppFontSize.sm,
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -227,12 +229,13 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(24.0),
+        const Padding(
+          padding: EdgeInsets.all(24.0),
           child: Text(
             'Pengajuan akan ditinjau oleh pengurus bank sampah.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+            style:
+                TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
           ),
         ),
         const SizedBox(height: 20),

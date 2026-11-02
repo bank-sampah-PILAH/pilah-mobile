@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class WebPaginationBar extends StatelessWidget {
   const WebPaginationBar({
@@ -125,7 +126,8 @@ class WebPaginationBar extends StatelessWidget {
             NumberFormat.decimalPattern('id').format(page),
             style: AppTextStyle.small.copyWith(
               color: selected ? Colors.white : AppColors.inkSoft,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              fontWeight:
+                  selected ? AppFontWeight.semibold : AppFontWeight.regular,
             ),
           ),
         ),

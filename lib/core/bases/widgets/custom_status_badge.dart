@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class CustomStatusBadge extends StatelessWidget {
   final bool? isActive;
@@ -49,7 +50,7 @@ class CustomStatusBadge extends StatelessWidget {
         label,
         style: AppTextStyle.extraSmall.copyWith(
           color: text,
-          fontWeight: FontWeight.bold,
+          fontWeight: AppFontWeight.bold,
         ),
       ),
     );

@@ -10,6 +10,7 @@ import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pilihan periode bawaan Riwayat Aktivitas, dalam urutan tampil.
 const periodePresets = <(String value, String label)>[
@@ -143,7 +144,9 @@ class _Option extends StatelessWidget {
                   label,
                   style: AppTextStyle.headline3.copyWith(
                     color: selected ? AppColors.greenDark : AppColors.black,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: selected
+                        ? AppFontWeight.semibold
+                        : AppFontWeight.regular,
                   ),
                 ),
               ),

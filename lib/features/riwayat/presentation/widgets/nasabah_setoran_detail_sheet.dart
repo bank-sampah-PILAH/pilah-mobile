@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class NasabahSetoranDetailSheet extends StatefulWidget {
   const NasabahSetoranDetailSheet({
@@ -50,7 +51,7 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
             ],
             Text(
               'Detail Setoran',
-              style: NasabahStyle.text(20, weight: FontWeight.w600),
+              style: NasabahStyle.text(20, weight: AppFontWeight.semibold),
             ),
             const SizedBox(height: 16),
             FutureBuilder<NasabahSetoranDetail>(
@@ -109,7 +110,7 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
             'RINCIAN SETORAN',
             style: NasabahStyle.text(
               11,
-              weight: FontWeight.w600,
+              weight: AppFontWeight.semibold,
               color: NasabahStyle.muted,
             ),
           ),
@@ -124,7 +125,8 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
                   children: [
                     Text(
                       item.name,
-                      style: NasabahStyle.text(14, weight: FontWeight.w600),
+                      style:
+                          NasabahStyle.text(14, weight: AppFontWeight.semibold),
                     ),
                     const SizedBox(height: 6),
                     AppDetailRow(

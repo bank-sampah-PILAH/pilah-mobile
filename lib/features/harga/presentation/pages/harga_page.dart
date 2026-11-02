@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,7 @@ import 'package:pilah_mobile/features/harga/presentation/providers/harga_provide
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class HargaPage extends StatelessWidget {
   const HargaPage({super.key, this.isWeb = kIsWeb});
@@ -250,9 +252,9 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
             Text(
               _pageTitle,
               style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
+                color: AppColors.black,
+                fontWeight: AppFontWeight.bold,
+                fontSize: AppFontSize.display,
               ),
             ),
             const SizedBox(height: 16),
@@ -524,7 +526,7 @@ class _HargaCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle.headline3.copyWith(
                     color: AppColors.black,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.semibold,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -543,7 +545,7 @@ class _HargaCard extends StatelessWidget {
                     '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
                     style: AppTextStyle.extraSmall.copyWith(
                       color: AppColors.warning,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                   ),
                 ],

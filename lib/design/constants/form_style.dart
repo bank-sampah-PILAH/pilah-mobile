@@ -29,15 +29,15 @@ InputDecoration appInputDecoration({
 
   return InputDecoration(
     hintText: hintText,
-    hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+    hintStyle: AppTextStyle.small.copyWith(color: AppColors.grey200),
     errorText: errorText,
     prefixText: prefixText,
     prefixIcon: prefixIcon,
     suffixIcon: suffixIcon,
     filled: true,
     fillColor: Colors.white,
-    enabledBorder: border(hasError ? AppColors.danger : Colors.grey[300]!),
-    disabledBorder: border(Colors.grey[200]!),
+    enabledBorder: border(hasError ? AppColors.danger : AppColors.border),
+    disabledBorder: border(AppColors.border),
     focusedBorder: border(
       hasError ? AppColors.danger : focusColor ?? AppColors.greenDark,
       1.5,
@@ -51,10 +51,10 @@ InputDecoration appInputDecoration({
 /// The look of a search field: a soft fill with no outline and a search icon.
 InputDecoration appSearchDecoration({String? hintText}) => InputDecoration(
       hintText: hintText,
-      hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
-      prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
+      hintStyle: AppTextStyle.small.copyWith(color: AppColors.grey200),
+      prefixIcon: const Icon(Icons.search, color: AppColors.grey200),
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: AppColors.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -73,4 +73,4 @@ InputDecoration appBorderlessInputDecoration({String? hintText}) =>
 
 /// Text style of what is typed into an [appInputDecoration] field.
 TextStyle get appInputStyle =>
-    AppTextStyle.small.copyWith(color: Colors.black87);
+    AppTextStyle.small.copyWith(color: AppColors.black);

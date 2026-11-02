@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pengurus-only transaction actions shown before the normal destinations.
 class RoleTransactionMenu extends StatelessWidget {
@@ -256,8 +257,9 @@ class _RoleMenuRowState extends State<RoleMenuRow> {
                   widget.label,
                   style: AppTextStyle.small.copyWith(
                     color: color,
-                    fontWeight:
-                        widget.selected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: widget.selected
+                        ? AppFontWeight.semibold
+                        : AppFontWeight.medium,
                   ),
                 ),
               ),

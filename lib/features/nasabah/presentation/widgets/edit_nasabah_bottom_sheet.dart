@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -10,6 +11,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_pro
 import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_fields.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/email_dikelola_nasabah_notice.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pesan 403 yang berarti profilnya milik pemilik akun (PIL-223). Endpoint
 /// ini juga membalas 403 untuk nasabah nonaktif dengan pesan lain, jadi
@@ -129,11 +131,11 @@ class _EditNasabahBottomSheetState
               backgroundColor: AppColors.greenLight,
               titleStyle: AppTextStyle.title1.copyWith(
                 color: AppColors.greenDark,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontWeight: AppFontWeight.bold,
+                fontSize: AppFontSize.md,
               ),
               messageStyle: AppTextStyle.small.copyWith(
-                color: Colors.black87,
+                color: AppColors.black,
                 height: 1.4,
               ),
               message:

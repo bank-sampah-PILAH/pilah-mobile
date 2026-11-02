@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class TransactionSummarySection extends StatelessWidget {
   final int grandTotal;
@@ -17,10 +20,10 @@ class TransactionSummarySection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -34,7 +37,7 @@ class TransactionSummarySection extends StatelessWidget {
               Text(
                 'Subtotal item',
                 style: AppTextStyle.small.copyWith(
-                  color: Colors.grey[500],
+                  color: AppColors.grey100,
                 ),
               ),
               const SizedBox(width: 12),
@@ -46,9 +49,9 @@ class TransactionSummarySection extends StatelessWidget {
                     CurrencyFormatter.formatRupiah(grandTotal),
                     maxLines: 1,
                     style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
+                      color: AppColors.black,
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: AppFontSize.md,
                     ),
                   ),
                 ),
@@ -65,9 +68,9 @@ class TransactionSummarySection extends StatelessWidget {
               Text(
                 'Grand Total',
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  color: AppColors.black,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.lg,
                 ),
               ),
               const SizedBox(width: 12),
@@ -84,8 +87,8 @@ class TransactionSummarySection extends StatelessWidget {
                     maxLines: 1,
                     style: AppTextStyle.headline1.copyWith(
                       color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: AppFontSize.xxl,
                     ),
                   ),
                 ),

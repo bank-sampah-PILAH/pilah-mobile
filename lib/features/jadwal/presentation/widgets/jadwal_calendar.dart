@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _monthNames = [
   'Januari',
@@ -31,10 +33,10 @@ const _weekdayShortNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 /// Label hari di atas kolom tanggal; dipakai juga untuk mengukur ke mana judul
 /// bulan harus sejajar.
-final _weekdayLabelStyle = TextStyle(
-  color: Colors.grey.shade600,
-  fontSize: 11,
-  fontWeight: FontWeight.w600,
+const _weekdayLabelStyle = TextStyle(
+  color: AppColors.grey100,
+  fontSize: AppFontSize.sm,
+  fontWeight: AppFontWeight.semibold,
 );
 
 String formatJadwalDayHeading(DateTime date, {DateTime? today}) {
@@ -94,7 +96,7 @@ class JadwalCalendar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -115,9 +117,9 @@ class JadwalCalendar extends StatelessWidget {
                       child: Text(
                         monthLabel,
                         style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
+                          color: AppColors.black,
+                          fontSize: AppFontSize.lg,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -297,10 +299,11 @@ class _JadwalDateCell extends StatelessWidget {
                       color: selected
                           ? Colors.white
                           : isInDisplayedMonth
-                              ? Colors.black87
-                              : Colors.grey.shade400,
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                              ? AppColors.black
+                              : AppColors.grey200,
+                      fontSize: AppFontSize.sm,
+                      fontWeight:
+                          selected ? AppFontWeight.bold : AppFontWeight.medium,
                     ),
                   ),
                 ),
