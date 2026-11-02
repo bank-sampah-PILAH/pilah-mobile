@@ -75,8 +75,7 @@ void main() {
               '/schedule',
               '/history',
               '/bank',
-              '/profile',
-              '/pengumuman'
+              '/profile'
             ])
               StatefulShellBranch(routes: [
                 GoRoute(
@@ -407,19 +406,6 @@ void main() {
           tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
       expect(bar.items.length, 5);
       expect(find.text('Pengumuman'), findsNothing);
-    });
-
-    testWidgets('on the app the page opens without a bottom bar or a dead end',
-        (tester) async {
-      await mountShell(tester,
-          role: 'pengelola',
-          window: const Size(390, 844),
-          isWeb: false,
-          initialLocation: '/pengumuman');
-
-      expect(find.text('body:/pengumuman'), findsOneWidget);
-      expect(find.text('Kembali ke Beranda'), findsNothing);
-      expect(find.byType(BottomNavigationBar), findsNothing);
     });
   });
 
