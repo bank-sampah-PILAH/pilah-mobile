@@ -117,6 +117,17 @@ void main() {
     expect(cubit.state, isA<NasabahInitial>());
   });
 
+  test('a cancelled refresh keeps existing rows and clears the loading flag',
+      () async {
+    await cubit.loadNasabah();
+    when(() => getUseCase.execute(any()))
+        .thenAnswer((_) async => Left(RequestCancelled()));
+    await cubit.loadNasabah();
+    final loaded = cubit.state as NasabahLoaded;
+    expect(loaded.nasabahList.single.name, 'Budi Santoso');
+    expect(loaded.isReloading, isFalse);
+  });
+
   testWidgets('superseded search cancels transport without displaying an error',
       (tester) async {
     await cubit.loadNasabah();
