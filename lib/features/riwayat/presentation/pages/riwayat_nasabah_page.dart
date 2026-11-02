@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/widgets/nasabah_setoran_detail_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The Setoran tab, scoped by the host screen to one membership.
 class RiwayatNasabahPage extends ConsumerStatefulWidget {
@@ -73,7 +74,8 @@ class _RiwayatNasabahPageState extends ConsumerState<RiwayatNasabahPage> {
                   Expanded(
                     child: Text(
                       'Riwayat Setoran',
-                      style: NasabahStyle.text(20, weight: FontWeight.w600),
+                      style:
+                          NasabahStyle.text(20, weight: AppFontWeight.semibold),
                     ),
                   ),
                   IconButton(
@@ -118,7 +120,7 @@ class _RiwayatNasabahPageState extends ConsumerState<RiwayatNasabahPage> {
                           'Coba Lagi',
                           style: NasabahStyle.text(
                             13,
-                            weight: FontWeight.w600,
+                            weight: AppFontWeight.semibold,
                             color: NasabahStyle.emerald,
                           ),
                         ),
@@ -136,7 +138,8 @@ class _RiwayatNasabahPageState extends ConsumerState<RiwayatNasabahPage> {
                       Text(
                         'Belum ada aktivitas',
                         textAlign: TextAlign.center,
-                        style: NasabahStyle.text(14, weight: FontWeight.w500),
+                        style:
+                            NasabahStyle.text(14, weight: AppFontWeight.medium),
                       ),
                     ],
                   ),

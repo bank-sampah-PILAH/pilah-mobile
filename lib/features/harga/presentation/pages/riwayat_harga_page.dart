@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/riwayat_harga_content.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 
@@ -36,14 +36,10 @@ class _RiwayatHargaViewState extends State<RiwayatHargaView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Riwayat Harga'),
-            Text(widget.namaJenis, style: AppTextStyle.small),
-          ],
-        ),
+      appBar: NasabahPageAppBar(
+        title: 'Riwayat Harga',
+        subtitle: widget.namaJenis,
+        showBack: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),

@@ -12,7 +12,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
 
   static const String _path = '/api/v1/nasabah';
 
-  /// Batas `max_page_size` backend; dipakai picker yang menarik satu kali ambil.
+  /// Batas `max_page_size` backend for the legacy active snapshot.
   static const int _batasPicker = 100;
 
   @override

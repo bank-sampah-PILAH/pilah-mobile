@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Confirmation step for activating / deactivating a jenis sampah.
 ///
@@ -52,7 +53,7 @@ class HargaConfirmationDialog extends StatelessWidget {
         ),
         TextSpan(
           text: wasteName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: AppFontWeight.bold),
         ),
         TextSpan(
           text: isActivating

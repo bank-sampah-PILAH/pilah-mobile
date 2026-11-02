@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_terjadwal.dart';
@@ -26,29 +27,29 @@ class HargaModel extends HargaEntity {
     final String category = json['kategori']?.toString() ?? 'dll';
 
     IconData icon = Icons.recycling;
-    Color iconColor = Colors.green;
+    Color iconColor = AppColors.greenDark;
     String badgeText = 'Anorganik';
 
     switch (category.toLowerCase()) {
       case 'kertas':
         icon = Icons.description;
-        iconColor = Colors.blue;
+        iconColor = AppColors.blue;
         break;
       case 'plastik':
         icon = Icons.local_drink;
-        iconColor = Colors.green;
+        iconColor = AppColors.greenDark;
         break;
       case 'logam':
         icon = Icons.hardware;
-        iconColor = Colors.grey;
+        iconColor = AppColors.grey100;
         break;
       case 'kaca':
         icon = Icons.wine_bar;
-        iconColor = Colors.teal;
+        iconColor = AppColors.statPurple;
         break;
       case 'organik':
         icon = Icons.eco;
-        iconColor = Colors.lightGreen;
+        iconColor = AppColors.statOrange;
         badgeText = 'Organik';
         break;
     }

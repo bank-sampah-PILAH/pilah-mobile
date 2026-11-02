@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -17,6 +18,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/email_dikelol
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DetailNasabahBottomSheet extends ConsumerStatefulWidget {
   static const dragHandleKey = ValueKey('detail-drag-handle');
@@ -93,16 +95,16 @@ class _DetailNasabahBottomSheetState
                 decoration: BoxDecoration(
                   color: isActive
                       ? DetailNasabahBottomSheet.mintTint
-                      : Colors.red[50],
+                      : AppColors.dangerLight,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   initials,
                   style: AppTextStyle.headline1.copyWith(
-                    color: isActive ? AppColors.greenDark : Colors.red[400],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    color: isActive ? AppColors.greenDark : AppColors.danger,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.display,
                   ),
                 ),
               ),
@@ -114,9 +116,9 @@ class _DetailNasabahBottomSheetState
                     Text(
                       name,
                       style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        color: AppColors.black,
+                        fontWeight: AppFontWeight.bold,
+                        fontSize: AppFontSize.xxl,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -125,8 +127,8 @@ class _DetailNasabahBottomSheetState
                         Text(
                           idNasabah,
                           style: AppTextStyle.small.copyWith(
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w500,
+                            color: AppColors.grey100,
+                            fontWeight: AppFontWeight.medium,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -144,8 +146,8 @@ class _DetailNasabahBottomSheetState
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +165,7 @@ class _DetailNasabahBottomSheetState
                         ? Icons.female
                         : Icons.male,
                     size: 16,
-                    color: Colors.grey[600],
+                    color: AppColors.grey100,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -182,8 +184,8 @@ class _DetailNasabahBottomSheetState
                   'Tanggal Daftar',
                   tanggalDaftar,
                   isBold: true,
-                  icon: Icon(Icons.calendar_month,
-                      size: 16, color: Colors.indigo[300]),
+                  icon: const Icon(Icons.calendar_month,
+                      size: 16, color: AppColors.blue),
                 ),
                 const SizedBox(height: 16),
                 _buildRingkasanRow(),
@@ -191,16 +193,16 @@ class _DetailNasabahBottomSheetState
                 Text(
                   'Alamat',
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[500],
+                    color: AppColors.grey100,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   address,
                   style: AppTextStyle.title1.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    color: AppColors.black,
+                    fontWeight: AppFontWeight.semibold,
+                    fontSize: AppFontSize.md,
                     height: 1.4,
                   ),
                 ),
@@ -213,11 +215,11 @@ class _DetailNasabahBottomSheetState
               backgroundColor: DetailNasabahBottomSheet.mintTint,
               titleStyle: AppTextStyle.title1.copyWith(
                 color: AppColors.greenDark,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontWeight: AppFontWeight.bold,
+                fontSize: AppFontSize.md,
               ),
               messageStyle: AppTextStyle.small.copyWith(
-                color: Colors.black87,
+                color: AppColors.black,
                 height: 1.4,
               ),
               message:
@@ -315,7 +317,7 @@ class _DetailNasabahBottomSheetState
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange[50],
+              color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Column(
@@ -323,15 +325,15 @@ class _DetailNasabahBottomSheetState
               children: [
                 Row(
                   children: [
-                    Icon(Icons.sync_problem,
-                        size: 18, color: Colors.orange[700]),
+                    const Icon(Icons.sync_problem,
+                        size: 18, color: AppColors.warning),
                     const SizedBox(width: 8),
                     Text(
                       'Data akun berbeda',
                       style: AppTextStyle.title1.copyWith(
-                        color: Colors.orange[800],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        color: AppColors.warning,
+                        fontWeight: AppFontWeight.bold,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -340,7 +342,7 @@ class _DetailNasabahBottomSheetState
                 Text(
                   'Nasabah ini memiliki data berbeda dari catatan yang anda miliki.',
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.black87,
+                    color: AppColors.black,
                     height: 1.4,
                   ),
                 ),
@@ -452,7 +454,7 @@ class _DetailNasabahBottomSheetState
         Text(
           label,
           style: AppTextStyle.small.copyWith(
-            color: Colors.grey[500],
+            color: AppColors.grey100,
           ),
         ),
         const SizedBox(width: 16),
@@ -469,9 +471,10 @@ class _DetailNasabahBottomSheetState
                 child: Text(
                   value,
                   style: AppTextStyle.title1.copyWith(
-                    color: valueColor ?? Colors.black87,
-                    fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 14,
+                    color: valueColor ?? AppColors.black,
+                    fontWeight:
+                        isBold ? AppFontWeight.bold : AppFontWeight.medium,
+                    fontSize: AppFontSize.md,
                   ),
                   textAlign: TextAlign.right,
                 ),

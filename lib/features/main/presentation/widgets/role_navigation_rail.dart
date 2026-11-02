@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Bentuk navigasi untuk layar lebar.
 ///
@@ -104,11 +105,11 @@ class RoleNavigationRail extends StatelessWidget {
             unselectedIconTheme: const IconThemeData(color: AppColors.inkSoft),
             selectedLabelTextStyle: labelStyle.copyWith(
               color: AppColors.greenDark,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
             ),
             unselectedLabelTextStyle: labelStyle.copyWith(
               color: AppColors.inkSoft,
-              fontWeight: FontWeight.w500,
+              fontWeight: AppFontWeight.medium,
             ),
             trailing: name.isEmpty
                 ? null
@@ -195,7 +196,7 @@ class _RailHeader extends StatelessWidget {
         initials,
         style: AppTextStyle.extraSmall.copyWith(
           color: Colors.white,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );
@@ -225,7 +226,7 @@ class _RailHeader extends StatelessWidget {
                   child: Text(
                     label,
                     style: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -269,7 +270,7 @@ class _RailHeader extends StatelessWidget {
                           Text('PILAH',
                               style: AppTextStyle.headline1.copyWith(
                                 color: AppColors.black,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: AppFontWeight.bold,
                               )),
                         ])
                       : logo,
@@ -292,7 +293,7 @@ class _RailHeader extends StatelessWidget {
             Text('MENU',
                 style: AppTextStyle.extraSmall.copyWith(
                   color: AppColors.grey100,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                   letterSpacing: 0.8,
                 )),
           ],
@@ -342,7 +343,7 @@ class _ProfileFooter extends StatelessWidget {
         initialsOf(name),
         style: AppTextStyle.extraSmall.copyWith(
           color: Colors.white,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );
@@ -384,7 +385,7 @@ class _ProfileFooter extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle.small.copyWith(
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: AppFontWeight.semibold,
                                       color: AppColors.black)),
                               if (email.isNotEmpty)
                                 Text(email,

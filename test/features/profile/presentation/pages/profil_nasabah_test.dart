@@ -138,6 +138,7 @@ void main() {
         await openProfile(tester, name: user.name, email: user.email);
         expect(find.text(user.name), findsOneWidget);
         expect(find.text(user.email), findsOneWidget);
+        expect(find.text('Informasi & legal'), findsOneWidget);
         expect(
             find.text(user.email == 'siti@example.test'
                 ? 'budi@example.test'
