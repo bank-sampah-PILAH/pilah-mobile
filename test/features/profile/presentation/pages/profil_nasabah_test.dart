@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
-import '../../../../support/beranda_pengumuman_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +12,6 @@ import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
-import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../../support/approved_membership.dart';
@@ -72,8 +70,6 @@ void main() {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(repository ??
         PreviewNasabahRepository(name: apiName ?? name, email: email));
-    registerNasabahPengumumanRepository();
-    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     addTearDown(() async {
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
