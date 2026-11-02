@@ -82,6 +82,7 @@ class RoleNavigationRail extends StatelessWidget {
             leading: _RailHeader(
               label: BankSampahLabel.of(navigation.bankSampahNama),
               initials: BankSampahLabel.initialsOf(navigation.bankSampahNama),
+              logoUrl: navigation.bankSampahLogoUrl,
               extended: extended,
               onHome: navigation.onHome,
               onAddTransaction: navigation.role == 'pengelola'
@@ -165,6 +166,7 @@ class _RailHeader extends StatelessWidget {
   const _RailHeader({
     required this.label,
     required this.initials,
+    this.logoUrl,
     required this.extended,
     this.onHome,
     this.onAddTransaction,
@@ -173,14 +175,27 @@ class _RailHeader extends StatelessWidget {
     this.riwayatSelected = false,
   });
 
+  final String label;
+  final String initials;
+
+  /// Logo tersimpan bank sampah; null/kosong menggambar inisial.
+  final String? logoUrl;
+  final bool extended;
   final VoidCallback? onHome;
   final VoidCallback? onAddTransaction;
   final bool transactionSelected;
   final VoidCallback? onRiwayat;
   final bool riwayatSelected;
-  final String label;
-  final String initials;
-  final bool extended;
+
+  Widget _badgeText(String text) => Center(
+        child: Text(
+          text,
+          style: AppTextStyle.extraSmall.copyWith(
+            color: Colors.white,
+            fontWeight: AppFontWeight.semibold,
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -192,12 +207,20 @@ class _RailHeader extends StatelessWidget {
         color: AppColors.greenDark,
         shape: BoxShape.circle,
       ),
-      child: Text(
-        initials,
-        style: AppTextStyle.extraSmall.copyWith(
-          color: Colors.white,
-          fontWeight: AppFontWeight.semibold,
-        ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (logoUrl?.isNotEmpty ?? false)
+            ClipOval(
+              child: Image.network(
+                logoUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _badgeText(initials),
+              ),
+            )
+          else
+            _badgeText(initials),
+        ],
       ),
     );
 

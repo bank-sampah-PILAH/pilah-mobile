@@ -10,6 +10,8 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
@@ -85,6 +87,16 @@ class _RoleShell extends ConsumerWidget {
         isWebOverride: isWebOverride,
       );
     }
+    // Rail/drawer heads draw the bank logo once loaded. The profile notifier
+    // is app-scoped and lazy: without this, a session that never opened the
+    // Profile page keeps initials forever. Silent — rail must not flash a
+    // spinner for it.
+    final profile = ref.watch(profileProvider);
+    if (profile.status == ProfileStatus.initial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(profileProvider.notifier).load(silent: true);
+      });
+    }
     return _ShellContent(
       role: role!,
       bankSampahNama:
@@ -119,6 +131,22 @@ class _ShellContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final approval = _watchApproval(context, ref);
     final limitedNasabah = _isLimitedNasabah(approval);
+    // Logo bank sampah untuk kepala rail/drawer. Pengurus memperbarui logo
+    // lewat GET /bank-sampah/me (di-watch profileProvider, jadi simpanan di
+    // halaman Profil langsung tercermin di sini); nasabah memakai logo yang
+    // datang bersama keanggotaannya dari GET /nasabah/me.
+    final bankSampahLogoUrl = role == 'nasabah'
+        ? (approval is NasabahApprovalLoaded
+            ? approval.memberships
+                .firstWhere(
+                  (m) => m.status == MembershipStatus.approved && m.isActive,
+                  orElse: () => approval.memberships.first,
+                )
+                .bankSampahLogoUrl
+            : null)
+        : (ref.watch(profileProvider).status == ProfileStatus.loaded
+            ? ref.watch(profileProvider).bankSampah?.fotoLogo
+            : null);
     // Only a confirmed status may discard the current route; initial loading
     // must leave the current route intact.
     final confirmedLimitedNasabah = role == 'nasabah' &&
@@ -159,6 +187,7 @@ class _ShellContent extends ConsumerWidget {
       railSelected,
       select,
       form,
+      bankSampahLogoUrl,
     );
   }
 
@@ -251,6 +280,7 @@ class _ShellContent extends ConsumerWidget {
     int? selected,
     ValueChanged<int> onSelected,
     NavigationForm form,
+    String? bankSampahLogoUrl,
   ) {
     final account = ref.watch(authenticationProvider);
     final profileName =
@@ -268,6 +298,7 @@ class _ShellContent extends ConsumerWidget {
           limitedNasabah: limitedNasabah,
           currentIndex: selected,
           bankSampahNama: bankSampahNama,
+          bankSampahLogoUrl: bankSampahLogoUrl,
           profileName: profileName,
           profileEmail: profileEmail,
           onProfile: () => navigationShell.goBranch(_profileBranch),

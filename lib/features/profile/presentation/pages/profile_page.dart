@@ -502,7 +502,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
 
   /// Kartu akun berisi identitas. Web sempit menaruh Keluar di bawah identitas;
   /// desktop menaruhnya di samping, dan aplikasi tetap menaruhnya di bawah.
-  Widget _buildAccountCard(String name, AuthEntity? auth) {
+  Widget _buildAccountCard(String name, AuthEntity? auth, String? logoUrl) {
     final email = auth?.email.trim() ?? '';
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -513,6 +513,10 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             CircleAvatar(
               radius: 28,
               backgroundColor: AppColors.greenLight,
+              foregroundImage: (logoUrl?.isNotEmpty ?? false)
+                  ? NetworkImage(logoUrl!)
+                  : null,
+              onForegroundImageError: (_, __) {},
               child: Text(
                 _initials(name),
                 style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
@@ -605,7 +609,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name =
         (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
-    final accountCard = _buildAccountCard(name, auth);
+    final accountCard =
+        _buildAccountCard(name, auth, state.bankSampah?.fotoLogo);
     final bankProfile = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -883,7 +888,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       const SizedBox(height: 16),
                       AppButton(
                         label: 'Salin Link Undangan',
-                        variant: AppButtonVariant.outlined,
+                        variant: AppButtonVariant.outlinedOnDark,
                         icon: Icons.copy,
                         onPressed: _onCopyInvite,
                       ),
