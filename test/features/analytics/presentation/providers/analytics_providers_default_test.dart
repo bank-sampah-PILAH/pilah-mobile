@@ -5,8 +5,10 @@ import 'package:pilah_mobile/features/analytics/presentation/providers/analytics
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
+import '../../../../support/fake_analytics_client.dart';
 
 /// Screens and tests that never set analytics up must behave as if it is off,
 /// and must not need dependency injection to know that.
@@ -28,6 +30,14 @@ void main() {
     addTearDown(container.dispose);
     return container;
   }
+
+  test('a registered client is the one the app uses', () {
+    final registered = FakeAnalyticsClient();
+    di.registerSingleton<AnalyticsClient>(registered);
+    addTearDown(() => di.reset());
+
+    expect(containerForPengurus().read(analyticsClientProvider), registered);
+  });
 
   test('with nothing registered the client is the unavailable no-op one', () {
     final client = containerForPengurus().read(analyticsClientProvider);
