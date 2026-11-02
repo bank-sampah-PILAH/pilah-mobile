@@ -7,6 +7,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CLIENT = "123-example.apps.googleusercontent.com"
+POSTHOG_KEY = "phc_" + "aB3dE5gH7jK9mN1pQ3sT5vW7yZ9bC1dE3fG5hJ7"
 
 
 class PrepareWebEnvTest(unittest.TestCase):
@@ -58,6 +59,65 @@ class PrepareWebEnvTest(unittest.TestCase):
         result, output = self.prepare("staging", valid.replace("BASE_URL_PROD", "BASE_URL_DEV"))
         self.assertNotEqual(result.returncode, 0)
         self.assertIsNone(output)
+
+
+    def test_ship_valid_analytics_settings_for_the_matching_flavor(self):
+        for flavor, key in (("staging", "BASE_URL_DEV"), ("production", "BASE_URL_PROD")):
+            with self.subTest(flavor=flavor):
+                origin = ("https://pilah-be-staging.fly.dev" if flavor == "staging"
+                          else "https://backend.run.app")
+                result, output = self.prepare(
+                    flavor,
+                    f"{key}={origin}\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
+                    f"ENABLE_ANALYTICS=true\nPOSTHOG_API_KEY={POSTHOG_KEY}\n"
+                    f"POSTHOG_ENVIRONMENT={flavor}\n",
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(
+                    output,
+                    f"{key}={origin}\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
+                    "ENABLE_DEMO_LOGIN=false\nENABLE_ANALYTICS=true\n"
+                    f"POSTHOG_API_KEY={POSTHOG_KEY}\n"
+                    "POSTHOG_HOST=https://us.i.posthog.com\n"
+                    f"POSTHOG_ENVIRONMENT={flavor}\n",
+                )
+
+    def test_reject_invalid_analytics_settings_without_writing(self):
+        base = ("BASE_URL_DEV=https://pilah-be-staging.fly.dev\n"
+                f"GOOGLE_SERVER_CLIENT_ID={CLIENT}\nENABLE_ANALYTICS=true\n")
+        valid = base + f"POSTHOG_API_KEY={POSTHOG_KEY}\nPOSTHOG_ENVIRONMENT=staging\n"
+        cases = {
+            "missing key": base + "POSTHOG_ENVIRONMENT=staging\n",
+            "missing environment": base + f"POSTHOG_API_KEY={POSTHOG_KEY}\n",
+            "not a project key": valid.replace(POSTHOG_KEY, "not-a-key"),
+            "personal api key": valid.replace(POSTHOG_KEY, "phx_" + POSTHOG_KEY[4:]),
+            "too short": valid.replace(POSTHOG_KEY, "phc_short"),
+            "eu host": valid + "POSTHOG_HOST=https://eu.i.posthog.com\n",
+            "plain http host": valid + "POSTHOG_HOST=http://us.i.posthog.com\n",
+            "unknown host": valid + "POSTHOG_HOST=https://analytics.example.com\n",
+            "production environment on staging": valid.replace("=staging", "=production"),
+            "duplicate key": valid + f"POSTHOG_API_KEY={POSTHOG_KEY}\n",
+        }
+        for name, contents in cases.items():
+            with self.subTest(name):
+                result, output = self.prepare("staging", contents)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Web environment error:", result.stderr)
+                self.assertIsNone(output)
+                self.assertNotIn(POSTHOG_KEY, result.stdout + result.stderr)
+
+    def test_ship_nothing_for_analytics_that_is_not_enabled(self):
+        for flag in ("ENABLE_ANALYTICS=false\n", ""):
+            with self.subTest(flag=flag):
+                result, output = self.prepare(
+                    "staging",
+                    "BASE_URL_DEV=https://pilah-be-staging.fly.dev\n"
+                    f"GOOGLE_SERVER_CLIENT_ID={CLIENT}\n{flag}"
+                    f"POSTHOG_API_KEY={POSTHOG_KEY}\nPOSTHOG_ENVIRONMENT=staging\n",
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn("POSTHOG", output)
+                self.assertNotIn("ENABLE_ANALYTICS", output)
 
 
 if __name__ == "__main__":
