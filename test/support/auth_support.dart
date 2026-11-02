@@ -78,6 +78,13 @@ class TestAuthenticationNotifier extends AuthenticationNotifier {
   }
 
   @override
+  Future<void> discardRegistration(
+      {void Function(String message)? onError}) async {
+    calls.add('logout'); // Shares the exit-path expectation with logout.
+    setStateForTest(Unauthenticated());
+  }
+
+  @override
   Future<void> refreshUser() async => calls.add('refreshUser');
 }
 
@@ -96,6 +103,10 @@ class _NoopAuthenticationUseCases implements AuthenticationUseCases {
 
   @override
   Future<Either<NetworkException, void>> logout() async => const Right(null);
+
+  @override
+  Future<Either<NetworkException, void>> discardRegistration() async =>
+      const Right(null);
 
   @override
   Future<Either<Exception, void>> saveToken(
@@ -127,6 +138,10 @@ class _NoopAuthRepository implements AuthRepository {
 
   @override
   Future<Either<NetworkException, void>> logout() async => const Right(null);
+
+  @override
+  Future<Either<NetworkException, void>> discardRegistration() async =>
+      const Right(null);
 
   @override
   Future<Either<Exception, void>> saveToken(

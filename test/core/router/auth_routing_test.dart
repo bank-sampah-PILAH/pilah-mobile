@@ -31,7 +31,7 @@ void main() {
           loginPath: '/login',
           role: 'nasabah',
         ),
-        '/login',
+        '/login?$webRoleBounceFlag=1',
       );
       expect(
         webRoleRedirect(

@@ -190,6 +190,7 @@ class _HomeSessionState extends State<_HomeSession>
                             children: [
                               _BankUnitCard(
                                 unitName: home.bank.name,
+                                logoUrl: home.bank.logoUrl,
                                 onSelect: () => _select(null),
                                 onOpen: () => _details(
                                   'Detail Bank Sampah',
@@ -482,66 +483,75 @@ class _BalanceCard extends StatelessWidget {
 class _BankUnitCard extends StatelessWidget {
   const _BankUnitCard({
     required this.unitName,
+    this.logoUrl,
     required this.onOpen,
     required this.onSelect,
   });
   final String unitName;
+
+  /// Logo bank sampah dari payload beranda; null menggambar inisial.
+  final String? logoUrl;
   final VoidCallback onOpen;
   final VoidCallback onSelect;
   @override
-  Widget build(BuildContext context) => _card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 17,
-                  backgroundColor: NasabahStyle.emeraldLight,
-                  child: Text(
-                    'BS',
-                    style: _text(
-                      11,
-                      weight: AppFontWeight.semibold,
-                      color: _emerald,
-                    ),
+  Widget build(BuildContext context) {
+    final hasLogo = logoUrl?.isNotEmpty ?? false;
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 17,
+                backgroundColor: NasabahStyle.emeraldLight,
+                foregroundImage: hasLogo ? NetworkImage(logoUrl!) : null,
+                onForegroundImageError: hasLogo ? (_, __) {} : null,
+                child: Text(
+                  'BS',
+                  style: _text(
+                    11,
+                    weight: AppFontWeight.semibold,
+                    color: _emerald,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('KEANGGOTAAN AKTIF',
-                          style: _text(10,
-                              weight: AppFontWeight.medium, color: _muted)),
-                      Text(
-                        unitName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _text(14, weight: AppFontWeight.medium),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Pilih ulang bank sampah',
-                  onPressed: onSelect,
-                  icon: const Icon(Icons.expand_more),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppButton(
-                label: 'Detail Bank Sampah',
-                variant: AppButtonVariant.text,
-                onPressed: onOpen,
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('KEANGGOTAAN AKTIF',
+                        style: _text(10,
+                            weight: AppFontWeight.medium, color: _muted)),
+                    Text(
+                      unitName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _text(14, weight: AppFontWeight.medium),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Pilih ulang bank sampah',
+                onPressed: onSelect,
+                icon: const Icon(Icons.expand_more),
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton(
+              label: 'Detail Bank Sampah',
+              variant: AppButtonVariant.text,
+              onPressed: onOpen,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HomeGreeting extends StatelessWidget {

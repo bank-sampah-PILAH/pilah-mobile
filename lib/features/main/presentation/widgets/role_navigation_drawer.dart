@@ -191,7 +191,8 @@ class _BankHeader extends StatelessWidget {
               foregroundImage: (logoUrl?.isNotEmpty ?? false)
                   ? NetworkImage(logoUrl!)
                   : null,
-              onForegroundImageError: (_, __) {},
+              onForegroundImageError:
+                  (logoUrl?.isNotEmpty ?? false) ? (_, __) {} : null,
               child: Text(
                 initials,
                 style: AppTextStyle.extraSmall.copyWith(

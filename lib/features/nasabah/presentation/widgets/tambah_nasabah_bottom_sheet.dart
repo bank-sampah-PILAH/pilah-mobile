@@ -71,13 +71,10 @@ class _TambahNasabahBottomSheetState
             onChanged: () {
               if (_kodeHasError) setState(() => _kodeHasError = false);
             },
-            // Only the required check stays inline (short, standard across the
-            // form). The uniqueness check moved to submit (_handleSimpan) so
-            // its longer message shows in full via AppNotification instead of
-            // truncating in this narrow field.
-            validator: (value) => (value == null || value.trim().isEmpty)
-                ? 'Bagian ini wajib diisi.'
-                : null,
+            // Kosong sekarang sah: server menomori otomatis dari ID terbesar
+            // bank sampah ini (UAT 2026-11, increment NAS-001 -> NAS-002).
+            // Hanya bila diisi, duplikasi dicek di server (422 -> toast).
+            validator: null,
           ),
           right: NasabahGenderField(
             value: _jenisKelamin,
@@ -139,10 +136,10 @@ class _TambahNasabahBottomSheetState
     final state = ref.read(nasabahProvider);
     final kode = _idNasabahController.text.trim();
 
-    // Uniqueness check, moved out of the inline validator: a duplicate ID gets a
-    // full, readable message in a notification plus a red border on the field,
-    // and still blocks the save.
-    if (state is NasabahLoaded) {
+    // Uniqueness check hanya bila pengurus mengisi manual: kosong berarti
+    // server menomori otomatis dan tidak mungkin duplikat. Duplikat manual
+    // juga diverifikasi ulang oleh backend (422 -> toast di bawah).
+    if (state is NasabahLoaded && kode.isNotEmpty) {
       final list = state.nasabahList;
       final isDuplicate = list
           .any((e) => e.idNasabah.trim().toLowerCase() == kode.toLowerCase());

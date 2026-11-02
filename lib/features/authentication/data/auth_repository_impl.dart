@@ -136,6 +136,21 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<NetworkException, void>> discardRegistration() async {
+    // Unlike logout, a failure here is worth reporting: the caller offers the
+    // user an explanation when the backend refuses to delete a committed
+    // account (a profile already complete, or a linked membership row).
+    try {
+      await _remoteDataSources.discardRegistration();
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    } catch (e) {
+      return Left(GeneralException(message: e.toString()));
+    }
+  }
+
+  @override
   Future<bool> hasSession() async {
     final token = await _localDataSources.readAccessToken();
     return token != null && token.isNotEmpty;

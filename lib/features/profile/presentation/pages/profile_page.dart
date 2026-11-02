@@ -516,7 +516,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               foregroundImage: (logoUrl?.isNotEmpty ?? false)
                   ? NetworkImage(logoUrl!)
                   : null,
-              onForegroundImageError: (_, __) {},
+              onForegroundImageError:
+                  (logoUrl?.isNotEmpty ?? false) ? (_, __) {} : null,
               child: Text(
                 _initials(name),
                 style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),

@@ -35,5 +35,9 @@ class AuthenticationInteractor implements AuthenticationUseCases {
   Future<Either<NetworkException, void>> logout() => _repository.logout();
 
   @override
+  Future<Either<NetworkException, void>> discardRegistration() =>
+      _repository.discardRegistration();
+
+  @override
   Future<bool> hasSession() => _repository.hasSession();
 }

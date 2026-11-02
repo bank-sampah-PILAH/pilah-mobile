@@ -90,12 +90,17 @@ class _RoleShell extends ConsumerWidget {
     // Rail/drawer heads draw the bank logo once loaded. The profile notifier
     // is app-scoped and lazy: without this, a session that never opened the
     // Profile page keeps initials forever. Silent — rail must not flash a
-    // spinner for it.
-    final profile = ref.watch(profileProvider);
-    if (profile.status == ProfileStatus.initial) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(profileProvider.notifier).load(silent: true);
-      });
+    // spinner for it. Guarded: building profileProvider touches DI (it is
+    // constructed with GetIt factories), and lightweight test harnesses
+    // register no data sources.
+    final container = ProviderScope.containerOf(context, listen: false);
+    if (container.exists(profileProvider)) {
+      final profile = container.read(profileProvider);
+      if (profile.status == ProfileStatus.initial) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          container.read(profileProvider.notifier).load(silent: true);
+        });
+      }
     }
     return _ShellContent(
       role: role!,
@@ -134,19 +139,27 @@ class _ShellContent extends ConsumerWidget {
     // Logo bank sampah untuk kepala rail/drawer. Pengurus memperbarui logo
     // lewat GET /bank-sampah/me (di-watch profileProvider, jadi simpanan di
     // halaman Profil langsung tercermin di sini); nasabah memakai logo yang
-    // datang bersama keanggotaannya dari GET /nasabah/me.
-    final bankSampahLogoUrl = role == 'nasabah'
-        ? (approval is NasabahApprovalLoaded
-            ? approval.memberships
-                .firstWhere(
-                  (m) => m.status == MembershipStatus.approved && m.isActive,
-                  orElse: () => approval.memberships.first,
-                )
-                .bankSampahLogoUrl
-            : null)
-        : (ref.watch(profileProvider).status == ProfileStatus.loaded
-            ? ref.watch(profileProvider).bankSampah?.fotoLogo
-            : null);
+    // datang bersama keanggotaannya dari GET /nasabah/me. Dijaga `exists`:
+    // profileProvider dibangun dari pabrik DI, dan harness uji ringan tidak
+    // mendaftarkan sumber datanya.
+    final container = ProviderScope.containerOf(context, listen: false);
+    String? profileLogoUrl;
+    if (container.exists(profileProvider)) {
+      final profile = container.read(profileProvider);
+      profileLogoUrl = profile.status == ProfileStatus.loaded
+          ? profile.bankSampah?.fotoLogo
+          : null;
+    }
+    String? approvalLogoUrl;
+    if (approval is NasabahApprovalLoaded && approval.memberships.isNotEmpty) {
+      final membership = approval.memberships.firstWhere(
+        (m) => m.status == MembershipStatus.approved && m.isActive,
+        orElse: () => approval.memberships.first,
+      );
+      approvalLogoUrl = membership.bankSampahLogoUrl;
+    }
+    final bankSampahLogoUrl =
+        role == 'nasabah' ? approvalLogoUrl : profileLogoUrl;
     // Only a confirmed status may discard the current route; initial loading
     // must leave the current route intact.
     final confirmedLimitedNasabah = role == 'nasabah' &&

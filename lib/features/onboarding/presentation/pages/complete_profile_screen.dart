@@ -423,7 +423,12 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   /// exit confirmation.
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
-    confirmExitOnboarding(context, title: 'Batal Lengkapi Profil?');
+    confirmExitOnboarding(context,
+        title: 'Batal Lengkapi Profil?',
+        // Fresh registration may go back as far as role selection: deleting
+        // the incomplete account lets the user re-choose (UAT 2026-11).
+        // Invite mode belongs to an existing bank's flow — its account stays.
+        discardAccount: !_isInviteMode);
   }
 
   @override
@@ -442,7 +447,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
           onExit: _isLoading
               ? null
               : () => confirmExitOnboarding(context,
-                  title: 'Batal Lengkapi Profil?'),
+                  title: 'Batal Lengkapi Profil?',
+                  discardAccount: !_isInviteMode),
           progress: !_isInviteMode &&
                   (_startsNewRegistration || _startsNasabahRegistration)
               ? OnboardingProgress(

@@ -21,8 +21,8 @@ import 'package:pilah_mobile/features/profile/presentation/providers/profile_pro
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
-import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 
@@ -125,15 +125,24 @@ class App extends StatelessWidget {
           if (isWeb &&
               current is Authenticated &&
               !isSupportedWebRole(current.authEntity.role)) {
-            ref.read(authenticationProvider.notifier).logout();
-            AppNotification.afterNavigation(
-              (context) => AppNotification.showWarning(
+            // Flag before logging out, and raise the toast from the shell
+            // itself via afterNavigation: the bounce lands on whatever page
+            // the user is on, and the toast must survive both the page
+            // teardown and the redirect (CPBI-21 UAT finding). Toasting
+            // directly here dies with the page being torn down within one
+            // frame.
+            WebRoleBounceNotice.arm();
+            AppNotification.afterNavigation((context) {
+              AppNotification.showError(
                 context,
-                title: 'Akses web tidak tersedia',
+                title: 'Peran Tidak Didukung',
                 message:
-                    'Akun ini hanya dapat digunakan melalui aplikasi mobile.',
-              ),
-            );
+                    'Akun ini tidak memiliki peran Pengurus, sehingga tidak '
+                    'dapat mengakses aplikasi web. Silakan masuk dengan akun '
+                    'Pengurus.',
+              );
+            });
+            ref.read(authenticationProvider.notifier).logout();
           }
         });
         return _PendingInviteResumeWatcher(

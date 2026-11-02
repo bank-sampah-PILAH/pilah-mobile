@@ -76,4 +76,10 @@ class PreviewAuthenticationSession
     _hasSession = false;
     return const Right(null);
   }
+
+  @override
+  Future<Either<NetworkException, void>> discardRegistration() async {
+    _hasSession = false;
+    return const Right(null);
+  }
 }
