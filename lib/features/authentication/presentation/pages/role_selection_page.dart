@@ -102,7 +102,9 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
 
     if (state is Authenticated) {
       // A draft typed for the old role must not prefill the new role's form.
-      if (_account != null) {
+      // Re-picking the same role is a no-op on the server, so it keeps it.
+      final account = _account;
+      if (account != null && state.authEntity.role != account.role) {
         ref.read(onboardingProvider.notifier).clearProfileDraft();
       }
       context.go(locationForAuthStep(

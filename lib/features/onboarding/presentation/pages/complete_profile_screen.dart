@@ -161,6 +161,35 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     }
   }
 
+  /// A role changed from the role page (PIL-451): this State survives the
+  /// trip there and back, so its fields would still hold input typed for the
+  /// old role. A refreshed session for the same role is not a change.
+  static bool _roleChanged(
+    AuthenticationStates? previous,
+    AuthenticationStates current,
+  ) =>
+      previous is Authenticated &&
+      current is Authenticated &&
+      previous.authEntity.role != current.authEntity.role;
+
+  /// Starts the form over for the new role, from what the account itself has
+  /// saved, as a first visit would. The role page drops the banked draft.
+  void _resetForNewRole() {
+    for (final controller in [
+      _nameController,
+      _dobController,
+      _phoneController,
+      _alamatController,
+    ]) {
+      controller.clear();
+    }
+    setState(() {
+      _gender = null;
+      _selectedDob = null;
+      _prefillFromSavedProfile();
+    });
+  }
+
   String _displayDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
 
@@ -441,6 +470,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   Widget build(BuildContext context) {
     ref.listen(authenticationProvider, (previous, current) {
       if (current is Unauthenticated) context.go(LoginPage.route);
+      if (_roleChanged(previous, current)) _resetForNewRole();
     });
     // Watched, not only listened to: a role changed from the role page comes
     // back to this same screen, which must then draw the new role's form.
