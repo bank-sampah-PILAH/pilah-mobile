@@ -17,7 +17,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the
 # build suffix.
-version: 2.0.0+7
+version: 2.0.1+8
 
 environment:
   sdk: ">=3.0.5 <4.0.0"
@@ -74,6 +74,7 @@ dependencies:
   another_flushbar: ^2.2.4
   path_provider: ^2.1.5
   share_plus: ^13.3.0
+  showcaseview: ^5.1.0
   image_cropper: ^12.2.1
   url_launcher: ^6.3.2
   pdfrx: ^2.4.4
@@ -100,6 +101,7 @@ dev_dependencies:
   path_provider_platform_interface: ^2.1.2
   share_plus_platform_interface: ^7.2.0
   plugin_platform_interface: ^2.1.8
+  shared_preferences_platform_interface: ^2.4.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

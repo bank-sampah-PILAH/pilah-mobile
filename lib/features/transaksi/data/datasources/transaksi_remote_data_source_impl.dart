@@ -210,7 +210,16 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   TransaksiEntity mapListItem(Map<String, dynamic> json, DateTime? tanggal) {
     final name = json['nasabah_nama']?.toString() ?? '-';
     final jenisUtama = json['jenis_sampah_utama']?.toString();
+    final jumlahItem = int.tryParse(json['jumlah_item']?.toString() ?? '');
     final berat = WeightFormatter.formatKg(json['total_berat_kg']);
+    final String subtitle;
+    if (jumlahItem != null && jumlahItem >= 0) {
+      subtitle = '$jumlahItem jenis • $berat kg';
+    } else if (jenisUtama != null) {
+      subtitle = '$jenisUtama • $berat kg';
+    } else {
+      subtitle = '$berat kg';
+    }
     final palette = avatarPaletteFor(name);
     return TransaksiEntity(
       id: json['id']?.toString() ?? '',
@@ -218,7 +227,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       avatarColor: palette.$1,
       textColor: palette.$2,
       name: name,
-      subtitle: jenisUtama != null ? '$jenisUtama • $berat kg' : '$berat kg',
+      subtitle: subtitle,
       amount: '+${_rupiah(json['total_nilai'])}',
       isWaSuccess: json['status_wa']?.toString() == 'terkirim',
       time: tanggal != null ? _formatTime(tanggal) : null,

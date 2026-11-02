@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +10,7 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -18,9 +19,9 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acc
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
-import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _genderMaleApiValue = 'laki-laki';
 const _genderMaleLabel = 'Laki-laki';
@@ -237,7 +238,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
   Future<void> _onSaveAndContinue() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!validateOnboardingForm(_formKey)) return;
 
     // Latched for the whole submit: redeeming the invite clears the token,
     // which would otherwise flip [_isInviteMode] halfway through.
@@ -435,42 +436,53 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
       child: Scaffold(
         backgroundColor: AppColors.surface, // Light gray background
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              // 1. Header Section
-              OnboardingHeader(
-                title: 'Lengkapi Profil Anda',
-                subtitle: 'Data ini digunakan untuk verifikasi akun Anda.',
-                onExit: () => confirmExitOnboarding(context,
-                    title: 'Batal Lengkapi Profil?'),
-              ),
-
-              // The stepper shows only when profile completion leads to the
-              // bank sampah registration form, pengelola or nasabah.
-              if (!_isInviteMode &&
-                  (_startsNewRegistration || _startsNasabahRegistration))
-                OnboardingStepper(
+        body: OnboardingFlowLayout(
+          title: 'Lengkapi Profil Anda',
+          subtitle: 'Pastikan data diri Anda sesuai untuk verifikasi akun.',
+          onExit: _isLoading
+              ? null
+              : () => confirmExitOnboarding(context,
+                  title: 'Batal Lengkapi Profil?'),
+          progress: !_isInviteMode &&
+                  (_startsNewRegistration || _startsNasabahRegistration)
+              ? OnboardingProgress(
                   currentStep: 1,
-                  secondStepLabel:
-                      _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
+                  lastStepLabel:
+                      _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah')
+              : null,
+          actions: OnboardingActions(
+            primary: AppButton(
+              label: _isInviteMode
+                  ? 'Simpan & Masuk Dashboard'
+                  : 'Simpan Profil & Lanjut',
+              trailingIcon: Icons.arrow_forward,
+              isLoading: _isLoading,
+              onPressed: _onSaveAndContinue,
+            ),
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Data diri', style: AppTextStyle.title1),
+                const SizedBox(height: 8),
+                Text('Semua kolom bertanda * wajib diisi.',
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100)),
+                const SizedBox(height: 24),
+                OnboardingNameField(
+                  controller: _nameController,
+                  label: 'NAMA LENGKAP',
+                  hintText: 'Contoh: Siti Rahayu',
                 ),
 
-              const SizedBox(height: 24),
-              OnboardingFormCard(
-                formKey: _formKey,
-                children: [
-                  OnboardingNameField(
-                    controller: _nameController,
-                    label: 'NAMA LENGKAP',
-                    hintText: 'Contoh: Siti Rahayu',
-                  ),
-
-                  // Field 2: Jenis Kelamin
-                  OnboardingFormField(
+                OnboardingFieldPair(
+                  first: OnboardingFormField(
                     label: 'JENIS KELAMIN',
                     child: DropdownButtonFormField<String>(
                       borderRadius: BorderRadius.circular(AppRadius.md),
+                      isExpanded: true,
                       initialValue: _gender,
                       hint: const Text(
                         'Pilih jenis kelamin',
@@ -519,9 +531,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       },
                     ),
                   ),
-
-                  // Field 3: Tanggal Lahir
-                  OnboardingFormField(
+                  second: OnboardingFormField(
                     label: 'TANGGAL LAHIR',
                     child: TextFormField(
                       controller: _dobController,
@@ -539,49 +549,22 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       },
                     ),
                   ),
-
-                  OnboardingPhoneField(
-                    controller: _phoneController,
-                    label: 'NOMOR HP / WHATSAPP',
-                    requiredMessage: 'Nomor HP wajib diisi',
-                  ),
-
-                  // Alamat: nasabah accounts only.
-                  if (_isNasabah)
-                    OnboardingAddressField(controller: _alamatController),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // 4. Action Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: AppButton(
-                  label: _isInviteMode
-                      ? 'Simpan & Masuk Dashboard'
-                      : 'Simpan Profil & Lanjut',
-                  trailingIcon: Icons.arrow_forward,
-                  isLoading: _isLoading,
-                  onPressed: _onSaveAndContinue,
                 ),
-              ),
-
-              // 5. Footer Text
-              const Padding(
-                padding: EdgeInsets.all(24.0),
-                child: Text(
-                  'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: AppFontSize.sm,
-                    color: AppColors.grey100,
-                    height: 1.5,
-                  ),
+                OnboardingPhoneField(
+                  controller: _phoneController,
+                  label: 'NOMOR HP / WHATSAPP',
+                  requiredMessage: 'Nomor HP wajib diisi',
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+
+                // Alamat: nasabah accounts only.
+                if (_isNasabah)
+                  OnboardingAddressField(controller: _alamatController),
+                Text(
+                    'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100)),
+              ],
+            ),
           ),
         ),
       ),
