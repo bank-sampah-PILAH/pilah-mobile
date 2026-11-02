@@ -32,10 +32,19 @@ void main() {
       (tester) async {
     await open(tester);
 
-    expect(find.text('Bantu kami memperbaiki PILAH'), findsOneWidget);
+    expect(
+        find.text('Bantu kami meningkatkan pengalaman Anda'), findsOneWidget);
     expect(
         find.textContaining('merekam layar dan gerakan Anda'), findsOneWidget);
-    expect(find.textContaining('Nama nasabah, saldo, foto, email, dan nomor'),
+    expect(
+        find.textContaining(
+            'untuk memahami cara pengguna memakai aplikasi dan membantu kami '
+            'meningkatkan pengalaman Anda'),
+        findsOneWidget);
+    expect(
+        find.textContaining(
+            'Nama nasabah, saldo, foto, email, telepon, dan data sensitif '
+            'lainnya akan ditutup'),
         findsOneWidget);
     expect(find.textContaining('mengubah pilihan kapan saja di Profil'),
         findsOneWidget);
@@ -68,7 +77,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(answer, isTrue);
-    expect(find.text('Bantu kami memperbaiki PILAH'), findsNothing);
+    expect(find.text('Bantu kami meningkatkan pengalaman Anda'), findsNothing);
   });
 
   testWidgets('declining answers false', (tester) async {
@@ -89,7 +98,8 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    expect(find.text('Bantu kami memperbaiki PILAH'), findsOneWidget);
+    expect(
+        find.text('Bantu kami meningkatkan pengalaman Anda'), findsOneWidget);
     expect(answered, isFalse);
   });
 }

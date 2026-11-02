@@ -60,6 +60,10 @@ void main() {
     await openCard(tester);
 
     expect(find.text('Perekaman sesi'), findsOneWidget);
+    expect(
+        find.text('Izinkan PILAH merekam layar agar kami bisa meningkatkan '
+            'pengalaman pemakaian aplikasi. Data sensitif akan ditutup.'),
+        findsOneWidget);
     expect(switchValue(tester), isTrue);
   });
 

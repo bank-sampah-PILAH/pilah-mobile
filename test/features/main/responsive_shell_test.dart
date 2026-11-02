@@ -138,12 +138,14 @@ void main() {
           isWeb: false,
           extraOverrides: analytics());
 
-      expect(find.text('Bantu kami memperbaiki PILAH'), findsOneWidget);
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsOneWidget);
       await tester.tap(find.text('Setuju'));
       await tester.pumpAndSettle();
 
       expect(client.calls, ['start']);
-      expect(find.text('Bantu kami memperbaiki PILAH'), findsNothing);
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsNothing);
     });
 
     testWidgets('a nasabah is never asked', (tester) async {
@@ -153,7 +155,8 @@ void main() {
           isWeb: false,
           extraOverrides: analytics());
 
-      expect(find.text('Bantu kami memperbaiki PILAH'), findsNothing);
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsNothing);
       expect(client.calls, isNot(contains('start')));
     });
   });

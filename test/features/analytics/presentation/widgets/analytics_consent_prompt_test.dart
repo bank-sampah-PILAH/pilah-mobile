@@ -13,7 +13,7 @@ import '../../../../support/auth_support.dart';
 import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/fake_app_storage.dart';
 
-const _title = 'Bantu kami memperbaiki PILAH';
+const _title = 'Bantu kami meningkatkan pengalaman Anda';
 
 Authenticated _signedInAs(String role) => Authenticated(
       authEntity: AuthEntity(
