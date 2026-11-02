@@ -390,20 +390,13 @@ void main() {
     });
   });
 
-  group('Pengumuman is a sidebar destination, not a sixth bottom tab', () {
-    testWidgets('the rail keeps Pengumuman visible but disabled',
-        (tester) async {
-      final router = await mountShell(tester,
+  group('Pengumuman is not a destination on any form factor', () {
+    testWidgets('the rail draws no Pengumuman destination', (tester) async {
+      await mountShell(tester,
           role: 'pengelola', window: const Size(1280, 900), isWeb: true);
-      final announcement = find.text('Pengumuman');
 
-      expect(announcement, findsOneWidget);
-      await tester.tap(announcement);
-      await tester.pumpAndSettle();
-
-      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
-          '/home');
       expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.text('Pengumuman'), findsNothing);
     });
 
     testWidgets('the app keeps five bottom tabs', (tester) async {
