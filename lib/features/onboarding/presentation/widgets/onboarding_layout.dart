@@ -94,11 +94,13 @@ class OnboardingStepper extends StatelessWidget {
             reached: true,
             done: onSecond,
           ),
-          Container(
-            width: 100,
-            height: 2,
-            margin: const EdgeInsets.only(bottom: 24),
-            color: onSecond ? AppColors.greenDark : AppColors.border,
+          Flexible(
+            child: Container(
+              width: 100,
+              height: 2,
+              margin: const EdgeInsets.only(bottom: 24),
+              color: onSecond ? AppColors.greenDark : AppColors.border,
+            ),
           ),
           _Step(
             number: 2,
@@ -240,10 +242,11 @@ class OnboardingFormField extends StatelessWidget {
         ),
         if (description != null) ...[
           const SizedBox(height: 4),
-          Text(description!, style: AppTextStyle.extraSmall),
+          Text(description!,
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100)),
         ],
         const SizedBox(height: 8),
-        child,
+        Semantics(label: label, child: child),
         const SizedBox(height: 20),
       ],
     );

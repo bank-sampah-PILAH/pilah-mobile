@@ -1,9 +1,11 @@
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
@@ -18,6 +20,9 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setora
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../support/dashboard_support.dart';
@@ -34,6 +39,28 @@ class _MockUrlLauncher extends Mock
     implements UrlLauncherPlatform {}
 
 class _FakeLaunchOptions extends Fake implements LaunchOptions {}
+
+class _FailingSharedPreferencesStore extends SharedPreferencesStorePlatform {
+  _FailingSharedPreferencesStore({this.failRead = true});
+
+  final bool failRead;
+
+  @override
+  Future<bool> clear() async => true;
+
+  @override
+  Future<Map<String, Object>> getAll() async {
+    if (failRead) throw PlatformException(code: 'storage-unavailable');
+    return {};
+  }
+
+  @override
+  Future<bool> remove(String key) async => true;
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async =>
+      throw PlatformException(code: 'storage-unavailable');
+}
 
 Map<String, dynamic> _jenis(String id, String nama, String harga,
         {String kategori = 'plastik', bool active = true}) =>
@@ -57,6 +84,7 @@ void main() {
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     api = StubApi();
     launcher = _MockUrlLauncher();
     UrlLauncherPlatform.instance = launcher;
@@ -82,8 +110,8 @@ void main() {
   });
 
   /// Opens the real page with its controllers, over the stubbed API.
-  Future<void> open(WidgetTester tester,
-      {Size window = const Size(800, 2600)}) async {
+  Future<GoRouter> open(WidgetTester tester,
+      {Size window = const Size(800, 2600), bool closeTutorial = true}) async {
     final harga = buildHargaNotifier(api);
     final profile = buildProfileNotifier(api);
     final transaksi = buildTransaksiNotifier(api);
@@ -98,7 +126,7 @@ void main() {
         GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)), export);
     final nasabah = buildNasabahNotifier(api);
 
-    await pumpRouted(
+    final router = await pumpRouted(
       tester,
       // A non-const instance so the constructor itself runs.
       // ignore: prefer_const_constructors
@@ -121,6 +149,11 @@ void main() {
       size: window,
     );
     await tester.pumpAndSettle();
+    if (closeTutorial && find.text('Lewati').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Lewati'));
+      await tester.pumpAndSettle();
+    }
+    return router;
   }
 
   Future<void> pickNasabah(WidgetTester tester) async {
@@ -146,6 +179,144 @@ void main() {
     await tester.tap(find.text('Simpan Transaksi'));
     await pumpToast(tester);
   }
+
+  test('tutorial progress stays in memory on mobile', () async {
+    final progress = SetoranTutorialProgress(isWeb: false);
+    expect(await progress.hasSeen(), isFalse);
+    await progress.markSeen();
+    expect(await progress.hasSeen(), isTrue);
+  });
+
+  test('web tutorial progress handles failed preference reads and writes',
+      () async {
+    final progress = SetoranTutorialProgress(isWeb: true);
+    SharedPreferences.setMockInitialValues({});
+    expect(await progress.hasSeen(), isFalse);
+    await progress.markSeen();
+    expect(await progress.hasSeen(), isTrue);
+
+    SharedPreferencesStorePlatform.instance =
+        _FailingSharedPreferencesStore(failRead: true);
+    SharedPreferences.resetStatic();
+    expect(await progress.hasSeen(), isFalse);
+
+    SharedPreferencesStorePlatform.instance =
+        _FailingSharedPreferencesStore(failRead: false);
+    SharedPreferences.resetStatic();
+    expect(await progress.hasSeen(), isFalse);
+    await progress.markSeen();
+  });
+
+  testWidgets('shows the setoran tutorial on first visit and can replay it',
+      (tester) async {
+    await open(tester, closeTutorial: false);
+
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+
+    await tester.tap(find.text('Lewati'));
+    await tester.pumpAndSettle();
+    await pickNasabah(tester);
+    await tester.tap(find.byTooltip('Panduan setoran'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+    expect(
+      find.text('Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+          'ketuk lagi nama nasabah yang tampil.'),
+      findsOneWidget,
+    );
+    expect(find.text('Budi Santoso'), findsOneWidget);
+  });
+
+  testWidgets('tutorial covers item actions and uses white action labels',
+      (tester) async {
+    await open(tester, closeTutorial: false);
+
+    final skipButton = tester.widget<AppButton>(
+      find.ancestor(
+        of: find.text('Lewati'),
+        matching: find.byType(AppButton),
+      ),
+    );
+    expect(skipButton.variant, AppButtonVariant.primary);
+    expect(skipButton.expand, isFalse);
+    expect(
+      Theme.of(tester.element(find.text('Lewati'))).colorScheme.onPrimary,
+      Colors.white,
+    );
+
+    for (final title in [
+      'Tambah item setoran',
+      'Atur item setoran',
+      'Periksa total',
+      'Simpan transaksi',
+    ]) {
+      await tester.tap(find.text('Lanjut'));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+      if (title == 'Atur item setoran') {
+        expect(
+          find.text('Setelah menambah item, pilih jenis sampah dan isi berat '
+              '(kg). Harga/kg dan subtotal dihitung otomatis.'),
+          findsOneWidget,
+        );
+      }
+    }
+
+    await tester.tap(find.text('Sebelumnya'));
+    await tester.pumpAndSettle();
+    expect(find.text('Periksa total'), findsOneWidget);
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Simpan transaksi'), findsNothing);
+  });
+
+  testWidgets('item tutorial highlights the first item card', (tester) async {
+    await open(tester);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+
+    await tester.tap(find.byTooltip('Panduan setoran'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Atur item setoran'), findsOneWidget);
+    expect(
+      find.text('Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+          'otomatis; tekan × untuk menghapus item.'),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: find.byType(ItemSetoranCard),
+        matching: find.byType(Showcase),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows automatically once but can be reopened with help',
+      (tester) async {
+    final router = await open(tester, closeTutorial: false);
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+
+    await tester.tap(find.text('Lewati'));
+    await tester.pumpAndSettle();
+    router.pop();
+    await tester.pumpAndSettle();
+    router.push('/page');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih nasabah'), findsNothing);
+    await tester.tap(find.byTooltip('Panduan setoran'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pilih nasabah'), findsOneWidget);
+  });
 
   testWidgets('loads the price list and the WhatsApp template on open',
       (tester) async {
