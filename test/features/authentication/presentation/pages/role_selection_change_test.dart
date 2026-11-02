@@ -98,6 +98,21 @@ void main() {
         reason: 'a draft typed for the old role must not prefill the new one');
   });
 
+  testWidgets('re-picking the role the account already has keeps its draft',
+      (tester) async {
+    // Review on #174 (Scallss, Heraldo): the server treats this as a no-op,
+    // so the client must not drop what was typed either.
+    await pumpPage(tester, _account('pengelola'));
+    auth.changedAuth = _account('pengelola');
+
+    await tester.tap(find.text('Lanjutkan'));
+    await tester.pumpAndSettle();
+
+    expect(auth.lastRole, GoogleRegistrationRole.pengelola);
+    expect(find.text('route:/complete-profile'), findsOneWidget);
+    expect(container.read(onboardingProvider.notifier).hasProfileDraft, isTrue);
+  });
+
   testWidgets('a refused change says why and keeps the account where it was',
       (tester) async {
     await pumpPage(tester, _account('pengelola'));

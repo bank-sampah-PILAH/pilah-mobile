@@ -109,4 +109,35 @@ void main() {
     expect(find.text('Pilih Bank Sampah'), findsOneWidget);
     expect(find.text('Data Bank Sampah'), findsNothing);
   });
+
+  // Review on #174 (Tristan, P2): this screen's State survives the trip to
+  // the role page and back, so its fields must not keep the old role's input.
+  testWidgets('a real role change clears what was typed for the old role',
+      (tester) async {
+    final auth = await _pump(tester, _account('pengelola'));
+    await tester.enterText(
+        find.byType(TextFormField).first, 'Diketik Untuk Pengurus');
+    await tester.pump();
+
+    auth.setStateForTest(Authenticated(authEntity: _account('nasabah')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Diketik Untuk Pengurus'), findsNothing);
+    expect(find.widgetWithText(TextFormField, 'Sari'), findsOneWidget,
+        reason: "the account's own saved name is filled in again");
+  });
+
+  testWidgets('a new session for the same role keeps what was typed',
+      (tester) async {
+    final auth = await _pump(tester, _account('pengelola'));
+    await tester.enterText(
+        find.byType(TextFormField).first, 'Diketik Untuk Pengurus');
+    await tester.pump();
+
+    auth.setStateForTest(Authenticated(authEntity: _account('pengelola')));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Diketik Untuk Pengurus'),
+        findsOneWidget);
+  });
 }
