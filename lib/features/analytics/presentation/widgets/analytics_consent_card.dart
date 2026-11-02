@@ -40,8 +40,8 @@ class AnalyticsConsentCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Izinkan PILAH merekam layar Anda untuk memperbaiki '
-                  'aplikasi. Data nasabah ditutup.',
+                  'Izinkan PILAH merekam layar agar kami bisa meningkatkan '
+                  'pengalaman pemakaian aplikasi. Data sensitif akan ditutup.',
                   style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
               ],

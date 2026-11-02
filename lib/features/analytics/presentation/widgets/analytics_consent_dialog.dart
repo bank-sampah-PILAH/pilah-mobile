@@ -24,10 +24,11 @@ Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
           child: AppDialog(
-            title: 'Bantu kami memperbaiki PILAH',
+            title: 'Bantu kami meningkatkan pengalaman Anda',
             message: 'Kami ingin merekam layar dan gerakan Anda saat memakai '
-                'PILAH, untuk melihat di mana pengurus merasa kesulitan. '
-                'Nama nasabah, saldo, foto, email, dan nomor telepon akan '
+                'PILAH, untuk memahami cara pengguna memakai aplikasi dan '
+                'membantu kami meningkatkan pengalaman Anda. Nama nasabah, '
+                'saldo, foto, email, telepon, dan data sensitif lainnya akan '
                 'ditutup. Rekaman hanya dilihat tim PILAH.\n\n'
                 'Anda boleh menolak dan tetap memakai aplikasi seperti biasa, '
                 'dan bisa mengubah pilihan kapan saja di Profil.',
