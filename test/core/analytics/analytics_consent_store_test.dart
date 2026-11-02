@@ -1,35 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
-import 'package:pilah_mobile/core/storage/app_storage.dart';
-
-/// In-memory stand-in for the real key-value storage.
-class _FakeStorage implements AppStorage {
-  final values = <String, dynamic>{};
-
-  @override
-  Future<void> init() async {}
-
-  @override
-  Future<void> put(String key, dynamic value) async => values[key] = value;
-
-  @override
-  Future<T?> get<T>(String key) async => values[key] as T?;
-
-  @override
-  Future<void> delete(String key) async => values.remove(key);
-
-  @override
-  Future<void> clear() async => values.clear();
-
-  @override
-  Future<bool> contains(String key) async => values.containsKey(key);
-}
+import '../../support/fake_app_storage.dart';
 
 void main() {
-  late _FakeStorage storage;
+  late FakeAppStorage storage;
 
-  setUp(() => storage = _FakeStorage());
+  setUp(() => storage = FakeAppStorage());
 
   test('no choice has been made until the user decides', () async {
     final store = AnalyticsConsentStore(storage);

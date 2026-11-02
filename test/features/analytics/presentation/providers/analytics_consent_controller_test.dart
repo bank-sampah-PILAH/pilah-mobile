@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -8,22 +7,8 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 
 import '../../../../support/auth_support.dart';
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/fake_app_storage.dart';
-
-/// Records what it was asked to do, in order.
-class _FakeClient implements AnalyticsClient {
-  _FakeClient({this.isAvailable = true});
-
-  @override
-  final bool isAvailable;
-  final calls = <String>[];
-
-  @override
-  Future<void> start() async => calls.add('start');
-
-  @override
-  Future<void> stop() async => calls.add('stop');
-}
 
 Authenticated _signedInAs(String role) => Authenticated(
       authEntity: AuthEntity(
@@ -37,12 +22,12 @@ Authenticated _signedInAs(String role) => Authenticated(
 
 void main() {
   late FakeAppStorage storage;
-  late _FakeClient client;
+  late FakeAnalyticsClient client;
   late TestAuthenticationNotifier auth;
 
   setUp(() {
     storage = FakeAppStorage();
-    client = _FakeClient();
+    client = FakeAnalyticsClient();
     auth = TestAuthenticationNotifier(initialState: _signedInAs('pengelola'));
   });
 
@@ -131,7 +116,7 @@ void main() {
     });
 
     test('nobody is asked about a recorder that cannot record', () async {
-      client = _FakeClient(isAvailable: false);
+      client = FakeAnalyticsClient(isAvailable: false);
 
       expect(await needsPrompt(containerForTest()), isFalse);
     });
