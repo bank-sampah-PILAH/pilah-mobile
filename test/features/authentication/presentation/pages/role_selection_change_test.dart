@@ -132,6 +132,21 @@ void main() {
     await settleToasts(tester);
   });
 
+  testWidgets(
+      'a signed-in account is not asked for consent again, and Keluar asks '
+      'before logging out', (tester) async {
+    await pumpPage(tester, _account('pengelola'));
+
+    expect(find.text('Persetujuan'), findsNothing,
+        reason: 'the account agreed to the policies when it registered');
+
+    await tester.tap(find.text('Keluar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Batal Lengkapi Profil?'), findsOneWidget);
+    expect(auth.calls, isNot(contains('logout')));
+  });
+
   testWidgets('an account past the profile step is sent to login',
       (tester) async {
     await pumpPage(
