@@ -8,14 +8,9 @@ import 'package:pilah_mobile/core/analytics/posthog_web_client.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
-/// A tiny stand-in for PostHog's library, so tests never touch the network.
-/// It only records how `posthog.init` was called.
-final _fakeLibraryUrl = Uri.dataFromString(
-  'window.posthog = { init: function (key, options) {'
-  ' window.__initCalls = (window.__initCalls || 0) + 1;'
-  ' window.__initArgs = [key, options]; } };',
-  mimeType: 'text/javascript',
-).toString();
+/// Served next to this test by the test runner, so it has a normal address
+/// (a `data:` script breaks the runner's coverage collection).
+final _fakeLibraryUrl = Uri.base.resolve('fake_posthog_library.js').toString();
 
 List<web.HTMLScriptElement> _scriptsWithSource(String source) {
   final all = web.document.scripts;
