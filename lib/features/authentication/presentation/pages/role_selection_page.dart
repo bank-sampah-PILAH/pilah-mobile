@@ -148,58 +148,59 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
             const SizedBox(height: 24),
             Text('Saya ingin mendaftar sebagai', style: AppTextStyle.title1),
             const SizedBox(height: 16),
-            LayoutBuilder(builder: (context, constraints) {
-              final paired =
-                  constraints.maxWidth >= LayoutBreakpoint.mediumMinWidth &&
-                      MediaQuery.textScalerOf(context).scale(16) <= 24;
-              Widget roleCard(_RoleOption option) => _RoleCard(
-                    option: option,
-                    selected: _selectedRole == option.value,
-                    enabled: !isBusy,
-                    onTap: () => setState(() => _selectedRole = option.value),
-                  );
-
-              if (!paired) {
-                return Wrap(
-                  runSpacing: 16,
-                  children: [
-                    for (final option in roleOptions)
-                      SizedBox(
-                        width: constraints.maxWidth,
-                        child: roleCard(option),
-                      ),
-                  ],
-                );
-              }
-
-              return Column(
-                children: [
-                  for (var index = 0;
-                      index < roleOptions.length;
-                      index += 2) ...[
-                    if (index > 0) const SizedBox(height: 16),
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(child: roleCard(roleOptions[index])),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: index + 1 < roleOptions.length
-                                ? roleCard(roleOptions[index + 1])
-                                : const SizedBox.shrink(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            }),
+            _buildRoleOptions(roleOptions, isBusy),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildRoleOptions(List<_RoleOption> roleOptions, bool isBusy) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final paired = constraints.maxWidth >= LayoutBreakpoint.mediumMinWidth &&
+          MediaQuery.textScalerOf(context).scale(16) <= 24;
+      Widget roleCard(_RoleOption option) => _RoleCard(
+            option: option,
+            selected: _selectedRole == option.value,
+            enabled: !isBusy,
+            onTap: () => setState(() => _selectedRole = option.value),
+          );
+
+      if (!paired) {
+        return Wrap(
+          runSpacing: 16,
+          children: [
+            for (final option in roleOptions)
+              SizedBox(
+                width: constraints.maxWidth,
+                child: roleCard(option),
+              ),
+          ],
+        );
+      }
+
+      return Column(
+        children: [
+          for (var index = 0; index < roleOptions.length; index += 2) ...[
+            if (index > 0) const SizedBox(height: 16),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: roleCard(roleOptions[index])),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: index + 1 < roleOptions.length
+                        ? roleCard(roleOptions[index + 1])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      );
+    });
   }
 }
 
