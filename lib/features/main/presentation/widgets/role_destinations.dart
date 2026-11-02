@@ -86,7 +86,7 @@ abstract final class RoleDestinations {
 }
 
 // Urutan branch StatefulShellRoute: dashboard, nasabah, harga, laporan,
-// jadwal, customer history, customer bank, profile, pengumuman.
+// jadwal, customer history, customer bank, profile.
 const _nasabah = <RoleDestination>[
   RoleDestination(0, Icons.home_outlined, 'Beranda'),
   RoleDestination(5, Icons.account_balance_wallet_outlined, 'Tabungan'),
@@ -105,11 +105,4 @@ const _staff = <RoleDestination>[
   RoleDestination(2, Icons.local_offer_outlined, 'Harga'),
   RoleDestination(3, Icons.insert_drive_file_outlined, 'Aktivitas'),
   RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
-  RoleDestination(
-    8,
-    Icons.campaign_outlined,
-    'Pengumuman',
-    inBottomBar: false,
-    disabled: true,
-  ),
 ];
