@@ -28,7 +28,7 @@ class CiPipelineTest(unittest.TestCase):
         ci = workflow("ci.yml")
         for name in ("quality", "test_shards", "changed_tests", "browser_tests"):
             uses = [step.get("uses") for step in ci["jobs"][name]["steps"]]
-            self.assertIn("./.github/actions/setup-flutter", uses, f"{name} must use the composite setup action")
+            self.assertIn("$/.github/actions/setup-flutter", uses, f"{name} must use the composite setup action")
             self.assertFalse(
                 [use for use in uses if use and use.startswith("subosito/")],
                 f"{name} should not inline the flutter action",
@@ -37,7 +37,9 @@ class CiPipelineTest(unittest.TestCase):
             (ROOT / ".github/actions/setup-flutter/action.yml").read_text(), Loader=yaml.BaseLoader
         )
         steps = [step.get("uses") or step.get("name") for step in action["runs"]["steps"]]
-        self.assertIn("subosito/flutter-action@v2", steps)
+        self.assertIn(
+            "subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2", steps
+        )
 
         selected = ci["jobs"]["changed_tests"]
         self.assertIn("needs.changes.outputs.has_vm_tests", selected["if"])
@@ -67,9 +69,15 @@ class CiPipelineTest(unittest.TestCase):
         run_tests = next(
             step["run"] for step in tests["steps"] if step.get("name") == "Run tests with coverage"
         )
-        self.assertIn("--total-shards=${{ strategy.job-total }}", run_tests)
-        self.assertIn("--shard-index=${{ matrix.shard }}", run_tests)
-        shard_upload = next(step for step in tests["steps"] if step.get("uses") == "actions/upload-artifact@v4")
+        shard_run = next(step for step in tests["steps"] if step.get("name") == "Run tests with coverage")
+        self.assertEqual(shard_run["env"]["TOTAL_SHARDS"], "${{ strategy.job-total }}")
+        self.assertEqual(shard_run["env"]["SHARD_INDEX"], "${{ matrix.shard }}")
+        self.assertIn('--total-shards="$TOTAL_SHARDS"', run_tests)
+        self.assertIn('--shard-index="$SHARD_INDEX"', run_tests)
+        shard_upload = next(
+            step for step in tests["steps"]
+            if step.get("uses", "").startswith("actions/upload-artifact@")
+        )
         self.assertEqual(shard_upload["with"]["name"], "unit-coverage-${{ matrix.shard }}")
         self.assertEqual(shard_upload["with"]["path"], "coverage/lcov-${{ matrix.shard }}.info")
 
@@ -122,7 +130,10 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("github.event_name == 'pull_request'", sonar["if"])
         self.assertIn("github.ref == 'refs/heads/staging'", sonar["if"])
         self.assertIn("github.ref == 'refs/heads/main'", sonar["if"])
-        download = next(step for step in sonar["steps"] if step.get("uses") == "actions/download-artifact@v4")
+        download = next(
+            step for step in sonar["steps"]
+            if step.get("uses", "").startswith("actions/download-artifact@")
+        )
         self.assertEqual(download["with"]["name"], "sonar-coverage")
         self.assertEqual(download["if"], "needs.coverage.outputs.has_coverage == 'true'")
 
@@ -140,6 +151,48 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("coverage/lcov.info", coverage_merge)
         self.assertIn("coverage/browser.lcov.info", coverage_merge)
         self.assertFalse((ROOT / ".github/workflows/sonar.yml").exists())
+
+    def test_zizmor_is_a_blocking_online_scan_on_ci_branches(self):
+        zizmor = workflow("zizmor.yml")
+        self.assertEqual(zizmor["permissions"], {})
+        self.assertIn("pull_request", zizmor["on"])
+        self.assertEqual(
+            zizmor["on"]["push"]["branches"], ["main", "staging", "feature/**"]
+        )
+        self.assertIn("workflow_dispatch", zizmor["on"])
+        job = zizmor["jobs"]["zizmor"]
+        self.assertEqual(job["permissions"], {"actions": "read", "contents": "read"})
+        scan = next(step for step in job["steps"] if step.get("name") == "Run Zizmor")
+        self.assertEqual(
+            scan["uses"],
+            "zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b",
+        )
+        self.assertEqual(scan["with"]["inputs"], ".github")
+        self.assertEqual(scan["with"]["version"], "v1.31.1")
+        self.assertEqual(scan["with"]["online-audits"], "true")
+        self.assertEqual(scan["with"]["advanced-security"], "false")
+
+    def test_ci_permissions_are_empty_by_default_and_job_scoped(self):
+        ci = workflow("ci.yml")
+        self.assertEqual(ci["permissions"], {})
+        for job_name in (
+            "changes", "quality", "test_shards", "changed_tests", "browser_tests", "coverage"
+        ):
+            self.assertEqual(ci["jobs"][job_name]["permissions"], {"contents": "read"})
+        deploy = ci["jobs"]["deploy_web_staging"]
+        self.assertEqual(
+            deploy["permissions"], {"contents": "read", "id-token": "write"}
+        )
+        self.assertEqual(set(deploy["secrets"]), {"APP_ENV_FILE", "FLY_API_TOKEN"})
+
+    def test_actionlint_ignores_only_its_unknown_self_repository_reference_errors(self):
+        ci = workflow("ci.yml")
+        lint = next(
+            step["run"] for step in ci["jobs"]["quality"]["steps"]
+            if step.get("name") == "actionlint"
+        )
+        self.assertIn('specifying action "\\$/.+" in invalid format because ref is missing', lint)
+        self.assertIn('reusable workflow call "\\$/.+" at "uses" is not following the format', lint)
 
 
 if __name__ == "__main__":

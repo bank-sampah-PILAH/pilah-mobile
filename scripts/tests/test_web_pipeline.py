@@ -31,7 +31,8 @@ class WebPipelineTest(unittest.TestCase):
         self.assertEqual(job["needs"], "verify")
         self.assertEqual(job["if"], "github.event_name == 'push' && github.ref == 'refs/heads/staging'")
         self.assertEqual(job["with"]["flavor"], "staging")
-        self.assertEqual(job["uses"], "./.github/workflows/deploy-web.yml")
+        self.assertEqual(job["uses"], "$/.github/workflows/deploy-web.yml")
+        self.assertEqual(set(job["secrets"]), {"APP_ENV_FILE", "FLY_API_TOKEN"})
 
     def test_production_follows_tags_and_web_jobs_do_not_need_android_secrets(self):
         release = workflow("cd-production.yml")
@@ -39,8 +40,15 @@ class WebPipelineTest(unittest.TestCase):
         job = release["jobs"]["deploy_web_production"]
         self.assertNotIn("needs", job)  # Independent of native signing/Firebase.
         self.assertEqual(job["with"]["flavor"], "production")
+        self.assertEqual(set(job["secrets"]), {"APP_ENV_FILE"})
         deploy = workflow("deploy-web.yml")
         self.assertEqual(list(deploy["on"]), ["workflow_call"])
+        self.assertEqual(
+            deploy["on"]["workflow_call"]["secrets"]["APP_ENV_FILE"]["required"], "true"
+        )
+        self.assertEqual(
+            deploy["on"]["workflow_call"]["secrets"]["FLY_API_TOKEN"]["required"], "false"
+        )
         self.assertEqual(deploy["jobs"]["deploy"]["environment"], "${{ inputs.flavor }}")
         text = (ROOT / ".github/workflows/deploy-web.yml").read_text()
         for secret in ("ANDROID_KEY", "GOOGLE_SERVICES_JSON"):

@@ -6,10 +6,13 @@ on:
       flavor:
         required: true
         type: string
+    secrets:
+      APP_ENV_FILE:
+        required: true
+      FLY_API_TOKEN:
+        required: false
 
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
 
 concurrency:
   group: dashboard-web-${{ inputs.flavor }}
@@ -18,6 +21,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     # Production must have required reviewers configured in GitHub.
     environment: ${{ inputs.flavor }}
     env:
@@ -31,8 +37,9 @@ jobs:
       DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
       RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_WEB_SERVICE_ACCOUNT }}
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - name: Validate hosting configuration
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -60,7 +67,7 @@ jobs:
             *) echo "::error::Unsupported dashboard environment"; exit 1 ;;
           esac
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
@@ -94,7 +101,7 @@ jobs:
           flutter build web --release -t "$target"
 
       - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dashboard-web-${{ inputs.flavor }}-${{ github.sha }}
           path: build/web
@@ -102,7 +109,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
         if: inputs.flavor == 'staging'
 
       - name: Deploy Fly staging
@@ -118,12 +125,12 @@ jobs:
 
       - name: Authenticate to Google Cloud
         if: inputs.flavor == 'production'
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ env.WORKLOAD_PROVIDER }}
           service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
 
-      - uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
         if: inputs.flavor == 'production'
 
       - name: Build and push static image
