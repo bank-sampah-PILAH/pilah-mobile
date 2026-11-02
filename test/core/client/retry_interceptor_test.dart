@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -57,6 +58,30 @@ Dio _dioWith(_FlakyAdapter adapter) {
 
 void main() {
   group('RetryInterceptor', () {
+    test('cancelling during the retry delay never reissues the request',
+        () async {
+      final token = CancelToken();
+      final dropped = Completer<void>();
+      final adapter = _FlakyAdapter(
+          dropCount: 1,
+          dropError: (_) {
+            dropped.complete();
+            return const SocketException('Connection dropped');
+          });
+      final dio = _dioWith(adapter);
+      final request = dio.get<dynamic>('/api/v1/nasabah', cancelToken: token);
+      final assertion = expectLater(
+          request,
+          throwsA(isA<DioException>()
+              .having((e) => e.type, 'type', DioExceptionType.cancel)));
+      await dropped.future;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      token.cancel('Search superseded');
+      await assertion;
+      await Future<void>.delayed(RetryInterceptor.retryDelay);
+      expect(adapter.calls, 1);
+    });
+
     test('a GET dropped once succeeds on the retry', () async {
       final adapter = _FlakyAdapter(dropCount: 1);
       final dio = _dioWith(adapter);

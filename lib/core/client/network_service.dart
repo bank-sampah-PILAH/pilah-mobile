@@ -39,6 +39,7 @@ class NetworkService {
     String path, {
     Map<String, dynamic>? queryParams,
     Map<String, String>? headers,
+    CancelToken? cancelToken,
   }) async {
     /// If a key of [other] is already in this map, its value is overwritten.
     headers?.addAll(headersRequest());
@@ -46,6 +47,7 @@ class NetworkService {
     Response response = await dio
         .get(environment.baseUrl + path,
             queryParameters: queryParams,
+            cancelToken: cancelToken,
             options: options.copyWith(
               headers: headers ?? headersRequest(),
             ))

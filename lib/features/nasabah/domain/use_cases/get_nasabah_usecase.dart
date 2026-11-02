@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/bases/use_case.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -13,12 +14,14 @@ class GetNasabahParams {
   final int? pageSize;
   final String status;
   final String? search;
+  final CancelToken? cancelToken;
 
   const GetNasabahParams({
     this.page = 1,
     this.pageSize,
     this.status = 'aktif',
     this.search,
+    this.cancelToken,
   });
 }
 
@@ -38,6 +41,7 @@ class GetNasabahUseCase implements UseCase<HalamanNasabah, GetNasabahParams> {
       pageSize: params.pageSize,
       status: params.status,
       search: params.search,
+      cancelToken: params.cancelToken,
     );
   }
 }

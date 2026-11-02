@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -63,6 +64,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
   bool _listNeedsReload = false;
 
   Timer? _jedaCari;
+  CancelToken? _listCancelToken;
 
   bool? _isActiveTab = true;
   String _searchQuery = '';
@@ -86,7 +88,10 @@ class NasabahNotifier extends Notifier<NasabahState> {
 
   @override
   NasabahState build() {
-    ref.onDispose(() => _jedaCari?.cancel());
+    ref.onDispose(() {
+      _jedaCari?.cancel();
+      _listCancelToken?.cancel('Customer list disposed');
+    });
     return NasabahInitial();
   }
 
@@ -114,6 +119,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
     _pageSize = pageSize ?? _pageSize;
     _jedaCari?.cancel();
     final requestGeneration = ++_listRequestGeneration;
+    _startListRequest();
     _listNeedsReload = false;
     final hasLoadedList = state is NasabahLoaded;
     _halaman = 1;
@@ -132,7 +138,17 @@ class NasabahNotifier extends Notifier<NasabahState> {
     final result = await getNasabahUseCase.execute(_params(1));
     if (!ref.mounted || requestGeneration != _listRequestGeneration) return;
     result.fold(
-      (failure) => state = NasabahError(failure.displayMessage),
+      (failure) {
+        if (failure is RequestCancelled) {
+          if (state is NasabahLoaded) {
+            _emitLoaded();
+          } else {
+            state = NasabahInitial();
+          }
+          return;
+        }
+        state = NasabahError(failure.displayMessage);
+      },
       (data) {
         _items = data.items;
         _hasMore = data.hasMore;
@@ -161,6 +177,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
     }
 
     final requestGeneration = ++_listRequestGeneration;
+    _startListRequest();
     _emitLoaded(isReloading: true);
     final result = await getNasabahUseCase.execute(_params(page));
     if (!ref.mounted || requestGeneration != _listRequestGeneration) return;
@@ -192,6 +209,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
       return;
     }
     final requestGeneration = _listRequestGeneration;
+    _startListRequest();
     _isLoadingMore = true;
     _emitLoaded();
 
@@ -213,12 +231,18 @@ class NasabahNotifier extends Notifier<NasabahState> {
     );
   }
 
+  void _startListRequest() {
+    _listCancelToken?.cancel('Customer list superseded');
+    _listCancelToken = CancelToken();
+  }
+
   GetNasabahParams _params(int halaman) => GetNasabahParams(
         page: halaman,
         pageSize: _pageSize,
         status: _statusParam,
         // Server mengabaikan kata kunci di bawah dua huruf, jadi jangan dikirim.
         search: _searchQuery.length >= 2 ? _searchQuery : null,
+        cancelToken: _listCancelToken,
       );
 
   String get _statusParam {
@@ -241,7 +265,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
   Future<void> _refreshActiveCount() async {
     final requestGeneration = ++_activeCountRequestGeneration;
     final result = await getNasabahUseCase.execute(
-      const GetNasabahParams(status: 'aktif'),
+      const GetNasabahParams(status: 'aktif', pageSize: 1),
     );
     if (!ref.mounted || requestGeneration != _activeCountRequestGeneration) {
       return;
@@ -270,7 +294,9 @@ class NasabahNotifier extends Notifier<NasabahState> {
   /// Pencarian harus dilakukan server karena menyaring di aplikasi hanya akan
   /// menyaring halaman yang kebetulan sudah dimuat.
   void searchNasabah(String query) {
+    query = query.trim();
     if (_searchQuery == query) return;
+    _listCancelToken?.cancel('Search query changed');
     _searchQuery = query;
     _listRequestGeneration++;
     _listNeedsReload = true;

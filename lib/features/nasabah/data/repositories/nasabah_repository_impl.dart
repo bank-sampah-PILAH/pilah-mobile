@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -18,6 +19,7 @@ class NasabahRepositoryImpl implements NasabahRepository {
     int? pageSize,
     String status = 'aktif',
     String? search,
+    CancelToken? cancelToken,
   }) {
     return apiCall<HalamanNasabah>(
       func: remoteDataSource.getNasabah(
@@ -25,6 +27,7 @@ class NasabahRepositoryImpl implements NasabahRepository {
         pageSize: pageSize,
         status: status,
         search: search,
+        cancelToken: cancelToken,
       ),
       mapper: (result) => result as HalamanNasabah,
     );

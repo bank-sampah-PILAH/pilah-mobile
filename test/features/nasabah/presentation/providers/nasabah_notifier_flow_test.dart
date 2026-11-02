@@ -215,6 +215,7 @@ void main() {
     // Off the active tab, the active total is fetched separately.
     expect(api.requests.where((r) => r.query['status'] == 'aktif'), isNotEmpty);
     expect(cubit.activeCount, 7);
+    expect(api.requests.last.query['page_size'], '1');
   });
 
   test('an update failure is returned', () async {

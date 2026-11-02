@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:pilah_mobile/features/nasabah/data/models/nasabah_model.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
@@ -11,6 +12,7 @@ abstract class NasabahRemoteDataSource {
     int? pageSize,
     String status,
     String? search,
+    CancelToken? cancelToken,
   });
 
   /// Seluruh nasabah aktif dalam satu panggilan, untuk picker Transaksi Baru.

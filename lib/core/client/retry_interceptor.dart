@@ -63,6 +63,9 @@ class RetryInterceptor extends Interceptor {
     final options = err.requestOptions;
     options.extra[retriedFlag] = true;
     await Future<void>.delayed(retryDelay);
+    if (options.cancelToken?.isCancelled == true) {
+      return handler.next(options.cancelToken!.cancelError!);
+    }
 
     try {
       return handler.resolve(await dio.fetch<dynamic>(options));
@@ -73,6 +76,7 @@ class RetryInterceptor extends Interceptor {
   }
 
   bool _isRetryableDrop(DioException err) {
+    if (err.requestOptions.cancelToken?.isCancelled == true) return false;
     if (err.requestOptions.method.toUpperCase() != 'GET') return false;
     if (err.requestOptions.extra[retriedFlag] == true) return false;
     if (err.response != null) return false;

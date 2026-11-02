@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/nasabah/data/datasources/nasabah_remote_data_source.dart';
@@ -21,12 +22,14 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
     int? pageSize,
     String status = 'aktif',
     String? search,
+    CancelToken? cancelToken,
   }) async {
     // Penyaringan dilakukan server supaya paginasi tetap benar: menyaring di
     // aplikasi hanya akan menyaring halaman yang kebetulan sudah dimuat.
     // Ukuran halaman mengikuti default server, tidak dipaksa dari sini.
     final response = await networkService.get(
       _path,
+      cancelToken: cancelToken,
       queryParams: {
         'status': status,
         'page': page,

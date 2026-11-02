@@ -1,4 +1,8 @@
-import 'package:dartz/dartz.dart' show Right;
+import 'dart:async';
+
+import 'package:dartz/dartz.dart' show Either, Left, Right;
+import 'package:dio/dio.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -91,6 +95,67 @@ void main() {
   });
 
   tearDown(() => harness.dispose());
+
+  test('disposing the provider cancels its in-flight request', () async {
+    final response = Completer<Either<NetworkException, HalamanNasabah>>();
+    CancelToken? token;
+    when(() => getUseCase.execute(any())).thenAnswer((call) {
+      token = (call.positionalArguments.first as GetNasabahParams).cancelToken;
+      return response.future;
+    });
+    final load = cubit.loadNasabah();
+    harness.dispose();
+    expect(token!.isCancelled, isTrue);
+    response.complete(Left(RequestCancelled()));
+    await load;
+  });
+
+  test('a cancelled latest request never becomes an error state', () async {
+    when(() => getUseCase.execute(any()))
+        .thenAnswer((_) async => Left(RequestCancelled()));
+    await cubit.loadNasabah();
+    expect(cubit.state, isA<NasabahInitial>());
+  });
+
+  testWidgets('superseded search cancels transport without displaying an error',
+      (tester) async {
+    await cubit.loadNasabah();
+    final oldResponse = Completer<Either<NetworkException, HalamanNasabah>>();
+    CancelToken? oldToken;
+    when(() => getUseCase.execute(any())).thenAnswer((call) {
+      final params = call.positionalArguments.first as GetNasabahParams;
+      if (params.search == 'old') {
+        oldToken = params.cancelToken;
+        return oldResponse.future;
+      }
+      return Future.value(Right(_page([
+        _nasabah('Siti Aminah', 'siti@example.test', '81234567890'),
+      ])));
+    });
+    cubit.searchNasabah('old');
+    await tester.pump(NasabahNotifier.jedaPencarian);
+    expect(oldToken, isNotNull);
+    cubit.searchNasabah('new');
+    expect(oldToken!.isCancelled, isTrue);
+    oldResponse.complete(Left(RequestCancelled()));
+    await tester.pump();
+    expect(cubit.state, isNot(isA<NasabahError>()));
+    await tester.pump(NasabahNotifier.jedaPencarian);
+    expect(
+        (cubit.state as NasabahLoaded).nasabahList.single.name, 'Siti Aminah');
+  });
+
+  testWidgets('trims whitespace before debounce and minimum query length',
+      (tester) async {
+    await cubit.loadNasabah();
+    cubit.searchNasabah('  bu  ');
+    await tester.pump(NasabahNotifier.jedaPencarian);
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .cast<GetNasabahParams>();
+    expect(params.last.search, 'bu');
+    expect(cubit.searchQuery, 'bu');
+  });
 
   // Pencarian dijalankan server (PIL-214) supaya seluruh nasabah ikut dicari,
   // bukan hanya halaman yang kebetulan sudah dimuat. Backend mencocokkan nama,
