@@ -71,6 +71,11 @@ enum SideSheetPresentation {
   /// jendela peramban diseret menyempit sementara panel sedang terbuka.
   /// Tanpa itu `windowWidth - minPageVisible` menjadi negatif dan layout
   /// melempar.
+  ///
+  /// Cabang itu defensif, bukan keadaan tampilan yang bisa diandalkan
+  /// pemanggil: [resolve] tidak pernah mengembalikan [sideSheet] di bawah
+  /// [LayoutBreakpoint.mediumMinWidth], jadi hasil di lebar itu jangan dibaca
+  /// sebagai "panel juga bekerja di telepon".
   static double widthFor(double windowWidth) =>
       windowWidth < LayoutBreakpoint.mediumMinWidth
           ? math.max(windowWidth, 0)
@@ -286,6 +291,16 @@ class SideSheetGuard {
   /// Dipakai isi panel ketika ia menutup dirinya sendiri sesudah berhasil
   /// menyimpan. Di sana pengguna sudah memutuskan, dan bertanya justru akan
   /// menahan simpan yang baru saja ia minta.
+  ///
+  /// **Harus berada langsung sebelum pop yang tak bersyarat.** Kunci ini tidak
+  /// kedaluwarsa dengan sendirinya: yang menghabiskannya adalah [confirmExit]
+  /// atas pop yang menyusul. Pemanggil yang menyalakannya lalu tidak mem-pop —
+  /// karena sebuah await di antaranya, atau cabang yang membatalkan penutupan
+  /// sesudahnya — meninggalkannya menyala selagi [hasUnsavedInput] masih benar.
+  /// Jalan keluar berikutnya yang sungguh-sungguh, klik scrim atau tombol
+  /// kembali peramban, lalu dilewatkan tanpa ditanya: justru pembuangan
+  /// diam-diam yang penjaga ini ada untuk mencegah. Jangan pula menyalakannya
+  /// lebih dulu "untuk nanti".
   void allowNextExit() => _answered = true;
 
   /// Jalan keluar lewat `Navigator.maybePop`: scrim dan Esc.
