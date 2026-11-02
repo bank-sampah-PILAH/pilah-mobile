@@ -20,6 +20,12 @@ final analyticsEligibleProvider = Provider<bool>((ref) {
   return RoleDestinations.isStaff(role);
 });
 
+/// Whether the "Perekaman sesi" switch applies: to a pengurus, on a platform
+/// that can record, whatever they chose before.
+final analyticsToggleVisibleProvider = Provider<bool>((ref) =>
+    ref.watch(analyticsEligibleProvider) &&
+    ref.watch(analyticsClientProvider).isAvailable);
+
 /// Whether to ask for consent now: a pengurus who has not chosen yet, on a
 /// platform where recording is possible. Anyone who answered is not asked
 /// again, and nobody is told they are recorded when nothing records.
