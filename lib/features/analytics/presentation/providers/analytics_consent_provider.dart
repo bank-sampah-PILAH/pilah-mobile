@@ -6,41 +6,65 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-final analyticsClientProvider =
-    Provider<AnalyticsClient>((ref) => di<AnalyticsClient>());
+/// The client for this build. Where none is registered (a test, or a build
+/// without analytics) it is the no-op one, so the app behaves as if analytics
+/// is off instead of failing, and nobody is ever recorded by accident.
+final analyticsClientProvider = Provider<AnalyticsClient>((ref) =>
+    di.isRegistered<AnalyticsClient>()
+        ? di<AnalyticsClient>()
+        : NoopAnalyticsClient());
 
 final analyticsConsentStoreProvider =
     Provider<AnalyticsConsentStore>((ref) => di<AnalyticsConsentStore>());
 
 /// Whether the signed-in user is a pengurus, the only people who may be
 /// recorded. Nasabah and signed-out users never are.
-final analyticsEligibleProvider = Provider<bool>((ref) {
-  final auth = ref.watch(authenticationProvider);
-  final role = auth is Authenticated ? auth.authEntity.role : null;
-  return RoleDestinations.isStaff(role);
-});
+final analyticsEligibleProvider = Provider<bool>(
+  (ref) {
+    final auth = ref.watch(authenticationProvider);
+    final role = auth is Authenticated ? auth.authEntity.role : null;
+    return RoleDestinations.isStaff(role);
+  },
+  dependencies: [authenticationProvider],
+);
 
 /// Whether the "Perekaman sesi" switch applies: to a pengurus, on a platform
 /// that can record, whatever they chose before.
-final analyticsToggleVisibleProvider = Provider<bool>((ref) =>
-    ref.watch(analyticsEligibleProvider) &&
-    ref.watch(analyticsClientProvider).isAvailable);
+final analyticsToggleVisibleProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(analyticsEligibleProvider) &&
+      ref.watch(analyticsClientProvider).isAvailable,
+  dependencies: [analyticsEligibleProvider, analyticsClientProvider],
+);
 
 /// Whether to ask for consent now: a pengurus who has not chosen yet, on a
 /// platform where recording is possible. Anyone who answered is not asked
 /// again, and nobody is told they are recorded when nothing records.
-final analyticsNeedsPromptProvider = Provider<bool>((ref) {
-  final eligible = ref.watch(analyticsEligibleProvider);
-  final available = ref.watch(analyticsClientProvider).isAvailable;
-  final choice = ref.watch(analyticsConsentProvider).value;
-  return eligible && available && choice == ConsentChoice.unset;
-});
+final analyticsNeedsPromptProvider = Provider<bool>(
+  (ref) {
+    // Cheapest checks first: the saved choice is only read when it can matter.
+    if (!ref.watch(analyticsEligibleProvider)) return false;
+    if (!ref.watch(analyticsClientProvider).isAvailable) return false;
+    return ref.watch(analyticsConsentProvider).value == ConsentChoice.unset;
+  },
+  dependencies: [
+    analyticsEligibleProvider,
+    analyticsClientProvider,
+    analyticsConsentProvider,
+  ],
+);
 
 /// The user's recording choice, and the only place that starts or stops the
 /// analytics client.
 final analyticsConsentProvider =
     AsyncNotifierProvider<AnalyticsConsentController, ConsentChoice>(
-        AnalyticsConsentController.new);
+  AnalyticsConsentController.new,
+  dependencies: [
+    analyticsEligibleProvider,
+    analyticsClientProvider,
+    analyticsConsentStoreProvider,
+  ],
+);
 
 class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
   @override

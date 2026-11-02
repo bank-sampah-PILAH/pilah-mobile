@@ -19,6 +19,8 @@ import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_consent_card.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
@@ -874,6 +876,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       bankProfile,
                       const SizedBox(height: 32),
                       whatsappTemplate,
+                    ],
+                    // Only where it applies, so a hidden card leaves no gap.
+                    if (ref.watch(analyticsToggleVisibleProvider)) ...[
+                      const SizedBox(height: 32),
+                      const AnalyticsConsentCard(),
                     ],
                     if (!_webShell) ...[
                       const SizedBox(height: 32),
