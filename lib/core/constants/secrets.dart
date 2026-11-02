@@ -7,6 +7,17 @@ abstract class Secret {
   static bool get demoLoginEnabled =>
       (dotenv.env['ENABLE_DEMO_LOGIN'] ?? 'false').toLowerCase() == 'true';
 
+  static bool get analyticsEnabled =>
+      (dotenv.env['ENABLE_ANALYTICS'] ?? 'false').toLowerCase() == 'true';
+
+  static String get posthogApiKey => dotenv.env['POSTHOG_API_KEY'] ?? '';
+
+  static String get posthogHost =>
+      dotenv.env['POSTHOG_HOST'] ?? 'https://us.i.posthog.com';
+
+  static String get posthogEnvironment =>
+      dotenv.env['POSTHOG_ENVIRONMENT'] ?? '';
+
   static String get demoPengurusEmail =>
       dotenv.env['DEMO_PENGURUS_EMAIL'] ?? 'pengurus.demo@example.com';
 
