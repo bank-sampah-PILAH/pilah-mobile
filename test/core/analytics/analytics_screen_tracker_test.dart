@@ -68,31 +68,33 @@ void main() {
     expect(client.screens, ['dashboard']);
   });
 
-  test('says how long the screen was open when leaving it', () {
+  test('the first screen comes with no previous screen to describe', () {
+    expect(client.screenProps, [<String, Object>{}]);
+  });
+
+  test('a new screen says which one it follows and for how long', () {
     now = now.add(const Duration(seconds: 12, milliseconds: 400));
 
     goTo('/nasabah');
 
-    expect(client.events.map((e) => e.name), ['layar_ditinggalkan']);
-    expect(client.events.single.properties, {
-      'layar': 'dashboard',
-      'durasi_detik': 12,
+    expect(client.screens, ['dashboard', 'nasabah']);
+    expect(client.screenProps.last, {
+      'layar_sebelumnya': 'dashboard',
+      'durasi_layar_sebelumnya_detik': 12,
     });
-    // The screen left is reported before the new one is.
-    expect(client.log, [
-      'screen:dashboard',
-      'capture:layar_ditinggalkan',
-      'screen:nasabah',
-    ]);
+    // One event per move, not a second one for leaving.
+    expect(client.events, isEmpty);
+    expect(client.log, ['screen:dashboard', 'screen:nasabah']);
   });
 
-  test('reportCurrent repeats the current screen without a leave event', () {
+  test('reportCurrent repeats the current screen with nothing before it', () {
     goTo('/riwayat');
     client.log.clear();
 
     tracker.reportCurrent();
 
     expect(client.log, ['screen:riwayat']);
+    expect(client.screenProps.last, isEmpty);
   });
 
   test('time on a screen counts from when analytics started hearing of it', () {
@@ -103,7 +105,7 @@ void main() {
     now = now.add(const Duration(seconds: 5));
     goTo('/nasabah');
 
-    expect(client.events.single.properties['durasi_detik'], 5);
+    expect(client.screenProps.last['durasi_layar_sebelumnya_detik'], 5);
   });
 
   test('stops listening once disposed', () {

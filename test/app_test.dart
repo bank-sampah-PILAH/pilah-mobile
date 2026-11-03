@@ -102,7 +102,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(analytics.screens.last, 'nasabah');
-    expect(analytics.events.map((e) => e.name), contains('layar_ditinggalkan'));
+    expect(analytics.screenProps.last['layar_sebelumnya'], 'dashboard');
   });
 
   testWidgets('every screen inherits the app theme, not the Material default',

@@ -21,6 +21,8 @@ void main() {
     expect(() => client.capture('setoran_disimpan', {'jumlah_item': 2}),
         returnsNormally);
     expect(() => client.screen('dashboard'), returnsNormally);
+    expect(() => client.screen('nasabah', {'layar_sebelumnya': 'dashboard'}),
+        returnsNormally);
   });
 
   test('createAnalyticsClient returns the no-op client when analytics is off',

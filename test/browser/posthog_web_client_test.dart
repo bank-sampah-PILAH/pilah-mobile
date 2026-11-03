@@ -133,6 +133,27 @@ void main() {
     ]);
   });
 
+  test('a screen can say which screen it follows and for how long', () async {
+    final client = _client();
+    await client.start();
+
+    client.screen('nasabah', {
+      'layar_sebelumnya': 'dashboard',
+      'durasi_layar_sebelumnya_detik': 12,
+    });
+
+    expect(_captures(), [
+      [
+        r'$screen',
+        {
+          r'$screen_name': 'nasabah',
+          'layar_sebelumnya': 'dashboard',
+          'durasi_layar_sebelumnya_detik': 12,
+        },
+      ],
+    ]);
+  });
+
   test('nothing is sent after stop, and sending resumes after start', () async {
     final client = _client();
     await client.start();

@@ -20,8 +20,9 @@ class FakeAnalyticsClient implements AnalyticsClient {
   /// Every event captured, with its cleaned properties.
   final events = <({String name, Map<String, Object> properties})>[];
 
-  /// Every screen name reported.
+  /// Every screen name reported, and the properties each came with.
   final screens = <String>[];
+  final screenProps = <Map<String, Object>>[];
 
   @override
   Future<void> start() async {
@@ -42,8 +43,9 @@ class FakeAnalyticsClient implements AnalyticsClient {
   }
 
   @override
-  void screen(String name) {
+  void screen(String name, [Map<String, Object?> properties = const {}]) {
     log.add('screen:$name');
     screens.add(name);
+    screenProps.add(AnalyticsProps.sanitize(properties));
   }
 }
