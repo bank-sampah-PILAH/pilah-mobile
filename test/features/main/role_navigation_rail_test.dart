@@ -1,4 +1,4 @@
-import 'dart:ui' show SemanticsAction, Tristate;
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,18 +47,16 @@ void main() {
   }
 
   group('RoleNavigationRail', () {
-    testWidgets('offers the staff destinations, Pengumuman included',
-        (tester) async {
+    testWidgets('offers the five staff destinations', (tester) async {
       await taps(tester, role: 'pengelola');
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.destinations.length, 6);
+      expect(rail.destinations.length, 5);
       const expectedLabels = [
         'Dashboard',
         'Nasabah',
         'Harga',
         'Aktivitas',
         'Jadwal',
-        'Pengumuman',
       ];
       final visibleLabels = tester
           .widgetList<Text>(find.byType(Text))
@@ -68,31 +66,16 @@ void main() {
       expect(visibleLabels, expectedLabels);
     });
 
-    testWidgets('keeps Pengumuman visible but disabled', (tester) async {
-      final selected = await taps(tester, role: 'pengelola');
+    testWidgets('draws no Pengumuman destination at all', (tester) async {
+      await taps(tester, role: 'pengelola');
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.destinations.last.disabled, isTrue);
 
-      final semantics =
-          tester.getSemantics(find.text('Pengumuman')).getSemanticsData();
-      expect(semantics.flagsCollection.isButton, isTrue);
-      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
-      expect(semantics.hasAction(SemanticsAction.tap), isFalse);
-      final disabledLabel = tester.widget<Semantics>(find
-          .ancestor(
-            of: find.text('Pengumuman'),
-            matching: find.byWidgetPredicate(
-              (widget) =>
-                  widget is Semantics &&
-                  widget.properties.label == 'Pengumuman',
-            ),
-          )
-          .first);
-      expect(disabledLabel.excludeSemantics, isTrue);
-
-      await tester.tap(find.text('Pengumuman'));
-      await tester.pumpAndSettle();
-      expect(selected, isEmpty);
+      expect(find.text('Pengumuman'), findsNothing);
+      expect(
+        rail.destinations.map((d) => (d.label as Text).data),
+        isNot(contains('Pengumuman')),
+      );
+      expect(find.byIcon(Icons.campaign_outlined), findsNothing);
     });
 
     testWidgets('shows the Transaksi accordion before destinations',
@@ -295,9 +278,9 @@ void main() {
       await taps(tester, role: 'pengelola', onAddTransaction: () {});
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.destinations.length, 5);
+      expect(rail.destinations.length, 4);
       expect(
-        rail.destinations.take(4).map((d) => (d.label as Text).data),
+        rail.destinations.map((d) => (d.label as Text).data),
         ['Dashboard', 'Nasabah', 'Harga', 'Jadwal'],
       );
       expect(find.text('Aktivitas'), findsNothing);
@@ -365,7 +348,7 @@ void main() {
           onAddTransaction: () {});
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.destinations.length, 6);
+      expect(rail.destinations.length, 5);
       expect(find.text('Aktivitas'), findsOneWidget);
     });
 

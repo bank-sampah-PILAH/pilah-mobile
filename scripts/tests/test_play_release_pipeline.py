@@ -83,7 +83,7 @@ class PlayReleasePipelineTest(unittest.TestCase):
         self.assertNotIn("flutter build", text)
         self.assertIn("scripts/promote_play_release.py", text)
         self.assertNotIn("r0adkll/upload-google-play@", str(steps))
-        self.assertIn("google-auth==2.62.0", str(steps))
+        self.assertIn("google-auth[requests]==2.62.0", str(steps))
         self.assertIn("PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON", str(steps))
         self.assertIn("PLAY_TEST_SERVICE_ACCOUNT_JSON", str(steps))
 
