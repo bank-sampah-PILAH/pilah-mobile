@@ -79,7 +79,7 @@ void main() {
       'durasi_detik': 12,
     });
     // The screen left is reported before the new one is.
-    expect(client.calls, [
+    expect(client.log, [
       'screen:dashboard',
       'capture:layar_ditinggalkan',
       'screen:nasabah',
@@ -88,11 +88,11 @@ void main() {
 
   test('reportCurrent repeats the current screen without a leave event', () {
     goTo('/riwayat');
-    client.calls.clear();
+    client.log.clear();
 
     tracker.reportCurrent();
 
-    expect(client.calls, ['screen:riwayat']);
+    expect(client.log, ['screen:riwayat']);
   });
 
   test('stops listening once disposed', () {

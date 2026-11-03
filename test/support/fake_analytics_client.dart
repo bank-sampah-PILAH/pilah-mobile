@@ -10,7 +10,12 @@ class FakeAnalyticsClient implements AnalyticsClient {
 
   @override
   final bool isAvailable;
+
+  /// Only `start` and `stop`, in order.
   final calls = <String>[];
+
+  /// Everything it was asked to do, in order: lifecycle, events and screens.
+  final log = <String>[];
 
   /// Every event captured, with its cleaned properties.
   final events = <({String name, Map<String, Object> properties})>[];
@@ -19,20 +24,26 @@ class FakeAnalyticsClient implements AnalyticsClient {
   final screens = <String>[];
 
   @override
-  Future<void> start() async => calls.add('start');
+  Future<void> start() async {
+    calls.add('start');
+    log.add('start');
+  }
 
   @override
-  Future<void> stop() async => calls.add('stop');
+  Future<void> stop() async {
+    calls.add('stop');
+    log.add('stop');
+  }
 
   @override
   void capture(String event, [Map<String, Object?> properties = const {}]) {
-    calls.add('capture:$event');
+    log.add('capture:$event');
     events.add((name: event, properties: AnalyticsProps.sanitize(properties)));
   }
 
   @override
   void screen(String name) {
-    calls.add('screen:$name');
+    log.add('screen:$name');
     screens.add(name);
   }
 }
