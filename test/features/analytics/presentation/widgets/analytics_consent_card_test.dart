@@ -64,7 +64,10 @@ void main() {
     expect(find.text('Analitik penggunaan'), findsOneWidget);
     expect(
         find.text('Izinkan PILAH mencatat langkah pemakaian aplikasi agar kami '
-            'bisa meningkatkannya. Isi layar tidak dicatat.'),
+            'bisa meningkatkannya. Data dikirim ke PostHog, penyedia analitik '
+            'di luar negeri, bersama jenis perangkat, peramban, dan perkiraan '
+            'lokasi dari alamat IP. Isi layar dan alamat halaman tidak '
+            'dicatat.'),
         findsOneWidget);
     expect(switchValue(tester), isTrue);
   });

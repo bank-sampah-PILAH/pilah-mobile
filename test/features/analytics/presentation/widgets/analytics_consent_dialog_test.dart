@@ -37,14 +37,13 @@ void main() {
     expect(
         find.textContaining(
             'Kami mencatat langkah yang Anda lakukan di PILAH, misalnya saat '
-            'setoran disimpan atau jadwal dibuat'),
+            'setoran disimpan'),
         findsOneWidget);
     expect(
         find.textContaining(
             'Kami tidak merekam layar, dan tidak mencatat nama nasabah, '
             'saldo, foto, email, atau nomor telepon'),
         findsOneWidget);
-    expect(find.textContaining('Data hanya dilihat tim PILAH'), findsOneWidget);
     expect(find.textContaining('mengubah pilihan kapan saja di Profil'),
         findsOneWidget);
     expect(find.text('Setuju'), findsOneWidget);
@@ -109,5 +108,26 @@ void main() {
     expect(
         find.text('Bantu kami meningkatkan pengalaman Anda'), findsOneWidget);
     expect(answered, isFalse);
+  });
+
+  testWidgets('says who receives the data and what comes along with it',
+      (tester) async {
+    await open(tester);
+
+    expect(find.textContaining('PostHog'), findsOneWidget);
+    expect(find.textContaining('di luar negeri'), findsOneWidget);
+    expect(find.textContaining('jenis perangkat dan peramban'), findsOneWidget);
+    expect(
+        find.textContaining('perkiraan lokasi dari alamat IP'), findsOneWidget);
+    expect(find.textContaining('Alamat halaman tidak dikirim'), findsOneWidget);
+  });
+
+  testWidgets(
+      'does not claim that only PILAH sees the data, or promise events '
+      'that are not sent', (tester) async {
+    await open(tester);
+
+    expect(find.textContaining('Data hanya dilihat tim PILAH'), findsNothing);
+    expect(find.textContaining('jadwal dibuat'), findsNothing);
   });
 }
