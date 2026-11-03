@@ -97,4 +97,23 @@ void main() {
       throwsA(isA<AssertionError>()),
     );
   });
+
+  group('cleanId', () {
+    test('keeps an id that names nobody', () {
+      expect(AnalyticsProps.cleanId('7c9819de-c44d-4fb3-acdf-b61d7d87174c'),
+          '7c9819de-c44d-4fb3-acdf-b61d7d87174c');
+      expect(AnalyticsProps.cleanId('42'), '42');
+    });
+
+    test('refuses an email address or a phone number as an id', () {
+      expect(() => AnalyticsProps.cleanId('siti@example.com'),
+          throwsAssertionError);
+      expect(
+          () => AnalyticsProps.cleanId('081234567890'), throwsAssertionError);
+    });
+
+    test('refuses an empty id', () {
+      expect(() => AnalyticsProps.cleanId(''), throwsAssertionError);
+    });
+  });
 }

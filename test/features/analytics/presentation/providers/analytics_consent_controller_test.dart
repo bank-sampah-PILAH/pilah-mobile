@@ -360,7 +360,12 @@ void main() {
 
       await container.read(analyticsConsentProvider.notifier).grant();
 
-      expect(client.log, ['start', 'capture:app_dibuka']);
+      expect(client.log, [
+        'start',
+        'identify:u1',
+        'register',
+        'capture:app_dibuka',
+      ]);
       expect(tracker.reported, 1);
     });
 
@@ -371,7 +376,12 @@ void main() {
 
       await container.read(analyticsConsentProvider.future);
 
-      expect(client.log, ['start', 'capture:app_dibuka']);
+      expect(client.log, [
+        'start',
+        'identify:u1',
+        'register',
+        'capture:app_dibuka',
+      ]);
       expect(tracker.reported, 1);
     });
 
@@ -395,6 +405,79 @@ void main() {
       await container.read(analyticsConsentProvider.notifier).revoke();
 
       expect(client.log, ['stop']);
+    });
+  });
+
+  group('who the user is', () {
+    test('analytics is told their id and role once they agree', () async {
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      expect(client.identified, ['u1']);
+      expect(client.registered, [
+        {'peran': 'pengelola'},
+      ]);
+    });
+
+    test('an id is never sent for someone who has not agreed', () async {
+      final container = containerForTest();
+
+      await container.read(analyticsConsentProvider.future);
+      await container.read(analyticsConsentProvider.notifier).deny();
+
+      expect(client.identified, isEmpty);
+      expect(client.registered, isEmpty);
+    });
+
+    test('a nasabah is never identified', () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      auth.setStateForTest(_signedInAs('nasabah'));
+      final container = containerForTest();
+
+      await container.read(analyticsConsentProvider.future);
+
+      expect(client.identified, isEmpty);
+    });
+
+    test('an account with no id is not identified, but its role still is',
+        () async {
+      // Without an id nothing can be remembered, so it agrees in this session.
+      auth.setStateForTest(_signedInAs('pengelola', id: null));
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      expect(client.identified, isEmpty);
+      expect(client.registered, [
+        {'peran': 'pengelola'},
+      ]);
+    });
+
+    test('withdrawing forgets the user after stopping', () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+      client.log.clear();
+
+      await container.read(analyticsConsentProvider.notifier).revoke();
+
+      expect(client.log, ['stop', 'reset']);
+    });
+
+    test('signing out forgets the user, so the next one is not tied to them',
+        () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+      client.log.clear();
+
+      auth.setStateForTest(Unauthenticated());
+      await container.read(analyticsConsentProvider.future);
+
+      expect(client.log, ['stop', 'reset']);
     });
   });
 }

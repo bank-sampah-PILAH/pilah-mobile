@@ -38,10 +38,23 @@ List<List<Object?>> _captures() {
       : (captures as List<Object?>).map((e) => e as List<Object?>).toList();
 }
 
-PosthogWebClient _client() => PosthogWebClient(
+List<Object?> _identified() {
+  final ids = globalContext.getProperty<JSAny?>('__identified'.toJS).dartify();
+  return ids == null ? [] : (ids as List<Object?>);
+}
+
+List<Map<Object?, Object?>> _registered() {
+  final all = globalContext.getProperty<JSAny?>('__registered'.toJS).dartify();
+  return all == null
+      ? []
+      : (all as List<Object?>).map((e) => e as Map<Object?, Object?>).toList();
+}
+
+PosthogWebClient _client({String? environment}) => PosthogWebClient(
       apiKey: 'phc_test_key',
       host: 'https://us.i.posthog.com',
       libraryUrl: _fakeLibraryUrl,
+      environment: environment,
     );
 
 void main() {
@@ -52,6 +65,8 @@ void main() {
       ..delete('posthog'.toJS)
       ..delete('__calls'.toJS)
       ..delete('__captures'.toJS)
+      ..delete('__identified'.toJS)
+      ..delete('__registered'.toJS)
       ..delete('__initCalls'.toJS)
       ..delete('__initArgs'.toJS)
       ..delete('__optInOptions'.toJS)
@@ -165,6 +180,78 @@ void main() {
     await client.start();
     client.capture('setoran_disimpan', {'jumlah_item': 1});
     expect(_captures(), hasLength(1));
+  });
+
+  test('identity sent before start goes nowhere and loads nothing', () {
+    final client = _client();
+
+    client.identify('user-1');
+    client.register({'peran': 'pengelola'});
+    client.reset();
+
+    expect(_scriptsWithSource(_fakeLibraryUrl), isEmpty);
+    expect(_libraryCalls(), isEmpty);
+  });
+
+  test('identify tells the library who the user is', () async {
+    final client = _client();
+    await client.start();
+
+    client.identify('7c9819de-c44d-4fb3-acdf-b61d7d87174c');
+
+    expect(_identified(), ['7c9819de-c44d-4fb3-acdf-b61d7d87174c']);
+  });
+
+  test('register passes cleaned properties for every event', () async {
+    final client = _client();
+    await client.start();
+
+    client.register({'peran': 'pengelola'});
+
+    expect(_registered().last, {'peran': 'pengelola'});
+  });
+
+  test('reset forgets the user, even after analytics was stopped', () async {
+    final client = _client();
+    await client.start();
+    client.identify('user-1');
+    await client.stop();
+
+    client.reset();
+
+    expect(_libraryCalls(), contains('reset'));
+  });
+
+  test('identify does nothing after stop', () async {
+    final client = _client();
+    await client.start();
+    await client.stop();
+
+    client.identify('user-1');
+
+    expect(_identified(), isEmpty);
+  });
+
+  test('the library is told the environment, the platform and the screen size',
+      () async {
+    final client = _client(environment: 'staging');
+
+    await client.start();
+
+    final registered = _registered().single;
+    expect(registered['environment'], 'staging');
+    expect(registered['platform'], 'web');
+    expect(registered['kelas_layar'], isIn(['ponsel', 'tablet', 'desktop']));
+  });
+
+  test('without an environment only the platform and screen size are told',
+      () async {
+    final client = _client();
+
+    await client.start();
+
+    expect(_registered().single.keys, isNot(contains('environment')));
+    expect(_registered().single['platform'], 'web');
   });
 
   test('adds no PostHog script until start is called', () {
