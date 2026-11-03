@@ -38,6 +38,11 @@ class PosthogWebClient implements AnalyticsClient {
   /// Loaded and not stopped: the only time events may leave the app.
   bool _live = false;
 
+  /// Counts every stop, so a start that is still waiting for the library knows
+  /// whether a stop came after it. A second start does not count: it asks for
+  /// the same thing, and must not leave the first one's caller dropped.
+  int _stops = 0;
+
   @override
   bool get isAvailable => true;
 
@@ -46,6 +51,7 @@ class PosthogWebClient implements AnalyticsClient {
   /// the next call tries again.
   @override
   Future<void> start() async {
+    final stopsBefore = _stops;
     final starting = _starting ??= _load();
     starting.then<void>((_) {}, onError: (Object _) {
       if (identical(_starting, starting)) _starting = null;
@@ -58,11 +64,13 @@ class PosthogWebClient implements AnalyticsClient {
       final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
       posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
     }
-    _live = true;
+    // A stop that came while the library was loading is the later decision.
+    if (stopsBefore == _stops) _live = true;
   }
 
   @override
   Future<void> stop() async {
+    _stops++;
     _live = false;
     final starting = _starting;
     // Never started, so there is nothing to stop and nothing to load.
@@ -147,6 +155,16 @@ class PosthogWebClient implements AnalyticsClient {
         'autocapture': false,
         'capture_pageview': false,
         'enable_heatmaps': false,
+        // posthog-js adds the address and referrer to every event by itself.
+        // A route can carry an id, which the sanitizer never sees, so none of
+        // them may leave the app.
+        'property_denylist': [
+          r'$current_url',
+          r'$pathname',
+          r'$referrer',
+          r'$referring_domain',
+          r'$host',
+        ],
         'capture_performance': true,
       };
 }

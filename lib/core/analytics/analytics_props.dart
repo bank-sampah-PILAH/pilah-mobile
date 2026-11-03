@@ -95,11 +95,11 @@ abstract final class AnalyticsProps {
     for (final MapEntry(:key, :value) in properties.entries) {
       if (value == null) continue;
       final problem = _problemWith(key, value);
-      if (problem != null) {
+      if (problem == null) {
+        clean[key] = value;
+      } else {
         assert(false, 'Analytics property "$key" refused: $problem');
-        continue;
       }
-      clean[key] = value;
     }
     return clean;
   }
