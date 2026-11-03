@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/side_sheet_presentation.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
@@ -38,13 +39,22 @@ Page<void> setoranSideSheetPage(LocalKey pageKey) => SideSheetPage<void>(
       child: Builder(
         builder: (sheetContext) => SetoranFormView(
           key: _formKey,
-          header: AppPanelHeader(
-            title: 'Transaksi Baru',
-            // maybePop, bukan pop: lewat jalan ini penjaga isian yang belum
-            // tersimpan ikut bertanya, karena hanya maybePop yang menghormati
-            // PopScope. Tombol tutup adalah jalan keluar yang bisa tidak
-            // sengaja.
-            onClose: () => Navigator.of(sheetContext).maybePop(),
+          // AppPanelHeader sengaja tidak membawa padding sendiri: ia dipakai
+          // di beberapa wadah yang inset-nya berbeda, jadi pemanggillah yang
+          // menentukan. Di panel ini isinya ditambah AppSpacing.lg di atas
+          // ContentInset bersama, sehingga tanpa padding yang sama judulnya
+          // berdiri 16 px di kiri seluruh isi di bawahnya. Pola yang sama
+          // sudah dipakai pengumuman_form_page.
+          header: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: AppPanelHeader(
+              title: 'Transaksi Baru',
+              // maybePop, bukan pop: lewat jalan ini penjaga isian yang belum
+              // tersimpan ikut bertanya, karena hanya maybePop yang
+              // menghormati PopScope. Tombol tutup adalah jalan keluar yang
+              // bisa tidak sengaja.
+              onClose: () => Navigator.of(sheetContext).maybePop(),
+            ),
           ),
           // Jalan ini hanya dilalui setelah setoran berhasil tersimpan. Di
           // sana memang tidak ada lagi yang perlu diselamatkan, dan bertanya
