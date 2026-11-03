@@ -21,9 +21,10 @@ ref.read(analyticsClientProvider).capture('setoran_disimpan', {
 without checking. See `transaksi_baru_page.dart` for a real one.
 
 Screens are reported automatically: `AnalyticsScreenTracker` names each screen
-after its route pattern (`nasabah/:id`, never the real id) and sends
-`layar_ditinggalkan` with `durasi_detik` when the user leaves it. `app_dibuka`
-is sent once when analytics starts. Do not send those yourself.
+after its route pattern (`nasabah/:id`, never the real id). Each `$screen` event
+says which screen the user came from (`layar_sebelumnya`) and how many seconds
+they stayed there (`durasi_layar_sebelumnya_detik`). `app_dibuka` is sent once
+when analytics starts. Do not send those yourself.
 
 ## Naming
 

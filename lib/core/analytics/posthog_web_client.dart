@@ -85,12 +85,12 @@ class PosthogWebClient implements AnalyticsClient {
   }
 
   @override
-  void screen(String name) {
+  void screen(String name, [Map<String, Object?> properties = const {}]) {
     if (!_live) return;
     _posthog.callMethod(
       'capture'.toJS,
       r'$screen'.toJS,
-      {r'$screen_name': name}.jsify(),
+      {r'$screen_name': name, ...AnalyticsProps.sanitize(properties)}.jsify(),
     );
   }
 

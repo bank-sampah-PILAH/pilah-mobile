@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 
-/// Reports which screen the user is on, and how long each one stayed open.
+/// Reports which screen the user is on, and how long the one before it stayed
+/// open.
 ///
 /// A screen is named after its route pattern (`nasabah/:id`), not the address
 /// the user is on, so an id or any other value in the address never reaches
@@ -55,13 +56,14 @@ class AnalyticsScreenTracker {
     final previous = _screen;
     final since = _since;
     final now = _clock();
-    if (previous != null && since != null) {
-      client.capture('layar_ditinggalkan', {
-        'layar': previous,
-        'durasi_detik': now.difference(since).inSeconds,
-      });
-    }
-    client.screen(screen);
+    client.screen(screen, {
+      // One event per move: it says where the user came from and how long they
+      // stayed there.
+      if (previous != null && since != null) ...{
+        'layar_sebelumnya': previous,
+        'durasi_layar_sebelumnya_detik': now.difference(since).inSeconds,
+      },
+    });
     _screen = screen;
     _since = now;
   }
