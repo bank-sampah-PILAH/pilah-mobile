@@ -146,4 +146,43 @@ void main() {
 
     expect(client.log, isEmpty);
   });
+
+  group('editing a recorded setoran', () {
+    late SetoranEditAnalytics edit;
+
+    setUp(() {
+      edit = SetoranEditAnalytics(client,
+          clock: () => now, newFlowId: () => _flow);
+    });
+
+    test('opening the sheet starts a flow', () {
+      edit.started();
+
+      expect(client.events.single.name, 'setoran_ubah_dimulai');
+      expect(last(), {'alur_id': _flow});
+    });
+
+    test('a saved edit says what changed and how long it took', () {
+      edit.started();
+      after(50);
+
+      edit.saved(itemCount: 2, itemsChanged: true, noteChanged: false);
+
+      expect(client.events.last.name, 'setoran_diubah');
+      expect(last(), {
+        'alur_id': _flow,
+        'jumlah_item': 2,
+        'bidang_diubah': ['item'],
+        'durasi_detik': 50,
+      });
+    });
+
+    test('a changed note is named too', () {
+      edit.started();
+
+      edit.saved(itemCount: 1, itemsChanged: true, noteChanged: true);
+
+      expect(last()['bidang_diubah'], ['item', 'catatan']);
+    });
+  });
 }

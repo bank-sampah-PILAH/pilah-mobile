@@ -612,9 +612,9 @@ void main() {
 
     await save(tester);
 
-    expect(analytics.events, hasLength(1));
-    expect(analytics.events.single.name, 'setoran_disimpan');
-    expect(analytics.events.single.properties, {'jumlah_item': 1});
+    final saved =
+        analytics.events.singleWhere((e) => e.name == 'setoran_disimpan');
+    expect(saved.properties['jumlah_item'], 1);
   });
 
   testWidgets('a transaksi the server refuses is not reported as saved',
@@ -627,8 +627,137 @@ void main() {
 
     await save(tester);
 
-    expect(analytics.events, isEmpty);
+    expect(analytics.events.map((e) => e.name),
+        isNot(contains('setoran_disimpan')));
     await settleToasts(tester);
+  });
+
+  group('the events of a setoran', () {
+    List<String> names(FakeAnalyticsClient a) =>
+        a.events.map((e) => e.name).toList();
+
+    testWidgets('opening the form starts a flow', (tester) async {
+      final analytics = FakeAnalyticsClient();
+
+      await open(tester, analytics: analytics);
+
+      expect(names(analytics), ['setoran_dimulai']);
+      expect(analytics.events.single.properties['alur_id'], isNotEmpty);
+    });
+
+    testWidgets('saving walks the funnel, all under one flow id',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 201, json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      await save(tester);
+
+      expect(names(analytics), [
+        'setoran_dimulai',
+        'setoran_nasabah_dipilih',
+        'setoran_simpan_ditekan',
+        'setoran_disimpan',
+      ]);
+      expect(analytics.events.map((e) => e.properties['alur_id']).toSet(),
+          hasLength(1));
+      final saved = analytics.events.last.properties;
+      expect(saved['jumlah_item'], 1);
+      expect(saved['jumlah_jenis_berbeda'], 1);
+      expect(saved['berat_total_kg'], 1.0);
+      expect(saved['percobaan_ke'], 1);
+      // Nobody and nothing worth money is named.
+      expect(
+          saved.values.whereType<String>(), isNot(contains(contains('Budi'))));
+    });
+
+    testWidgets(
+        'an empty form is refused with the fixed names of what is missing',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+
+      await save(tester);
+
+      expect(names(analytics),
+          ['setoran_dimulai', 'setoran_simpan_ditekan', 'validasi_gagal']);
+      final refused = analytics.events.last.properties;
+      expect(refused['tugas'], 'setoran');
+      expect(refused['masalah'], ['nasabah_belum_dipilih', 'belum_ada_item']);
+      await settleToasts(tester);
+    });
+
+    testWidgets('a failed save is not counted as saved', (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 500, json: {'detail': 'x'});
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      await save(tester);
+
+      expect(names(analytics).last, 'setoran_simpan_ditekan');
+      expect(names(analytics), isNot(contains('setoran_disimpan')));
+      await settleToasts(tester);
+    });
+
+    testWidgets('sending the WhatsApp message after saving is reported',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 201, json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await save(tester);
+
+      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await pumpToast(tester);
+
+      final after = analytics.events
+          .singleWhere((e) => e.name == 'setoran_aksi_sesudah_simpan');
+      expect(after.properties['aksi'], 'kirim_wa');
+      expect(after.properties['berhasil'], isA<bool>());
+      expect(after.properties['template_wa_dipakai'], isA<bool>());
+      // Finishing after a save is not walking away from it.
+      expect(names(analytics), isNot(contains('setoran_dibatalkan')));
+      await settleToasts(tester);
+    });
+
+    testWidgets('leaving before saving says how far the pengurus got',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(names(analytics).last, 'setoran_dibatalkan');
+      expect(analytics.events.last.properties['langkah_terakhir'], 'item');
+    });
+
+    testWidgets('leaving without choosing a nasabah is the first step',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(analytics.events.last.properties['langkah_terakhir'], 'nasabah');
+    });
   });
 
   testWidgets('a saved transaksi opens the success sheet and WhatsApp draft',
