@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
-import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
@@ -17,11 +18,7 @@ class AktivitasOptionsMenu extends ConsumerWidget {
     final feed = ref.watch(riwayatAktivitasProvider);
     final selecting = ref.watch(aktivitasBulkSelectionProvider) != null;
     final hasSelectable = feed.status == AktivitasStatus.loaded &&
-        feed.items.any((item) =>
-            item.tipe == ActivitasTipe.setoran &&
-            item.transaksi != null &&
-            item.transaksi!.id.isNotEmpty &&
-            !item.transaksi!.isDibatalkan);
+        feed.items.any((item) => item.isSelectableSetoran);
     return PopupMenuButton<String>(
       tooltip: 'Opsi',
       enabled: !selecting,
@@ -59,8 +56,14 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(aktivitasBulkSelectionProvider);
     if (selected == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return ContentInset(
+        child: Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.layoutBreakpoint == LayoutBreakpoint.compact
+            ? AppSpacing.lg
+            : AppSpacing.webGutter,
+        vertical: AppSpacing.md,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -78,6 +81,6 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

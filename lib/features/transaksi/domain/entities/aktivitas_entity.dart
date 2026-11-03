@@ -34,6 +34,16 @@ class ActivitasEntity {
   final TransaksiEntity? transaksi;
   final Pencairan? pencairan;
 
+  /// Selection eligibility only. PIL-428 still checks saldo and payout history
+  /// on submission; an active setoran is not guaranteed to be voidable.
+  bool get isSelectableSetoran {
+    final setoran = transaksi;
+    return tipe == ActivitasTipe.setoran &&
+        setoran != null &&
+        setoran.id.isNotEmpty &&
+        !setoran.isDibatalkan;
+  }
+
   const ActivitasEntity({
     required this.tipe,
     required this.tanggal,

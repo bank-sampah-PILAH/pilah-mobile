@@ -315,8 +315,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     final id = item.transaksi?.id ?? '';
     final expandable = item.tipe == ActivitasTipe.setoran;
     // A voided setoran is final: nothing to edit or cancel again.
-    final selectable =
-        expandable && id.isNotEmpty && !item.transaksi!.isDibatalkan;
+    final selectable = item.isSelectableSetoran;
     final selection = ref.watch(aktivitasSelectionProvider);
     final bulkSelection = ref.watch(aktivitasBulkSelectionProvider);
     final selecting = selection != null || bulkSelection != null;

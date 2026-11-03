@@ -166,8 +166,7 @@ class _RowState extends State<_Row> {
 
   /// Only a setoran still tercatat can be edited or cancelled.
   bool get _bisaDiubah => item.tipe == ActivitasTipe.setoran && !_dibatalkan;
-  bool get _selectable =>
-      _bisaDiubah && (item.transaksi?.id.isNotEmpty ?? false);
+  bool get _selectable => item.isSelectableSetoran;
 
   @override
   Widget build(BuildContext context) {

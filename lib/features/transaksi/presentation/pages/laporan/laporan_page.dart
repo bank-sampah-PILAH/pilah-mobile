@@ -17,7 +17,6 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_l
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_bulk_selection_controls.dart';
-import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 
 /// One filtered report and activity feed for Pengurus on mobile and web.
@@ -57,6 +56,26 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
   bool _webPadding(BuildContext context) =>
       context.layoutBreakpoint != LayoutBreakpoint.compact;
 
+  void _syncBulkSelection(
+      RiwayatAktivitasState? previous, RiwayatAktivitasState current) {
+    final selection = ref.read(aktivitasBulkSelectionProvider.notifier);
+    final scopeChanged = previous != null &&
+        (previous.search != current.search ||
+            previous.periode != current.periode ||
+            previous.dariTanggal != current.dariTanggal ||
+            previous.sampaiTanggal != current.sampaiTanggal ||
+            previous.tipeFilter != current.tipeFilter ||
+            (widget.isWeb && previous.currentPage != current.currentPage));
+    if (scopeChanged || current.status == AktivitasStatus.failure) {
+      selection.clear();
+    } else if (current.status == AktivitasStatus.loaded) {
+      selection.retain({
+        for (final item in current.items)
+          if (item.isSelectableSetoran) item.transaksi!.id,
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(riwayatAktivitasProvider, (previous, current) {
@@ -64,27 +83,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
           _searchController.text != current.search) {
         _searchController.text = current.search;
       }
-      final selection = ref.read(aktivitasBulkSelectionProvider.notifier);
-      if (previous != null &&
-          (previous.search != current.search ||
-              previous.periode != current.periode ||
-              previous.dariTanggal != current.dariTanggal ||
-              previous.sampaiTanggal != current.sampaiTanggal ||
-              previous.tipeFilter != current.tipeFilter ||
-              (widget.isWeb && previous.currentPage != current.currentPage))) {
-        selection.clear();
-      } else if (current.status == AktivitasStatus.failure) {
-        selection.clear();
-      } else if (current.status == AktivitasStatus.loaded) {
-        selection.retain({
-          for (final item in current.items)
-            if (item.tipe == ActivitasTipe.setoran &&
-                item.transaksi != null &&
-                item.transaksi!.id.isNotEmpty &&
-                !item.transaksi!.isDibatalkan)
-              item.transaksi!.id,
-        });
-      }
+      _syncBulkSelection(previous, current);
     });
     final bulkSelecting = ref.watch(aktivitasBulkSelectionProvider) != null;
     return PopScope(
