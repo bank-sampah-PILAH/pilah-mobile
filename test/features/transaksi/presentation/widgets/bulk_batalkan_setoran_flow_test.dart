@@ -4,6 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
@@ -12,7 +17,11 @@ import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/lapor
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/bulk_batalkan_setoran_dialog.dart';
 
+import '../../../../support/dashboard_support.dart';
+import '../../../../support/nasabah_support.dart';
+import '../../../../support/pencairan_support.dart';
 import '../../../../support/stub_api.dart';
 import '../../../../support/transaksi_support.dart';
 
@@ -41,6 +50,7 @@ class _Feed extends RiwayatAktivitasNotifier {
   _Feed() : super(_Get(), _Export());
   final voided = <String>{};
   bool failRefresh = false;
+  Future<void> Function()? onLoad;
   int loads = 0;
   @override
   RiwayatAktivitasState build() => RiwayatAktivitasState(
@@ -51,6 +61,7 @@ class _Feed extends RiwayatAktivitasNotifier {
   @override
   Future<void> load({bool silent = false, int? pageSize}) async {
     loads++;
+    await onLoad?.call();
     state = state.copyWith(
       status: failRefresh ? AktivitasStatus.failure : AktivitasStatus.loaded,
       items: [
@@ -73,18 +84,27 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     api = StubApi();
     feed = _Feed();
+    final transaksi = buildTransaksiNotifier(api);
     await tester.pumpWidget(withTransaksiProviders(
-      transaksi: buildTransaksiNotifier(api),
+      transaksi: transaksi,
       riwayat: feed,
-      child: MaterialApp(
-          builder: (context, child) {
-            container = ProviderScope.containerOf(context);
-            return MediaQuery(
-                data: MediaQuery.of(context)
-                    .copyWith(textScaler: TextScaler.linear(textScale)),
-                child: child!);
-          },
-          home: const LaporanPage(isWeb: true)),
+      nasabah: buildNasabahNotifier(api),
+      child: ProviderScope(
+        overrides: [
+          dashboardProvider.overrideWith(() => buildDashboardNotifier(api)),
+          recentActivityProvider.overrideWith(() => RecentActivityNotifier(
+              transaksi.getTransaksiUseCase, buildPencairanUseCases(api))),
+        ],
+        child: MaterialApp(
+            builder: (context, child) {
+              container = ProviderScope.containerOf(context);
+              return MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(textScale)),
+                  child: child!);
+            },
+            home: const LaporanPage(isWeb: true)),
+      ),
     ));
     await tester.pumpAndSettle();
   }
@@ -291,6 +311,119 @@ void main() {
     expect(find.textContaining('riwayat belum berhasil dimuat ulang'),
         findsOneWidget);
     expect(api.requests, hasLength(2));
+  });
+
+  testWidgets('stale selection is cleared without opening a confirmation',
+      (tester) async {
+    await pumpPage(tester);
+    final selection = container.read(aktivitasBulkSelectionProvider.notifier);
+    selection.start();
+    selection.toggle('no-longer-in-history');
+    await showBulkBatalkanSetoranDialog(
+        tester.element(find.byType(LaporanPage)));
+    await tester.pumpAndSettle();
+    expect(container.read(aktivitasBulkSelectionProvider), isNull);
+    expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
+    expect(api.requests, isEmpty);
+  });
+
+  testWidgets('session change during a void dismisses stale results and stops',
+      (tester) async {
+    await pumpPage(tester);
+    api.onRequest('POST', '/api/v1/transaksi/s1/batalkan', json: (_) {
+      api.utils.setToken(accessToken: 'new-demo-session', refreshToken: 'demo');
+      return {'status': 'dibatalkan', 'items': []};
+    });
+    await openDialog(tester);
+    await fillReason(tester);
+    final loads = feed.loads;
+    await tester.tap(submit());
+    await tester.pumpAndSettle();
+    expect(api.requests, hasLength(1));
+    expect(feed.loads, loads, reason: 'old session must not refresh caches');
+    expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
+    expect(find.text('Hasil pembatalan'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('session change during refresh dismisses old session results',
+      (tester) async {
+    await pumpPage(tester);
+    succeed('s1');
+    succeed('s2');
+    await openDialog(tester);
+    await fillReason(tester);
+    feed.onLoad = () async {
+      api.utils.setToken(accessToken: 'new-demo-session', refreshToken: 'demo');
+    };
+    await tester.tap(submit());
+    await tester.pumpAndSettle();
+    expect(api.requests, hasLength(2));
+    expect(feed.loads, 2);
+    expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
+    expect(find.text('Hasil pembatalan'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('refresh exception preserves successful outcomes and warns',
+      (tester) async {
+    await pumpPage(tester);
+    succeed('s1');
+    succeed('s2');
+    await openDialog(tester);
+    await fillReason(tester);
+    feed.onLoad = () async => throw StateError('Demo refresh interrupted');
+    await tester.tap(submit());
+    await tester.pumpAndSettle();
+    expect(find.text('2 setoran berhasil dibatalkan.'), findsOneWidget);
+    expect(find.textContaining('riwayat belum berhasil dimuat ulang'),
+        findsOneWidget);
+    expect(container.read(aktivitasBulkSelectionProvider), isNull);
+    expect(api.requests, hasLength(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('void reloads already initialized dashboard and customer caches',
+      (tester) async {
+    await pumpPage(tester);
+    // Mirrors a user who visited Dashboard and Nasabah before Riwayat.
+    container.read(dashboardProvider);
+    container.read(recentActivityProvider);
+    container.read(nasabahProvider);
+    api.on('GET', '/api/v1/dashboard/stats', json: {
+      'total_nilai_bulan_ini': 0,
+      'nasabah_aktif': 1,
+      'total_sampah_kg_bulan_ini': 0,
+      'transaksi_bulan_ini': 0,
+    });
+    api.on('GET', '/api/v1/transaksi', json: {'results': []});
+    api.on('GET', '/api/v1/pencairan', json: {'results': [], 'next': null});
+    api.on('GET', '/api/v1/nasabah',
+        json: nasabahPage([nasabahRow('n1', saldo: '0')]));
+    succeed('s1');
+    succeed('s2');
+    await openDialog(tester);
+    await fillReason(tester);
+    await tester.tap(submit());
+    await tester.pumpAndSettle();
+    expect(find.text('2 setoran berhasil dibatalkan.'), findsOneWidget);
+    final dashboard = container.read(dashboardProvider);
+    expect(dashboard.isLoaded, isTrue);
+    expect(dashboard.totalKasBulanIni, 0);
+    expect(dashboard.totalNasabahAktif, 1);
+    expect(container.read(recentActivityProvider), isA<RecentActivityLoaded>());
+    final customers = container.read(nasabahProvider) as NasabahLoaded;
+    expect(customers.nasabahList.single.balance, 'Rp 0');
+    expect(api.requests.where((r) => r.method == 'POST'), hasLength(2));
+    expect(
+        api.requests.where((r) => r.method == 'GET').map((r) => r.path),
+        containsAll([
+          '/api/v1/dashboard/stats',
+          '/api/v1/transaksi',
+          '/api/v1/pencairan',
+          '/api/v1/nasabah',
+        ]));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('confirmation and full failure reason fit 320px with large text',
