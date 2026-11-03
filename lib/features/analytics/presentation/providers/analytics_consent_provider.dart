@@ -50,7 +50,7 @@ final analyticsEligibleProvider = Provider<bool>(
   dependencies: [authenticationProvider],
 );
 
-/// Whether the "Perekaman sesi" switch applies: to a pengurus, on a platform
+/// Whether the "Analitik penggunaan" switch applies: to a pengurus, on a platform
 /// that can record, whatever they chose before.
 final analyticsToggleVisibleProvider = Provider<bool>(
   (ref) =>
