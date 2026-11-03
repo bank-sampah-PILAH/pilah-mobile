@@ -690,6 +690,31 @@ void main() {
     expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
   });
 
+  /// On a phone the success panel is a bottom sheet, and a sheet route pops on
+  /// Android back unless something intercepts it. Back would leave the pengurus
+  /// on a still-filled form whose idempotency key was already spent, one tap
+  /// from recording the same setoran twice.
+  testWidgets('on a phone the success panel survives the back button',
+      (tester) async {
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester, window: const Size(390, 2600));
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+    await save(tester);
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
+    await settleToasts(tester);
+  });
+
   /// `_isSaving` only disables the save button. Every other control stays
   /// live while the POST is in flight — the nasabah picker, the weight boxes,
   /// the per-item delete.

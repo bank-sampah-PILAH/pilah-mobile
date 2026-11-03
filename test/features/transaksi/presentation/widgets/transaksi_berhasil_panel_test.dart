@@ -78,6 +78,12 @@ void main() {
     expect(button(tester, 'Selesai').onPressed, isNull);
     await tester.tap(find.text('Selesai'), warnIfMissed: false);
     expect(selesai, 0);
+    // The loading button shows a spinner in place of its label, so it is
+    // found by type: the first AppButton is the primary one.
+    final primary = find.byType(AppButton).first;
+    expect(tester.widget<AppButton>(primary).isLoading, isTrue);
+    await tester.tap(primary, warnIfMissed: false);
+    expect(whatsApp, 1, reason: 'a second tap must not start a second message');
 
     whatsAppHeld!.complete();
     await tester.pumpAndSettle();
