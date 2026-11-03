@@ -85,6 +85,9 @@ abstract final class AnalyticsProps {
   };
 
   static final _email = RegExp(r'[^\s@]+@[^\s@]+\.[^\s@]+');
+  static final _uuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
   static final _phoneShaped = RegExp(r'^[+\d\s\-().]+$');
 
   /// [properties] without the null values, or a failed assertion for a name
@@ -130,6 +133,8 @@ abstract final class AnalyticsProps {
   }
 
   static String? _problemWithText(String text) {
+    // A uuid made only of digits would otherwise pass for a phone number.
+    if (_uuid.hasMatch(text)) return null;
     if (_email.hasMatch(text)) return 'it looks like an email address';
     final digits = text.replaceAll(RegExp(r'\D'), '');
     if (digits.length >= 9 && _phoneShaped.hasMatch(text)) {
