@@ -1,12 +1,19 @@
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import '../entities/bulk_void_result.dart';
 import '../entities/transaksi_entity.dart';
 import 'batalkan_transaksi_usecase.dart';
+
+typedef _VoidStep = ({SetoranVoidOutcome outcome, String? stopReason});
 
 /// Compose PIL-428's existing operation. Each call owns its server transaction;
 /// a refusal does not roll back earlier successes or duplicate saldo logic here.
 class BatalkanBeberapaTransaksiUseCase {
   const BatalkanBeberapaTransaksiUseCase(this._batalkan);
   final BatalkanTransaksiUseCase _batalkan;
+  static const _uncertainStop =
+      'Proses dihentikan karena hasil permintaan sebelumnya belum dipastikan.';
+  static const _uncertainMessage =
+      'Status pembatalan belum dipastikan. Periksa riwayat terbaru sebelum mencoba lagi.';
 
   Future<BulkVoidResult> execute({
     required List<String> ids,
@@ -31,41 +38,49 @@ class BatalkanBeberapaTransaksiUseCase {
             stopReason ?? 'Sesi berubah. Setoran ini belum diproses.'));
         continue;
       }
-      try {
-        final result = await _batalkan
-            .execute(TransaksiBatalRequest(id: id, alasan: reason));
-        outcomes.add(result.fold((failure) {
-          final status = failure.response?.statusCode;
-          if (status == null || status >= 500) {
-            stopReason =
-                'Proses dihentikan karena hasil permintaan sebelumnya belum dipastikan.';
-            return SetoranVoidOutcome(id, BulkVoidStatus.belumDipastikan,
-                'Status pembatalan belum dipastikan. Periksa riwayat terbaru sebelum mencoba lagi.');
-          }
-          if (status == 401 || status == 403) {
-            stopReason =
-                'Sesi atau izin akses tidak lagi berlaku. Setoran ini belum diproses.';
-          }
-          return SetoranVoidOutcome(
-              id, BulkVoidStatus.gagal, failure.displayMessage);
-        }, (detail) {
-          if (!detail.isDibatalkan) {
-            stopReason =
-                'Proses dihentikan karena hasil permintaan sebelumnya belum dipastikan.';
-            return SetoranVoidOutcome(id, BulkVoidStatus.belumDipastikan,
-                'Status pembatalan belum dipastikan. Periksa riwayat terbaru sebelum mencoba lagi.');
-          }
-          return SetoranVoidOutcome(id, BulkVoidStatus.berhasil);
-        }));
-      } catch (_) {
-        stopReason =
-            'Proses dihentikan karena hasil permintaan sebelumnya belum dipastikan.';
-        outcomes.add(SetoranVoidOutcome(id, BulkVoidStatus.belumDipastikan,
-            'Status pembatalan belum dipastikan. Periksa riwayat terbaru sebelum mencoba lagi.'));
-      }
+      final step = await _voidOne(id, reason);
+      outcomes.add(step.outcome);
+      stopReason = step.stopReason;
       completed++;
       onProgress?.call(completed, uniqueIds.length);
     }
     return BulkVoidResult(outcomes);
   }
+
+  Future<_VoidStep> _voidOne(String id, String reason) async {
+    try {
+      final result = await _batalkan
+          .execute(TransaksiBatalRequest(id: id, alasan: reason));
+      return result.fold(
+        (failure) => _failure(id, failure),
+        (detail) => detail.isDibatalkan
+            ? (
+                outcome: SetoranVoidOutcome(id, BulkVoidStatus.berhasil),
+                stopReason: null
+              )
+            : _uncertain(id),
+      );
+    } catch (_) {
+      // A lost/malformed response is not proof the server rolled back the write.
+      return _uncertain(id);
+    }
+  }
+
+  _VoidStep _failure(String id, NetworkException failure) {
+    final status = failure.response?.statusCode;
+    if (status == null || status >= 500) return _uncertain(id);
+    return (
+      outcome:
+          SetoranVoidOutcome(id, BulkVoidStatus.gagal, failure.displayMessage),
+      stopReason: status == 401 || status == 403
+          ? 'Sesi atau izin akses tidak lagi berlaku. Setoran ini belum diproses.'
+          : null,
+    );
+  }
+
+  _VoidStep _uncertain(String id) => (
+        outcome: SetoranVoidOutcome(
+            id, BulkVoidStatus.belumDipastikan, _uncertainMessage),
+        stopReason: _uncertainStop,
+      );
 }

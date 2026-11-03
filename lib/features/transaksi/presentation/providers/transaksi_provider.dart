@@ -23,10 +23,18 @@ final transaksiProvider = NotifierProvider<TransaksiNotifier, TransaksiState>(
     di<ExportTransaksiUseCase>(),
     di<ResendWaUseCase>(),
     di<EditTransaksiUseCase>(),
-    di<BatalkanTransaksiUseCase>(),
-    sessionKey: () => di<NetworkUtils>().accessToken,
+    (
+      useCase: di<BatalkanTransaksiUseCase>(),
+      sessionKey: () => di<NetworkUtils>().accessToken
+    ),
   ),
 );
+
+/// The existing void operation and the session in which it is authorized.
+typedef SetoranVoidAction = ({
+  BatalkanTransaksiUseCase useCase,
+  String Function()? sessionKey
+});
 
 class TransaksiNotifier extends Notifier<TransaksiState> {
   final GetTransaksiUseCase getTransaksiUseCase;
@@ -53,9 +61,9 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
     this.exportTransaksiUseCase,
     this.resendWaUseCase,
     this.editTransaksiUseCase,
-    this.batalkanTransaksiUseCase, {
-    String Function()? sessionKey,
-  }) : _sessionKey = sessionKey;
+    SetoranVoidAction voidAction,
+  )   : batalkanTransaksiUseCase = voidAction.useCase,
+        _sessionKey = voidAction.sessionKey;
 
   @override
   TransaksiState build() => TransaksiInitial();
