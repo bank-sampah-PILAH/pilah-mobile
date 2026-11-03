@@ -146,6 +146,8 @@ Future<void> openSetoranBaru(BuildContext context, {bool? isWeb}) async {
     setoranSheetProvider.notifier,
   );
 
+  // Kunci sisa dari panel sebelumnya tidak boleh ikut ke panel ini.
+  _guard.reset();
   sheet.opened();
   try {
     await context.push<void>(

@@ -310,7 +310,6 @@ void main() {
         reason: 'the success panel is up');
     expect(form.hasUnsavedInput, isFalse,
         reason: 'the transaction is recorded; there is nothing left to lose');
-    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
     await settleToasts(tester);
   });
 

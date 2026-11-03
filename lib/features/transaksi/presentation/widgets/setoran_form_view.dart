@@ -36,6 +36,10 @@ import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
+/// Membangun header wadah formulir. [startTutorial] memulai panduan setoran,
+/// yang kuncinya hanya dikenal formulir.
+typedef SetoranHeaderBuilder = Widget Function(VoidCallback startTutorial);
+
 /// Memecah [text] di batas kata supaya tidak ada baris lebih panjang dari
 /// [maxChars].
 ///
@@ -159,7 +163,7 @@ class SetoranFormView extends ConsumerStatefulWidget {
   /// sebelum header ini dapat diganti. Pembangun menerima aksi untuk memulai
   /// panduan setoran, yang kuncinya hanya dikenal formulir ini, supaya setiap
   /// wadah dapat memasang tombol bantuannya di headernya sendiri.
-  final Widget Function(VoidCallback startTutorial) headerBuilder;
+  final SetoranHeaderBuilder headerBuilder;
 
   @override
   ConsumerState<SetoranFormView> createState() => SetoranFormViewState();
@@ -170,6 +174,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
   bool _isSaving = false;
+  bool _saved = false;
   String? _idempotencyKey;
   late final SetoranTutorialProgress _tutorialProgress;
   final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
@@ -281,7 +286,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   /// sudah menekan "Tambah Item Setoran", dan membuang pekerjaan itu tanpa
   /// bertanya sama saja mengabaikan satu langkah yang memang ia lakukan.
   bool get hasUnsavedInput =>
-      selectedCustomer != null || setoranItems.isNotEmpty;
+      !_saved && (selectedCustomer != null || setoranItems.isNotEmpty);
 
   /// Keadaan form sebagai draft, supaya aturan kelayakannya hidup di satu
   /// tempat dan dapat diuji tanpa widget.
@@ -453,6 +458,10 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
 
     final created = result.created!;
     _idempotencyKey = null;
+    // Setoran sudah tercatat. Isian yang masih tampil di belakang panel sukses
+    // bukan lagi sesuatu yang belum tersimpan, jadi wadah tidak boleh bertanya
+    // apakah isian itu akan dibuang.
+    _saved = true;
 
     // Dari salinan yang diambil sebelum await, bukan dari form sebagaimana
     // keadaannya sekarang.

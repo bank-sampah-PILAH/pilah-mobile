@@ -276,9 +276,7 @@ class _SideSheetRoute<T> extends PageRoute<T> {
 /// ditanyai dua kali: sekali oleh `PopScope`, sekali lagi oleh `onExit` atas
 /// pop yang baru saja disetujui.
 class SideSheetGuard {
-  SideSheetGuard({required this.hasUnsavedInput, this.isBusy = _never});
-
-  static bool _never() => false;
+  SideSheetGuard({required this.hasUnsavedInput, required this.isBusy});
 
   /// Dibaca saat panel hendak ditutup, bukan saat dibangun.
   ///
@@ -314,6 +312,14 @@ class SideSheetGuard {
   /// diam-diam yang penjaga ini ada untuk mencegah. Jangan pula menyalakannya
   /// lebih dulu "untuk nanti".
   void allowNextExit() => _answered = true;
+
+  /// Melupakan kunci yang dinyalakan [allowNextExit] tetapi tak pernah
+  /// dihabiskan.
+  ///
+  /// Penjaga bisa hidup lebih lama daripada satu panel: di panel setoran ia
+  /// objek tingkat atas. Kunci sisa dari satu sesi akan meloloskan penutupan
+  /// panel berikutnya tanpa bertanya. Dipanggil setiap kali panel dibuka.
+  void reset() => _answered = false;
 
   /// Jalan keluar lewat `Navigator.maybePop`: scrim dan Esc.
   Future<void> handlePopAttempt(BuildContext context) async {
