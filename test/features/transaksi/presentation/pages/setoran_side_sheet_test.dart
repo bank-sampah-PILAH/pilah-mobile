@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
@@ -8,6 +9,7 @@ import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remot
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_form_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 import '../../../../support/dashboard_support.dart';
@@ -154,5 +156,54 @@ void main() {
         reason: 'width said panel; the platform says page, and wins');
     expect(find.text('PILIH NASABAH'), findsNothing,
         reason: 'no panel is mounted on the native app at any width');
+  });
+
+  /// The panel injects two different ways of leaving into the same form, and
+  /// until now both were built by every test and run by none: constructed,
+  /// so the lines looked covered to a reader, but never invoked.
+  ///
+  /// They are not interchangeable. The header's close button is an exit a
+  /// Pengurus can hit by accident, so it goes through `maybePop` and the
+  /// discard guard gets to ask. The form's own exit after a successful save
+  /// is deliberate, so it spends the guard's one-shot key first and pops
+  /// directly. Each needs its own case or the distinction is untested.
+  testWidgets('the header close button closes the panel, not the page behind',
+      (tester) async {
+    await openHost(tester, const Size(1440, 900));
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+    expect(find.text('PILIH NASABAH'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppPanelHeader),
+        matching: find.byTooltip('Tutup'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('PILIH NASABAH'), findsNothing,
+        reason: 'the panel is gone');
+    expect(find.text('Tambah Transaksi'), findsOneWidget,
+        reason: 'the page it was opened from is still there');
+  });
+
+  testWidgets('the form closing itself closes the panel, not the page beneath',
+      (tester) async {
+    await openHost(tester, const Size(1440, 900));
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+
+    // The post-save exit. Calling the injected strategy directly rather than
+    // driving a whole save keeps this a test of the wiring, which is the part
+    // the container owns: the form is handed a way out and does not choose it.
+    tester.widget<SetoranFormView>(find.byType(SetoranFormView)).onClose();
+    await tester.pumpAndSettle();
+
+    expect(find.text('PILIH NASABAH'), findsNothing,
+        reason: 'the panel closed');
+    expect(find.text('Tambah Transaksi'), findsOneWidget,
+        reason: 'GoRouter.pop() here would have popped the page beneath '
+            'instead, because the panel is pushed on the navigator');
   });
 }
