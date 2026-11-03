@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
@@ -31,6 +35,49 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+const _setoranTutorialSeenKey = 'pilah.setoran_tutorial_seen';
+
+final _setoranTutorialProgressProvider = Provider<SetoranTutorialProgress>(
+  (ref) => SetoranTutorialProgress(),
+);
+
+@visibleForTesting
+class SetoranTutorialProgress {
+  SetoranTutorialProgress({bool? isWeb}) : _isWeb = isWeb ?? kIsWeb;
+
+  final bool _isWeb;
+  bool _seenInMemory = false;
+
+  Future<bool> hasSeen() async {
+    if (!_isWeb) return _seenInMemory;
+    try {
+      return (await SharedPreferences.getInstance())
+              .getBool(_setoranTutorialSeenKey) ??
+          false;
+    } on Exception catch (error) {
+      debugPrint('Failed to read setoran tutorial status: $error');
+      return false;
+    }
+  }
+
+  Future<void> markSeen() {
+    if (!_isWeb) {
+      _seenInMemory = true;
+      return Future<void>.value();
+    }
+    return _persistSeen();
+  }
+
+  Future<void> _persistSeen() async {
+    try {
+      await (await SharedPreferences.getInstance())
+          .setBool(_setoranTutorialSeenKey, true);
+    } on Exception catch (error) {
+      debugPrint('Failed to save setoran tutorial status: $error');
+    }
+  }
+}
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
 /// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
@@ -67,7 +114,7 @@ String newTransaksiIdempotencyKey() {
 class SetoranFormView extends ConsumerStatefulWidget {
   const SetoranFormView({
     required this.onClose,
-    required this.header,
+    required this.headerBuilder,
     super.key,
   });
 
@@ -79,12 +126,15 @@ class SetoranFormView extends ConsumerStatefulWidget {
   /// langsung pada Navigator dan tidak pernah masuk ke match list go_router.
   final VoidCallback onClose;
 
-  /// Header wadah: [AppBackHeader] pada halaman, `AppPanelHeader` pada panel.
+  /// Membangun header wadah: [AppBackHeader] pada halaman, `AppPanelHeader`
+  /// pada panel.
   ///
   /// Diterima dari luar tetapi dipasang di dalam AbsorbPointer formulir, jadi
   /// tombol kembali ikut membeku selama penyimpanan berjalan — sama seperti
-  /// sebelum header ini dapat diganti.
-  final Widget header;
+  /// sebelum header ini dapat diganti. Pembangun menerima aksi untuk memulai
+  /// panduan setoran, yang kuncinya hanya dikenal formulir ini, supaya setiap
+  /// wadah dapat memasang tombol bantuannya di headernya sendiri.
+  final Widget Function(VoidCallback startTutorial) headerBuilder;
 
   @override
   ConsumerState<SetoranFormView> createState() => SetoranFormViewState();
@@ -96,10 +146,78 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   bool _hasSubmitted = false;
   bool _isSaving = false;
   String? _idempotencyKey;
+  late final SetoranTutorialProgress _tutorialProgress;
+  final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _addItemTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _itemDetailsTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _summaryTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _saveTutorialKey = GlobalKey<State<StatefulWidget>>();
+
+  List<GlobalKey<State<StatefulWidget>>> get _tutorialKeys => [
+        _customerTutorialKey,
+        _addItemTutorialKey,
+        _itemDetailsTutorialKey,
+        _summaryTutorialKey,
+        _saveTutorialKey,
+      ];
+
+  TooltipActionButton _tutorialAction({
+    required TooltipDefaultActionType type,
+    required String name,
+    List<GlobalKey> hideActionWidgetForShowcase = const [],
+  }) =>
+      TooltipActionButton.custom(
+        hideActionWidgetForShowcase: hideActionWidgetForShowcase,
+        button: AppButton(
+          label: name,
+          variant: AppButtonVariant.primary,
+          expand: false,
+          onPressed: () {
+            switch (type) {
+              case TooltipDefaultActionType.previous:
+                ShowcaseView.get().previous();
+              case TooltipDefaultActionType.skip:
+                ShowcaseView.get().dismiss();
+              case TooltipDefaultActionType.next:
+                ShowcaseView.get().next();
+            }
+          },
+        ),
+      );
 
   @override
   void initState() {
     super.initState();
+    _tutorialProgress = ref.read(_setoranTutorialProgressProvider);
+    ShowcaseView.register(
+      enableAutoScroll: true,
+      disableMovingAnimation: true,
+      onFinish: () => unawaited(_tutorialProgress.markSeen()),
+      onDismiss: (_) => unawaited(_tutorialProgress.markSeen()),
+      globalTooltipActionConfig: const TooltipActionConfig(
+        alignment: MainAxisAlignment.spaceBetween,
+        position: TooltipActionPosition.inside,
+      ),
+      globalTooltipActions: [
+        _tutorialAction(
+          type: TooltipDefaultActionType.previous,
+          name: 'Sebelumnya',
+          hideActionWidgetForShowcase: [_customerTutorialKey],
+        ),
+        _tutorialAction(
+          type: TooltipDefaultActionType.skip,
+          name: 'Lewati',
+        ),
+        _tutorialAction(
+          type: TooltipDefaultActionType.next,
+          name: 'Lanjut',
+        ),
+      ],
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_showTutorialIfNeeded());
+    });
+
     // The harga picker reads an app-scoped singleton that is otherwise only
     // populated by the Harga page. Load it here so the dropdown has options
     // even when arriving straight from the dashboard. The nasabah picker
@@ -157,10 +275,24 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
 
   /// Tombol simpan. Satu definisi dipakai dua tata letak: pada lebar sempit ia
   /// berlabuh di dasar formulir, pada layar lebar ia duduk di panel ringkasan.
-  Widget _saveButton() => AppButton(
-        label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
-        icon: Icons.save_outlined,
-        onPressed: _isSaving ? null : _handleSubmit,
+  Widget _summaryTutorialStep() => _tutorialStep(
+        key: _summaryTutorialKey,
+        title: 'Periksa total',
+        description:
+            'Harga mengikuti jenis sampah; subtotal dan grand total mengikuti berat.',
+        child: TransactionSummarySection(grandTotal: grandTotal),
+      );
+
+  Widget _saveButton() => _tutorialStep(
+        key: _saveTutorialKey,
+        title: 'Simpan transaksi',
+        description:
+            'Pastikan nasabah, item, dan total sudah benar sebelum menyimpan.',
+        child: AppButton(
+          label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
+          icon: Icons.save_outlined,
+          onPressed: _isSaving ? null : _handleSubmit,
+        ),
       );
 
   /// Kartu mana yang ditandai merah saat ini.
@@ -396,6 +528,39 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     });
   }
 
+  void _startTutorial() => ShowcaseView.get().startShowCase(_tutorialKeys);
+
+  Future<void> _showTutorialIfNeeded() async {
+    if (await _tutorialProgress.hasSeen() || !mounted) return;
+    ShowcaseView.get().startShowCase(_tutorialKeys);
+  }
+
+  Widget _tutorialStep({
+    required GlobalKey<State<StatefulWidget>> key,
+    required String title,
+    required String description,
+    required Widget child,
+  }) =>
+      Showcase(
+        key: key,
+        title: title,
+        description: description,
+        targetShapeBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        tooltipBackgroundColor: AppColors.greenDark,
+        textColor: Colors.white,
+        titleTextStyle: AppTextStyle.headline3.copyWith(color: Colors.white),
+        descTextStyle: AppTextStyle.small.copyWith(color: Colors.white),
+        child: child,
+      );
+
+  @override
+  void dispose() {
+    ShowcaseView.get().unregister();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Yang menentukan tata letak adalah lebar yang tersedia untuk formulir
@@ -423,7 +588,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
               child: Column(
             children: [
               // Header
-              ContentInset(child: widget.header),
+              ContentInset(child: widget.headerBuilder(_startTutorial)),
 
               Expanded(
                 child: Builder(builder: (context) {
@@ -442,16 +607,23 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
                               // Section 1: PILIH NASABAH
                               const AppFieldLabel('PILIH NASABAH'),
                               const SizedBox(height: 16),
-                              PilihNasabahSection(
-                                selectedCustomer: selectedCustomer,
-                                onCustomerSelected: (customer) {
-                                  setState(() {
-                                    selectedCustomer = customer;
-                                  });
-                                },
-                                hasError:
-                                    _hasSubmitted && selectedCustomer == null,
-                                errorText: 'Nasabah harus dipilih',
+                              _tutorialStep(
+                                key: _customerTutorialKey,
+                                title: 'Pilih nasabah',
+                                description:
+                                    'Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+                                    'ketuk lagi nama nasabah yang tampil.',
+                                child: PilihNasabahSection(
+                                  selectedCustomer: selectedCustomer,
+                                  onCustomerSelected: (customer) {
+                                    setState(() {
+                                      selectedCustomer = customer;
+                                    });
+                                  },
+                                  hasError:
+                                      _hasSubmitted && selectedCustomer == null,
+                                  errorText: 'Nasabah harus dipilih',
+                                ),
                               ),
                               const SizedBox(height: 24),
 
@@ -475,17 +647,22 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
                               const SizedBox(height: 16),
 
                               // Add Item Button
-                              AppButton(
-                                label: 'Tambah Item Setoran',
-                                variant: AppButtonVariant.outlined,
-                                icon: Icons.add,
-                                onPressed: _addItem,
+                              _tutorialStep(
+                                key: _addItemTutorialKey,
+                                title: 'Tambah item setoran',
+                                description:
+                                    'Tekan tombol ini untuk menambahkan satu item per jenis sampah.',
+                                child: AppButton(
+                                  label: 'Tambah Item Setoran',
+                                  variant: AppButtonVariant.outlined,
+                                  icon: Icons.add,
+                                  onPressed: _addItem,
+                                ),
                               ),
                               const SizedBox(height: 24),
 
                               if (!sideBySide) ...[
-                                TransactionSummarySection(
-                                    grandTotal: grandTotal),
+                                _summaryTutorialStep(),
                                 const SizedBox(height: 24),
                               ],
                             ],
@@ -495,7 +672,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
                       if (sideBySide) ...[
                         const SizedBox(width: 24),
                         _SummaryPanel(
-                          grandTotal: grandTotal,
+                          summary: _summaryTutorialStep(),
                           saveButton: _saveButton(),
                           rightInset: inset.right,
                         ),
@@ -522,9 +699,26 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   }
 
   Widget _buildItemsSection() {
-    if (setoranItems.isEmpty) return _buildEmptyItems();
+    final isEmpty = setoranItems.isEmpty;
+    final itemDetails = _tutorialStep(
+      key: _itemDetailsTutorialKey,
+      title: 'Atur item setoran',
+      description: isEmpty
+          ? 'Setelah menambah item, pilih jenis sampah dan isi berat (kg). '
+              'Harga/kg dan subtotal dihitung otomatis.'
+          : 'Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+              'otomatis; tekan × untuk menghapus item.',
+      child: isEmpty ? _buildEmptyItems() : _buildItemCard(0),
+    );
+    if (isEmpty) return itemDetails;
     return Column(
-      children: List.generate(setoranItems.length, _buildItemCard),
+      children: [
+        itemDetails,
+        ...List.generate(
+          setoranItems.length - 1,
+          (index) => _buildItemCard(index + 1),
+        ),
+      ],
     );
   }
 
@@ -622,12 +816,12 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
 /// sementara daftar item di kiri digulir.
 class _SummaryPanel extends StatelessWidget {
   const _SummaryPanel({
-    required this.grandTotal,
+    required this.summary,
     required this.saveButton,
     this.rightInset = 0,
   });
 
-  final int grandTotal;
+  final Widget summary;
   final Widget saveButton;
 
   /// Room a wide window leaves right of the content column; the panel grows
@@ -643,7 +837,7 @@ class _SummaryPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TransactionSummarySection(grandTotal: grandTotal),
+            summary,
             const SizedBox(height: 16),
             saveButton,
           ],

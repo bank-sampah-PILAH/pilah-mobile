@@ -173,6 +173,11 @@ void main() {
     await tester.tap(find.text('Tambah Transaksi'));
     await tester.pumpAndSettle();
     expect(find.text('PILIH NASABAH'), findsOneWidget);
+    // The first-time tutorial covers the panel until it is skipped.
+    if (find.text('Lewati').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Lewati'));
+      await tester.pumpAndSettle();
+    }
 
     await tester.tap(
       find.descendant(
@@ -186,6 +191,26 @@ void main() {
         reason: 'the panel is gone');
     expect(find.text('Tambah Transaksi'), findsOneWidget,
         reason: 'the page it was opened from is still there');
+  });
+
+  testWidgets('the panel can start the setoran tutorial again from its header',
+      (tester) async {
+    await openHost(tester, const Size(1440, 900));
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+    if (find.text('Lewati').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Lewati'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Lewati'), findsNothing);
+
+    await tester.tap(find.descendant(
+      of: find.byType(AppPanelHeader),
+      matching: find.byTooltip('Panduan setoran'),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lewati'), findsOneWidget);
   });
 
   testWidgets('the form closing itself closes the panel, not the page beneath',

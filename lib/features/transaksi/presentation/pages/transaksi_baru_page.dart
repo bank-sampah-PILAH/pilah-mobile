@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_form_view.dart';
 
 /// Halaman penuh untuk mencatat setoran.
@@ -21,7 +22,17 @@ class TransaksiBaruPage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: SetoranFormView(
         onClose: close,
-        header: AppBackHeader(title: 'Transaksi Baru', onBack: close),
+        headerBuilder: (startTutorial) => AppBackHeader(
+          title: 'Transaksi Baru',
+          onBack: close,
+          actions: [
+            AppIconButton(
+              icon: Icons.help_outline,
+              tooltip: 'Panduan setoran',
+              onPressed: startTutorial,
+            ),
+          ],
+        ),
       ),
     );
   }

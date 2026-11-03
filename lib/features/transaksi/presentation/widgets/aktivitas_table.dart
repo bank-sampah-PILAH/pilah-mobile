@@ -6,6 +6,8 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/data_table_card.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_setoran_detail.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Daftar aktivitas untuk layar lebar: satu baris per setoran atau pencairan
@@ -20,6 +22,7 @@ class AktivitasTable extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.onEdit,
+    this.loadSetoranDetail,
     this.footer = const [],
     this.toolbar,
     this.pagination,
@@ -31,6 +34,9 @@ class AktivitasTable extends StatelessWidget {
 
   /// Dipanggil dari kolom Aksi pada baris setoran. Null menyembunyikan kolom.
   final ValueChanged<ActivitasEntity>? onEdit;
+
+  /// Fetches full details when a setoran row is expanded.
+  final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
 
   /// Isi di bawah baris terakhir: indikator muat atau tombol "Muat Lagi".
   final List<Widget> footer;
@@ -53,7 +59,12 @@ class AktivitasTable extends StatelessWidget {
     letterSpacing: 0.3,
   );
 
-  static Key rowKey(int index) => ValueKey('aktivitas-row-$index');
+  static Key rowKey(ActivitasEntity item) {
+    final id = item.transaksi?.id ?? item.pencairan?.id;
+    return id == null || id.isEmpty
+        ? ObjectKey(item)
+        : ValueKey('aktivitas-row-${item.tipe.name}-$id');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +89,11 @@ class AktivitasTable extends StatelessWidget {
         itemBuilder: (context, i) => i == items.length
             ? Column(children: footer)
             : _Row(
-                key: rowKey(i),
+                key: rowKey(items[i]),
                 item: items[i],
                 onTap: () => onTap(items[i]),
                 onEdit: onEdit == null ? null : () => onEdit!(items[i]),
+                loadSetoranDetail: loadSetoranDetail,
               ),
       ),
       footer: pagination,
@@ -113,11 +125,13 @@ class _Row extends StatefulWidget {
     required this.item,
     required this.onTap,
     this.onEdit,
+    this.loadSetoranDetail,
   });
 
   final ActivitasEntity item;
   final VoidCallback onTap;
   final VoidCallback? onEdit;
+  final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
 
   @override
   State<_Row> createState() => _RowState();
@@ -125,125 +139,197 @@ class _Row extends StatefulWidget {
 
 class _RowState extends State<_Row> {
   bool _hover = false;
+  bool _expanded = false;
 
   ActivitasEntity get item => widget.item;
 
   @override
   Widget build(BuildContext context) {
+    final expandable = item.tipe == ActivitasTipe.setoran;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Container(
+        color: _hover ? AppColors.greenLight.withValues(alpha: 0.45) : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDataRow(context, expandable),
+            if (expandable) _buildExpandedDetail(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataRow(BuildContext context, bool expandable) {
     final base = AppTextStyle.small.copyWith(color: AppColors.black);
-    final muted = base.copyWith(color: AppColors.grey100);
-    final waktu = item.trailingCaptions;
     return Semantics(
       button: true,
-      // Every row opens a detail, so it gets the hover of the nasabah and
-      // harga tables.
+      expanded: expandable && _expanded,
+      hint: _hint(expandable),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
         child: InkWell(
-          onTap: widget.onTap,
-          child: Container(
-            color: _hover ? AppColors.greenLight.withValues(alpha: 0.45) : null,
+          onTap: () => _handleTap(expandable),
+          child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.xl,
               vertical: AppSpacing.md,
             ),
-            child: Row(children: [
-              AktivitasTable._cell(
-                0,
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: 2,
-                  children: [
-                    if (waktu.isNotEmpty) Text(waktu.first, style: base),
-                    if (waktu.length > 1) Text(waktu[1], style: muted),
-                  ],
-                ),
-              ),
-              AktivitasTable._cell(
-                1,
-                Row(children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: item.avatarColor,
-                    child: Text(
-                      item.avatarText,
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: item.avatarTextColor,
-                        fontWeight: AppFontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: base.copyWith(fontWeight: AppFontWeight.semibold),
-                    ),
-                  ),
-                ]),
-              ),
-              AktivitasTable._cell(
-                2,
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: CustomStatusBadge(
-                    statusText: item.tipe == ActivitasTipe.setoran
-                        ? 'Setoran'
-                        : 'Pencairan',
-                    backgroundColor: item.tipe == ActivitasTipe.setoran
-                        ? AppColors.greenLight
-                        : AppColors.warningLight,
-                    textColor: item.tipe == ActivitasTipe.setoran
-                        ? AppColors.greenDark
-                        : AppColors.warning,
-                  ),
-                ),
-              ),
-              AktivitasTable._cell(
-                3,
-                Text(
-                  item.subtitleLines.join(' • '),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: muted,
-                ),
-              ),
-              AktivitasTable._cell(
-                4,
-                Text(
-                  item.amount,
-                  textAlign: TextAlign.end,
-                  style: base.copyWith(
-                    color: item.amountColor ?? AppColors.greenDark,
-                    fontWeight: AppFontWeight.semibold,
-                  ),
-                ),
-              ),
-              if (widget.onEdit != null)
-                AktivitasTable._aksiCell(
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: item.tipe == ActivitasTipe.setoran
-                        ? AppButton(
-                            key: const ValueKey('aktivitas-edit'),
-                            label: 'Edit',
-                            icon: Icons.edit_outlined,
-                            variant: AppButtonVariant.outlined,
-                            size: AppButtonSize.compact,
-                            expand: false,
-                            onPressed: widget.onEdit,
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-            ]),
+            child: _buildCells(
+              base,
+              base.copyWith(color: AppColors.grey100),
+              expandable,
+            ),
           ),
         ),
       ),
     );
   }
+
+  String? _hint(bool expandable) {
+    if (!expandable) return null;
+    return _expanded
+        ? 'Ketuk untuk menutup rincian'
+        : 'Ketuk untuk melihat rincian';
+  }
+
+  void _handleTap(bool expandable) {
+    if (expandable) {
+      setState(() => _expanded = !_expanded);
+    } else {
+      widget.onTap();
+    }
+  }
+
+  Widget _buildCells(TextStyle base, TextStyle muted, bool expandable) {
+    final waktu = item.trailingCaptions;
+    return Row(
+      children: [
+        AktivitasTable._cell(
+          0,
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: 2,
+            children: [
+              if (waktu.isNotEmpty) Text(waktu.first, style: base),
+              if (waktu.length > 1) Text(waktu[1], style: muted),
+            ],
+          ),
+        ),
+        _nasabahCell(base),
+        _typeCell(expandable),
+        _detailCell(muted, expandable),
+        _amountCell(base),
+        if (widget.onEdit != null) _editCell(expandable),
+      ],
+    );
+  }
+
+  Widget _nasabahCell(TextStyle base) => AktivitasTable._cell(
+        1,
+        Row(children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: item.avatarColor,
+            child: Text(
+              item.avatarText,
+              style: AppTextStyle.extraSmall.copyWith(
+                color: item.avatarTextColor,
+                fontWeight: AppFontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: base.copyWith(fontWeight: AppFontWeight.semibold),
+            ),
+          ),
+        ]),
+      );
+
+  Widget _typeCell(bool expandable) => AktivitasTable._cell(
+        2,
+        Align(
+          alignment: Alignment.centerLeft,
+          child: CustomStatusBadge(
+            statusText: expandable ? 'Setoran' : 'Pencairan',
+            backgroundColor:
+                expandable ? AppColors.greenLight : AppColors.warningLight,
+            textColor: expandable ? AppColors.greenDark : AppColors.warning,
+          ),
+        ),
+      );
+
+  Widget _detailCell(TextStyle muted, bool expandable) => AktivitasTable._cell(
+        3,
+        Row(children: [
+          Expanded(
+            child: Text(
+              item.subtitleLines.join(' • '),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: muted,
+            ),
+          ),
+          if (expandable) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Icon(
+              _expanded ? Icons.expand_less : Icons.expand_more,
+              color: AppColors.grey100,
+              size: 18,
+            ),
+          ],
+        ]),
+      );
+
+  Widget _amountCell(TextStyle base) => AktivitasTable._cell(
+        4,
+        Text(
+          item.amount,
+          textAlign: TextAlign.end,
+          style: base.copyWith(
+            color: item.amountColor ?? AppColors.greenDark,
+            fontWeight: AppFontWeight.semibold,
+          ),
+        ),
+      );
+
+  Widget _editCell(bool expandable) => AktivitasTable._aksiCell(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: expandable
+              ? AppButton(
+                  key: const ValueKey('aktivitas-edit'),
+                  label: 'Edit',
+                  icon: Icons.edit_outlined,
+                  variant: AppButtonVariant.outlined,
+                  size: AppButtonSize.compact,
+                  expand: false,
+                  onPressed: widget.onEdit,
+                )
+              : const SizedBox.shrink(),
+        ),
+      );
+
+  Widget _buildExpandedDetail(BuildContext context) => AnimatedSize(
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: _expanded
+            ? AktivitasSetoranDetail(
+                key: ValueKey('setoran-details-${item.transaksi?.id ?? ''}'),
+                transactionId: item.transaksi?.id ?? '',
+                loadDetail: widget.loadSetoranDetail ?? (_) async => null,
+              )
+            : const SizedBox.shrink(),
+      );
 }

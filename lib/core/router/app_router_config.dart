@@ -29,13 +29,16 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
-import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pengumuman_routes.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
+import 'package:pilah_mobile/features/legal/presentation/pages/legal_document_page.dart';
+import 'package:pilah_mobile/features/legal/presentation/pages/legal_information_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
@@ -92,6 +95,11 @@ class AppRouterConfig {
     // the invite outranks wherever the user was headed.
     redirect: (context, state) {
       final path = state.uri.path;
+      // Registration must be able to open these without a session or redeeming an invite.
+      if (path == LegalInformationPage.route ||
+          LegalDocument.values.any((document) => document.path == path)) {
+        return null;
+      }
 
       final restore = sessionRestoreRedirect(
         sessionChecked: ProviderScope.containerOf(context, listen: false)
@@ -141,6 +149,15 @@ class AppRouterConfig {
     },
     routes: <RouteBase>[
       GoRoute(
+        path: LegalInformationPage.route,
+        builder: (context, state) => const LegalInformationPage(),
+      ),
+      for (final document in LegalDocument.values)
+        GoRoute(
+          path: document.path,
+          builder: (context, state) => LegalDocumentPage(document: document),
+        ),
+      GoRoute(
         path: SplashPage.route,
         name: SplashPage.route,
         builder: (context, state) =>
@@ -189,32 +206,29 @@ class AppRouterConfig {
         name: PilihNasabahPencairanPage.route,
         builder: (context, state) => const PilihNasabahPencairanPage(),
       ),
-      GoRoute(
-        path: PengumumanPage.route,
-        name: PengumumanPage.route,
-        builder: (context, state) => PengumumanPage(
-          membershipId: state.uri.queryParameters['keanggotaan_id'],
+      // Pengumuman is locked for handover (PIL-436). The paths stay declared
+      // as pure redirects instead of being deleted: an unknown route renders
+      // go_router's "page not found" screen, and PIL-392 forbids a visible
+      // error as firmly as it forbids the page. AppLocations.dashboard then
+      // passes back through the global role redirect, so a nasabah following
+      // an old link is forwarded to their own home rather than a staff page.
+      //
+      // The paths come from [pengumumanRoutes] rather than being retyped here,
+      // so the locked set cannot drift from the real one: that list holds the
+      // routes as they were, guards included, compiled and tested but not
+      // registered. Re-enabling the feature is registering it in place of this
+      // loop.
+      for (final route in pengumumanRoutes)
+        GoRoute(
+          path: route.path,
+          redirect: (_, __) => AppLocations.dashboard,
         ),
-      ),
+      // Kelola Pengumuman is not in that list because it was a shell branch,
+      // not a top-level route, so its lock is declared here on its own and
+      // restoring it means bringing the branch and its rail destination back.
       GoRoute(
-        path: PengumumanDetailPage.route,
-        name: PengumumanDetailPage.route,
-        // Without the row (a stale link) there is nothing to show.
-        redirect: (context, state) =>
-            state.extra is PengumumanEntity ? null : PengumumanPage.route,
-        builder: (context, state) => PengumumanDetailPage(
-          pengumuman: state.extra! as PengumumanEntity,
-        ),
-      ),
-      GoRoute(
-        path: PengumumanFormPage.route,
-        name: PengumumanFormPage.route,
-        // Without args (a stale link, or a router restored on its own) there
-        // is nothing to edit, so fall back to the dashboard.
-        redirect: (context, state) =>
-            state.extra is PengumumanFormArgs ? null : AppLocations.dashboard,
-        builder: (context, state) =>
-            PengumumanFormPage(args: state.extra! as PengumumanFormArgs),
+        path: PengumumanKelolaPage.route,
+        redirect: (_, __) => AppLocations.dashboard,
       ),
       GoRoute(
         path: DraftEditorPage.route,
@@ -457,15 +471,6 @@ class AppRouterConfig {
                 path: ProfilePage.route,
                 name: ProfilePage.route,
                 builder: (_, __) => const ProfilePage()),
-          ]),
-          // Kelola Pengumuman: destinasi rail dan drawer staff (branch 8). Di
-          // aplikasi dibuka dari Profil.
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: PengumumanKelolaPage.route,
-              name: PengumumanKelolaPage.route,
-              builder: (context, state) => const PengumumanKelolaPage(),
-            ),
           ]),
         ],
       ),

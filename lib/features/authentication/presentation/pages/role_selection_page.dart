@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -12,11 +11,13 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
+import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/services/di.dart';
-import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class RoleSelectionPage extends ConsumerStatefulWidget {
   const RoleSelectionPage({super.key});
@@ -31,6 +32,22 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
   GoogleRegistrationRole? _selectedRole;
   GoogleRegistrationRequired? _registration;
   bool _isChangingAccount = false;
+  bool _acceptedPrivacyPolicy = false;
+  bool _acceptedTermsAndConditions = false;
+
+  bool get _canContinue =>
+      _selectedRole != null &&
+      _acceptedPrivacyPolicy &&
+      _acceptedTermsAndConditions;
+
+  void _continueRegistration() {
+    final role = _selectedRole;
+    if (!_canContinue || role == null) return;
+    if (ref.read(authenticationProvider) is GoogleRegistrationSubmitting) {
+      return;
+    }
+    ref.read(authenticationProvider.notifier).registerGoogleRole(role);
+  }
 
   @override
   void initState() {
@@ -112,6 +129,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     }
 
     final isLoading = state is GoogleRegistrationSubmitting;
+    final isBusy = isLoading || _isChangingAccount;
     final roleOptions = _roleOptions
         .where((option) => isRoleSupportedOnPlatform(
               option.value.wireValue,
@@ -119,80 +137,52 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
             ))
         .toList();
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+      backgroundColor: AppColors.surface,
+      body: OnboardingFlowLayout(
+        title: 'Daftar Akun',
+        subtitle: 'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
+        onExit: isBusy ? null : _changeAccount,
+        progress: const OnboardingProgress(currentStep: 0),
+        actions: OnboardingActions(
+            primary: AppButton(
+          label: 'Lanjutkan',
+          trailingIcon: Icons.arrow_forward,
+          isLoading: isLoading,
+          onPressed: _canContinue && !isBusy ? _continueRegistration : null,
+        )),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Langkah 1',
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: AppFontWeight.semibold,
-                        )),
-                    const SizedBox(height: 4),
-                    Text('Daftar Akun', style: AppTextStyle.headline1),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.grey100,
-                        fontSize: AppFontSize.md,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _VerifiedIdentity(
-                      name: registration.name,
-                      email: registration.email,
-                      onChangeAccount: isLoading || _isChangingAccount
-                          ? null
-                          : _changeAccount,
-                    ),
-                    const SizedBox(height: 32),
-                    Text('Saya ingin mendaftar sebagai',
-                        style: AppTextStyle.title1),
-                    const SizedBox(height: 16),
-                    for (var index = 0;
-                        index < roleOptions.length;
-                        index++) ...[
-                      _RoleCard(
-                        option: roleOptions[index],
-                        selected: _selectedRole == roleOptions[index].value,
-                        enabled: !isLoading,
-                        onTap: () => setState(
-                            () => _selectedRole = roleOptions[index].value),
-                      ),
-                      if (index < roleOptions.length - 1)
-                        const SizedBox(height: 12),
-                    ],
-                  ],
-                ),
+            _VerifiedIdentity(
+              name: registration.name,
+              email: registration.email,
+              onChangeAccount: isBusy ? null : _changeAccount,
+            ),
+            const SizedBox(height: 24),
+            Text('Saya ingin mendaftar sebagai', style: AppTextStyle.title1),
+            const SizedBox(height: 16),
+            _buildRoleOptions(roleOptions, isBusy),
+            const SizedBox(height: 24),
+            Text('Persetujuan', style: AppTextStyle.title1),
+            const SizedBox(height: 8),
+            _legalConsent(
+              context: context,
+              document: LegalDocument.privacyPolicy,
+              title: 'Kebijakan Privasi',
+              accepted: _acceptedPrivacyPolicy,
+              enabled: !isBusy,
+              onChanged: (accepted) => setState(
+                () => _acceptedPrivacyPolicy = accepted,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.greenDark.withValues(alpha: 0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: AppButton(
-                label: 'Lanjutkan',
-                isLoading: isLoading,
-                onPressed: _selectedRole == null
-                    ? null
-                    : () => ref
-                        .read(authenticationProvider.notifier)
-                        .registerGoogleRole(_selectedRole!),
+            _legalConsent(
+              context: context,
+              document: LegalDocument.termsAndConditions,
+              title: 'Syarat & Ketentuan',
+              accepted: _acceptedTermsAndConditions,
+              enabled: !isBusy,
+              onChanged: (accepted) => setState(
+                () => _acceptedTermsAndConditions = accepted,
               ),
             ),
           ],
@@ -200,6 +190,91 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
       ),
     );
   }
+
+  Widget _buildRoleOptions(List<_RoleOption> roleOptions, bool isBusy) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final paired = constraints.maxWidth >= LayoutBreakpoint.mediumMinWidth &&
+          MediaQuery.textScalerOf(context).scale(16) <= 24;
+      Widget roleCard(_RoleOption option) => _RoleCard(
+            option: option,
+            selected: _selectedRole == option.value,
+            enabled: !isBusy,
+            onTap: () => setState(() => _selectedRole = option.value),
+          );
+
+      if (!paired) {
+        return Wrap(
+          runSpacing: 16,
+          children: [
+            for (final option in roleOptions)
+              SizedBox(
+                width: constraints.maxWidth,
+                child: roleCard(option),
+              ),
+          ],
+        );
+      }
+
+      return Column(
+        children: [
+          for (var index = 0; index < roleOptions.length; index += 2) ...[
+            if (index > 0) const SizedBox(height: 16),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: roleCard(roleOptions[index])),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: index + 1 < roleOptions.length
+                        ? roleCard(roleOptions[index + 1])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+Widget _legalConsent({
+  required BuildContext context,
+  required LegalDocument document,
+  required String title,
+  required bool accepted,
+  required bool enabled,
+  required ValueChanged<bool> onChanged,
+}) {
+  return Row(
+    children: [
+      Checkbox(
+        value: accepted,
+        semanticLabel: 'Saya menyetujui $title',
+        onChanged: enabled ? (value) => onChanged(value ?? false) : null,
+      ),
+      Expanded(
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            InkWell(
+              onTap: enabled ? () => onChanged(!accepted) : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('Saya menyetujui ', style: AppTextStyle.small),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.push(document.path),
+              child: Text(title),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 class _VerifiedIdentity extends StatelessWidget {
@@ -223,8 +298,8 @@ class _VerifiedIdentity extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.grey200),
       ),
-      child: Row(
-        children: [
+      child: LayoutBuilder(builder: (context, constraints) {
+        final identity = Row(children: [
           const CircleAvatar(
             backgroundColor: Colors.white,
             foregroundColor: AppColors.grey100,
@@ -232,23 +307,29 @@ class _VerifiedIdentity extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: AppTextStyle.headline3),
+              Text(email,
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey100)),
+            ],
+          )),
+        ]);
+        final changeAccount = TextButton(
+            onPressed: onChangeAccount, child: const Text('Ganti akun'));
+        if (constraints.maxWidth < LayoutBreakpoint.mediumMinWidth ||
+            MediaQuery.textScalerOf(context).scale(16) > 24) {
+          return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: AppTextStyle.headline3),
-                Text(email,
-                    style: AppTextStyle.small.copyWith(
-                      color: AppColors.grey100,
-                    )),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: onChangeAccount,
-            child: const Text('Ganti akun'),
-          ),
-        ],
-      ),
+                identity,
+                const SizedBox(height: 8),
+                changeAccount,
+              ]);
+        }
+        return Row(children: [Expanded(child: identity), changeAccount]);
+      }),
     );
   }
 }
@@ -301,7 +382,7 @@ class _RoleCard extends StatelessWidget {
     return Semantics(
       label: '${option.title}. ${option.description}',
       inMutuallyExclusiveGroup: true,
-      selected: selected,
+      checked: selected,
       enabled: enabled,
       onTap: enabled ? onTap : null,
       child: ExcludeSemantics(
@@ -335,7 +416,6 @@ class _RoleCard extends StatelessWidget {
                         Text(option.description,
                             style: AppTextStyle.small.copyWith(
                               color: AppColors.grey100,
-                              fontSize: AppFontSize.sm,
                             )),
                       ],
                     ),

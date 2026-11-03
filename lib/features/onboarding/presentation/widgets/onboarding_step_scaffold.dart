@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 
 class OnboardingStepScaffold extends ConsumerWidget {
   const OnboardingStepScaffold({
@@ -18,6 +19,8 @@ class OnboardingStepScaffold extends ConsumerWidget {
     required this.formKey,
     required this.formFields,
     required this.footer,
+    this.actions,
+    this.notice,
   });
 
   final String title;
@@ -28,12 +31,27 @@ class OnboardingStepScaffold extends ConsumerWidget {
   final GlobalKey<FormState> formKey;
   final List<Widget> formFields;
   final List<Widget> footer;
+  final Widget? actions;
+  final Widget? notice;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(authenticationProvider, (previous, current) {
       if (current is Unauthenticated) onUnauthenticated();
     });
+    final content = Column(
+      children: [
+        OnboardingHeader(
+          title: title,
+          subtitle: subtitle,
+          onExit: onExit,
+        ),
+        progress,
+        const SizedBox(height: 24),
+        OnboardingFormCard(formKey: formKey, children: formFields),
+        ...footer,
+      ],
+    );
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) => handleOnboardingStepPop(
@@ -43,21 +61,22 @@ class OnboardingStepScaffold extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: AppColors.surface,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              OnboardingHeader(
+        body: actions != null
+            ? OnboardingFlowLayout(
                 title: title,
                 subtitle: subtitle,
                 onExit: onExit,
-              ),
-              progress,
-              const SizedBox(height: 24),
-              OnboardingFormCard(formKey: formKey, children: formFields),
-              ...footer,
-            ],
-          ),
-        ),
+                progress: progress,
+                notice: notice,
+                actions: actions!,
+                child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: formFields,
+                    )),
+              )
+            : SingleChildScrollView(child: content),
       ),
     );
   }

@@ -45,10 +45,12 @@ Page<void> setoranSideSheetPage(LocalKey pageKey) => SideSheetPage<void>(
           // ContentInset bersama, sehingga tanpa padding yang sama judulnya
           // berdiri 16 px di kiri seluruh isi di bawahnya. Pola yang sama
           // sudah dipakai pengumuman_form_page.
-          header: Padding(
+          headerBuilder: (startTutorial) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: AppPanelHeader(
               title: 'Transaksi Baru',
+              onHelp: startTutorial,
+              helpTooltip: 'Panduan setoran',
               // maybePop, bukan pop: lewat jalan ini penjaga isian yang belum
               // tersimpan ikut bertanya, karena hanya maybePop yang
               // menghormati PopScope. Tombol tutup adalah jalan keluar yang

@@ -23,7 +23,6 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_sid
 
 /// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
 const _profileBranch = 7;
-const _pengumumanBranch = 8;
 
 class MainPage extends ConsumerWidget {
   const MainPage({
@@ -188,8 +187,7 @@ class _ShellContent extends ConsumerWidget {
   bool _isOffDestination(int selected, bool limitedNasabah) =>
       selected < 0 &&
       ((RoleNavigationBar.isStaff(role) &&
-              (navigationShell.currentIndex == _profileBranch ||
-                  navigationShell.currentIndex == _pengumumanBranch)) ||
+              navigationShell.currentIndex == _profileBranch) ||
           (role == 'nasabah' &&
               !limitedNasabah &&
               navigationShell.currentIndex == 4));

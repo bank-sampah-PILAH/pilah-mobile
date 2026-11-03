@@ -33,6 +33,7 @@ import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -499,65 +500,89 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
 
   // ── Tab 1: Pengaturan Umum ──────────────────────────────────────────
 
-  /// Kartu akun, sama di web dan di aplikasi: putih dengan garis tepi, berisi
-  /// identitas. Di web Keluar ada di kanannya; di aplikasi Keluar ada di paling
-  /// bawah halaman ([_buildLogoutButton]).
+  /// Kartu akun berisi identitas. Web sempit menaruh Keluar di bawah identitas;
+  /// desktop menaruhnya di samping, dan aplikasi tetap menaruhnya di bawah.
   Widget _buildAccountCard(String name, AuthEntity? auth) {
     final email = auth?.email.trim() ?? '';
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.greenLight,
-            child: Text(
-              _initials(name),
-              style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactWeb = _webShell &&
+            constraints.maxWidth < LayoutBreakpoint.expandedMinWidth;
+        final identity = Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.greenLight,
+              child: Text(
+                _initials(name),
+                style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyle.title1.copyWith(color: AppColors.black),
-                ),
-                if (email.isNotEmpty)
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    email,
+                    name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style:
-                        AppTextStyle.small.copyWith(color: AppColors.grey100),
+                    style: AppTextStyle.title1.copyWith(color: AppColors.black),
                   ),
-                const SizedBox(height: AppSpacing.sm),
-                CustomStatusBadge(statusText: _roleLabel(auth?.role)),
-              ],
-            ),
-          ),
-          if (_webShell) ...[
-            const SizedBox(width: AppSpacing.lg),
-            AppButton(
-              label: 'Keluar dari Aplikasi',
-              variant: AppButtonVariant.destructiveOutlined,
-              size: AppButtonSize.compact,
-              icon: Icons.logout,
-              expand: false,
-              onPressed: _confirmLogout,
+                  if (email.isNotEmpty)
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          AppTextStyle.small.copyWith(color: AppColors.grey100),
+                    ),
+                  const SizedBox(height: AppSpacing.sm),
+                  CustomStatusBadge(statusText: _roleLabel(auth?.role)),
+                ],
+              ),
             ),
           ],
-        ],
-      ),
+        );
+        final logoutButton = AppButton(
+          label: 'Keluar dari Aplikasi',
+          variant: AppButtonVariant.destructiveOutlined,
+          size: AppButtonSize.compact,
+          icon: Icons.logout,
+          expand: false,
+          onPressed: _confirmLogout,
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: compactWeb
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    identity,
+                    const SizedBox(height: AppSpacing.md),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: logoutButton,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: identity),
+                    if (_webShell) ...[
+                      const SizedBox(width: AppSpacing.lg),
+                      logoutButton,
+                    ],
+                  ],
+                ),
+        );
+      },
     );
   }
 
@@ -649,6 +674,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     accountCard,
+                    const SizedBox(height: AppSpacing.md),
+                    const LegalInformationButton(),
                     const SizedBox(height: 32),
                     if (isDesktop)
                       Row(

@@ -389,7 +389,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Play promotion API dependency
-        run: python3 -m pip install --disable-pip-version-check google-auth==2.62.0
+        run: python3 -m pip install --disable-pip-version-check 'google-auth[requests]==2.62.0'
 
       - name: Promote existing bundle to test track
         if: inputs.track != 'production'
