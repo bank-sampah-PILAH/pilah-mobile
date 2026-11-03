@@ -35,9 +35,13 @@ void main() {
     WidgetTester tester,
     Size window, {
     bool Function()? hasUnsavedInput,
+    bool Function()? isBusy,
     bool guarded = true,
   }) async {
-    guard = SideSheetGuard(hasUnsavedInput: hasUnsavedInput ?? () => false);
+    guard = SideSheetGuard(
+      hasUnsavedInput: hasUnsavedInput ?? () => false,
+      isBusy: isBusy ?? () => false,
+    );
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -338,6 +342,63 @@ void main() {
   /// the guard entirely and destroyed a setoran in a real browser. go_router
   /// offers `GoRoute.onExit` for exactly this, and [SideSheetGuard.confirmExit]
   /// is what goes there.
+  /// A request in flight cannot be taken back. Closing the panel then, even
+  /// after the Pengurus agrees to discard, leaves a form that is gone while its
+  /// save still lands: recorded on the server, never shown to the person who
+  /// made it. While the form is busy the panel does not close, and no question
+  /// is asked either: there is nothing left to decide.
+  group('a panel whose form is busy', () {
+    testWidgets('does not close on a click beside it, and does not ask',
+        (tester) async {
+      await open(tester, const Size(1440, 900),
+          hasUnsavedInput: () => true, isBusy: () => true);
+
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsOneWidget);
+      expect(find.text('Buang isi formulir?'), findsNothing);
+    });
+
+    testWidgets('does not close on escape', (tester) async {
+      await open(tester, const Size(1440, 900),
+          hasUnsavedInput: () => true, isBusy: () => true);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(contentKey), findsOneWidget);
+    });
+
+    testWidgets('refuses to be left through the browser history',
+        (tester) async {
+      await open(tester, const Size(1440, 900),
+          hasUnsavedInput: () => true, isBusy: () => true);
+
+      final left = await guard.confirmExit(
+        tester.element(find.byKey(contentKey)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(left, isFalse);
+      expect(find.text('Buang isi formulir?'), findsNothing);
+    });
+
+    testWidgets('is read again on each attempt, not cached', (tester) async {
+      var busy = true;
+      await open(tester, const Size(1440, 900), isBusy: () => busy);
+
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+      expect(find.byKey(contentKey), findsOneWidget);
+
+      busy = false;
+      await tester.tapAt(const Offset(100, 450));
+      await tester.pumpAndSettle();
+      expect(find.byKey(contentKey), findsNothing);
+    });
+  });
+
   group('leaving through the browser history', () {
     const question = 'Buang isi formulir?';
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
@@ -211,6 +212,68 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Lewati'), findsOneWidget);
+  });
+
+  /// Esc and the scrim are one keystroke from the form, and a save in flight
+  /// cannot be called back. Letting the panel go then drops the success panel
+  /// and the WhatsApp draft of a setoran the server did record.
+  testWidgets('a save in flight keeps the panel open, then shows its result',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [
+        {
+          'id': 'j1',
+          'kode': 'K-j1',
+          'nama_sampah': 'Botol PET',
+          'kategori': 'plastik',
+          'deskripsi': '',
+          'harga_per_kg': '2000',
+          'is_active': true,
+        },
+      ],
+    });
+    api.on('GET', '/api/v1/nasabah',
+        json: nasabahPage([nasabahRow('n1', nama: 'Budi Santoso')]));
+    api.on('POST', '/api/v1/transaksi', json: {
+      'id': 't1',
+      'total_nilai': '2000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await openHost(tester, const Size(1440, 900));
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+    if (find.text('Lewati').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Lewati'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Tap untuk pilih nasabah'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Budi Santoso'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tambah Item Setoran'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pilih Jenis').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Botol PET').last);
+    await tester.pumpAndSettle();
+
+    api.latency = const Duration(seconds: 1);
+    await tester.tap(find.text('Simpan Transaksi'));
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Buang isi formulir?'), findsNothing,
+        reason: 'nothing to decide while the request is out');
+    expect(find.text('Simpan Transaksi'), findsNothing);
+    expect(find.text('Menyimpan...'), findsOneWidget,
+        reason: 'the panel is still there, still saving');
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text('Kirim WhatsApp'), findsOneWidget,
+        reason: 'the result still reaches the person who saved it');
   });
 
   testWidgets('the form closing itself closes the panel, not the page beneath',
