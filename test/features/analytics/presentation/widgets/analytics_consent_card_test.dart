@@ -61,10 +61,10 @@ void main() {
 
     await openCard(tester);
 
-    expect(find.text('Perekaman sesi'), findsOneWidget);
+    expect(find.text('Analitik penggunaan'), findsOneWidget);
     expect(
-        find.text('Izinkan PILAH merekam layar agar kami bisa meningkatkan '
-            'pengalaman pemakaian aplikasi. Data sensitif akan ditutup.'),
+        find.text('Izinkan PILAH mencatat langkah pemakaian aplikasi agar kami '
+            'bisa meningkatkannya. Isi layar tidak dicatat.'),
         findsOneWidget);
     expect(switchValue(tester), isTrue);
   });
@@ -79,7 +79,7 @@ void main() {
     expect(switchValue(tester), isFalse);
   });
 
-  testWidgets('switching it on agrees and starts recording', (tester) async {
+  testWidgets('switching it on agrees and starts analytics', (tester) async {
     await openCard(tester);
 
     await tester.tap(find.byType(Switch));
@@ -91,7 +91,7 @@ void main() {
     expect(switchValue(tester), isTrue);
   });
 
-  testWidgets('switching it off withdraws consent and stops recording',
+  testWidgets('switching it off withdraws consent and stops analytics',
       (tester) async {
     await AnalyticsConsentStore(storage).grant('u1');
     await openCard(tester);
@@ -112,7 +112,7 @@ void main() {
     await openCard(tester);
 
     expect(find.byType(Switch), findsNothing);
-    expect(find.text('Perekaman sesi'), findsNothing);
+    expect(find.text('Analitik penggunaan'), findsNothing);
   });
 
   testWidgets('is not shown where nothing can record', (tester) async {

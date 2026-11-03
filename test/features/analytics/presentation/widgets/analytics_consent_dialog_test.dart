@@ -28,28 +28,36 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('explains what is recorded and offers agree and decline',
+  testWidgets('explains what is noted and offers agree and decline',
       (tester) async {
     await open(tester);
 
     expect(
         find.text('Bantu kami meningkatkan pengalaman Anda'), findsOneWidget);
     expect(
-        find.textContaining('merekam layar dan gerakan Anda'), findsOneWidget);
-    expect(
         find.textContaining(
-            'untuk memahami cara pengguna memakai aplikasi dan membantu kami '
-            'meningkatkan pengalaman Anda'),
+            'Kami mencatat langkah yang Anda lakukan di PILAH, misalnya saat '
+            'setoran disimpan atau jadwal dibuat'),
         findsOneWidget);
     expect(
         find.textContaining(
-            'Nama nasabah, saldo, foto, email, telepon, dan data sensitif '
-            'lainnya akan ditutup'),
+            'Kami tidak merekam layar, dan tidak mencatat nama nasabah, '
+            'saldo, foto, email, atau nomor telepon'),
         findsOneWidget);
+    expect(find.textContaining('Data hanya dilihat tim PILAH'), findsOneWidget);
     expect(find.textContaining('mengubah pilihan kapan saja di Profil'),
         findsOneWidget);
     expect(find.text('Setuju'), findsOneWidget);
     expect(find.text('Tolak'), findsOneWidget);
+  });
+
+  testWidgets('no longer says the screen is recorded or that data is covered',
+      (tester) async {
+    await open(tester);
+
+    expect(find.textContaining('merekam layar dan gerakan'), findsNothing);
+    expect(find.textContaining('akan ditutup'), findsNothing);
+    expect(find.textContaining('Rekaman'), findsNothing);
   });
 
   testWidgets('stays a readable width on a wide window', (tester) async {
