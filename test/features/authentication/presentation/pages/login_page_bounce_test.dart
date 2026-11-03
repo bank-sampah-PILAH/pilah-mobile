@@ -32,7 +32,9 @@ void main() {
       routes: [
         GoRoute(
           path: '/login',
-          builder: (_, __) => const LoginPage(debugShowDemoLogin: false),
+          // Not const: a const instance is compile-time folded and the
+          // constructor line never executes under coverage.
+          builder: (_, __) => LoginPage(debugShowDemoLogin: false),
         ),
         for (final path in ['/dashboard', '/home'])
           GoRoute(
