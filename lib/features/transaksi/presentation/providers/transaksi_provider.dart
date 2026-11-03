@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/network_utils.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/bulk_void_result.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/batalkan_beberapa_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
@@ -21,6 +24,7 @@ final transaksiProvider = NotifierProvider<TransaksiNotifier, TransaksiState>(
     di<ResendWaUseCase>(),
     di<EditTransaksiUseCase>(),
     di<BatalkanTransaksiUseCase>(),
+    sessionKey: () => di<NetworkUtils>().accessToken,
   ),
 );
 
@@ -32,6 +36,9 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
   final ResendWaUseCase resendWaUseCase;
   final EditTransaksiUseCase editTransaksiUseCase;
   final BatalkanTransaksiUseCase batalkanTransaksiUseCase;
+  final String Function()? _sessionKey;
+
+  String? get sessionKey => _sessionKey?.call();
 
   List<TransaksiGroupEntity> _allTransaksi = [];
   String _periode = 'bulan_ini';
@@ -46,8 +53,9 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
     this.exportTransaksiUseCase,
     this.resendWaUseCase,
     this.editTransaksiUseCase,
-    this.batalkanTransaksiUseCase,
-  );
+    this.batalkanTransaksiUseCase, {
+    String Function()? sessionKey,
+  }) : _sessionKey = sessionKey;
 
   @override
   TransaksiState build() => TransaksiInitial();
@@ -144,6 +152,21 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
   Future<TransaksiDetailEntity?> fetchTransaksiDetail(String id) async {
     final result = await getTransaksiDetailUseCase.execute(id);
     return result.fold((_) => null, (data) => data);
+  }
+
+  Future<BulkVoidResult> batalkanBeberapaTransaksi({
+    required List<String> ids,
+    required String alasan,
+    required bool Function() canContinue,
+    void Function(int, int)? onProgress,
+  }) {
+    final session = sessionKey;
+    return BatalkanBeberapaTransaksiUseCase(batalkanTransaksiUseCase).execute(
+      ids: ids,
+      alasan: alasan,
+      canContinue: () => ref.mounted && sessionKey == session && canContinue(),
+      onProgress: onProgress,
+    );
   }
 
   /// Resends the WhatsApp notification for transaction [id]. Returns whether it

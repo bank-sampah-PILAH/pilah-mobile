@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
@@ -109,6 +108,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Pilih Setoran'));
     await tester.pumpAndSettle();
+    if (find.byType(NestedScrollView).evaluate().isNotEmpty) {
+      await tester.scrollUntilVisible(
+        find.byWidgetPredicate((w) =>
+            w is Checkbox && w.semanticLabel == 'Pilih setoran Budi Santoso'),
+        200,
+        scrollable: find
+            .descendant(
+                of: find.byType(NestedScrollView),
+                matching: find.byType(Scrollable))
+            .first,
+      );
+      await tester.pumpAndSettle();
+    }
     await tester.tap(find.byType(Checkbox).first);
     await tester.pumpAndSettle();
     if (both) {
@@ -117,7 +129,8 @@ void main() {
     }
   }
 
-  Finder submit() => find.widgetWithText(AppButton, 'Ya, hapus 2 setoran');
+  Finder submit() => find.byWidgetPredicate(
+      (w) => w is AppButton && w.label == 'Ya, hapus 2 setoran');
   Future<void> openDialog(WidgetTester tester) async {
     await select(tester);
     await tester.tap(find.widgetWithText(AppButton, 'Hapus (2)'));

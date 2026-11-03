@@ -5,6 +5,8 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/bulk_batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
@@ -48,7 +50,7 @@ class AktivitasOptionsMenu extends ConsumerWidget {
   }
 }
 
-/// The selection checkpoint; bulk confirmation and processing follow separately.
+/// Count and an explicit action; selecting alone never submits a void.
 class AktivitasBulkSelectionBar extends ConsumerWidget {
   const AktivitasBulkSelectionBar({super.key});
 
@@ -64,23 +66,44 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
             : AppSpacing.webGutter,
         vertical: AppSpacing.md,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Semantics(
-              liveRegion: true,
-              child: Text('${selected.length} dipilih',
-                  style: AppTextStyle.title1),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                liveRegion: true,
+                child: Text('${selected.length} dipilih',
+                    style: AppTextStyle.title1),
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          AppIconButton(
-            icon: Icons.close,
-            tooltip: 'Batal memilih setoran',
-            onPressed: ref.read(aktivitasBulkSelectionProvider.notifier).clear,
-          ),
+            const SizedBox(width: AppSpacing.md),
+            if (context.layoutBreakpoint != LayoutBreakpoint.compact) ...[
+              _hapus(context, selected),
+              const SizedBox(width: AppSpacing.md),
+            ],
+            AppIconButton(
+              icon: Icons.close,
+              tooltip: 'Batal memilih setoran',
+              onPressed:
+                  ref.read(aktivitasBulkSelectionProvider.notifier).clear,
+            ),
+          ],
+        ),
+        if (context.layoutBreakpoint == LayoutBreakpoint.compact) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _hapus(context, selected),
         ],
-      ),
+      ]),
     ));
   }
+
+  Widget _hapus(BuildContext context, Set<String> selected) => AppButton(
+        label: 'Hapus (${selected.length})',
+        icon: Icons.delete_outline,
+        variant: AppButtonVariant.destructiveOutlined,
+        expand: context.layoutBreakpoint == LayoutBreakpoint.compact,
+        onPressed: selected.isEmpty
+            ? null
+            : () => showBulkBatalkanSetoranDialog(context),
+      );
 }

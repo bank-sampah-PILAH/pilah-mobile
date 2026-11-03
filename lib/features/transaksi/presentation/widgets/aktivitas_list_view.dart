@@ -116,15 +116,25 @@ class AktivitasListView extends StatelessWidget {
     );
     if (!isWeb) return cards;
     // Browser sempit: kartu satu kolom, paginasi di bawahnya.
-    return Column(
-      children: [
-        Expanded(child: cards),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildPagination(context, state),
-        ),
-      ],
-    );
+    return LayoutBuilder(
+        builder: (context, constraints) => Column(
+              children: [
+                Expanded(child: cards),
+                // While the nested header is still visible, large text can leave less
+                // height than the pagination needs. Keep it scrollable until the user
+                // scrolls the header away rather than overflowing that initial frame.
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                  child: SingleChildScrollView(
+                    primary: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildPagination(context, state),
+                    ),
+                  ),
+                ),
+              ],
+            ));
   }
 
   Widget _buildWideList(
