@@ -36,6 +36,17 @@ class WebPipelineTest(unittest.TestCase):
         self.assertEqual(job["with"]["flavor"], "staging")
         self.assertEqual(job["uses"], "./.github/workflows/deploy-web.yml")
 
+    def test_main_push_deploys_production_after_merge_gate(self):
+        ci = workflow("ci.yml")
+        job = ci["jobs"]["deploy_web_production"]
+        self.assertEqual(job["needs"], "verify")
+        self.assertEqual(
+            job["if"],
+            "${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}",
+        )
+        self.assertEqual(job["with"]["flavor"], "production")
+        self.assertEqual(job["uses"], "./.github/workflows/deploy-web.yml")
+
     def test_production_follows_tags_and_web_jobs_do_not_need_android_secrets(self):
         release = workflow("cd-production.yml")
         self.assertEqual(release["on"]["push"]["tags"], ["v*"])
