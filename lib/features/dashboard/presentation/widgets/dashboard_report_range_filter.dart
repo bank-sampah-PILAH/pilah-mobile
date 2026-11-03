@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/dashboard/analytics/dashboard_analytics.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_calendar_range_picker.dart';
@@ -42,7 +45,7 @@ String reportCategoryWeightSubtitle(DashboardReportRange range) {
       '${_reportDateIndonesian(range.end)}';
 }
 
-class DashboardReportRangeFilter extends StatelessWidget {
+class DashboardReportRangeFilter extends ConsumerWidget {
   final DashboardReportRange range;
   final ValueChanged<DashboardReportRange> onChanged;
 
@@ -60,12 +63,18 @@ class DashboardReportRangeFilter extends StatelessWidget {
     );
   }
 
+  DashboardRangeChoice _presetChoice(int days) => switch (days) {
+        1 => DashboardRangeChoice.today,
+        7 => DashboardRangeChoice.week,
+        _ => DashboardRangeChoice.month,
+      };
+
   bool _isSelected(DashboardReportRange preset) =>
       DateUtils.isSameDay(range.start, preset.start) &&
       DateUtils.isSameDay(range.end, preset.end);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final controller = MenuController();
     final today = DateUtils.dateOnly(DateTime.now());
     final lastDate = range.end.isAfter(today) ? range.end : today;
@@ -80,7 +89,13 @@ class DashboardReportRangeFilter extends StatelessWidget {
             AppChip(
               label: days == 1 ? 'Hari ini' : '$days Hari',
               selected: _isSelected(_preset(days)),
-              onTap: () => onChanged(_preset(days)),
+              onTap: () {
+                final preset = _preset(days);
+                if (_isSelected(preset)) return onChanged(preset);
+                dashboardRangeChanged(
+                    ref.read(analyticsClientProvider), _presetChoice(days));
+                onChanged(preset);
+              },
             ),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -121,6 +136,8 @@ class DashboardReportRangeFilter extends StatelessWidget {
                     lastDate: lastDate,
                     onApply: (value) {
                       controller.close();
+                      dashboardRangeChanged(ref.read(analyticsClientProvider),
+                          DashboardRangeChoice.custom);
                       onChanged(DashboardReportRange(
                         start: value.start,
                         end: value.end,

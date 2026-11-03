@@ -1,7 +1,10 @@
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/dashboard/analytics/dashboard_analytics.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/transaksi_chooser_sheet.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/draft_pencairan_routes.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
@@ -19,7 +22,7 @@ const transaksiPilihanTerbuka = {TransaksiPilihan.setoran};
 /// Pengurus dashboard action area: the two things done most, side by side.
 /// Which transactions Transaksi Baru offers is [terbuka]; everything else is
 /// a destination in the navigation, not a button.
-class DashboardActionButtons extends StatelessWidget {
+class DashboardActionButtons extends ConsumerWidget {
   const DashboardActionButtons({
     super.key,
     this.isWeb,
@@ -37,7 +40,7 @@ class DashboardActionButtons extends StatelessWidget {
   final Set<TransaksiPilihan> terbuka;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Nol transaksi terbuka bukan keadaan yang punya tampilan: tombolnya akan
     // membuka pemilih yang seluruh barisnya mati, kontrol mati yang sama
     // dengan yang dilarang CPBI-31. Menutup transaksi yang terakhir berarti
@@ -50,7 +53,11 @@ class DashboardActionButtons extends StatelessWidget {
           child: AppButton(
             label: 'Transaksi Baru',
             icon: Icons.add,
-            onPressed: () => _openTransaksiBaru(context, isWeb),
+            onPressed: () {
+              dashboardQuickActionTapped(ref.read(analyticsClientProvider),
+                  DashboardQuickAction.newTransaction);
+              _openTransaksiBaru(context, isWeb);
+            },
           ),
         ),
         const SizedBox(width: 12),
@@ -60,6 +67,8 @@ class DashboardActionButtons extends StatelessWidget {
             variant: AppButtonVariant.outlined,
             icon: Icons.person_add_outlined,
             onPressed: () {
+              dashboardQuickActionTapped(ref.read(analyticsClientProvider),
+                  DashboardQuickAction.addNasabah);
               // 1. Trigger the route change to the Nasabah tab
               context.go('/nasabah');
 
