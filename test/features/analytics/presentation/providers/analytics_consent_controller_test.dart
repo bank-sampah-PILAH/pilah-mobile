@@ -481,6 +481,24 @@ void main() {
       expect(client.log, ['stop', 'reset']);
     });
   });
+
+  group('only a pengurus can agree', () {
+    test('a nasabah who reaches the switch is not recorded or identified',
+        () async {
+      auth.setStateForTest(_signedInAs('nasabah'));
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+      client.calls.clear();
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      expect(client.calls, isEmpty);
+      expect(client.identified, isEmpty);
+      expect(client.registered, isEmpty);
+      expect(
+          await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.unset);
+    });
+  });
 }
 
 /// A tracker that only counts how often it was asked to repeat the screen.

@@ -471,4 +471,35 @@ void main() {
     expect(_libraryCalls(), contains('capture'),
         reason: 'the caller of the first start was told the client is running');
   });
+
+  group('when the library never loaded', () {
+    PosthogWebClient failingClient() => PosthogWebClient(
+          apiKey: 'phc_test_key',
+          host: 'https://us.i.posthog.com',
+          // Nothing listens on port 1, so the script request is refused.
+          libraryUrl: 'http://127.0.0.1:1/array.js',
+        );
+
+    test('forgetting the user does nothing instead of throwing', () async {
+      final client = failingClient();
+      await client.start().catchError((Object _) {});
+
+      expect(client.reset, returnsNormally);
+    });
+
+    test('stopping does nothing instead of throwing, so a withdrawal is kept',
+        () async {
+      final client = failingClient();
+      await client.start().catchError((Object _) {});
+
+      await expectLater(client.stop(), completes);
+    });
+  });
+
+  test('the screen class follows the width of the window', () {
+    expect(PosthogWebClient.screenClassFor(599), 'ponsel');
+    expect(PosthogWebClient.screenClassFor(600), 'tablet');
+    expect(PosthogWebClient.screenClassFor(1023), 'tablet');
+    expect(PosthogWebClient.screenClassFor(1024), 'desktop');
+  });
 }
