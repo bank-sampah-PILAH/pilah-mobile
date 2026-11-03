@@ -284,7 +284,7 @@ void main() {
 
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
-    expect(find.text('Kirim Notif WhatsApp & Selesai'), findsOneWidget,
+    expect(find.text('Kirim WhatsApp'), findsOneWidget,
         reason: 'the result still reaches the person who saved it');
     await settleToasts(tester);
   });
@@ -306,10 +306,32 @@ void main() {
     await tester.tap(find.text('Simpan Transaksi'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Kirim Notif WhatsApp & Selesai'), findsOneWidget,
+    expect(find.text('Kirim WhatsApp'), findsOneWidget,
         reason: 'the success panel is up');
     expect(form.hasUnsavedInput, isFalse,
         reason: 'the transaction is recorded; there is nothing left to lose');
+    await settleToasts(tester);
+  });
+
+  /// Selesai leaves the form without WhatsApp. In the panel it must close the
+  /// panel and leave the page it was opened from, not pop that page: the form
+  /// closes through its container, and `GoRouter.pop()` from inside the panel
+  /// would take the page behind it.
+  testWidgets('Selesai closes the panel and keeps the page behind it',
+      (tester) async {
+    stubSetoranApi();
+    await openHost(tester, const Size(1440, 900));
+    await fillSetoran(tester);
+    await tester.tap(find.text('Simpan Transaksi'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Selesai'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simpan Transaksi'), findsNothing,
+        reason: 'the panel is gone');
+    expect(find.text('Tambah Transaksi'), findsOneWidget,
+        reason: 'the page it was opened from is still there');
     await settleToasts(tester);
   });
 
