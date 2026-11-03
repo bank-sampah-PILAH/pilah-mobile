@@ -136,35 +136,7 @@ class _ShellContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final approval = _watchApproval(context, ref);
     final limitedNasabah = _isLimitedNasabah(approval);
-    // Logo bank sampah untuk kepala rail/drawer. Pengurus memperbarui logo
-    // lewat GET /bank-sampah/me (di-watch profileProvider, jadi simpanan di
-    // halaman Profil langsung tercermin di sini); nasabah memakai logo yang
-    // datang bersama keanggotaannya dari GET /nasabah/me. Dijaga `exists`:
-    // profileProvider dibangun dari pabrik DI, dan harness uji ringan tidak
-    // mendaftarkan sumber datanya.
-    final container = ProviderScope.containerOf(context, listen: false);
-    String? profileLogoUrl;
-    if (container.exists(profileProvider)) {
-      final profile = container.read(profileProvider);
-      profileLogoUrl = profile.status == ProfileStatus.loaded
-          ? profile.bankSampah?.fotoLogo
-          : null;
-    }
-    String? approvalLogoUrl;
-    if (approval is NasabahApprovalLoaded && approval.memberships.isNotEmpty) {
-      final membership = approval.memberships.firstWhere(
-        (m) => m.status == MembershipStatus.approved && m.isActive,
-        orElse: () => approval.memberships.first,
-      );
-      approvalLogoUrl = membership.bankSampahLogoUrl;
-    }
-    final bankSampahLogoUrl =
-        role == 'nasabah' ? approvalLogoUrl : profileLogoUrl;
-    // Only a confirmed status may discard the current route; initial loading
-    // must leave the current route intact.
-    final confirmedLimitedNasabah = role == 'nasabah' &&
-        approval is NasabahApprovalLoaded &&
-        limitedNasabah;
+    final bankSampahLogoUrl = _bankSampahLogoUrl(context, approval);
     final form = NavigationForm.resolve(
       isWeb: isWebOverride ?? kIsWeb,
       width: MediaQuery.sizeOf(context).width,
@@ -173,20 +145,15 @@ class _ShellContent extends ConsumerWidget {
         limitedNasabah: limitedNasabah,
         bottomBar: form == NavigationForm.bottomBar);
     final selected = branches.indexOf(navigationShell.currentIndex);
-    if (confirmedLimitedNasabah && selected < 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
-      });
-    }
+    // Only a confirmed status may discard the current route; initial loading
+    // must leave the current route intact.
+    _resetConfirmedStrandedRoute(context, approval, limitedNasabah, selected);
     final offDestination = _isOffDestination(selected, limitedNasabah);
     final routeGuard =
         _routeGuard(selected, limitedNasabah, offDestination, form);
     if (routeGuard != null) return routeGuard;
 
-    final body =
-        limitedNasabah && navigationShell.currentIndex != _profileBranch
-            ? NasabahVerificationHome(name: name)
-            : navigationShell;
+    final body = _shellBody(limitedNasabah);
     final select = _selectionHandler(ref, branches, selected);
     final railSelected = offDestination ? null : (selected < 0 ? 0 : selected);
     if (form == NavigationForm.bottomBar) {
@@ -196,13 +163,60 @@ class _ShellContent extends ConsumerWidget {
       context,
       ref,
       body,
-      limitedNasabah,
       railSelected,
       select,
       form,
       bankSampahLogoUrl,
     );
   }
+
+  /// Logo bank sampah untuk kepala rail/drawer. Pengurus memperbarui logo
+  /// lewat GET /bank-sampah/me (di-watch profileProvider, jadi simpanan di
+  /// halaman Profil langsung tercermin di sini); nasabah memakai logo yang
+  /// datang bersama keanggotaannya dari GET /nasabah/me. Dijaga `exists`:
+  /// profileProvider dibangun dari pabrik DI, dan harness uji ringan tidak
+  /// mendaftarkan sumber datanya.
+  String? _bankSampahLogoUrl(
+    BuildContext context,
+    NasabahApprovalState? approval,
+  ) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    if (role != 'nasabah') {
+      if (!container.exists(profileProvider)) return null;
+      final profile = container.read(profileProvider);
+      return profile.status == ProfileStatus.loaded
+          ? profile.bankSampah?.fotoLogo
+          : null;
+    }
+    if (approval is! NasabahApprovalLoaded || approval.memberships.isEmpty) {
+      return null;
+    }
+    final membership = approval.memberships.firstWhere(
+      (m) => m.status == MembershipStatus.approved && m.isActive,
+      orElse: () => approval.memberships.first,
+    );
+    return membership.bankSampahLogoUrl;
+  }
+
+  void _resetConfirmedStrandedRoute(
+    BuildContext context,
+    NasabahApprovalState? approval,
+    bool limitedNasabah,
+    int selected,
+  ) {
+    final confirmed = role == 'nasabah' &&
+        approval is NasabahApprovalLoaded &&
+        limitedNasabah;
+    if (!confirmed || selected >= 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
+    });
+  }
+
+  Widget _shellBody(bool limitedNasabah) =>
+      limitedNasabah && navigationShell.currentIndex != _profileBranch
+          ? NasabahVerificationHome(name: name)
+          : navigationShell;
 
   NasabahApprovalState? _watchApproval(BuildContext context, WidgetRef ref) {
     if (role != 'nasabah') return null;
@@ -289,7 +303,6 @@ class _ShellContent extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Widget body,
-    bool limitedNasabah,
     int? selected,
     ValueChanged<int> onSelected,
     NavigationForm form,
@@ -300,6 +313,8 @@ class _ShellContent extends ConsumerWidget {
         account is Authenticated ? account.authEntity.name : null;
     final profileEmail =
         account is Authenticated ? account.authEntity.email : null;
+    final limitedNasabah =
+        _isLimitedNasabah(ref.watch(nasabahApprovalProvider));
     final routeInformationProvider =
         GoRouter.of(context).routeInformationProvider;
     return AnimatedBuilder(
