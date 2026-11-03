@@ -55,7 +55,7 @@ void main() {
       tester.widget<Switch>(find.byType(Switch)).value;
 
   testWidgets('shows the current choice: on after agreeing', (tester) async {
-    await AnalyticsConsentStore(storage).grant();
+    await AnalyticsConsentStore(storage).grant('u1');
 
     await openCard(tester);
 
@@ -72,7 +72,7 @@ void main() {
     await openCard(tester);
     expect(switchValue(tester), isFalse);
 
-    await AnalyticsConsentStore(storage).deny();
+    await AnalyticsConsentStore(storage).deny('u1');
     await openCard(tester);
     expect(switchValue(tester), isFalse);
   });
@@ -84,13 +84,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(client.calls, ['start']);
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.granted);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.granted);
     expect(switchValue(tester), isTrue);
   });
 
   testWidgets('switching it off withdraws consent and stops recording',
       (tester) async {
-    await AnalyticsConsentStore(storage).grant();
+    await AnalyticsConsentStore(storage).grant('u1');
     await openCard(tester);
     client.calls.clear();
 
@@ -98,7 +99,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(client.calls, ['stop']);
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.denied);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.denied);
     expect(switchValue(tester), isFalse);
   });
 

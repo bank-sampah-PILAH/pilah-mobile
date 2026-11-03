@@ -44,6 +44,7 @@ void main() {
       ..delete('__calls'.toJS)
       ..delete('__initCalls'.toJS)
       ..delete('__initArgs'.toJS)
+      ..delete('__optInOptions'.toJS)
       ..delete('__emptyLibraryLoaded'.toJS);
   });
 
@@ -216,5 +217,31 @@ void main() {
       throwsA(isA<StateError>()
           .having((e) => e.message, 'message', contains('did not define'))),
     );
+  });
+
+  test('start opts in even when an earlier visit opted out', () async {
+    // PostHog keeps an opt-out across page reloads. A fresh client has not
+    // stopped anything itself, but the pengurus agreed again, so it opts in.
+    final client = _client();
+
+    await client.start();
+
+    expect(_libraryCalls(), ['init', 'opt_in_capturing']);
+  });
+
+  test('opting in does not make PostHog send an event of its own', () async {
+    // By default opt_in_capturing sends a `$opt_in` event, which would reach
+    // PostHog without passing the sanitizer.
+    final client = _client();
+
+    await client.start();
+    await client.stop();
+    await client.start();
+
+    final options = globalContext
+        .getProperty<JSAny?>('__optInOptions'.toJS)
+        .dartify()! as List<Object?>;
+    expect(options, hasLength(2));
+    expect(options, everyElement({'captureEventName': false}));
   });
 }

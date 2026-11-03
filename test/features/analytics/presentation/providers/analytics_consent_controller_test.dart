@@ -10,8 +10,9 @@ import '../../../../support/auth_support.dart';
 import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/fake_app_storage.dart';
 
-Authenticated _signedInAs(String role) => Authenticated(
+Authenticated _signedInAs(String role, {String? id = 'u1'}) => Authenticated(
       authEntity: AuthEntity(
+        id: id,
         name: 'Tester',
         email: 'tester@example.com',
         photoUrl: '',
@@ -53,7 +54,7 @@ void main() {
 
   test('a pengurus who agreed before is recorded again without being asked',
       () async {
-    await AnalyticsConsentStore(storage).grant();
+    await AnalyticsConsentStore(storage).grant('u1');
     final container = containerForTest();
 
     final choice = await container.read(analyticsConsentProvider.future);
@@ -64,7 +65,7 @@ void main() {
 
   test('a nasabah is never recorded, even if the device remembers an agreement',
       () async {
-    await AnalyticsConsentStore(storage).grant();
+    await AnalyticsConsentStore(storage).grant('u1');
     auth.setStateForTest(_signedInAs('nasabah'));
     final container = containerForTest();
 
@@ -76,7 +77,7 @@ void main() {
   test(
       'recording stops when the pengurus signs out and someone else takes over',
       () async {
-    await AnalyticsConsentStore(storage).grant();
+    await AnalyticsConsentStore(storage).grant('u1');
     final container = containerForTest();
     await container.read(analyticsConsentProvider.future);
     expect(client.calls, ['start']);
@@ -94,7 +95,8 @@ void main() {
     await container.read(analyticsConsentProvider.notifier).grant();
 
     expect(client.calls, ['start']);
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.granted);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.granted);
     expect(
         container.read(analyticsConsentProvider).value, ConsentChoice.granted);
   });
@@ -123,8 +125,8 @@ void main() {
 
     test('nobody is asked twice, whatever they answered', () async {
       for (final answer in [
-        (AnalyticsConsentStore store) => store.grant(),
-        (AnalyticsConsentStore store) => store.deny(),
+        (AnalyticsConsentStore store) => store.grant('u1'),
+        (AnalyticsConsentStore store) => store.deny('u1'),
       ]) {
         // A fresh app start each time: new storage, session and notifier.
         storage = FakeAppStorage();
@@ -144,7 +146,8 @@ void main() {
     await container.read(analyticsConsentProvider.notifier).deny();
 
     expect(client.calls, isEmpty);
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.denied);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.denied);
     expect(
         container.read(analyticsConsentProvider).value, ConsentChoice.denied);
   });
@@ -158,8 +161,84 @@ void main() {
     await container.read(analyticsConsentProvider.notifier).revoke();
 
     expect(client.calls, ['start', 'stop']);
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.denied);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.denied);
     expect(
         container.read(analyticsConsentProvider).value, ConsentChoice.denied);
+  });
+
+  group('one device, more than one pengurus', () {
+    test('a second pengurus is not recorded on the first one\'s agreement',
+        () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      auth.setStateForTest(_signedInAs('pengelola', id: 'u2'));
+      final container = containerForTest();
+
+      final choice = await container.read(analyticsConsentProvider.future);
+
+      expect(choice, ConsentChoice.unset);
+      expect(client.calls, isEmpty);
+    });
+
+    test('a second pengurus is asked, even though the first one agreed',
+        () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      auth.setStateForTest(_signedInAs('pengelola', id: 'u2'));
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      expect(container.read(analyticsNeedsPromptProvider), isTrue);
+    });
+
+    test('the first pengurus is still recorded when they come back', () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      auth.setStateForTest(_signedInAs('pengelola', id: 'u2'));
+      await container.read(analyticsConsentProvider.future);
+      auth.setStateForTest(_signedInAs('pengelola', id: 'u1'));
+      final choice = await container.read(analyticsConsentProvider.future);
+
+      expect(choice, ConsentChoice.granted);
+      expect(client.calls, ['start', 'stop', 'start']);
+    });
+
+    test('recording stops when another pengurus takes over without signing out',
+        () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+      expect(client.calls, ['start']);
+
+      auth.setStateForTest(_signedInAs('pengelola', id: 'u2'));
+      await container.read(analyticsConsentProvider.future);
+
+      expect(client.calls, ['start', 'stop']);
+    });
+
+    test('agreeing is remembered for that pengurus only', () async {
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      final store = AnalyticsConsentStore(storage);
+      expect(await store.read('u1'), ConsentChoice.granted);
+      expect(await store.read('u2'), ConsentChoice.unset);
+    });
+
+    test('an account without an id records for now and remembers nothing',
+        () async {
+      auth.setStateForTest(_signedInAs('pengelola', id: null));
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      expect(client.calls, ['start']);
+      expect(
+          await AnalyticsConsentStore(storage).read(''), ConsentChoice.unset);
+    });
   });
 }

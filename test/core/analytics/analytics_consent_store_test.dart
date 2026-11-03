@@ -11,54 +11,93 @@ void main() {
   test('no choice has been made until the user decides', () async {
     final store = AnalyticsConsentStore(storage);
 
-    expect(await store.read(), ConsentChoice.unset);
+    expect(await store.read('u1'), ConsentChoice.unset);
   });
 
   test('agreeing is remembered', () async {
     final store = AnalyticsConsentStore(storage);
 
-    await store.grant();
+    await store.grant('u1');
 
-    expect(await store.read(), ConsentChoice.granted);
+    expect(await store.read('u1'), ConsentChoice.granted);
   });
 
   test('declining is remembered and is not the same as not having chosen',
       () async {
     final store = AnalyticsConsentStore(storage);
 
-    await store.deny();
+    await store.deny('u1');
 
-    expect(await store.read(), ConsentChoice.denied);
+    expect(await store.read('u1'), ConsentChoice.denied);
   });
 
   test('the choice survives reopening the app', () async {
-    await AnalyticsConsentStore(storage).grant();
+    await AnalyticsConsentStore(storage).grant('u1');
 
     // A new store over the same storage stands for a fresh app start.
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.granted);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.granted);
+  });
+
+  test('a choice belongs to the user who made it, not to the device', () async {
+    final store = AnalyticsConsentStore(storage);
+
+    await store.grant('u1');
+
+    expect(await store.read('u2'), ConsentChoice.unset);
+    expect(await store.decidedAt('u2'), isNull);
+  });
+
+  test('every user keeps their own choice', () async {
+    final store = AnalyticsConsentStore(storage);
+
+    await store.grant('u1');
+    await store.deny('u2');
+
+    expect(await store.read('u1'), ConsentChoice.granted);
+    expect(await store.read('u2'), ConsentChoice.denied);
+  });
+
+  test('a choice made before choices were kept per user is not carried over',
+      () async {
+    await storage.put('analytics_consent_choice', 'granted');
+
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.unset);
+  });
+
+  test('without a user there is nothing to remember', () async {
+    final store = AnalyticsConsentStore(storage);
+
+    await store.grant('');
+
+    expect(await store.read(''), ConsentChoice.unset);
+    expect(
+        await storage.get<String>(AnalyticsConsentStore.choiceKey('')), isNull);
   });
 
   test('records when the choice was made', () async {
     final store = AnalyticsConsentStore(storage);
-    expect(await store.decidedAt(), isNull);
+    expect(await store.decidedAt('u1'), isNull);
 
     await withClock(
       Clock.fixed(DateTime.utc(2026, 11, 2, 10)),
-      () => store.grant(),
+      () => store.grant('u1'),
     );
-    expect(await store.decidedAt(), DateTime.utc(2026, 11, 2, 10));
+    expect(await store.decidedAt('u1'), DateTime.utc(2026, 11, 2, 10));
 
     await withClock(
       Clock.fixed(DateTime.utc(2026, 11, 3, 9)),
-      () => store.deny(),
+      () => store.deny('u1'),
     );
-    expect(await store.decidedAt(), DateTime.utc(2026, 11, 3, 9));
+    expect(await store.decidedAt('u1'), DateTime.utc(2026, 11, 3, 9));
   });
 
   test('a stored value nobody recognises counts as not having chosen',
       () async {
-    await storage.put(AnalyticsConsentStore.choiceKey, 'maybe');
+    await storage.put(AnalyticsConsentStore.choiceKey('u1'), 'maybe');
 
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.unset);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.unset);
   });
 }

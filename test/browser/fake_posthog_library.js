@@ -8,5 +8,8 @@ window.posthog = {
     window.__initArgs = [key, options];
   },
   opt_out_capturing: function () { window.__calls.push('opt_out_capturing'); },
-  opt_in_capturing: function () { window.__calls.push('opt_in_capturing'); },
+  opt_in_capturing: function (options) {
+    window.__calls.push('opt_in_capturing');
+    window.__optInOptions = (window.__optInOptions || []).concat([options]);
+  },
 };

@@ -70,7 +70,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(client.calls, ['start']);
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.granted);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.granted);
     expect(find.text(_title), findsNothing);
   });
 
@@ -82,7 +83,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(client.calls, isEmpty);
-    expect(await AnalyticsConsentStore(storage).read(), ConsentChoice.denied);
+    expect(
+        await AnalyticsConsentStore(storage).read('u1'), ConsentChoice.denied);
     expect(find.text(_title), findsNothing);
   });
 
@@ -96,7 +98,7 @@ void main() {
   });
 
   testWidgets('does not ask someone who already answered', (tester) async {
-    await AnalyticsConsentStore(storage).deny();
+    await AnalyticsConsentStore(storage).deny('u1');
 
     await openApp(tester);
 
