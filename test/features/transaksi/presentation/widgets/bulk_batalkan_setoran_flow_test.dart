@@ -341,12 +341,17 @@ void main() {
     selection.toggle('no-longer-in-history');
     await showBulkBatalkanSetoranDialog(
         tester.element(find.byType(LaporanPage)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(container.read(aktivitasBulkSelectionProvider), isNull);
     expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
+    expect(find.text('Pilihan tidak tersedia'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
     expect(find.text('Pilihan sudah tidak tersedia di riwayat terbaru'),
         findsOneWidget);
     expect(api.requests, isEmpty);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('session change during a void dismisses stale results and stops',

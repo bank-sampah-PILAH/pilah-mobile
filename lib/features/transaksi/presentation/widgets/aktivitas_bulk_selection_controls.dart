@@ -68,7 +68,7 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
     }
     return ContentInset(
         child: Padding(
-      padding: EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.webGutter,
         vertical: AppSpacing.md,
       ),

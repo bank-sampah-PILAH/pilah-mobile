@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:intl/intl.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -36,8 +37,11 @@ Future<void> showBulkBatalkanSetoranDialog(BuildContext context) async {
   });
   if (targets.isEmpty) {
     container.read(aktivitasBulkSelectionProvider.notifier).clear();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Pilihan sudah tidak tersedia di riwayat terbaru')));
+    AppNotification.showWarning(
+      context,
+      title: 'Pilihan tidak tersedia',
+      message: 'Pilihan sudah tidak tersedia di riwayat terbaru',
+    );
     return;
   }
   await showDialog<void>(
