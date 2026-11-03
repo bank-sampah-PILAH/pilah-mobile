@@ -58,11 +58,14 @@ and privacy guarantees without introducing test-only production paths.
 Run the affected suite with coverage:
 
 ```sh
-flutter test --no-pub --coverage test/core/client test/features/nasabah
+flutter test --no-pub --coverage test/core/client test/features/nasabah \
+  test/features/transaksi/presentation/widgets/pilih_nasabah_flow_test.dart \
+  test/features/transaksi/presentation/widgets/pilih_nasabah_host_test.dart \
+  test/features/transaksi/presentation/widgets/pilih_nasabah_fetch_test.dart
 ```
 
 The local Dart LCOV result covers all 95 measured executable lines added or changed
-by PIL-442 against baseline `074f14f3625db2219d86492dfcbd32b037609479`.
+by PIL-442 against current-main baseline `382a5bfb2ac0dc2660317dbf7ab204e33220e980`.
 This is 100% changed-code line coverage, not 100% whole-application or branch
 coverage. Existing coverage exclusions and quality thresholds were not changed.
 
@@ -70,3 +73,8 @@ The redaction marker is centralized in one constant to address Sonar rule
 `dart:S1192`; privacy tests still verify that the emitted marker and actual HTTP
 traffic remain unchanged. Sonar's CI analysis is the independent verification of
 the final PR coverage and issue count.
+
+The paginated transaction customer picker on current main shares this repository.
+Its access-denied integration test therefore requires the fixed safe message and
+asserts that private backend diagnostics are absent, rather than requiring raw
+server text to appear in the UI.

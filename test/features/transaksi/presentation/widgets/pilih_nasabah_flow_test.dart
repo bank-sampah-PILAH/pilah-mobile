@@ -270,13 +270,17 @@ void main() {
     expect(find.text('Belum ada nasabah aktif.'), findsOneWidget);
   });
 
-  testWidgets('a failed fetch shows the backend message', (tester) async {
+  testWidgets(
+      'a failed fetch shows safe access text without backend diagnostics',
+      (tester) async {
     api.on('GET', '/api/v1/nasabah',
-        status: 403, json: {'error': 'Tidak diizinkan'});
+        status: 403, json: {'error': 'private-forbidden-backend-diagnostic'});
     await open(tester);
     await openPicker(tester);
 
-    expect(find.text('Tidak diizinkan'), findsOneWidget);
+    expect(find.text('Anda tidak memiliki akses ke daftar nasabah ini.'),
+        findsOneWidget);
+    expect(find.textContaining('private-forbidden'), findsNothing);
   });
 
   testWidgets('a nasabah without a code shows the phone alone', (tester) async {

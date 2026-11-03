@@ -126,15 +126,17 @@ void main() {
       expect(find.text('Siti Aminah'), findsOneWidget);
     });
 
-    testWidgets('a failed fetch shows the backend message in the dialog',
+    testWidgets('a failed fetch shows safe access text in the dialog',
         (tester) async {
       api.on('GET', '/api/v1/nasabah',
-          status: 403, json: {'error': 'Tidak diizinkan'});
+          status: 403, json: {'error': 'private-forbidden-dialog-diagnostic'});
       await open(tester, const Size(1280, 800));
 
-      expect(find.text('Tidak diizinkan'), findsOneWidget,
+      expect(find.text('Anda tidak memiliki akses ke daftar nasabah ini.'),
+          findsOneWidget,
           reason: 'the picker never falls back to an unscoped list when the '
               'server refuses');
+      expect(find.textContaining('private-forbidden'), findsNothing);
     });
 
     testWidgets('the dialog is a bounded box in the middle of the window',
