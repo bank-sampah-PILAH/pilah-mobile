@@ -53,6 +53,47 @@ void main() {
       'Anda tidak memiliki akses ke daftar nasabah ini.'
     ),
     ('invalid query', _http(422), 'Pencarian atau filter nasabah tidak valid.'),
+    ('bad request', _http(400), 'Pencarian atau filter nasabah tidak valid.'),
+    (
+      'wrapped timeout',
+      DioException(
+        requestOptions: RequestOptions(),
+        error: TimeoutException('private-wrapped-timeout'),
+      ),
+      _timeout
+    ),
+    (
+      'send timeout',
+      DioException(
+          requestOptions: RequestOptions(), type: DioExceptionType.sendTimeout),
+      _timeout
+    ),
+    (
+      'transform timeout',
+      DioException(
+          requestOptions: RequestOptions(),
+          type: DioExceptionType.transformTimeout),
+      _timeout
+    ),
+    (
+      'cancelled request',
+      DioException(
+          requestOptions: RequestOptions(), type: DioExceptionType.cancel),
+      'Permintaan dibatalkan.'
+    ),
+    (
+      'untrusted certificate',
+      DioException(
+          requestOptions: RequestOptions(),
+          type: DioExceptionType.badCertificate),
+      'Koneksi aman tidak dapat diverifikasi.'
+    ),
+    (
+      'unknown transport error',
+      DioException(
+          requestOptions: RequestOptions(), error: 'private-transport-error'),
+      _generic
+    ),
     (
       'connection timeout',
       DioException(

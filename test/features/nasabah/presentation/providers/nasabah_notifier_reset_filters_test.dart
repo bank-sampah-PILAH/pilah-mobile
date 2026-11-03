@@ -22,6 +22,29 @@ void main() {
   });
   tearDown(() => harness.dispose());
 
+  test('reset cancels search entered before the initial list is loaded',
+      () async {
+    expect(notifier.state, isA<NasabahInitial>());
+
+    notifier.searchNasabah('budi');
+
+    expect(notifier.state, isA<NasabahLoading>());
+    expect(notifier.searchQuery, 'budi');
+    expect(notifier.hasActiveFilters, isTrue);
+    expect(api.requests, isEmpty);
+
+    await notifier.resetFilters();
+    final requestsAfterReset = api.requests.length;
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
+
+    expect(api.requests.length, requestsAfterReset);
+    expect(api.last.query['search'], isNull);
+    expect(api.last.query['urutan'], 'nomor');
+    expect(api.last.query['status'], 'aktif');
+    expect((notifier.state as NasabahLoaded).searchQuery, isEmpty);
+    expect(notifier.hasActiveFilters, isFalse);
+  });
+
   for (final (tab, status) in [
     (true, 'aktif'),
     (false, 'tidak_aktif'),

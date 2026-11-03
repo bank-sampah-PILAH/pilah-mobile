@@ -47,3 +47,26 @@ An HTTP 429 message does not bypass or replace the backend's quota.
 The existing customer-list ordering, reset, and pagination tests still apply.
 The manual Burp checks should inspect actual HTTP traffic; redacted client logs
 are not evidence of which credentials or data crossed the network.
+
+## Coverage and quality follow-up
+
+The coverage follow-up exercises search before the first list load, reset during
+that pending search, every Dio error category, wrapped timeouts, and unknown HTTP
+methods with missing response/cause metadata. These tests verify public behavior
+and privacy guarantees without introducing test-only production paths.
+
+Run the affected suite with coverage:
+
+```sh
+flutter test --no-pub --coverage test/core/client test/features/nasabah
+```
+
+The local Dart LCOV result covers all 95 measured executable lines added or changed
+by PIL-442 against baseline `074f14f3625db2219d86492dfcbd32b037609479`.
+This is 100% changed-code line coverage, not 100% whole-application or branch
+coverage. Existing coverage exclusions and quality thresholds were not changed.
+
+The redaction marker is centralized in one constant to address Sonar rule
+`dart:S1192`; privacy tests still verify that the emitted marker and actual HTTP
+traffic remain unchanged. Sonar's CI analysis is the independent verification of
+the final PR coverage and issue count.

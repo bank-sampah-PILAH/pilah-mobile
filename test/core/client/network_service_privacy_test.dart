@@ -8,6 +8,11 @@ import 'package:pilah_mobile/core/client/network_service.dart';
 import '../../support/stub_api.dart';
 
 class _RejectedAdapter implements HttpClientAdapter {
+  const _RejectedAdapter({this.withResponse = true, this.withCause = true});
+
+  final bool withResponse;
+  final bool withCause;
+
   @override
   Future<ResponseBody> fetch(RequestOptions options,
       Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
@@ -15,12 +20,14 @@ class _RejectedAdapter implements HttpClientAdapter {
       requestOptions: options,
       type: DioExceptionType.badResponse,
       message: 'private-error-message',
-      error: const FormatException('private-error-source'),
-      response: Response(
-        requestOptions: options,
-        statusCode: 503,
-        data: {'error': 'private-response-customer'},
-      ),
+      error: withCause ? const FormatException('private-error-source') : null,
+      response: withResponse
+          ? Response(
+              requestOptions: options,
+              statusCode: 503,
+              data: {'error': 'private-response-customer'},
+            )
+          : null,
     );
   }
 
@@ -115,5 +122,28 @@ void main() {
     await dio.post('/upload', data: '{"password":"private-malformed-json"');
     expect(logs.join('\n'), isNot(contains('private-')));
     expect(logs.join('\n'), contains('[REDACTED]'));
+  });
+
+  test('unknown methods and response-less errors keep diagnostics safe',
+      () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
+      ..httpClientAdapter =
+          const _RejectedAdapter(withResponse: false, withCause: false)
+      ..interceptors.add(interceptors);
+    addTearDown(() => dio.close(force: true));
+
+    await expectLater(
+      dio.request('/private-path',
+          options: Options(method: 'private-custom-method')),
+      throwsA(isA<DioException>()
+          .having((error) => error.response, 'response', isNull)
+          .having((error) => error.error, 'cause', isNull)),
+    );
+
+    final output = logs.join('\n');
+    expect(output, contains('OTHER'));
+    expect(output, contains('status: 0'));
+    expect(output, contains('[REDACTED]'));
+    expect(output.toLowerCase(), isNot(contains('private-')));
   });
 }

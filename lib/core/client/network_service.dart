@@ -227,12 +227,14 @@ class NetworkService {
   }
 }
 
+const _redactedLogValue = '[REDACTED]';
+
 final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
   if (kDebugMode) {
     Logger().i({
       'event': 'http_request',
       'method': _methodForLog(options.method),
-      'request': '[REDACTED]',
+      'request': _redactedLogValue,
     });
   }
   return handler.next(options);
@@ -242,7 +244,7 @@ final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
       'event': 'http_response',
       'method': _methodForLog(resp.requestOptions.method),
       'status': resp.statusCode,
-      'response': '[REDACTED]',
+      'response': _redactedLogValue,
     });
   }
   return handler.next(resp);
@@ -253,8 +255,8 @@ final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
       'method': _methodForLog(err.requestOptions.method),
       'status': err.response?.statusCode ?? 0,
       'type': err.type.name,
-      'request': '[REDACTED]',
-      'response': '[REDACTED]',
+      'request': _redactedLogValue,
+      'response': _redactedLogValue,
       // Keep the cause category for diagnosis, never its raw message: a
       // decoder or server error may contain tokens or customer records.
       'errorType': err.error?.runtimeType.toString(),
