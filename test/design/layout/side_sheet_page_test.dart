@@ -399,6 +399,25 @@ void main() {
     });
   });
 
+  /// The guard is a global in the setoran panel, so a key armed by an exit that
+  /// nothing consumed would outlive its panel and wave the next one through.
+  /// Opening a panel starts from a clean slate.
+  testWidgets('reset drops a one-shot key that nothing consumed',
+      (tester) async {
+    await open(tester, const Size(1440, 900), hasUnsavedInput: () => true);
+    guard.allowNextExit();
+
+    guard.reset();
+    final exit = guard.confirmExit(tester.element(find.byKey(contentKey)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buang isi formulir?'), findsOneWidget,
+        reason: 'the stale key is gone, so the dirty panel asks again');
+    await tester.tap(find.text('Lanjut mengisi'));
+    await tester.pumpAndSettle();
+    expect(await exit, isFalse);
+  });
+
   group('leaving through the browser history', () {
     const question = 'Buang isi formulir?';
 

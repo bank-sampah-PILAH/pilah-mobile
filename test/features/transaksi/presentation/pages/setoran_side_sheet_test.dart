@@ -106,6 +106,53 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The API a complete setoran needs: one nasabah, one jenis, and a save that
+  /// succeeds.
+  void stubSetoranApi() {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [
+        {
+          'id': 'j1',
+          'kode': 'K-j1',
+          'nama_sampah': 'Botol PET',
+          'kategori': 'plastik',
+          'deskripsi': '',
+          'harga_per_kg': '2000',
+          'is_active': true,
+        },
+      ],
+    });
+    api.on('GET', '/api/v1/nasabah',
+        json: nasabahPage([nasabahRow('n1', nama: 'Budi Santoso')]));
+    api.on('POST', '/api/v1/transaksi', json: {
+      'id': 't1',
+      'total_nilai': '2000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+  }
+
+  /// Opens the panel from [openHost]'s page and fills in one nasabah and one
+  /// item, skipping the first-time tutorial.
+  Future<void> fillSetoran(WidgetTester tester) async {
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+    if (find.text('Lewati').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Lewati'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Tap untuk pilih nasabah'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Budi Santoso'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tambah Item Setoran'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pilih Jenis').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Botol PET').last);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('a wide window gets the form in a panel over the page',
       (tester) async {
     await openHost(tester, const Size(1440, 900));
@@ -219,44 +266,9 @@ void main() {
   /// and the WhatsApp draft of a setoran the server did record.
   testWidgets('a save in flight keeps the panel open, then shows its result',
       (tester) async {
-    api.on('GET', '/api/v1/jenis-sampah', json: {
-      'results': [
-        {
-          'id': 'j1',
-          'kode': 'K-j1',
-          'nama_sampah': 'Botol PET',
-          'kategori': 'plastik',
-          'deskripsi': '',
-          'harga_per_kg': '2000',
-          'is_active': true,
-        },
-      ],
-    });
-    api.on('GET', '/api/v1/nasabah',
-        json: nasabahPage([nasabahRow('n1', nama: 'Budi Santoso')]));
-    api.on('POST', '/api/v1/transaksi', json: {
-      'id': 't1',
-      'total_nilai': '2000',
-      'saldo_setelah_transaksi': '30000',
-      'items': [{}],
-    });
+    stubSetoranApi();
     await openHost(tester, const Size(1440, 900));
-    await tester.tap(find.text('Tambah Transaksi'));
-    await tester.pumpAndSettle();
-    if (find.text('Lewati').evaluate().isNotEmpty) {
-      await tester.tap(find.text('Lewati'));
-      await tester.pumpAndSettle();
-    }
-    await tester.tap(find.text('Tap untuk pilih nasabah'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Budi Santoso'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Tambah Item Setoran'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Pilih Jenis').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Botol PET').last);
-    await tester.pumpAndSettle();
+    await fillSetoran(tester);
 
     api.latency = const Duration(seconds: 1);
     await tester.tap(find.text('Simpan Transaksi'));
@@ -274,6 +286,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Kirim Notif WhatsApp & Selesai'), findsOneWidget,
         reason: 'the result still reaches the person who saved it');
+    await settleToasts(tester);
+  });
+
+  /// The setoran is recorded the moment the save resolves. From then on the
+  /// form holds nothing that is unsaved, even though its fields are still
+  /// filled in behind the success panel. Browser back during that window must
+  /// not ask whether to throw away a transaction that already stands.
+  testWidgets('a saved setoran no longer counts as unsaved input',
+      (tester) async {
+    stubSetoranApi();
+    await openHost(tester, const Size(1440, 900));
+    await fillSetoran(tester);
+    final form = tester.state<SetoranFormViewState>(
+      find.byType(SetoranFormView),
+    );
+    expect(form.hasUnsavedInput, isTrue, reason: 'filled in, not yet saved');
+
+    await tester.tap(find.text('Simpan Transaksi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kirim Notif WhatsApp & Selesai'), findsOneWidget,
+        reason: 'the success panel is up');
+    expect(form.hasUnsavedInput, isFalse,
+        reason: 'the transaction is recorded; there is nothing left to lose');
+    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
     await settleToasts(tester);
   });
 
