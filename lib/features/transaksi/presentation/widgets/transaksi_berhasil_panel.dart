@@ -12,7 +12,12 @@ class TransaksiBerhasilPanel extends StatefulWidget {
   final int totalSetoran;
   final int newBalance;
   final int itemCount;
-  final Future<void> Function() onKirimWaSelesai;
+
+  /// Opens the WhatsApp message for the nasabah, then closes the form.
+  final Future<void> Function() onKirimWa;
+
+  /// Closes the form without sending anything.
+  final Future<void> Function() onSelesai;
 
   const TransaksiBerhasilPanel({
     super.key,
@@ -20,7 +25,8 @@ class TransaksiBerhasilPanel extends StatefulWidget {
     required this.totalSetoran,
     required this.newBalance,
     required this.itemCount,
-    required this.onKirimWaSelesai,
+    required this.onKirimWa,
+    required this.onSelesai,
   });
 
   @override
@@ -99,16 +105,23 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         ),
         const SizedBox(height: 32),
 
-        // Action Buttons
+        // Action Buttons. Sending the message is the main choice; finishing is
+        // the quieter one. Neither can be taken while the message is prepared.
         AppButton(
-          label: 'Kirim Notif WhatsApp & Selesai',
+          label: 'Kirim WhatsApp',
           isLoading: _isSending,
           onPressed: () async {
             setState(() => _isSending = true);
-            await widget.onKirimWaSelesai();
+            await widget.onKirimWa();
             if (!mounted) return;
             setState(() => _isSending = false);
           },
+        ),
+        const SizedBox(height: 12),
+        AppButton(
+          label: 'Selesai',
+          variant: AppButtonVariant.outlined,
+          onPressed: _isSending ? null : () => widget.onSelesai(),
         ),
       ],
     );

@@ -488,7 +488,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
         totalSetoran: created.totalNilai,
         newBalance: created.saldoSetelah,
         itemCount: created.itemCount,
-        onKirimWaSelesai: () async {
+        onKirimWa: () async {
           // Both navigators are resolved up front, before the await. Reaching
           // back for a BuildContext afterwards is what the
           // use_build_context_synchronously diagnostic was pointing at, and the
@@ -553,6 +553,23 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
               ),
             );
           }
+        },
+        onSelesai: () async {
+          // Nothing to wait for, so no await separates these from the pop. The
+          // container closes itself, as above: from inside the side sheet
+          // `GoRouter.pop()` would pop the page behind the panel.
+          final sheetNavigator = Navigator.of(sheetContext);
+          final close = widget.onClose;
+          sheetNavigator.pop();
+          close();
+          // Same reason as above: shown once the destination has settled.
+          AppNotification.afterNavigation(
+            (toastContext) => AppNotification.showSuccess(
+              toastContext,
+              title: 'Berhasil',
+              message: 'Transaksi disimpan.',
+            ),
+          );
         },
       ),
     );
