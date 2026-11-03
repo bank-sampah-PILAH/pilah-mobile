@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
@@ -171,7 +172,7 @@ void main() {
       expect(style.fontSize, 12);
       expect(style.fontWeight, FontWeight.bold);
       expect(style.letterSpacing, 1.0);
-      expect(style.color, Colors.black87);
+      expect(style.color, AppColors.black);
     });
 
     testWidgets('a field label is a step quieter: smaller, dark grey',
@@ -184,7 +185,7 @@ void main() {
       expect(style.fontSize, 11);
       expect(style.fontWeight, FontWeight.bold);
       expect(style.letterSpacing, 1.0);
-      expect(style.color, Colors.grey[700]);
+      expect(style.color, AppColors.inkSoft);
     });
   });
 
@@ -229,11 +230,11 @@ void main() {
         findsOneWidget);
     final text = tester.widget<Text>(find.byType(Text));
     final spans = (text.textSpan! as TextSpan).children!.cast<TextSpan>();
-    expect(spans[0].style!.color, Colors.grey[700]);
+    expect(spans[0].style!.color, AppColors.inkSoft);
     expect(spans[1].text, 'Pengurus PILAH');
-    expect(spans[1].style!.color, Colors.black87);
+    expect(spans[1].style!.color, AppColors.black);
     expect(spans[1].style!.fontWeight, FontWeight.w600);
-    expect(spans[2].style!.color, Colors.grey[700]);
+    expect(spans[2].style!.color, AppColors.inkSoft);
   });
 
   testWidgets('PencairanChip can carry an icon', (tester) async {
@@ -263,7 +264,7 @@ void main() {
     expect(decoration.fillColor, Colors.white);
     final enabled = decoration.enabledBorder! as OutlineInputBorder;
     expect(enabled.borderRadius, BorderRadius.circular(12));
-    expect(enabled.borderSide.color, Colors.grey[300]);
+    expect(enabled.borderSide.color, AppColors.border);
     final focused = decoration.focusedBorder! as OutlineInputBorder;
     expect(focused.borderSide.color, AppColors.greenDark);
     expect(focused.borderSide.width, 1.5);
@@ -379,14 +380,14 @@ void main() {
       tester,
       Scaffold(
         body: PencairanCard(
-            borderColor: Colors.red.shade300, child: const Text('isi')),
+            borderColor: AppColors.danger, child: const Text('isi')),
       ),
     );
 
     final box = tester.widget<Container>(find.descendant(
         of: find.byType(PencairanCard), matching: find.byType(Container)));
     expect(((box.decoration! as BoxDecoration).border! as Border).top.color,
-        Colors.red.shade300);
+        AppColors.danger);
   });
 
   group('PencairanActionButton', () {
@@ -417,45 +418,41 @@ void main() {
           ),
         );
 
-    testWidgets('shows its icon and label, 52 tall, and reports taps',
+    testWidgets('shows its icon and label, 48 tall, and reports taps',
         (tester) async {
       var taps = 0;
       await pump(tester, filled: false, onPressed: () => taps++);
 
       expect(find.byIcon(Icons.save_outlined), findsOneWidget);
       expect(find.text('Simpan Draft'), findsOneWidget);
-      expect(tester.getSize(find.byKey(const Key('aksi'))).height, 52);
+      expect(tester.getSize(find.byKey(const Key('aksi'))).height, 48);
       await tester.tap(find.byKey(const Key('aksi')));
       expect(taps, 1);
     });
 
-    testWidgets('filled is solid green with white content', (tester) async {
+    testWidgets('filled is the primary AppButton', (tester) async {
       await pump(tester, filled: true, onPressed: () {});
 
-      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-      expect(button.style!.backgroundColor!.resolve({}), AppColors.greenDark);
-      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
-          Colors.white);
+      final button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.variant, AppButtonVariant.primary);
     });
 
-    testWidgets('outlined is white with a green border and green content',
-        (tester) async {
+    testWidgets('outlined is the outlined AppButton', (tester) async {
       await pump(tester, filled: false, onPressed: () {});
 
-      expect(find.byType(OutlinedButton), findsOneWidget);
-      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
-          AppColors.greenDark);
+      final button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.variant, AppButtonVariant.outlined);
     });
 
-    testWidgets('a disabled button is grey and ignores taps', (tester) async {
+    testWidgets('a disabled button ignores taps', (tester) async {
       await pump(tester, filled: true, onPressed: null);
 
-      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
-          Colors.grey[500]);
+      expect(
+          tester.widget<AppButton>(find.byType(AppButton)).onPressed, isNull);
       await tester.tap(find.byKey(const Key('aksi')), warnIfMissed: false);
     });
 
-    testWidgets('loading swaps the icon for a spinner and keeps the label',
+    testWidgets('loading swaps the label for a spinner and ignores taps',
         (tester) async {
       var taps = 0;
       await pump(tester,
@@ -463,7 +460,6 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byIcon(Icons.save_outlined), findsNothing);
-      expect(find.text('Simpan Draft'), findsOneWidget);
       await tester.tap(find.byKey(const Key('aksi')), warnIfMissed: false);
       expect(taps, 0, reason: 'busy: no double taps');
     });

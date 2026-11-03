@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../constants/colors.dart';
@@ -61,7 +61,7 @@ class _AppTextFieldState extends State<AppTextField> {
           Text(
             widget.label!,
             style: AppTextStyle.regularSemiBold.copyWith(
-              color: widget.isError ? AppColors.danger : Colors.black45,
+              color: widget.isError ? AppColors.danger : AppColors.grey100,
             ),
           ),
         ValueListenableBuilder(
@@ -71,7 +71,7 @@ class _AppTextFieldState extends State<AppTextField> {
               controller: widget.controller,
               obscureText: obscure,
               style: AppTextStyle.regularSemiBold.copyWith(
-                color: Colors.black,
+                color: AppColors.black,
               ),
               onChanged: widget.onChanged,
               keyboardType: widget.keyboardType,
@@ -92,7 +92,8 @@ class _AppTextFieldState extends State<AppTextField> {
                         },
                         icon: Icon(
                           obscure ? Icons.visibility : Icons.visibility_off,
-                          color: obscure ? AppColors.greenDark : Colors.black45,
+                          color:
+                              obscure ? AppColors.greenDark : AppColors.grey100,
                         ),
                       )
                     : null,

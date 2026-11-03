@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// The white rounded card with a soft shadow that opens something when tapped
 /// (a nasabah, a price, a bank sampah). It is announced as a button that reads
@@ -29,7 +30,7 @@ class AppTappableCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(_radius),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: AppColors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

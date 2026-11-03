@@ -81,7 +81,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Belum ada jadwal kegiatan'), findsOneWidget);
-    final createButton = find.widgetWithText(FilledButton, 'Buat Jadwal');
+    final createButton = find.widgetWithText(ElevatedButton, 'Buat Jadwal');
     expect(createButton, findsOneWidget);
     await tester.tap(createButton);
     await tester.pumpAndSettle();

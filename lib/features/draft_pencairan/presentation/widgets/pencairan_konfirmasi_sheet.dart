@@ -60,7 +60,7 @@ Future<bool> showPencairanKonfirmasi(
           if (pesan != null) ...[
             const SizedBox(height: 12),
             Text(pesan,
-                style: AppTextStyle.small.copyWith(color: Colors.grey[800])),
+                style: AppTextStyle.small.copyWith(color: AppColors.inkSoft)),
           ],
           if (isi != null) ...[
             const SizedBox(height: 16),

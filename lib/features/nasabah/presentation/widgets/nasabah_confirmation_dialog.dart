@@ -4,6 +4,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class NasabahConfirmationDialog extends StatefulWidget {
   final bool isActivating;
@@ -76,7 +77,7 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
         ),
         TextSpan(
           text: widget.customerName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: AppFontWeight.bold),
         ),
         TextSpan(
           text: activating

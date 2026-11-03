@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -11,6 +12,7 @@ import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DetailTransaksiBottomSheet extends StatefulWidget {
   final Map<String, dynamic> transactionData;
@@ -102,9 +104,9 @@ class _DetailTransaksiBottomSheetState
   Widget build(BuildContext context) {
     final String initials = widget.transactionData['initials'] ?? 'NN';
     final Color avatarColor =
-        widget.transactionData['avatarColor'] ?? Colors.grey[200]!;
+        widget.transactionData['avatarColor'] ?? AppColors.border;
     final Color textColor =
-        widget.transactionData['textColor'] ?? Colors.grey[600]!;
+        widget.transactionData['textColor'] ?? AppColors.grey100;
     final String name = widget.transactionData['name'] ?? 'Unknown';
     final String time = widget.transactionData['time'] ?? 'Hari ini';
     final String amount =
@@ -162,7 +164,7 @@ class _DetailTransaksiBottomSheetState
                     initials,
                     style: AppTextStyle.title1.copyWith(
                       color: textColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                 ),
@@ -174,16 +176,16 @@ class _DetailTransaksiBottomSheetState
                       Text(
                         name,
                         style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          color: AppColors.black,
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.lg,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         time,
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                         ),
                       ),
                     ],
@@ -213,8 +215,8 @@ class _DetailTransaksiBottomSheetState
                       child: Text(
                         'JENIS',
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey100,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -223,8 +225,8 @@ class _DetailTransaksiBottomSheetState
                       child: Text(
                         'BERAT',
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey100,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -233,8 +235,8 @@ class _DetailTransaksiBottomSheetState
                       child: Text(
                         'HARGA/KG',
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey100,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -244,8 +246,8 @@ class _DetailTransaksiBottomSheetState
                         'SUBTOTAL',
                         textAlign: TextAlign.right,
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.grey100,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -278,8 +280,8 @@ class _DetailTransaksiBottomSheetState
                             child: Text(
                               item['jenis'] ?? '',
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
+                                color: AppColors.black,
+                                fontWeight: AppFontWeight.semibold,
                               ),
                             ),
                           ),
@@ -288,7 +290,7 @@ class _DetailTransaksiBottomSheetState
                             child: Text(
                               item['berat'] ?? '',
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[600],
+                                color: AppColors.grey100,
                               ),
                             ),
                           ),
@@ -297,7 +299,7 @@ class _DetailTransaksiBottomSheetState
                             child: Text(
                               item['harga'] ?? '',
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[600],
+                                color: AppColors.grey100,
                               ),
                             ),
                           ),
@@ -307,8 +309,8 @@ class _DetailTransaksiBottomSheetState
                               item['subtotal'] ?? '',
                               textAlign: TextAlign.right,
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.bold,
+                                color: AppColors.black,
+                                fontWeight: AppFontWeight.bold,
                               ),
                             ),
                           ),
@@ -325,16 +327,16 @@ class _DetailTransaksiBottomSheetState
                     Text(
                       'Total Setoran',
                       style: AppTextStyle.small.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
+                        color: AppColors.black,
+                        fontWeight: AppFontWeight.bold,
                       ),
                     ),
                     Text(
                       amount,
                       style: AppTextStyle.title1.copyWith(
                         color: AppColors.greenDark,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontWeight: AppFontWeight.bold,
+                        fontSize: AppFontSize.lg,
                       ),
                     ),
                   ],
@@ -359,7 +361,7 @@ class _DetailTransaksiBottomSheetState
                     Text(
                       'Saldo Setelah Transaksi',
                       style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[600],
+                        color: AppColors.grey100,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -367,8 +369,8 @@ class _DetailTransaksiBottomSheetState
                       balance,
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.greenDark,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontWeight: AppFontWeight.bold,
+                        fontSize: AppFontSize.xl,
                       ),
                     ),
                   ],
@@ -441,13 +443,13 @@ class _DetailTransaksiBottomSheetState
                     'Terkirim Sukses',
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                   Text(
                     'ke $name',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -485,13 +487,13 @@ class _DetailTransaksiBottomSheetState
                     'Gagal Kirim',
                     style: AppTextStyle.small.copyWith(
                       color: errorColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
                   Text(
                     'ke $name',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -537,7 +539,7 @@ class _RevisiCard extends StatelessWidget {
         children: [
           Text(
             'Versi ${revisi.versi} (sebelum diubah)',
-            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyle.small.copyWith(fontWeight: AppFontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
@@ -561,7 +563,7 @@ class _RevisiCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Total: ${revisi.totalFormatted}',
-            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyle.small.copyWith(fontWeight: AppFontWeight.bold),
           ),
         ],
       ),

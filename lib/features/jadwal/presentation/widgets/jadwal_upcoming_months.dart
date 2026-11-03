@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import 'jadwal_calendar.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Ringkasan "Berikutnya" di bawah kalender web: satu baris per bulan dengan
 /// jumlah hari berjadwal yang belum lewat, mulai dari bulan ini (hanya hari ini
@@ -63,7 +64,7 @@ class JadwalUpcomingMonths extends StatelessWidget {
               'Berikutnya',
               style: AppTextStyle.small.copyWith(
                 color: AppColors.black,
-                fontWeight: FontWeight.w700,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -142,7 +143,8 @@ class _MonthRow extends StatelessWidget {
                 label,
                 style: AppTextStyle.small.copyWith(
                   color: selected ? AppColors.greenDark : AppColors.black,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight:
+                      selected ? AppFontWeight.bold : AppFontWeight.medium,
                 ),
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The green banner at the top of an onboarding step: a title, a line under
 /// it and a logout button that calls [onExit].
@@ -33,7 +34,7 @@ class OnboardingHeader extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyle.headline1.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
@@ -93,11 +94,13 @@ class OnboardingStepper extends StatelessWidget {
             reached: true,
             done: onSecond,
           ),
-          Container(
-            width: 100,
-            height: 2,
-            margin: const EdgeInsets.only(bottom: 24),
-            color: onSecond ? AppColors.greenDark : AppColors.border,
+          Flexible(
+            child: Container(
+              width: 100,
+              height: 2,
+              margin: const EdgeInsets.only(bottom: 24),
+              color: onSecond ? AppColors.greenDark : AppColors.border,
+            ),
           ),
           _Step(
             number: 2,
@@ -143,7 +146,7 @@ class _Step extends StatelessWidget {
                     '$number',
                     style: TextStyle(
                       color: onColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeight.bold,
                     ),
                   ),
           ),
@@ -153,7 +156,7 @@ class _Step extends StatelessWidget {
           label,
           style: AppTextStyle.small.copyWith(
             color: reached ? AppColors.greenDark : AppColors.grey100,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.semibold,
           ),
         ),
       ],
@@ -220,7 +223,7 @@ class OnboardingFormField extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelStyle = AppTextStyle.small.copyWith(
       color: AppColors.grey100,
-      fontWeight: FontWeight.bold,
+      fontWeight: AppFontWeight.bold,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,10 +242,11 @@ class OnboardingFormField extends StatelessWidget {
         ),
         if (description != null) ...[
           const SizedBox(height: 4),
-          Text(description!, style: AppTextStyle.extraSmall),
+          Text(description!,
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100)),
         ],
         const SizedBox(height: 8),
-        child,
+        Semantics(label: label, child: child),
         const SizedBox(height: 20),
       ],
     );

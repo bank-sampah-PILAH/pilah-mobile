@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import '../../domain/entities/aktivitas_summary.dart';
 import '../providers/riwayat_aktivitas_provider.dart';
 import '../states/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Displays authoritative totals for the selected period and filters.
 class AktivitasSummaryView extends StatelessWidget {
@@ -85,7 +86,7 @@ class _SummaryStripRow extends StatelessWidget {
               text: value,
               style: AppTextStyle.small.copyWith(
                 color: color ?? AppColors.black,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                fontWeight: bold ? AppFontWeight.bold : AppFontWeight.semibold,
               ),
             ),
           ]),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -11,6 +13,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
 
 class RoleHandoffPage extends ConsumerWidget {
   final String title;
@@ -57,11 +60,7 @@ class RoleHandoffPage extends ConsumerWidget {
     });
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        title: const Text('PILAH'),
-      ),
+      appBar: const NasabahPageAppBar(title: 'PILAH'),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -99,7 +98,7 @@ class RoleHandoffPage extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.grey100,
-                      fontSize: 14,
+                      fontSize: AppFontSize.md,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -115,6 +114,8 @@ class RoleHandoffPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  const LegalInformationButton(),
+                  const SizedBox(height: 12),
                   AppButton(
                     label: 'Keluar dan ganti akun',
                     icon: Icons.logout,

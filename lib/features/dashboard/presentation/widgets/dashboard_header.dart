@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key, this.showProfile = true});
@@ -40,7 +42,7 @@ class DashboardHeader extends ConsumerWidget {
             children: [
               Text(
                 bankName,
-                style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
@@ -49,13 +51,14 @@ class DashboardHeader extends ConsumerWidget {
                 TextSpan(
                   text: 'Selamat datang, $name ',
                   children: const [
-                    TextSpan(text: '👋', style: TextStyle(fontSize: 18)),
+                    TextSpan(
+                        text: '👋', style: TextStyle(fontSize: AppFontSize.xl)),
                   ],
                 ),
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+                  color: AppColors.black,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.xxl,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -98,8 +101,8 @@ class DashboardHeader extends ConsumerWidget {
                 _initials(name),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.xl,
                 ),
               ),
             ),

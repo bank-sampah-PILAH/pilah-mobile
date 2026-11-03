@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
@@ -7,6 +8,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasab
 
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class PilihNasabahSection extends StatelessWidget {
   final NasabahEntity? selectedCustomer;
@@ -39,7 +41,7 @@ class PilihNasabahSection extends StatelessWidget {
       hasError: hasError,
       hasSelection: selectedCustomer != null,
       backgroundColor: Colors.white,
-      defaultBorderColor: Colors.grey[300]!,
+      defaultBorderColor: AppColors.border,
       errorText: errorText,
       child: selectedCustomer == null
           ? Row(
@@ -50,19 +52,19 @@ class PilihNasabahSection extends StatelessWidget {
                     color: AppColors.fill,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.person_outline,
-                      color: Colors.grey[500], size: 20),
+                  child: const Icon(Icons.person_outline,
+                      color: AppColors.grey100, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Tap untuk pilih nasabah',
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
+                const Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
               ],
             )
           : Row(
@@ -79,8 +81,8 @@ class PilihNasabahSection extends StatelessWidget {
                     selectedCustomer!.initials,
                     style: AppTextStyle.title1.copyWith(
                       color: selectedCustomer!.textColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: AppFontSize.lg,
                     ),
                   ),
                 ),
@@ -92,8 +94,8 @@ class PilihNasabahSection extends StatelessWidget {
                       Text(
                         selectedCustomer!.name,
                         style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.black,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                       // Show the kode, not the backend UUID.
@@ -102,14 +104,14 @@ class PilihNasabahSection extends StatelessWidget {
                         Text(
                           selectedCustomer!.idNasabah,
                           style: AppTextStyle.small.copyWith(
-                            color: Colors.grey[500],
+                            color: AppColors.grey100,
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                Icon(Icons.edit_outlined, color: Colors.grey[400]),
+                const Icon(Icons.edit_outlined, color: AppColors.grey200),
               ],
             ),
     );

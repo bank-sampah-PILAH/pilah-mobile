@@ -27,6 +27,25 @@ void main() {
     expect(find.byType(BackButton), findsNothing);
   });
 
+  testWidgets('shows a subtitle under the title when it has one',
+      (tester) async {
+    await open(
+      tester,
+      const NasabahPageAppBar(
+        title: 'Riwayat Harga',
+        subtitle: 'Botol Plastik',
+        showBack: true,
+      ),
+    );
+
+    expect(find.text('Riwayat Harga'), findsOneWidget);
+    expect(find.text('Botol Plastik'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Botol Plastik')).dy,
+      greaterThan(tester.getTopLeft(find.text('Riwayat Harga')).dy),
+    );
+  });
+
   testWidgets('shows a back button that goes back when asked to',
       (tester) async {
     await open(

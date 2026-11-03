@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The pill used for filters and tabs: solid green when [selected], light grey
 /// otherwise.
@@ -71,10 +73,10 @@ class AppChip extends StatelessWidget {
           widthFactor: 1,
           child: Material(
             color: background,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -89,7 +91,7 @@ class AppChip extends StatelessWidget {
                       label,
                       style: AppTextStyle.small.copyWith(
                         color: color,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: AppFontWeight.bold,
                       ),
                     ),
                     if (count != null) ...[
@@ -126,14 +128,14 @@ class _CountBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: selected ? Colors.white : AppColors.border,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         '$count',
         textAlign: TextAlign.center,
         style: AppTextStyle.extraSmall.copyWith(
           color: selected ? AppColors.greenDark : color,
-          fontWeight: FontWeight.bold,
+          fontWeight: AppFontWeight.bold,
         ),
       ),
     );
