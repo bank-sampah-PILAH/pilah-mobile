@@ -8,8 +8,12 @@ import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 /// pengurus gives one, and silence is never taken for a refusal or a consent.
 ///
 /// The text says the screen is not recorded and that no names, balances, photos,
-/// email addresses or phone numbers are noted. That stays true only while events
-/// follow the rules in `docs/ANALYTICS.md`.
+/// email addresses or phone numbers are noted. It also names who receives the
+/// data (PostHog, abroad) and what the browser library sends along: device and
+/// browser type, and a location estimated from the IP address. The page address
+/// is held back by the client's property denylist. That stays true only while
+/// events follow the rules in `docs/ANALYTICS.md` and the client keeps that
+/// denylist; change the text together with either.
 Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
   return showDialog<bool>(
     context: context,
@@ -27,11 +31,15 @@ Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
             title: 'Bantu kami meningkatkan pengalaman Anda',
             message:
                 'Kami mencatat langkah yang Anda lakukan di PILAH, misalnya '
-                'saat setoran disimpan atau jadwal dibuat, untuk memahami di '
-                'mana pengguna kesulitan dan meningkatkan pengalaman Anda. '
-                'Kami tidak merekam layar, dan tidak mencatat nama nasabah, '
-                'saldo, foto, email, atau nomor telepon. Data hanya dilihat '
-                'tim PILAH.\n\n'
+                'saat setoran disimpan, untuk memahami di mana pengguna '
+                'kesulitan dan meningkatkan pengalaman Anda. Kami tidak '
+                'merekam layar, dan tidak mencatat nama nasabah, saldo, foto, '
+                'email, atau nomor telepon.\n\n'
+                'Data dikirim ke PostHog, penyedia layanan analitik di luar '
+                'negeri, bersama data teknis seperti jenis perangkat dan '
+                'peramban serta perkiraan lokasi dari alamat IP. Alamat '
+                'halaman tidak dikirim. PostHog menyimpan data ini untuk kami, '
+                'dan tim PILAH yang menganalisisnya.\n\n'
                 'Anda boleh menolak dan tetap memakai aplikasi seperti biasa, '
                 'dan bisa mengubah pilihan kapan saja di Profil.',
             confirmLabel: 'Setuju',

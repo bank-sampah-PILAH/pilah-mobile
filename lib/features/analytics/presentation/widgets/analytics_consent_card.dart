@@ -41,7 +41,10 @@ class AnalyticsConsentCard extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Izinkan PILAH mencatat langkah pemakaian aplikasi agar kami '
-                  'bisa meningkatkannya. Isi layar tidak dicatat.',
+                  'bisa meningkatkannya. Data dikirim ke PostHog, penyedia '
+                  'analitik di luar negeri, bersama jenis perangkat, peramban, '
+                  'dan perkiraan lokasi dari alamat IP. Isi layar dan alamat '
+                  'halaman tidak dicatat.',
                   style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
               ],

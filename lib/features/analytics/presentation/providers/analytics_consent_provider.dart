@@ -51,7 +51,7 @@ final analyticsEligibleProvider = Provider<bool>(
 );
 
 /// Whether the "Analitik penggunaan" switch applies: to a pengurus, on a platform
-/// that can record, whatever they chose before.
+/// that can send events, whatever they chose before.
 final analyticsToggleVisibleProvider = Provider<bool>(
   (ref) =>
       ref.watch(analyticsEligibleProvider) &&
@@ -60,8 +60,8 @@ final analyticsToggleVisibleProvider = Provider<bool>(
 );
 
 /// Whether to ask for consent now: a pengurus who has not chosen yet, on a
-/// platform where recording is possible. Anyone who answered is not asked
-/// again, and nobody is told they are recorded when nothing records.
+/// platform where analytics is possible. Anyone who answered is not asked
+/// again, and nobody is told events are sent when nothing sends them.
 final analyticsNeedsPromptProvider = Provider<bool>(
   (ref) {
     // Cheapest checks first: the saved choice is only read when it can matter.
