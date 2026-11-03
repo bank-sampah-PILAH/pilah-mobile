@@ -206,4 +206,32 @@ void main() {
         reason: 'GoRouter.pop() here would have popped the page beneath '
             'instead, because the panel is pushed on the navigator');
   });
+
+  /// Raised on review of #186: the panel title sat 16px left of everything
+  /// under it, so the panel read as two columns that did not quite agree.
+  ///
+  /// AppPanelHeader carries no padding of its own - every other caller that
+  /// needs it to line up with inset content wraps it, as pengumuman_form_page
+  /// does. The side sheet did not, while the form body adds AppSpacing.lg on
+  /// top of the shared ContentInset. Asserting the two left edges are equal
+  /// pins the relationship rather than the number, so it survives a change to
+  /// either inset.
+  testWidgets('the panel title lines up with the form content under it',
+      (tester) async {
+    await openHost(tester, const Size(1440, 900));
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+
+    final title = tester.getTopLeft(
+      find.descendant(
+        of: find.byType(AppPanelHeader),
+        matching: find.text('Transaksi Baru'),
+      ),
+    );
+    final label = tester.getTopLeft(find.text('PILIH NASABAH'));
+
+    expect(title.dx, label.dx,
+        reason: 'the header title and the first section label are the '
+            'left edge of the same column');
+  });
 }
