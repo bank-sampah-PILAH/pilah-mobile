@@ -13,6 +13,8 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/setoran_analytics.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -58,9 +60,13 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
   String? _loadError;
   String? _saveError;
 
+  late final SetoranEditAnalytics _analytics;
+
   @override
   void initState() {
     super.initState();
+    _analytics = SetoranEditAnalytics(ref.read(analyticsClientProvider))
+      ..started();
     _alasan.addListener(_rebuild);
     _catatan.addListener(_rebuild);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -154,6 +160,10 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
       _saving = true;
       _saveError = null;
     });
+    final analytics = _analytics;
+    final itemsChanged = _itemsChanged;
+    final noteChanged = _catatanChanged;
+    final itemCount = _items.length;
     final result = await ref.read(transaksiProvider.notifier).editTransaksi(
           TransaksiEditRequest(
             id: widget.id,
@@ -170,6 +180,11 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
       });
       return;
     }
+    analytics.saved(
+      itemCount: itemCount,
+      itemsChanged: itemsChanged,
+      noteChanged: noteChanged,
+    );
     ref.read(aktivitasSelectionProvider.notifier).clear();
     ref.read(riwayatAktivitasProvider.notifier).load(silent: true);
     Navigator.of(context).pop(true);

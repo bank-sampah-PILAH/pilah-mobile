@@ -135,3 +135,54 @@ class SetoranAnalytics {
     _client.capture(event, {'alur_id': flowId, ...properties});
   }
 }
+
+/// The events of correcting a setoran that is already recorded (PIL-427).
+///
+/// They say that an edit was opened, what kind of thing was changed and whether
+/// the server refused it. The reason the pengurus wrote, the note and the
+/// weights stay in the app.
+class SetoranEditAnalytics {
+  SetoranEditAnalytics(
+    this._client, {
+    DateTime Function() clock = DateTime.now,
+    String Function() newFlowId = newFlowId,
+  })  : _clock = clock,
+        _newFlowId = newFlowId;
+
+  final AnalyticsClient _client;
+  final DateTime Function() _clock;
+  final String Function() _newFlowId;
+
+  String? _flowId;
+  late DateTime _startedAt;
+
+  /// The edit sheet was opened.
+  void started() {
+    _flowId = _newFlowId();
+    _startedAt = _clock();
+    _send('setoran_ubah_dimulai');
+  }
+
+  /// The correction was saved, naming what kind of thing changed.
+  void saved({
+    required int itemCount,
+    required bool itemsChanged,
+    required bool noteChanged,
+  }) =>
+      _send('setoran_diubah', {
+        'jumlah_item': itemCount,
+        'bidang_diubah': [
+          if (itemsChanged) 'item',
+          if (noteChanged) 'catatan',
+        ],
+        'durasi_detik': _sinceStart(),
+      });
+
+  int _sinceStart() => _clock().difference(_startedAt).inSeconds;
+
+  void _send(String event, [Map<String, Object?> properties = const {}]) {
+    final flowId = _flowId;
+    if (flowId == null) return;
+    _client.capture(event, {'alur_id': flowId, ...properties});
+  }
+}

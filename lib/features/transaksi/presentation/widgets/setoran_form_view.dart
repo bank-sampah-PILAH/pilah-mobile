@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/setoran_analytics.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
@@ -177,6 +179,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   bool _isSaving = false;
   bool _saved = false;
   String? _idempotencyKey;
+  late final SetoranAnalytics _analytics;
   late final SetoranTutorialProgress _tutorialProgress;
   final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
   final _addItemTutorialKey = GlobalKey<State<StatefulWidget>>();
@@ -219,6 +222,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   @override
   void initState() {
     super.initState();
+    _analytics = SetoranAnalytics(ref.read(analyticsClientProvider))..started();
     _tutorialProgress = ref.read(_setoranTutorialProgressProvider);
     ShowcaseView.register(
       enableAutoScroll: true,
@@ -380,9 +384,11 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     if (_isSaving) return;
 
     setState(() => _hasSubmitted = true);
+    _analytics.saveTapped(itemCount: setoranItems.length);
 
     final problems = _draft.problems;
     if (problems.isNotEmpty) {
+      _analytics.validationFailed(problems);
       // Teks sebaris saja mudah terlewat ketika kartu yang bermasalah sudah
       // tergulir keluar layar, dan pada layar lebar tombol simpan berada di
       // panel kanan yang jauh dari kartunya.
@@ -445,9 +451,12 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
       return;
     }
 
-    ref.read(analyticsClientProvider).capture('setoran_disimpan', {
-      'jumlah_item': request.items.length,
-    });
+    _analytics.saved(
+      itemCount: request.items.length,
+      distinctJenis:
+          request.items.map((item) => item.jenisSampahId).toSet().length,
+      totalKg: request.items.fold(0.0, (sum, item) => sum + item.berat),
+    );
 
     // Refresh the shell tabs that stay alive and won't re-init on their own.
     // loadStats updates the dashboard metrics (Total Kas / Sampah / Transaksi);
@@ -522,6 +531,8 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
             // the transaksi is already saved, only the draft didn't open.
             opened = false;
           }
+          _analytics.afterSave(
+              opened: opened, templateUsed: waTemplate != null);
           if (!mounted) return;
 
           // Deferred rather than raised in this frame: see [_leaveAndNotify].
@@ -598,6 +609,12 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     AppNotification.afterNavigation(toast);
   }
 
+  /// How far the pengurus has got, for when they leave without saving.
+  SetoranStep get _currentStep {
+    if (selectedCustomer == null) return SetoranStep.nasabah;
+    return _draft.problems.isEmpty ? SetoranStep.siapSimpan : SetoranStep.item;
+  }
+
   int get grandTotal {
     return setoranItems.fold(0, (sum, item) {
       final harga = item['harga'] as int? ?? 0;
@@ -635,6 +652,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
 
   @override
   void dispose() {
+    _analytics.leftWithoutSaving(_currentStep);
     ShowcaseView.get().unregister();
     super.dispose();
   }
@@ -697,6 +715,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
                                     setState(() {
                                       selectedCustomer = customer;
                                     });
+                                    _analytics.nasabahChosen();
                                   },
                                   hasError:
                                       _hasSubmitted && selectedCustomer == null,
