@@ -222,8 +222,9 @@ void main() {
 
     expect(find.text('Pilih nasabah'), findsOneWidget);
     expect(
-      find.text('Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
-          'ketuk lagi nama nasabah yang tampil.'),
+      find.text(wrapTutorialText(
+          'Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+          'ketuk lagi nama nasabah yang tampil.')),
       findsOneWidget,
     );
     expect(find.text('Budi Santoso'), findsOneWidget);
@@ -257,8 +258,9 @@ void main() {
       expect(find.text(title), findsOneWidget);
       if (title == 'Atur item setoran') {
         expect(
-          find.text('Setelah menambah item, pilih jenis sampah dan isi berat '
-              '(kg). Harga/kg dan subtotal dihitung otomatis.'),
+          find.text(wrapTutorialText(
+              'Setelah menambah item, pilih jenis sampah dan isi berat (kg). '
+              'Harga/kg dan subtotal dihitung otomatis.')),
           findsOneWidget,
         );
       }
@@ -288,8 +290,9 @@ void main() {
 
     expect(find.text('Atur item setoran'), findsOneWidget);
     expect(
-      find.text('Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
-          'otomatis; tekan × untuk menghapus item.'),
+      find.text(wrapTutorialText(
+          'Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+          'otomatis; tekan × untuk menghapus item.')),
       findsOneWidget,
     );
     expect(

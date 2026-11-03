@@ -36,6 +36,31 @@ import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
+/// Memecah [text] di batas kata supaya tidak ada baris lebih panjang dari
+/// [maxChars].
+///
+/// Tooltip tutorial selebar baris terpanjangnya dan ditata terhadap lebar
+/// jendela, bukan lebar panel tempat formulir berada. Satu kalimat panjang pada
+/// satu baris membuatnya keluar dari panel 560 px ke halaman di belakangnya.
+/// Kata yang lebih panjang dari batas dibiarkan utuh.
+@visibleForTesting
+String wrapTutorialText(String text, {int maxChars = 36}) {
+  final lines = <String>[];
+  var line = '';
+  for (final word in text.split(' ')) {
+    if (line.isEmpty) {
+      line = word;
+    } else if (line.length + 1 + word.length <= maxChars) {
+      line = '$line $word';
+    } else {
+      lines.add(line);
+      line = word;
+    }
+  }
+  if (line.isNotEmpty) lines.add(line);
+  return lines.join('\n');
+}
+
 const _setoranTutorialSeenKey = 'pilah.setoran_tutorial_seen';
 
 final _setoranTutorialProgressProvider = Provider<SetoranTutorialProgress>(
@@ -548,7 +573,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
       Showcase(
         key: key,
         title: title,
-        description: description,
+        description: wrapTutorialText(description),
         targetShapeBorder: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
