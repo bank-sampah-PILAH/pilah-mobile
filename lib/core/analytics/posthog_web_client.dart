@@ -141,10 +141,12 @@ class PosthogWebClient implements AnalyticsClient {
   Map<String, Object> _options() => {
         'api_host': host,
         // Only usage events are sent: no screen recording, no automatic
-        // capture of clicks or page views, no heatmaps.
+        // capture of clicks or page views, no heatmaps. Load time is the one
+        // automatic measurement kept, to see how slow the app is to open.
         'disable_session_recording': true,
         'autocapture': false,
         'capture_pageview': false,
         'enable_heatmaps': false,
+        'capture_performance': true,
       };
 }
