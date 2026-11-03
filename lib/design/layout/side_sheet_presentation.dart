@@ -276,13 +276,25 @@ class _SideSheetRoute<T> extends PageRoute<T> {
 /// ditanyai dua kali: sekali oleh `PopScope`, sekali lagi oleh `onExit` atas
 /// pop yang baru saja disetujui.
 class SideSheetGuard {
-  SideSheetGuard({required this.hasUnsavedInput});
+  SideSheetGuard({required this.hasUnsavedInput, this.isBusy = _never});
+
+  static bool _never() => false;
 
   /// Dibaca saat panel hendak ditutup, bukan saat dibangun.
   ///
   /// Formulir baru menjadi kotor jauh setelah panel dibangun, jadi nilai yang
   /// dihitung saat build selalu basi.
   final bool Function() hasUnsavedInput;
+
+  /// Benar selagi isi panel mengerjakan sesuatu yang tidak bisa ditarik
+  /// kembali, misalnya permintaan simpan yang sudah terkirim.
+  ///
+  /// Panel tidak ditutup saat itu, dan tidak ada pertanyaan juga: tidak ada
+  /// yang tersisa untuk diputuskan. Menutupnya meninggalkan formulir yang
+  /// hilang padahal simpannya tetap sampai, tercatat di server tetapi tak
+  /// pernah terlihat oleh orang yang membuatnya. Dibaca saat panel hendak
+  /// ditutup, seperti [hasUnsavedInput].
+  final bool Function() isBusy;
 
   bool _answered = false;
 
@@ -311,6 +323,8 @@ class SideSheetGuard {
     // jadwal.
     final navigator = Navigator.of(context);
 
+    if (isBusy()) return;
+
     // [allowNextExit] berlaku untuk jalan keluar ini juga. Formulir yang baru
     // berhasil menyimpan lalu keluar lewat maybePop — tombol kembali platform,
     // atau maybePop-nya sendiri — justru keadaan yang kunci itu ada untuk itu.
@@ -338,6 +352,7 @@ class SideSheetGuard {
   /// yang kebetulan dipakai aplikasi, dan pemanggilnya tinggal mengabaikan
   /// argumen kedua.
   Future<bool> confirmExit(BuildContext context) async {
+    if (isBusy()) return false;
     if (_answered) {
       _answered = false;
       return true;

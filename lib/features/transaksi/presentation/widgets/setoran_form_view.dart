@@ -240,6 +240,10 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     }
   }
 
+  /// Permintaan simpan sedang berjalan. Wadah memakainya untuk tidak menutup
+  /// formulir di tengahnya.
+  bool get isSaving => _isSaving;
+
   /// Apakah ada isian yang belum tersimpan dan akan hilang bila formulir
   /// ditutup sekarang.
   ///

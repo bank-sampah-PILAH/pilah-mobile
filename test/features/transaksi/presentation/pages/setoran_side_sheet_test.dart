@@ -272,8 +272,9 @@ void main() {
 
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
-    expect(find.text('Kirim WhatsApp'), findsOneWidget,
+    expect(find.text('Kirim Notif WhatsApp & Selesai'), findsOneWidget,
         reason: 'the result still reaches the person who saved it');
+    await settleToasts(tester);
   });
 
   testWidgets('the form closing itself closes the panel, not the page beneath',

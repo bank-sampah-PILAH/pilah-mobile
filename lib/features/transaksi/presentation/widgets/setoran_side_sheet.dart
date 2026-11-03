@@ -106,6 +106,9 @@ final _formKey = GlobalKey<SetoranFormViewState>();
 /// panel dibangun — saat itu formulir selalu masih kosong.
 final _guard = SideSheetGuard(
   hasUnsavedInput: () => _formKey.currentState?.hasUnsavedInput ?? false,
+  // Permintaan simpan tidak bisa ditarik. Menutup panel di tengahnya membuang
+  // panel sukses dan draf WhatsApp dari setoran yang tetap tercatat.
+  isBusy: () => _formKey.currentState?.isSaving ?? false,
 );
 
 /// Membuka formulir setoran sebagaimana jendela ini seharusnya menampilkannya.
