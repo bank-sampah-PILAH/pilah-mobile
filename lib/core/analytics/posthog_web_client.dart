@@ -34,12 +34,12 @@ class PosthogWebClient implements AnalyticsClient {
   Future<void>? _starting;
   bool _stopped = false;
 
-  /// Starts the client. Throws a [StateError] when the library cannot be
-  /// loaded, so a caller has to handle that. A failed start is not remembered:
-  /// the next call tries again.
   @override
   bool get isAvailable => true;
 
+  /// Starts the client. Throws a [StateError] when the library cannot be
+  /// loaded, so a caller has to handle that. A failed start is not remembered:
+  /// the next call tries again.
   @override
   Future<void> start() async {
     final starting = _starting ??= _load();
@@ -52,7 +52,7 @@ class PosthogWebClient implements AnalyticsClient {
     // so it only has to be switched back on.
     _stopped = false;
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
-    posthog.callMethod('opt_in_capturing'.toJS);
+    posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
   }
 
   @override
@@ -99,7 +99,15 @@ class PosthogWebClient implements AnalyticsClient {
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     posthog.callMethod('init'.toJS, apiKey.toJS, _options().jsify());
+    // PostHog keeps an opt-out across page reloads, so one made on an earlier
+    // visit would still be in force. start() is only called once the pengurus
+    // has agreed, so switch capturing on.
+    posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
   }
+
+  /// Opting in sends an event of PostHog's own by default, which would reach
+  /// PostHog without passing the sanitizer.
+  static const _optInOptions = {'captureEventName': false};
 
   Map<String, Object> _options() => {
         'api_host': host,

@@ -17,6 +17,7 @@ const _title = 'Bantu kami meningkatkan pengalaman Anda';
 
 Authenticated _signedInAs(String role) => Authenticated(
       authEntity: AuthEntity(
+        id: 'u1',
         name: 'Tester',
         email: 'tester@example.com',
         photoUrl: '',

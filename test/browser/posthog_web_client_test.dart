@@ -65,7 +65,7 @@ void main() {
 
     await client.stop();
 
-    expect(_libraryCalls(), ['init', 'opt_out_capturing']);
+    expect(_libraryCalls(), ['init', 'opt_in_capturing', 'opt_out_capturing']);
   });
 
   test('start after stop opts back in without loading the library again',
@@ -79,6 +79,7 @@ void main() {
     expect(_scriptsWithSource(_fakeLibraryUrl), hasLength(1));
     expect(_libraryCalls(), [
       'init',
+      'opt_in_capturing',
       'opt_out_capturing',
       'opt_in_capturing',
     ]);

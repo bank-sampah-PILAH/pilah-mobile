@@ -17,6 +17,16 @@ final analyticsClientProvider = Provider<AnalyticsClient>((ref) =>
 final analyticsConsentStoreProvider =
     Provider<AnalyticsConsentStore>((ref) => di<AnalyticsConsentStore>());
 
+/// Who is signed in, as the id a choice is kept under. Empty when nobody is,
+/// or when the account has no id.
+final analyticsUserIdProvider = Provider<String>(
+  (ref) {
+    final auth = ref.watch(authenticationProvider);
+    return auth is Authenticated ? auth.authEntity.id ?? '' : '';
+  },
+  dependencies: [authenticationProvider],
+);
+
 /// Whether the signed-in user is a pengurus, the only people who may be
 /// recorded. Nasabah and signed-out users never are.
 final analyticsEligibleProvider = Provider<bool>(
@@ -61,37 +71,53 @@ final analyticsConsentProvider =
   AnalyticsConsentController.new,
   dependencies: [
     analyticsEligibleProvider,
+    analyticsUserIdProvider,
     analyticsClientProvider,
     analyticsConsentStoreProvider,
   ],
 );
 
 class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
+  /// Whose analytics the client is running for, or null when it is not.
+  String? _recordingFor;
+
   @override
   Future<ConsentChoice> build() async {
     final eligible = ref.watch(analyticsEligibleProvider);
+    final userId = ref.watch(analyticsUserIdProvider);
     final client = ref.read(analyticsClientProvider);
-    final choice = await ref.read(analyticsConsentStoreProvider).read();
+    final choice = await ref.read(analyticsConsentStoreProvider).read(userId);
     if (!eligible) {
       // Whoever is signed in now may not be recorded, and the page may still
       // be recording the pengurus who just left.
       await client.stop();
+      _recordingFor = null;
     } else if (choice == ConsentChoice.granted) {
       await client.start();
+      _recordingFor = userId;
+    } else if (_recordingFor != null) {
+      // Another pengurus took over, and has not agreed: the one before them
+      // must not keep being recorded on their behalf.
+      await client.stop();
+      _recordingFor = null;
     }
     return choice;
   }
 
   /// The pengurus agreed: remember it, then start recording.
   Future<void> grant() async {
-    await ref.read(analyticsConsentStoreProvider).grant();
+    final userId = ref.read(analyticsUserIdProvider);
+    await ref.read(analyticsConsentStoreProvider).grant(userId);
     await ref.read(analyticsClientProvider).start();
+    _recordingFor = userId;
     state = const AsyncData(ConsentChoice.granted);
   }
 
   /// The pengurus declined: remember it and record nothing.
   Future<void> deny() async {
-    await ref.read(analyticsConsentStoreProvider).deny();
+    await ref
+        .read(analyticsConsentStoreProvider)
+        .deny(ref.read(analyticsUserIdProvider));
     state = const AsyncData(ConsentChoice.denied);
   }
 
@@ -99,7 +125,10 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
   /// failure to save the choice can never leave them recorded.
   Future<void> revoke() async {
     await ref.read(analyticsClientProvider).stop();
-    await ref.read(analyticsConsentStoreProvider).deny();
+    _recordingFor = null;
+    await ref
+        .read(analyticsConsentStoreProvider)
+        .deny(ref.read(analyticsUserIdProvider));
     state = const AsyncData(ConsentChoice.denied);
   }
 }
