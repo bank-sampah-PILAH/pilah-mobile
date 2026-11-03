@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/core/analytics/consent_revocation_channel.dart';
 import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_screen_tracker_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
@@ -86,6 +87,7 @@ final analyticsConsentProvider =
     analyticsClientProvider,
     analyticsConsentStoreProvider,
     consentRevocationChannelProvider,
+    analyticsScreenTrackerProvider,
   ],
 );
 
@@ -133,6 +135,7 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
     } else if (choice == ConsentChoice.granted) {
       await client.start();
       _recordingFor = userId;
+      _announceStart();
     } else if (_recordingFor != null) {
       // Another pengurus took over, and has not agreed: the one before them
       // must not keep being recorded on their behalf.
@@ -158,6 +161,7 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
     if (_changedSince(eligible, userId) || !eligible) return;
     await ref.read(analyticsClientProvider).start();
     _recordingFor = userId;
+    _announceStart();
     state = const AsyncData(ConsentChoice.granted);
   }
 
@@ -178,5 +182,12 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
     await ref.read(analyticsConsentStoreProvider).deny(userId);
     ref.read(consentRevocationChannelProvider).announce(userId);
     state = const AsyncData(ConsentChoice.denied);
+  }
+
+  /// Analytics has just started, so it has not heard yet that the app is open
+  /// or which screen the user is on.
+  void _announceStart() {
+    ref.read(analyticsClientProvider).capture('app_dibuka');
+    ref.read(analyticsScreenTrackerProvider).reportCurrent();
   }
 }
