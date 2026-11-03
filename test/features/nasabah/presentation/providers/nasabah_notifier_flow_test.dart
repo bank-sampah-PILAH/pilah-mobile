@@ -43,7 +43,7 @@ void main() {
 
     await cubit.loadNasabah();
 
-    expect(api.last.query, {'status': 'aktif', 'page': '1'});
+    expect(api.last.query, {'status': 'aktif', 'page': '1', 'urutan': 'nomor'});
     final loaded = cubit.state as NasabahLoaded;
     expect(loaded.nasabahList.single.name, 'Budi Santoso');
     expect(loaded.nasabahList.single.balance, 'Rp 25.000');
