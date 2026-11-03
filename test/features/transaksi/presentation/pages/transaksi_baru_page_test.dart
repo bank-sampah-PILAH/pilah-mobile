@@ -631,7 +631,7 @@ void main() {
           'the nasabah tab keeps its cached balance while this page is open',
     );
 
-    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+    await tester.tap(find.text('Kirim WhatsApp'));
     await pumpToast(tester);
 
     final launched = verify(() => launcher.launchUrl(captureAny(), any()))
@@ -642,6 +642,52 @@ void main() {
     expect(
         find.textContaining('Pesan WhatsApp sudah disiapkan'), findsOneWidget);
     await settleToasts(tester);
+  });
+
+  testWidgets('finishing after a save leaves the form without opening WhatsApp',
+      (tester) async {
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+    await save(tester);
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
+
+    await tester.tap(find.text('Selesai'));
+    await pumpToast(tester);
+
+    verifyNever(() => launcher.launchUrl(any(), any()));
+    expect(find.byType(TransaksiBerhasilPanel), findsNothing);
+    expect(find.text('route:/'), findsOneWidget);
+    expect(find.textContaining('Transaksi disimpan'), findsOneWidget);
+    expect(find.textContaining('WhatsApp'), findsNothing);
+    await settleToasts(tester);
+  });
+
+  testWidgets('the success panel cannot be dismissed without choosing',
+      (tester) async {
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+    await save(tester);
+
+    await tester.tapAt(const Offset(2, 2));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
   });
 
   /// `_isSaving` only disables the save button. Every other control stays
@@ -696,7 +742,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.close).first);
       await finishSave(tester);
 
-      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await tester.tap(find.text('Kirim WhatsApp'));
       await pumpToast(tester);
 
       final launched = verify(() => launcher.launchUrl(captureAny(), any()))
@@ -895,7 +941,7 @@ void main() {
         (tester) async {
       await saveSuccessfully(tester, const Size(1440, 1200));
 
-      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await tester.tap(find.text('Kirim WhatsApp'));
       await pumpToast(tester);
 
       final launched = verify(() => launcher.launchUrl(captureAny(), any()))
@@ -922,7 +968,7 @@ void main() {
     await addItem(tester, 'Botol PET');
     await save(tester);
 
-    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+    await tester.tap(find.text('Kirim WhatsApp'));
     await pumpToast(tester);
 
     expect(find.textContaining('WhatsApp tidak dapat dibuka'), findsOneWidget);
@@ -944,7 +990,7 @@ void main() {
     await addItem(tester, 'Botol PET');
     await save(tester);
 
-    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+    await tester.tap(find.text('Kirim WhatsApp'));
     await pumpToast(tester);
 
     expect(find.textContaining('WhatsApp tidak dapat dibuka'), findsOneWidget);
