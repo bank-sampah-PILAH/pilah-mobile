@@ -14,6 +14,20 @@ abstract class AnalyticsClient {
   /// or after [stop]. [properties] may only use the names in `AnalyticsProps`.
   void capture(String event, [Map<String, Object?> properties = const {}]);
 
+  /// Tells analytics who the user is, by [id]: the id the backend gave them,
+  /// never a name, email address or phone number. Everything sent afterwards
+  /// belongs to that id. Does nothing before [start] or after [stop].
+  void identify(String id);
+
+  /// Properties that go with every event from now on, such as the user's role.
+  /// Does nothing before [start] or after [stop].
+  void register(Map<String, Object?> properties);
+
+  /// Forgets who the user was, so whoever uses the device next is not tied to
+  /// them. Works even after [stop], and does nothing if analytics never
+  /// started.
+  void reset();
+
   /// Reports that the user is now looking at [name], with optional
   /// [properties] such as the screen they came from. Does nothing before
   /// [start] or after [stop].
@@ -32,6 +46,15 @@ class NoopAnalyticsClient implements AnalyticsClient {
 
   @override
   Future<void> stop() async {}
+
+  @override
+  void identify(String id) {}
+
+  @override
+  void register(Map<String, Object?> properties) {}
+
+  @override
+  void reset() {}
 
   @override
   void capture(String event, [Map<String, Object?> properties = const {}]) {}

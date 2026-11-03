@@ -104,6 +104,16 @@ abstract final class AnalyticsProps {
     return clean;
   }
 
+  /// [id] as the name analytics knows a user by, or a failed assertion if it is
+  /// empty or looks like an email address or a phone number. In a release build
+  /// that returns null instead, so nobody is identified by it.
+  static String? cleanId(String id) {
+    final problem = id.isEmpty ? 'it is empty' : _problemWithText(id);
+    if (problem == null) return id;
+    assert(false, 'Analytics id refused: $problem');
+    return null;
+  }
+
   static String? _problemWith(String name, Object value) {
     if (!allowed.contains(name)) return 'the name is not on the allowed list';
     if (value is List) {

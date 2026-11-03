@@ -19,12 +19,17 @@ class PosthogWebClient implements AnalyticsClient {
   PosthogWebClient({
     required this.apiKey,
     required this.host,
+    this.environment,
     String? libraryUrl,
     this.loadTimeout = const Duration(seconds: 15),
   }) : libraryUrl = libraryUrl ?? _libraryUrlFor(host);
 
   final String apiKey;
   final String host;
+
+  /// `staging` or `production`: both share one PostHog project, so every event
+  /// says which one it came from.
+  final String? environment;
   final String libraryUrl;
   final Duration loadTimeout;
 
@@ -93,6 +98,29 @@ class PosthogWebClient implements AnalyticsClient {
   }
 
   @override
+  void identify(String id) {
+    final clean = AnalyticsProps.cleanId(id);
+    if (!_live || clean == null) return;
+    _posthog.callMethod('identify'.toJS, clean.toJS);
+  }
+
+  @override
+  void register(Map<String, Object?> properties) {
+    if (!_live) return;
+    _posthog.callMethod(
+      'register'.toJS,
+      AnalyticsProps.sanitize(properties).jsify(),
+    );
+  }
+
+  @override
+  void reset() {
+    // Never loaded: nothing was identified, so there is nothing to forget.
+    if (_starting == null) return;
+    _posthog.callMethod('reset'.toJS);
+  }
+
+  @override
   void screen(String name, [Map<String, Object?> properties = const {}]) {
     if (!_live) return;
     _posthog.callMethod(
@@ -140,6 +168,23 @@ class PosthogWebClient implements AnalyticsClient {
     // visit would still be in force. start() is only called once the pengurus
     // has agreed, so switch capturing on.
     posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+    // Where this runs, told once and carried by every event after.
+    posthog.callMethod(
+      'register'.toJS,
+      AnalyticsProps.sanitize({
+        'platform': 'web',
+        'environment': environment,
+        'kelas_layar': _screenClass(),
+      }).jsify(),
+    );
+  }
+
+  /// A rough size of the screen, to tell a phone from a desktop in the results.
+  static String _screenClass() {
+    final width = web.window.innerWidth;
+    if (width < 600) return 'ponsel';
+    if (width < 1024) return 'tablet';
+    return 'desktop';
   }
 
   /// Opting in sends an event of PostHog's own by default, which would reach

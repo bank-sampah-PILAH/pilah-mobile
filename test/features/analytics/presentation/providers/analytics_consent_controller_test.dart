@@ -404,7 +404,8 @@ void main() {
 
       await container.read(analyticsConsentProvider.notifier).revoke();
 
-      expect(client.log, ['stop']);
+      // Nothing announced, and the user is forgotten.
+      expect(client.log, ['stop', 'reset']);
     });
   });
 

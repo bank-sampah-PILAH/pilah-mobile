@@ -90,7 +90,12 @@ void main() {
 
     await client.stop();
 
-    expect(_libraryCalls(), ['init', 'opt_in_capturing', 'opt_out_capturing']);
+    expect(_libraryCalls(), [
+      'init',
+      'opt_in_capturing',
+      'register',
+      'opt_out_capturing',
+    ]);
   });
 
   test('start after stop opts back in without loading the library again',
@@ -105,6 +110,7 @@ void main() {
     expect(_libraryCalls(), [
       'init',
       'opt_in_capturing',
+      'register',
       'opt_out_capturing',
       'opt_in_capturing',
     ]);
@@ -417,7 +423,7 @@ void main() {
 
     await client.start();
 
-    expect(_libraryCalls(), ['init', 'opt_in_capturing']);
+    expect(_libraryCalls(), ['init', 'opt_in_capturing', 'register']);
   });
 
   test('opting in does not make PostHog send an event of its own', () async {

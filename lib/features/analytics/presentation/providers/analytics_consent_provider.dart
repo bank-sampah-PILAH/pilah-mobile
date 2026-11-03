@@ -88,6 +88,7 @@ final analyticsConsentProvider =
     analyticsConsentStoreProvider,
     consentRevocationChannelProvider,
     analyticsScreenTrackerProvider,
+    authenticationProvider,
   ],
 );
 
@@ -132,6 +133,7 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
       // be recording the pengurus who just left.
       await client.stop();
       _recordingFor = null;
+      client.reset();
     } else if (choice == ConsentChoice.granted) {
       await client.start();
       _recordingFor = userId;
@@ -176,7 +178,9 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
   /// The pengurus withdrew an earlier agreement. Recording stops first, so a
   /// failure to save the choice can never leave them recorded.
   Future<void> revoke() async {
-    await ref.read(analyticsClientProvider).stop();
+    final client = ref.read(analyticsClientProvider);
+    await client.stop();
+    client.reset();
     _recordingFor = null;
     final userId = ref.read(analyticsUserIdProvider);
     await ref.read(analyticsConsentStoreProvider).deny(userId);
@@ -187,7 +191,14 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
   /// Analytics has just started, so it has not heard yet that the app is open
   /// or which screen the user is on.
   void _announceStart() {
-    ref.read(analyticsClientProvider).capture('app_dibuka');
+    final client = ref.read(analyticsClientProvider);
+    final auth = ref.read(authenticationProvider);
+    if (auth is Authenticated) {
+      final id = auth.authEntity.id;
+      if (id != null && id.isNotEmpty) client.identify(id);
+      client.register({'peran': auth.authEntity.role});
+    }
+    client.capture('app_dibuka');
     ref.read(analyticsScreenTrackerProvider).reportCurrent();
   }
 }
