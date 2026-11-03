@@ -29,6 +29,15 @@ List<String> _libraryCalls() {
   return calls == null ? [] : (calls as List<Object?>).cast<String>();
 }
 
+/// Each event the fake library was asked to capture, as `[name, properties]`.
+List<List<Object?>> _captures() {
+  final captures =
+      globalContext.getProperty<JSAny?>('__captures'.toJS).dartify();
+  return captures == null
+      ? []
+      : (captures as List<Object?>).map((e) => e as List<Object?>).toList();
+}
+
 PosthogWebClient _client() => PosthogWebClient(
       apiKey: 'phc_test_key',
       host: 'https://us.i.posthog.com',
@@ -42,6 +51,7 @@ void main() {
     globalContext
       ..delete('posthog'.toJS)
       ..delete('__calls'.toJS)
+      ..delete('__captures'.toJS)
       ..delete('__initCalls'.toJS)
       ..delete('__initArgs'.toJS)
       ..delete('__optInOptions'.toJS)
@@ -83,6 +93,57 @@ void main() {
       'opt_out_capturing',
       'opt_in_capturing',
     ]);
+  });
+
+  test('events and screens sent before start go nowhere', () {
+    final client = _client();
+
+    client.capture('setoran_disimpan', {'jumlah_item': 2});
+    client.screen('dashboard');
+
+    expect(_scriptsWithSource(_fakeLibraryUrl), isEmpty);
+    expect(_captures(), isEmpty);
+  });
+
+  test('capture passes the event and its cleaned properties on', () async {
+    final client = _client();
+    await client.start();
+
+    client.capture('setoran_disimpan', {'jumlah_item': 2, 'durasi_detik': 30});
+
+    expect(_captures(), [
+      [
+        'setoran_disimpan',
+        {'jumlah_item': 2, 'durasi_detik': 30},
+      ],
+    ]);
+  });
+
+  test('screen sends a screen event named after the screen', () async {
+    final client = _client();
+    await client.start();
+
+    client.screen('nasabah');
+
+    expect(_captures(), [
+      [
+        r'$screen',
+        {r'$screen_name': 'nasabah'},
+      ],
+    ]);
+  });
+
+  test('nothing is sent after stop, and sending resumes after start', () async {
+    final client = _client();
+    await client.start();
+    await client.stop();
+
+    client.capture('setoran_disimpan', {'jumlah_item': 1});
+    expect(_captures(), isEmpty);
+
+    await client.start();
+    client.capture('setoran_disimpan', {'jumlah_item': 1});
+    expect(_captures(), hasLength(1));
   });
 
   test('adds no PostHog script until start is called', () {
