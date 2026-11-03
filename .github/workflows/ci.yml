@@ -437,6 +437,17 @@ jobs:
       contents: read
       id-token: write
 
+  deploy_web_production:
+    needs: verify
+    if: ${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      flavor: production
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+
   debug_apk:
     if: github.event_name == 'workflow_dispatch'
     name: Build debug APK artifact

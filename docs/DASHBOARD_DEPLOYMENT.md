@@ -23,8 +23,9 @@ an authenticated dashboard session.
 These are maintainer provisioning steps, not actions performed by this PR.
 
 1. Create GitHub environments `staging` and `production`. Restrict staging to
-   the `staging` branch and production to version tags. **Require production
-   reviewers**; naming an environment alone does not enable approval protection.
+   the `staging` branch; allow both `main` and `v*` tags in the production
+   deployment branch policy. **Require production reviewers**; naming an
+   environment alone does not enable approval protection.
 2. Set environment secret `APP_ENV_FILE` using the existing application format:
    ```dotenv
    BASE_URL_DEV=https://pilah-be-staging.fly.dev
@@ -86,11 +87,14 @@ changes require separate authorization; this delivery does not perform them.
 
 ## Pipeline and serving behavior
 
-- `CI` now verifies `staging` pushes as well as PRs/existing `main` pushes.
-  `deploy_web_staging` runs automatically **only after successful CI verify on
-  a staging push**, using the exact triggering checkout; PRs never deploy.
-- Existing `v*` production release tags also call a separate web job, gated by
-  the `production` environment. Tags run their own analyze/tests before the
+- `CI` verifies `staging` and `main` pushes as well as PRs.
+  After successful verification, `deploy_web_staging` sends staging pushes to
+  Fly and `deploy_web_production` sends main pushes to Cloud Run, using the
+  exact triggering checkout. PRs never deploy. Production pushes remain gated
+  by required environment approval. These jobs tolerate skipped optional checks
+  but not failed verification or workflow cancellation.
+- Existing `v*` production release tags still call a separate web job, gated
+  by the `production` environment. Tags run their own analyze/tests before the
   production web build. Web jobs do not depend on the APK job, Android signing
   secrets or Firebase config. Existing APK delivery remains as before.
 - Flutter is pinned to 3.41.3. Each job installs the locked dependencies,
