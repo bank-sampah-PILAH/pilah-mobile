@@ -44,6 +44,7 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
@@ -173,6 +174,11 @@ class AppRouterConfig {
         name: TransaksiBaruPage.route,
         builder: (context, state) => const TransaksiBaruPage(),
       ),
+      // Panel setoran: route sendiri, bukan dialog yang dibuka pada navigator.
+      // Hanya route yang punya entri riwayat peramban, dan tanpa entri itu
+      // tombol kembali mem-pop halaman di belakang panel dan membuang isian
+      // yang belum tersimpan tanpa bertanya.
+      setoranSideSheetRoute(),
       GoRoute(
         path: DraftListPage.route,
         name: DraftListPage.route,
