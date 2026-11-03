@@ -197,6 +197,15 @@ void main() {
       'autocapture': false,
       'capture_pageview': false,
       'enable_heatmaps': false,
+      // posthog-js adds the address and referrer to every event by itself;
+      // a route can carry an id, so none of them may leave the app.
+      'property_denylist': [
+        r'$current_url',
+        r'$pathname',
+        r'$referrer',
+        r'$referring_domain',
+        r'$host',
+      ],
       'capture_performance': true,
     });
   });
@@ -327,5 +336,35 @@ void main() {
         .dartify()! as List<Object?>;
     expect(options, hasLength(2));
     expect(options, everyElement({'captureEventName': false}));
+  });
+
+  test('a stop that comes while the library is still loading wins', () async {
+    final client = _client();
+
+    final starting = client.start();
+    final stopping = client.stop();
+    await starting;
+    await stopping;
+    client.capture('app_dibuka');
+    client.screen('dashboard');
+
+    expect(_libraryCalls(), isNot(contains('capture')),
+        reason: 'the pengurus withdrew before the library finished loading');
+  });
+
+  test('two starts at the same time still leave the client live', () async {
+    // Consent and the saved choice can both start the client while the library
+    // is loading. The later start must not leave the earlier caller's events
+    // dropped.
+    final client = _client();
+
+    final first = client.start();
+    final second = client.start();
+    await first;
+    client.capture('app_dibuka');
+    await second;
+
+    expect(_libraryCalls(), contains('capture'),
+        reason: 'the caller of the first start was told the client is running');
   });
 }

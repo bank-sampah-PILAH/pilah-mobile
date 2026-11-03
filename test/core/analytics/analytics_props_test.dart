@@ -79,4 +79,22 @@ void main() {
       expect(AnalyticsProps.allowed, isNot(contains(name)), reason: name);
     }
   });
+
+  test('refuses personal data inside a list', () {
+    expect(
+      () => AnalyticsProps.sanitize({
+        'masalah': ['berat_nol', 'siti@example.com'],
+      }),
+      throwsAssertionError,
+    );
+  });
+
+  test('refuses a list that holds more than text', () {
+    expect(
+      () => AnalyticsProps.sanitize({
+        'masalah': ['berat_nol', 3],
+      }),
+      throwsAssertionError,
+    );
+  });
 }
