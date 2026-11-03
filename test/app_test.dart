@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
@@ -16,6 +17,7 @@ import 'package:pilah_mobile/services/di.dart';
 
 import 'support/app_shell_support.dart';
 import 'support/approved_membership.dart';
+import 'support/fake_analytics_client.dart';
 import 'support/profile_support.dart';
 import 'support/stub_api.dart';
 
@@ -48,7 +50,11 @@ void main() {
 
   /// Starts the app on its splash and lets the restored session in [shell.auth]
   /// route it, as the session check does at cold start.
-  Future<void> boot(WidgetTester tester, {bool isWeb = false}) async {
+  Future<void> boot(
+    WidgetTester tester, {
+    bool isWeb = false,
+    FakeAnalyticsClient? analytics,
+  }) async {
     AppRouterConfig.getRouter().go('/splash');
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
@@ -56,7 +62,14 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(App(
       isWebOverride: isWeb,
-      providerScopeBuilder: shell.wrap,
+      providerScopeBuilder: analytics == null
+          ? shell.wrap
+          : (child) => ProviderScope(
+                overrides: [
+                  analyticsClientProvider.overrideWithValue(analytics)
+                ],
+                child: shell.wrap(child),
+              ),
     ));
     // Unmount first so providers can dispose cleanly.
     addTearDown(() => tester.pumpWidget(const SizedBox()));
@@ -75,6 +88,21 @@ void main() {
 
     expect(location(), '/dashboard');
     expect(find.text('Flutter Pilah Mobile'), findsNothing);
+  });
+
+  testWidgets('tells analytics which screen the user is on as they move',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester, analytics: analytics);
+
+    expect(analytics.screens, contains('dashboard'));
+
+    AppRouterConfig.getRouter().go('/nasabah');
+    await tester.pumpAndSettle();
+
+    expect(analytics.screens.last, 'nasabah');
+    expect(analytics.events.map((e) => e.name), contains('layar_ditinggalkan'));
   });
 
   testWidgets('every screen inherits the app theme, not the Material default',
