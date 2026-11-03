@@ -229,7 +229,9 @@ void main() {
     await pumpPage(tester);
 
     expect(tester.getTopLeft(find.text('Riwayat Aktivitas')).dx, 32);
-    expect(tester.getRect(find.byType(TextField)).right, 1000 - 32);
+    final options = tester.getRect(find.byTooltip('Opsi'));
+    expect(options.right, 1000 - 32);
+    expect(tester.getRect(find.byType(TextField)).right, lessThan(options.left));
   });
 
   testWidgets('the activity list lines up with the header on a wide screen',
@@ -345,7 +347,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester, textScale: 2);
-    await tester.drag(find.byType(NestedScrollView), const Offset(0, -600));
+    await tester.scrollUntilVisible(
+      find.text('Budi Santoso'),
+      200,
+      scrollable: find
+          .descendant(
+              of: find.byType(NestedScrollView),
+              matching: find.byType(Scrollable))
+          .first,
+    );
     await tester.pumpAndSettle();
     expect(find.text('Budi Santoso').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);

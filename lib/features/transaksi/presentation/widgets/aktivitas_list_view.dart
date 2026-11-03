@@ -142,22 +142,26 @@ class AktivitasListView extends StatelessWidget {
       state,
       Padding(
         padding: side.add(const EdgeInsets.only(bottom: AppSpacing.xl)),
-        child: AktivitasTable(
-          items: state.items,
-          onTap: (item) => _openPencairanDetail(context, item),
-          loadSetoranDetail: (id) => ProviderScope.containerOf(
-            context,
-            listen: false,
-          ).read(transaksiProvider.notifier).fetchTransaksiDetail(id),
-          onEdit: (item) => _editItem(context, item),
-          // Hapus only shows on a tercatat setoran, which always has its record.
-          onHapus: (item) =>
-              showBatalkanSetoranDialog(context, item.transaksi!.id),
-          footer: footer,
-          toolbar: const AktivitasSummaryStrip(),
-          page: state.currentPage,
-          pagination: isWeb ? _buildPagination(context, state) : null,
-        ),
+        child: Consumer(
+            builder: (context, ref, _) => AktivitasTable(
+                  selectedIds: ref.watch(aktivitasBulkSelectionProvider),
+                  onToggleSelection:
+                      ref.read(aktivitasBulkSelectionProvider.notifier).toggle,
+                  items: state.items,
+                  onTap: (item) => _openPencairanDetail(context, item),
+                  loadSetoranDetail: (id) => ProviderScope.containerOf(
+                    context,
+                    listen: false,
+                  ).read(transaksiProvider.notifier).fetchTransaksiDetail(id),
+                  onEdit: (item) => _editItem(context, item),
+                  // Hapus only shows on a tercatat setoran, which always has its record.
+                  onHapus: (item) =>
+                      showBatalkanSetoranDialog(context, item.transaksi!.id),
+                  footer: footer,
+                  toolbar: const AktivitasSummaryStrip(),
+                  page: state.currentPage,
+                  pagination: isWeb ? _buildPagination(context, state) : null,
+                )),
       ),
     );
   }
@@ -314,8 +318,10 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     final selectable =
         expandable && id.isNotEmpty && !item.transaksi!.isDibatalkan;
     final selection = ref.watch(aktivitasSelectionProvider);
-    final selecting = selection != null;
-    final selected = selectable && selection == id;
+    final bulkSelection = ref.watch(aktivitasBulkSelectionProvider);
+    final selecting = selection != null || bulkSelection != null;
+    final selected = selectable &&
+        (selection == id || (bulkSelection?.contains(id) ?? false));
 
     return HoldToSelect(
       enabled: selectable && !selecting,
@@ -336,11 +342,11 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
                 selecting,
                 selected,
               ),
-              if (expandable) _buildDetails(id),
+              if (expandable && bulkSelection == null) _buildDetails(id),
             ],
           ),
           if (selected) _selectedTint(),
-          if (selected) _selectionIndicator(),
+          if (selected && bulkSelection == null) _selectionIndicator(),
         ],
       ),
     );
@@ -377,6 +383,15 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
           ),
           child: Row(
             children: [
+              if (ref.watch(aktivitasBulkSelectionProvider) != null &&
+                  selectable)
+                Checkbox(
+                  value: selected,
+                  semanticLabel: 'Pilih setoran ${item.title}',
+                  onChanged: (_) => ref
+                      .read(aktivitasBulkSelectionProvider.notifier)
+                      .toggle(id),
+                ),
               Expanded(
                 child: ActivityItem(
                   avatarText: item.avatarText,
@@ -390,7 +405,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
                   badge: item.badge,
                 ),
               ),
-              if (expandable)
+              if (expandable && !selecting)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Icon(
@@ -419,6 +434,13 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     bool selectable,
     bool selecting,
   ) {
+    if (ref.read(aktivitasBulkSelectionProvider) != null) {
+      if (selectable) {
+        setState(() => _expanded = false);
+        ref.read(aktivitasBulkSelectionProvider.notifier).toggle(id);
+      }
+      return;
+    }
     if (selecting) {
       if (selectable) {
         ref.read(aktivitasSelectionProvider.notifier).toggle(id);

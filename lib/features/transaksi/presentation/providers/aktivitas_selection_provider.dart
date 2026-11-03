@@ -22,3 +22,34 @@ class AktivitasSelectionNotifier extends Notifier<String?> {
 
   void clear() => state = null;
 }
+
+/// PIL-429: null is browsing; an empty set is selection mode with no choices.
+/// Separate from PIL-428's single selection so its edit/void flow stays intact.
+final aktivitasBulkSelectionProvider =
+    NotifierProvider<AktivitasBulkSelectionNotifier, Set<String>?>(
+  AktivitasBulkSelectionNotifier.new,
+);
+
+class AktivitasBulkSelectionNotifier extends Notifier<Set<String>?> {
+  @override
+  Set<String>? build() => null;
+
+  void start() => state = const {};
+
+  void toggle(String id) {
+    final selected = state;
+    if (selected == null || id.isEmpty) return;
+    final updated = {...selected};
+    if (!updated.remove(id)) updated.add(id);
+    state = Set.unmodifiable(updated);
+  }
+
+  /// Drop records no longer visible or selectable after a refresh.
+  void retain(Set<String> eligibleIds) {
+    final selected = state;
+    if (selected == null || selected.every(eligibleIds.contains)) return;
+    state = Set.unmodifiable(selected.intersection(eligibleIds));
+  }
+
+  void clear() => state = null;
+}

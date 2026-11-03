@@ -28,9 +28,13 @@ class AktivitasTable extends StatelessWidget {
     this.toolbar,
     this.pagination,
     this.page,
+    this.selectedIds,
+    this.onToggleSelection,
   });
 
   final List<ActivitasEntity> items;
+  final Set<String>? selectedIds;
+  final ValueChanged<String>? onToggleSelection;
   final ValueChanged<ActivitasEntity> onTap;
 
   /// Dipanggil dari kolom Aksi pada baris setoran. Null menyembunyikan kolom.
@@ -75,6 +79,7 @@ class AktivitasTable extends StatelessWidget {
     return DataTableCard(
       toolbar: toolbar,
       header: DataTableCard.head([
+        if (selectedIds != null) const SizedBox(width: 48),
         _cell(0, Text('WAKTU', style: _headStyle)),
         _cell(1, Text('NASABAH', style: _headStyle)),
         _cell(2, Text('TIPE', style: _headStyle)),
@@ -83,7 +88,8 @@ class AktivitasTable extends StatelessWidget {
           4,
           Text('NOMINAL', style: _headStyle, textAlign: TextAlign.end),
         ),
-        if (onEdit != null) _aksiCell(Text('AKSI', style: _headStyle)),
+        if (onEdit != null && selectedIds == null)
+          _aksiCell(Text('AKSI', style: _headStyle)),
       ]),
       body: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -99,6 +105,8 @@ class AktivitasTable extends StatelessWidget {
                 onEdit: onEdit == null ? null : () => onEdit!(items[i]),
                 onHapus: onHapus == null ? null : () => onHapus!(items[i]),
                 loadSetoranDetail: loadSetoranDetail,
+                selectedIds: selectedIds,
+                onToggleSelection: onToggleSelection,
               ),
       ),
       footer: pagination,
@@ -132,6 +140,8 @@ class _Row extends StatefulWidget {
     this.onEdit,
     this.onHapus,
     this.loadSetoranDetail,
+    this.selectedIds,
+    this.onToggleSelection,
   });
 
   final ActivitasEntity item;
@@ -139,6 +149,8 @@ class _Row extends StatefulWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onHapus;
   final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
+  final Set<String>? selectedIds;
+  final ValueChanged<String>? onToggleSelection;
 
   @override
   State<_Row> createState() => _RowState();
@@ -154,6 +166,8 @@ class _RowState extends State<_Row> {
 
   /// Only a setoran still tercatat can be edited or cancelled.
   bool get _bisaDiubah => item.tipe == ActivitasTipe.setoran && !_dibatalkan;
+  bool get _selectable =>
+      _bisaDiubah && (item.transaksi?.id.isNotEmpty ?? false);
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +182,8 @@ class _RowState extends State<_Row> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildDataRow(context, expandable),
-            if (expandable) _buildExpandedDetail(context),
+            if (expandable && widget.selectedIds == null)
+              _buildExpandedDetail(context),
           ],
         ),
       ),
@@ -209,6 +224,10 @@ class _RowState extends State<_Row> {
   }
 
   void _handleTap(bool expandable) {
+    if (widget.selectedIds != null) {
+      if (_selectable) widget.onToggleSelection?.call(item.transaksi!.id);
+      return;
+    }
     if (expandable) {
       setState(() => _expanded = !_expanded);
     } else {
@@ -220,6 +239,18 @@ class _RowState extends State<_Row> {
     final waktu = item.trailingCaptions;
     return Row(
       children: [
+        if (widget.selectedIds != null)
+          SizedBox(
+            width: 48,
+            child: _selectable
+                ? Checkbox(
+                    value: widget.selectedIds!.contains(item.transaksi!.id),
+                    semanticLabel: 'Pilih setoran ${item.title}',
+                    onChanged: (_) =>
+                        widget.onToggleSelection?.call(item.transaksi!.id),
+                  )
+                : null,
+          ),
         AktivitasTable._cell(
           0,
           Wrap(
@@ -235,7 +266,7 @@ class _RowState extends State<_Row> {
         _typeCell(expandable),
         _detailCell(muted, expandable),
         _amountCell(base),
-        if (widget.onEdit != null) _editCell(),
+        if (widget.onEdit != null && widget.selectedIds == null) _editCell(),
       ],
     );
   }

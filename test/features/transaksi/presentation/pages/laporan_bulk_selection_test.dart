@@ -191,7 +191,7 @@ void main() {
     expect(find.byType(Checkbox), findsNothing);
 
     await enterSelection(tester);
-    await tester.tap(find.text('Budi'));
+    await tester.tap(find.text('Budi').last);
     await tester.pumpAndSettle();
     feed.changePage();
     await tester.pumpAndSettle();

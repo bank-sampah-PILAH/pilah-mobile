@@ -16,6 +16,9 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_se
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_bulk_selection_controls.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 
 /// One filtered report and activity feed for Pengurus on mobile and web.
 class LaporanPage extends ConsumerStatefulWidget {
@@ -37,6 +40,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(aktivitasSelectionProvider.notifier).clear();
+        ref.read(aktivitasBulkSelectionProvider.notifier).clear();
         ref
             .read(riwayatAktivitasProvider.notifier)
             .load(pageSize: widget.isWeb ? 10 : null);
@@ -60,15 +64,52 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
           _searchController.text != current.search) {
         _searchController.text = current.search;
       }
+      final selection = ref.read(aktivitasBulkSelectionProvider.notifier);
+      if (previous != null &&
+          (previous.search != current.search ||
+              previous.periode != current.periode ||
+              previous.dariTanggal != current.dariTanggal ||
+              previous.sampaiTanggal != current.sampaiTanggal ||
+              previous.tipeFilter != current.tipeFilter ||
+              (widget.isWeb && previous.currentPage != current.currentPage))) {
+        selection.clear();
+      } else if (current.status == AktivitasStatus.failure) {
+        selection.clear();
+      } else if (current.status == AktivitasStatus.loaded) {
+        selection.retain({
+          for (final item in current.items)
+            if (item.tipe == ActivitasTipe.setoran &&
+                item.transaksi != null &&
+                item.transaksi!.id.isNotEmpty &&
+                !item.transaksi!.isDibatalkan)
+              item.transaksi!.id,
+        });
+      }
     });
-    return Scaffold(
-      backgroundColor:
-          WebContentSurface.pageColor(context, phone: Colors.white),
-      body: SafeArea(
-        // Wide: a data page, so only the table card scrolls. Phone: the whole
-        // page scrolls, across the body, so its scrollbar is at the edge.
-        child: ContentFrame(
-          child: _webPadding(context) ? _dataPage() : _phonePage(),
+    final bulkSelecting = ref.watch(aktivitasBulkSelectionProvider) != null;
+    return PopScope(
+      canPop: !bulkSelecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          ref.read(aktivitasBulkSelectionProvider.notifier).clear();
+        }
+      },
+      child: Scaffold(
+        backgroundColor:
+            WebContentSurface.pageColor(context, phone: Colors.white),
+        body: SafeArea(
+          // Wide: a data page, so only the table card scrolls. Phone: the whole
+          // page scrolls, across the body, so its scrollbar is at the edge.
+          child: ContentFrame(
+            child: Column(
+              children: [
+                if (bulkSelecting) const AktivitasBulkSelectionBar(),
+                Expanded(
+                  child: _webPadding(context) ? _dataPage() : _phonePage(),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -79,6 +120,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
         children: [
           AppPageHeader(
             title: 'Riwayat Aktivitas',
+            actions: const [AktivitasOptionsMenu()],
             search: CustomSearchField(
               hintText: 'Cari nama pelanggan...',
               controller: _searchController,
