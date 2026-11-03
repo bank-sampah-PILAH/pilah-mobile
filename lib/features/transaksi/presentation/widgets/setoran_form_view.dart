@@ -519,21 +519,15 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
           }
           if (!mounted) return;
 
-          sheetNavigator.pop();
-          close();
-
-          // Deferred rather than raised here. A Flushbar shows itself by
-          // pushing a route, and Navigator anchors an imperatively pushed route
-          // to the page-based one beneath it — in this frame that is a page
-          // already on its way out, so the toast would be torn down along with
-          // it. [AppNotification.afterNavigation] waits for the destination to
-          // settle and shows on the root navigator instead.
+          // Deferred rather than raised in this frame: see [_leaveAndNotify].
           if (opened) {
             // Deliberately not "terkirim": all that happened is that a draft was
             // opened. The pengelola still has to press send inside WhatsApp, and
             // claiming otherwise would leave them thinking the nasabah was
             // notified when they closed the draft.
-            AppNotification.afterNavigation(
+            _leaveAndNotify(
+              sheetNavigator,
+              close,
               (toastContext) => AppNotification.showSuccess(
                 toastContext,
                 title: 'Berhasil',
@@ -544,7 +538,9 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
           } else {
             // The transaksi itself was saved — only the WhatsApp draft failed to
             // open. Red would read as "your transaction didn't go through".
-            AppNotification.afterNavigation(
+            _leaveAndNotify(
+              sheetNavigator,
+              close,
               (toastContext) => AppNotification.showWarning(
                 toastContext,
                 title: 'Peringatan',
@@ -555,15 +551,12 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
           }
         },
         onSelesai: () async {
-          // Nothing to wait for, so no await separates these from the pop. The
+          // Nothing to wait for, so nothing separates these from the pop. The
           // container closes itself, as above: from inside the side sheet
           // `GoRouter.pop()` would pop the page behind the panel.
-          final sheetNavigator = Navigator.of(sheetContext);
-          final close = widget.onClose;
-          sheetNavigator.pop();
-          close();
-          // Same reason as above: shown once the destination has settled.
-          AppNotification.afterNavigation(
+          _leaveAndNotify(
+            Navigator.of(sheetContext),
+            widget.onClose,
             (toastContext) => AppNotification.showSuccess(
               toastContext,
               title: 'Berhasil',
@@ -573,6 +566,26 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
         },
       ),
     );
+  }
+
+  /// Menutup panel sukses, lalu formulir lewat wadahnya, dan menampilkan
+  /// pemberitahuan sesudah tujuan selesai berganti.
+  ///
+  /// Dua jalan keluar memakainya, supaya urutan tutup tidak bisa menyimpang di
+  /// salah satunya. Toast ditunda, bukan dimunculkan di frame ini: Flushbar
+  /// menampilkan diri dengan mendorong route, dan Navigator menambatkan route
+  /// imperatif ke route berbasis halaman di bawahnya — di frame ini itu halaman
+  /// yang sedang keluar, sehingga toast ikut hancur bersamanya.
+  /// [AppNotification.afterNavigation] menunggu tujuan stabil dan menampilkan di
+  /// navigator akar.
+  void _leaveAndNotify(
+    NavigatorState sheetNavigator,
+    VoidCallback close,
+    void Function(BuildContext toastContext) toast,
+  ) {
+    sheetNavigator.pop();
+    close();
+    AppNotification.afterNavigation(toast);
   }
 
   int get grandTotal {
