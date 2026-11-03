@@ -41,7 +41,11 @@ class AnalyticsScreenTracker {
   /// switched on and has not heard about it yet.
   void reportCurrent() {
     final screen = _screen;
-    if (screen != null) client.screen(screen);
+    if (screen == null) return;
+    client.screen(screen);
+    // What came before is nothing analytics was told about, so time on this
+    // screen counts from now.
+    _since = _clock();
   }
 
   void _onChange() {
