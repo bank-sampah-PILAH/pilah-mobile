@@ -95,6 +95,17 @@ void main() {
     expect(client.log, ['screen:riwayat']);
   });
 
+  test('time on a screen counts from when analytics started hearing of it', () {
+    // The user had been on the dashboard for half a minute before they agreed.
+    now = now.add(const Duration(seconds: 30));
+    tracker.reportCurrent();
+
+    now = now.add(const Duration(seconds: 5));
+    goTo('/nasabah');
+
+    expect(client.events.single.properties['durasi_detik'], 5);
+  });
+
   test('stops listening once disposed', () {
     tracker.dispose();
 
