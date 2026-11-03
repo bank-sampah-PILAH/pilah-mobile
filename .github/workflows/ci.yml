@@ -156,6 +156,13 @@ jobs:
           --dart2js-args=-O0
           --coverage-path=coverage/browser.lcov.info
           test/browser/file_downloader_test.dart
+          test/browser/posthog_web_client_test.dart
+
+      - name: Cover the web analytics client factory
+        run: >-
+          flutter test --platform chrome --coverage
+          --coverage-path=coverage/browser-analytics-factory.info
+          test/core/analytics/analytics_client_factory_web_test.dart
 
       - name: Run web-specific widget tests
         run: >-

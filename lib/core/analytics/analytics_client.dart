@@ -1,4 +1,4 @@
-/// Starts and stops session recording. Nothing is recorded until [start].
+/// What analytics can do on this platform. Nothing is sent until [start].
 abstract class AnalyticsClient {
   Future<void> start();
 }
