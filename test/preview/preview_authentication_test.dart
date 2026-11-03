@@ -32,4 +32,20 @@ void main() {
     expect(container.read(authenticationProvider), isA<Unauthenticated>());
     expect(states, contains(isA<Unauthenticated>()));
   });
+
+  test('preview discard registration ends the offline session', () async {
+    final container = ProviderContainer(
+      overrides: [
+        authenticationProvider
+            .overrideWith(createPreviewAuthenticationNotifier),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(authenticationProvider.notifier).discardRegistration();
+
+    expect(container.read(authenticationProvider), isA<Unauthenticated>());
+    await container.read(authenticationProvider.notifier).checkSession();
+    expect(container.read(authenticationProvider), isA<Unauthenticated>(),
+        reason: 'the discarding cleared the preview session for good');
+  });
 }

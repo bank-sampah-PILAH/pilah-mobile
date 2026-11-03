@@ -11,8 +11,13 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/n
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
+import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import '../../support/auth_support.dart';
+import '../../support/fake_image_download.dart';
 import '../../support/nasabah_approval_support.dart';
+import '../../support/profile_support.dart';
 
 const _approved = NasabahMembershipEntity(
   id: 'application-1',
@@ -39,7 +44,10 @@ void main() {
     required Size window,
     required bool isWeb,
     String initialLocation = '/home',
+    ProfileNotifier? profile,
+    bool warmProfile = false,
   }) async {
+    ProviderContainer? profileContainer;
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -93,8 +101,18 @@ void main() {
       overrides: [
         nasabahApprovalProvider.overrideWith(() => approval),
         authenticationProvider.overrideWith(() => auth),
+        if (profile != null) profileProvider.overrideWith(() => profile),
       ],
-      child: MaterialApp.router(routerConfig: router),
+      child: Builder(builder: (context) {
+        // exists(provider) is false until the provider is read once; the real
+        // app warms it through shell reads, so a test that needs the shell's
+        // lazy seeding warms it here first.
+        if (warmProfile && profile != null) {
+          profileContainer = ProviderScope.containerOf(context, listen: false);
+          profileContainer!.read(profileProvider.notifier);
+        }
+        return MaterialApp.router(routerConfig: router);
+      }),
     ));
     await tester.pumpAndSettle();
     return router;
@@ -446,4 +464,86 @@ void main() {
           reason: 'the session in this test carries no bankSampahNama');
     });
   });
+
+  group('the bank logo reaches the shell from the profile', () {
+    testWidgets('a loaded profile draws its logo in the rail header',
+        (tester) async {
+      final debugImage = FakeImageDownload.install();
+      final profile = _LoadedProfileNotifier(BankSampahProfile(
+        id: 'bank-1',
+        nama: 'Bank Sampah Melati',
+        alamat: 'Jl. Melati',
+        kota: 'Depok',
+        noHpPic: '+62812',
+        status: 'active',
+        fotoLogo: 'https://media.test/logo.png',
+      ));
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1440, 900),
+          isWeb: true,
+          profile: profile,
+          warmProfile: true);
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      debugImage.finish();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+
+      final logos = tester
+          .widgetList<Image>(find.byType(Image))
+          .where((i) => i.image is NetworkImage)
+          .toList();
+      expect(logos, isNotEmpty,
+          reason: 'the rail header shows the stored bank logo');
+      expect((logos.first.image as NetworkImage).url,
+          'https://media.test/logo.png');
+      FakeImageDownload.uninstall();
+    });
+
+    testWidgets('a Pengurus whose profile never loaded is fetched silently',
+        (tester) async {
+      var loaded = 0;
+      final profile = _CountingProfileNotifier((_) => loaded++);
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1440, 900),
+          isWeb: true,
+          profile: profile,
+          warmProfile: true);
+      await tester.pump();
+
+      expect(loaded, 1,
+          reason: 'the shell seeds the profile the session never opened');
+    });
+  });
+}
+
+/// Counts silent loads so the shell's lazy profile seeding can be observed
+/// without stubbing the three HTTP endpoints a full load reads.
+class _CountingProfileNotifier extends TestProfileNotifier {
+  _CountingProfileNotifier(this.onLoad) : super.noDataSource();
+
+  final void Function(bool silent) onLoad;
+
+  @override
+  Future<void> load({bool silent = false}) => Future.sync(() => onLoad(silent));
+}
+
+/// Starts loaded with the stored logo, as though the session had opened the
+/// profile page before reaching the shell.
+class _LoadedProfileNotifier extends _CountingProfileNotifier {
+  _LoadedProfileNotifier(BankSampahProfile bank) : super((_) {}) {
+    _loadedBank = bank;
+    _loaded = true;
+  }
+
+  bool _loaded = false;
+  BankSampahProfile? _loadedBank;
+
+  @override
+  ProfileState build() => _loaded
+      ? ProfileState(status: ProfileStatus.loaded, bankSampah: _loadedBank)
+      : const ProfileState();
 }

@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
+import '../../support/fake_image_download.dart';
 import '../../support/pump_app.dart';
 
 /// A browser window narrower than 600 cannot show a 256px rail and the content
@@ -22,6 +23,7 @@ void main() {
     String role = 'pengelola',
     int currentIndex = 0,
     String? bankSampahNama = 'Bank Sampah Melati',
+    String? bankSampahLogoUrl,
     bool limitedNasabah = false,
     bool transactionSelected = false,
     VoidCallback? onAddTransaction,
@@ -35,6 +37,7 @@ void main() {
             role: role,
             currentIndex: currentIndex,
             bankSampahNama: bankSampahNama,
+            bankSampahLogoUrl: bankSampahLogoUrl,
             limitedNasabah: limitedNasabah,
             transactionSelected: transactionSelected,
             onSelected: selected.add,
@@ -356,6 +359,30 @@ void main() {
 
       expect(find.text('Aktivitas'), findsOneWidget);
       expect(find.text('Riwayat'), findsNothing);
+    });
+
+    testWidgets('a stored bank logo is drawn in the header', (tester) async {
+      final debugImage = FakeImageDownload.install();
+      await mountDrawer(tester,
+          bankSampahLogoUrl: 'https://media.test/logo.png');
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      debugImage.finish();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+
+      // The drawer draws the logo through the avatar's foreground image.
+      final avatar = tester.widget<CircleAvatar>(
+        find.descendant(
+          of: find.byType(RoleNavigationDrawer),
+          matching: find.byType(CircleAvatar),
+        ),
+      );
+      expect(avatar.foregroundImage, isA<NetworkImage>());
+      expect((avatar.foregroundImage! as NetworkImage).url,
+          'https://media.test/logo.png');
+      FakeImageDownload.uninstall();
     });
   });
 }

@@ -81,8 +81,14 @@ class TestAuthenticationNotifier extends AuthenticationNotifier {
   Future<void> discardRegistration(
       {void Function(String message)? onError}) async {
     calls.add('logout'); // Shares the exit-path expectation with logout.
+    final failure = discardFailure;
+    if (failure != null) onError?.call(failure);
     setStateForTest(Unauthenticated());
   }
+
+  /// When set, [discardRegistration] passes this message to [onError] — a
+  /// backend refusal to delete the account (UAT 2026-11).
+  String? discardFailure;
 
   @override
   Future<void> refreshUser() async => calls.add('refreshUser');

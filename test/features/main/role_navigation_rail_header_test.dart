@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 
+import '../../support/fake_image_download.dart';
 import '../../support/pump_app.dart';
 
 /// A Pengurus only ever acts on behalf of one bank sampah, and every figure on
@@ -13,6 +14,7 @@ void main() {
   Future<void> mount(
     WidgetTester tester, {
     String? bankSampahNama,
+    String? bankSampahLogoUrl,
     String? role = 'pengelola',
     Size window = const Size(1440, 900),
   }) async {
@@ -25,6 +27,7 @@ void main() {
               role: role,
               currentIndex: 0,
               bankSampahNama: bankSampahNama,
+              bankSampahLogoUrl: bankSampahLogoUrl,
               onSelected: (_) {},
             ),
           ),
@@ -73,6 +76,29 @@ void main() {
           bankSampahNama:
               'Bank Sampah Kelurahan Kukusan Beji Depok Jawa Barat Indonesia');
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a stored logo is drawn instead of the initials badge',
+        (tester) async {
+      final debugImage = FakeImageDownload.install();
+      await mount(tester,
+          bankSampahNama: 'Bank Sampah Melati',
+          bankSampahLogoUrl: 'https://media.test/logo.png');
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      debugImage.finish();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+
+      final headers = tester
+          .widgetList<Image>(find.byType(Image))
+          .where((i) => i.image is NetworkImage)
+          .toList();
+      expect(headers, isNotEmpty);
+      expect((headers.first.image as NetworkImage).url,
+          'https://media.test/logo.png');
+      FakeImageDownload.uninstall();
     });
   });
 }

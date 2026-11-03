@@ -491,4 +491,53 @@ void main() {
     await pending;
     expect(harness.states, [AuthenticationLoading()]);
   });
+
+  group('discardRegistration', () {
+    test('deletes the fresh account and ends unauthenticated', () async {
+      when(() => useCases.discardRegistration())
+          .thenAnswer((_) async => const Right(null));
+
+      await harness.notifier.discardRegistration();
+
+      expect(harness.states, [AuthenticationLoading(), Unauthenticated()]);
+      verify(() => useCases.discardRegistration()).called(1);
+    });
+
+    test('a refusal still logs out and reports the reason', () async {
+      when(() => useCases.discardRegistration()).thenAnswer(
+        (_) async => Left(GeneralException(message: 'Profil sudah lengkap.')),
+      );
+      final errors = <String>[];
+
+      await harness.notifier.discardRegistration(onError: errors.add);
+
+      // The session goes regardless: the exit dialog has already promised
+      // logout, so keeping a half-deleted account signed in helps nobody.
+      expect(harness.states, [AuthenticationLoading(), Unauthenticated()]);
+      expect(errors, ['Profil sudah lengkap.']);
+    });
+
+    test('web discard signs out of Google before deleting the account',
+        () async {
+      final original = google_sign_in.GoogleSignInPlatform.instance;
+      final platform = _MockGoogleSignInPlatform();
+      google_sign_in.GoogleSignInPlatform.instance = platform;
+      final calls = <String>[];
+      when(() => platform.signOut(const google_sign_in.SignOutParams()))
+          .thenAnswer((_) async => calls.add('Google sign-out'));
+      when(() => useCases.discardRegistration()).thenAnswer((_) async {
+        calls.add('PILAH discard');
+        return const Right(null);
+      });
+      final webHarness = _Harness(useCases, googleUseCase, isWeb: true);
+      addTearDown(webHarness.close);
+      addTearDown(
+          () => google_sign_in.GoogleSignInPlatform.instance = original);
+
+      await webHarness.notifier.discardRegistration();
+
+      expect(calls, ['Google sign-out', 'PILAH discard']);
+      expect(webHarness.states.last, isA<Unauthenticated>());
+    });
+  });
 }

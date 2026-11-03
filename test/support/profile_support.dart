@@ -19,7 +19,23 @@ class TestProfileNotifier extends ProfileNotifier {
     super.isWeb,
   });
 
+  /// A notifier whose data source is never reached: every meaningful call is
+  /// overridden by the caller's subclass or unstubbed. Useful for shells that
+  /// only read state or seed a silent load.
+  TestProfileNotifier.noDataSource()
+      : super(
+          _ThrowingProfileDataSource(),
+          MockImagePicker(),
+          MockImageCropper(),
+        );
+
   void setStateForTest(ProfileState value) => state = value;
+}
+
+class _ThrowingProfileDataSource implements ProfileRemoteDataSource {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('profile data source is stubbed away');
 }
 
 /// A real [ProfileNotifier] with HTTP stubbed and media plugins mocked.

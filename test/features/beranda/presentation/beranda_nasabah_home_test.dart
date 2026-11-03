@@ -20,16 +20,23 @@ import 'package:pilah_mobile/services/di.dart';
 
 import '../../../support/stub_api.dart';
 import '../../../support/auth_support.dart';
+import '../../../support/fake_image_download.dart';
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
 /// A preview repository whose home carries the given balance and activities.
 class _HomeRepository extends PreviewNasabahRepository {
-  _HomeRepository(this.balanceUpdatedAt, this.activities);
+  _HomeRepository(this.balanceUpdatedAt, this.activities, {this.logoUrl});
 
   final DateTime? balanceUpdatedAt;
   final List<NasabahActivity> activities;
+  final String? logoUrl;
   final asked = <String?>[];
+
+  @override
+  Future<NasabahBank> bank(String membershipId) async =>
+      NasabahBank('Bank Sampah Melati', 'Jl. Melati', 'Depok', '08123456789',
+          logoUrl: logoUrl);
 
   @override
   Future<NasabahHome> home({String? membershipId}) async {
@@ -206,6 +213,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.asked, [null, null]);
+  });
+
+  testWidgets('a stored bank logo is drawn from its URL', (tester) async {
+    final debugImage = FakeImageDownload.install();
+    await pumpHome(
+        tester, _HomeRepository(null, const [], logoUrl: '/media/logo.png'));
+
+    // Let the avatar start its download without racing it.
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    debugImage.finish();
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump();
+
+    final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar).first);
+    expect(avatar.foregroundImage, isA<NetworkImage>());
+    expect((avatar.foregroundImage! as NetworkImage).url, isNotEmpty);
+    FakeImageDownload.uninstall();
+  });
+
+  testWidgets('without a logo the membership card keeps its BS initial',
+      (tester) async {
+    await pumpHome(tester, _HomeRepository(null, const []));
+    expect(find.text('BS'), findsOneWidget);
   });
 
   testWidgets('a failing schedule request is reported in its own card',

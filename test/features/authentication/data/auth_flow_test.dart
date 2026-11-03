@@ -317,4 +317,45 @@ void main() {
       expect(api.requests, isEmpty);
     });
   });
+
+  group('discarding an incomplete registration', () {
+    test('deletes the account and reports success', () async {
+      stack = AuthStack(api, stored: {'token': 'a', 'refresh_token': 'r'});
+      api.on('DELETE', '/api/v1/onboarding/discard-registration', json: {});
+
+      final result = await stack.interactor.discardRegistration();
+
+      expect(result.isRight(), isTrue);
+      expect(
+          api.requests.single.path, '/api/v1/onboarding/discard-registration');
+    });
+
+    test('a refusal from the backend is reported to the caller', () async {
+      stack = AuthStack(api, stored: {'token': 'a'});
+      api.on('DELETE', '/api/v1/onboarding/discard-registration',
+          status: 409,
+          json: {
+            'code': 'profile_complete',
+            'detail': 'Profil sudah lengkap.'
+          });
+
+      final result = await stack.interactor.discardRegistration();
+
+      expect(result.isLeft(), isTrue);
+      expect(
+        result.fold((f) => f.displayMessage, (_) => ''),
+        'Profil sudah lengkap.',
+      );
+    });
+
+    test('a malformed body is a general failure, not a crash', () async {
+      stack = AuthStack(api, stored: {'token': 'a'});
+      // A Dart Error (not an Exception) escapes the on Exception guard, as an
+      // unexpected reply shape would.
+      api.crash(
+          'DELETE', '/api/v1/onboarding/discard-registration', TypeError());
+
+      expect((await stack.interactor.discardRegistration()).isLeft(), isTrue);
+    });
+  });
 }

@@ -35,10 +35,15 @@ Future<void> confirmExitOnboarding(
       .read(authenticationProvider.notifier);
   if (discardAccount) {
     await provider.discardRegistration(
-      onError: (message) => AppNotification.showError(
-        context,
-        title: 'Akun Tidak Dihapus',
-        message: message,
+      // A refusal ends the session anyway, so the router is already heading to
+      // the login page; the toast must ride afterNavigation to survive both
+      // the page teardown and that redirect (same lesson as CPBI-21).
+      onError: (message) => AppNotification.afterNavigation(
+        (context) => AppNotification.showError(
+          context,
+          title: 'Akun Tidak Dihapus',
+          message: message,
+        ),
       ),
     );
     return;
