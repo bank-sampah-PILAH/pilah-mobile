@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
+import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 import 'package:web/web.dart' as web;
 
 /// Loads PostHog's browser library only when [start] is called, so nothing
@@ -34,6 +35,9 @@ class PosthogWebClient implements AnalyticsClient {
   Future<void>? _starting;
   bool _stopped = false;
 
+  /// Loaded and not stopped: the only time events may leave the app.
+  bool _live = false;
+
   @override
   bool get isAvailable => true;
 
@@ -47,16 +51,19 @@ class PosthogWebClient implements AnalyticsClient {
       if (identical(_starting, starting)) _starting = null;
     });
     await starting;
-    if (!_stopped) return;
-    // Started again after a stop: the library is already loaded and set up,
-    // so it only has to be switched back on.
-    _stopped = false;
-    final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
-    posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+    if (_stopped) {
+      // Started again after a stop: the library is already loaded and set up,
+      // so it only has to be switched back on.
+      _stopped = false;
+      final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
+      posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+    }
+    _live = true;
   }
 
   @override
   Future<void> stop() async {
+    _live = false;
     final starting = _starting;
     // Never started, so there is nothing to stop and nothing to load.
     if (starting == null) return;
@@ -66,6 +73,28 @@ class PosthogWebClient implements AnalyticsClient {
     posthog.callMethod('opt_out_capturing'.toJS);
     _stopped = true;
   }
+
+  @override
+  void capture(String event, [Map<String, Object?> properties = const {}]) {
+    if (!_live) return;
+    _posthog.callMethod(
+      'capture'.toJS,
+      event.toJS,
+      AnalyticsProps.sanitize(properties).jsify(),
+    );
+  }
+
+  @override
+  void screen(String name) {
+    if (!_live) return;
+    _posthog.callMethod(
+      'capture'.toJS,
+      r'$screen'.toJS,
+      {r'$screen_name': name}.jsify(),
+    );
+  }
+
+  JSObject get _posthog => globalContext.getProperty<JSObject>('posthog'.toJS);
 
   Future<void> _load() async {
     final loaded = Completer<void>();
