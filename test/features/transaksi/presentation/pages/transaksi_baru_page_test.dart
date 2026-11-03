@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
@@ -27,6 +28,7 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../support/dashboard_support.dart';
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/harga_support.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pencairan_support.dart';
@@ -112,7 +114,9 @@ void main() {
 
   /// Opens the real page with its controllers, over the stubbed API.
   Future<GoRouter> open(WidgetTester tester,
-      {Size window = const Size(800, 2600), bool closeTutorial = true}) async {
+      {Size window = const Size(800, 2600),
+      bool closeTutorial = true,
+      FakeAnalyticsClient? analytics}) async {
     final harga = buildHargaNotifier(api);
     final profile = buildProfileNotifier(api);
     final transaksi = buildTransaksiNotifier(api);
@@ -137,6 +141,8 @@ void main() {
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => recent),
           profileProvider.overrideWith(() => profile),
+          if (analytics != null)
+            analyticsClientProvider.overrideWithValue(analytics),
         ],
         child: withTransaksiProviders(
           child: app,
@@ -588,6 +594,40 @@ void main() {
         .map((r) => r.headers['Idempotency-Key'])
         .toSet();
     expect(keys, hasLength(1));
+    await settleToasts(tester);
+  });
+
+  testWidgets('a saved transaksi is reported to analytics by its item count',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester, analytics: analytics);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+
+    await save(tester);
+
+    expect(analytics.events, hasLength(1));
+    expect(analytics.events.single.name, 'setoran_disimpan');
+    expect(analytics.events.single.properties, {'jumlah_item': 1});
+  });
+
+  testWidgets('a transaksi the server refuses is not reported as saved',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('POST', '/api/v1/transaksi', status: 500, json: {'detail': 'x'});
+    await open(tester, analytics: analytics);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+
+    await save(tester);
+
+    expect(analytics.events, isEmpty);
     await settleToasts(tester);
   });
 
