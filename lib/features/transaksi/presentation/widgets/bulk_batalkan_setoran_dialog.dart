@@ -36,6 +36,8 @@ Future<void> showBulkBatalkanSetoranDialog(BuildContext context) async {
   });
   if (targets.isEmpty) {
     container.read(aktivitasBulkSelectionProvider.notifier).clear();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Pilihan sudah tidak tersedia di riwayat terbaru')));
     return;
   }
   await showDialog<void>(
@@ -94,12 +96,14 @@ class _BulkBatalkanSetoranDialogState
     );
     if (!mounted) return;
     if (notifier.sessionKey != session) {
+      ref.read(aktivitasBulkSelectionProvider.notifier).clear();
       Navigator.of(context).pop();
       return;
     }
     await _refreshAffectedViews();
     if (!mounted) return;
     if (notifier.sessionKey != session) {
+      ref.read(aktivitasBulkSelectionProvider.notifier).clear();
       Navigator.of(context).pop();
       return;
     }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -77,7 +79,9 @@ void main() {
   late _Feed feed;
 
   Future<void> pumpPage(WidgetTester tester, double width,
-      {double textScale = 1, bool onlyVoided = false}) async {
+      {double textScale = 1,
+      bool onlyVoided = false,
+      bool isWeb = true}) async {
     tester.view.physicalSize = Size(width, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -100,7 +104,7 @@ void main() {
               .copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
-        home: const LaporanPage(isWeb: true),
+        home: LaporanPage(isWeb: isWeb),
       ),
     ));
     await tester.pumpAndSettle();
@@ -113,21 +117,42 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  for (final width in [390.0, 1200.0]) {
-    testWidgets('Opsi starts empty multi-selection at width $width',
+  for (final (width, isWeb) in [
+    (390.0, true),
+    (390.0, false),
+    (1200.0, true)
+  ]) {
+    testWidgets('Opsi starts empty multi-selection at $width, web=$isWeb',
         (tester) async {
-      await pumpPage(tester, width);
+      await pumpPage(tester, width, isWeb: isWeb);
       await enterSelection(tester);
 
       expect(find.text('0 dipilih'), findsOneWidget);
       expect(find.byType(Checkbox), findsNWidgets(2));
+      if (width == 390) {
+        final sharedBar = find.byType(AktivitasSelectionBar);
+        expect(sharedBar, findsOneWidget);
+        final surface = tester.widget<Material>(find
+            .descendant(of: sharedBar, matching: find.byType(Material))
+            .first);
+        expect(surface.color, AppColors.greenDark);
+        expect(tester.getTopLeft(find.byKey(AktivitasSelectionBar.closeKey)).dx,
+            lessThan(tester.getTopLeft(find.text('0 dipilih')).dx));
+        expect(
+            tester
+                .widget<AppButton>(find.widgetWithText(AppButton, 'Hapus (0)'))
+                .onPressed,
+            isNull);
+      } else {
+        expect(find.byType(AktivitasSelectionBar), findsNothing);
+      }
       expect(api.requests, isEmpty);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('two rows toggle independently at width $width',
+    testWidgets('two rows toggle independently at $width, web=$isWeb',
         (tester) async {
-      await pumpPage(tester, width);
+      await pumpPage(tester, width, isWeb: isWeb);
       await enterSelection(tester);
 
       await tester.tap(find.text('Budi'));
@@ -148,9 +173,10 @@ void main() {
           reason: 'selecting must not load details or void anything');
     });
 
-    testWidgets('voided setoran and pencairan cannot join selection at $width',
+    testWidgets(
+        'voided setoran and pencairan cannot join at $width, web=$isWeb',
         (tester) async {
-      await pumpPage(tester, width);
+      await pumpPage(tester, width, isWeb: isWeb);
       await enterSelection(tester);
       await tester.tap(find.text('Sudah batal'));
       await tester.pumpAndSettle();
@@ -163,9 +189,9 @@ void main() {
     });
 
     testWidgets(
-        'deselecting the last row keeps mode until explicit exit $width',
+        'deselecting last row keeps mode until explicit exit $width, web=$isWeb',
         (tester) async {
-      await pumpPage(tester, width);
+      await pumpPage(tester, width, isWeb: isWeb);
       await enterSelection(tester);
       await tester.tap(find.text('Budi'));
       await tester.pumpAndSettle();

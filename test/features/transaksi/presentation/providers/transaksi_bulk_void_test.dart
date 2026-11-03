@@ -113,7 +113,7 @@ void main() {
     verifyNever(() => single.execute(any()));
   });
 
-  for (final status in [401, 403, 500]) {
+  for (final status in [401, 403, 429, 500]) {
     test('HTTP $status stops remaining writes', () async {
       when(() => single.execute(any())).thenAnswer((_) async => Left(
           NetworkException(
@@ -128,6 +128,10 @@ void main() {
               ? BulkVoidStatus.belumDipastikan
               : BulkVoidStatus.gagal);
       expect(result.outcomes.last.status, BulkVoidStatus.belumDiproses);
+      expect(result.remainingIds, {'s1', 's2'});
+      if (status == 429) {
+        expect(result.outcomes.last.message, contains('Batas permintaan'));
+      }
       verify(() => single.execute(any())).called(1);
     });
   }

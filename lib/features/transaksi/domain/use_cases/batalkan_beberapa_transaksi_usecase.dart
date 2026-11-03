@@ -70,11 +70,21 @@ class BatalkanBeberapaTransaksiUseCase {
     final status = failure.response?.statusCode;
     if (status == null || status >= 500) return _uncertain(id);
     return (
-      outcome:
-          SetoranVoidOutcome(id, BulkVoidStatus.gagal, failure.displayMessage),
-      stopReason: status == 401 || status == 403
-          ? 'Sesi atau izin akses tidak lagi berlaku. Setoran ini belum diproses.'
-          : null,
+      outcome: SetoranVoidOutcome(
+          id,
+          BulkVoidStatus.gagal,
+          status == 429
+              ? NetworkException.extractMessage(failure.response) ??
+                  'Terlalu banyak permintaan. Coba lagi nanti.'
+              : failure.displayMessage),
+      stopReason: switch (status) {
+        401 ||
+        403 =>
+          'Sesi atau izin akses tidak lagi berlaku. Setoran ini belum diproses.',
+        429 =>
+          'Batas permintaan tercapai. Setoran ini belum diproses. Coba lagi nanti.',
+        _ => null,
+      },
     );
   }
 

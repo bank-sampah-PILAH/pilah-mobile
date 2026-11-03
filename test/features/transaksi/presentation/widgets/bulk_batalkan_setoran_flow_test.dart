@@ -77,7 +77,7 @@ void main() {
   late ProviderContainer container;
 
   Future<void> pumpPage(WidgetTester tester,
-      {double width = 390, double textScale = 1}) async {
+      {double width = 390, double textScale = 1, bool isWeb = true}) async {
     tester.view.physicalSize = Size(width, 1100);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -103,7 +103,7 @@ void main() {
                       .copyWith(textScaler: TextScaler.linear(textScale)),
                   child: child!);
             },
-            home: const LaporanPage(isWeb: true)),
+            home: LaporanPage(isWeb: isWeb)),
       ),
     ));
     await tester.pumpAndSettle();
@@ -201,11 +201,15 @@ void main() {
     expect(api.requests, isEmpty);
   });
 
-  for (final width in [390.0, 1440.0]) {
+  for (final (width, isWeb) in [
+    (390.0, true),
+    (390.0, false),
+    (1440.0, true)
+  ]) {
     testWidgets(
-        'bulk reuses both PIL-428 endpoints and refreshes statuses at $width',
+        'bulk reuses PIL-428 endpoints and refreshes at $width, web=$isWeb',
         (tester) async {
-      await pumpPage(tester, width: width);
+      await pumpPage(tester, width: width, isWeb: isWeb);
       succeed('s1');
       succeed('s2');
       await openDialog(tester);
@@ -274,6 +278,22 @@ void main() {
     expect(find.text('Belum diproses'), findsOneWidget);
   });
 
+  testWidgets('rate limit stops the batch and retains untouched choices',
+      (tester) async {
+    await pumpPage(tester);
+    api.on('POST', '/api/v1/transaksi/s1/batalkan',
+        status: 429, json: {'error': 'Terlalu banyak permintaan'});
+    await openDialog(tester);
+    await fillReason(tester);
+    await tester.tap(submit());
+    await tester.pumpAndSettle();
+    expect(api.requests, hasLength(1));
+    expect(find.text('Terlalu banyak permintaan'), findsOneWidget);
+    expect(find.text('Belum diproses'), findsOneWidget);
+    expect(find.textContaining('Batas permintaan tercapai'), findsOneWidget);
+    expect(container.read(aktivitasBulkSelectionProvider), {'s1', 's2'});
+  });
+
   testWidgets('processing locks submission, cancellation and back navigation',
       (tester) async {
     await pumpPage(tester);
@@ -324,6 +344,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(aktivitasBulkSelectionProvider), isNull);
     expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
+    expect(find.text('Pilihan sudah tidak tersedia di riwayat terbaru'),
+        findsOneWidget);
     expect(api.requests, isEmpty);
   });
 
@@ -341,6 +363,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.requests, hasLength(1));
     expect(feed.loads, loads, reason: 'old session must not refresh caches');
+    expect(container.read(aktivitasBulkSelectionProvider), isNull);
     expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
     expect(find.text('Hasil pembatalan'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -360,6 +383,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.requests, hasLength(2));
     expect(feed.loads, 2);
+    expect(container.read(aktivitasBulkSelectionProvider), isNull);
     expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
     expect(find.text('Hasil pembatalan'), findsNothing);
     expect(tester.takeException(), isNull);

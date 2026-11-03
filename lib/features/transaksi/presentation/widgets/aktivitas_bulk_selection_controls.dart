@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/bulk_batalkan_setoran_dialog.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
@@ -58,12 +59,17 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(aktivitasBulkSelectionProvider);
     if (selected == null) return const SizedBox.shrink();
+    if (context.layoutBreakpoint == LayoutBreakpoint.compact) {
+      return AktivitasSelectionBar.bulk(
+        count: selected.length,
+        onClose: ref.read(aktivitasBulkSelectionProvider.notifier).clear,
+        action: _hapus(context, selected, compact: true),
+      );
+    }
     return ContentInset(
         child: Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: context.layoutBreakpoint == LayoutBreakpoint.compact
-            ? AppSpacing.lg
-            : AppSpacing.webGutter,
+        horizontal: AppSpacing.webGutter,
         vertical: AppSpacing.md,
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -77,10 +83,8 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            if (context.layoutBreakpoint != LayoutBreakpoint.compact) ...[
-              _hapus(context, selected),
-              const SizedBox(width: AppSpacing.md),
-            ],
+            _hapus(context, selected),
+            const SizedBox(width: AppSpacing.md),
             AppIconButton(
               icon: Icons.close,
               tooltip: 'Batal memilih setoran',
@@ -89,19 +93,18 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
             ),
           ],
         ),
-        if (context.layoutBreakpoint == LayoutBreakpoint.compact) ...[
-          const SizedBox(height: AppSpacing.sm),
-          _hapus(context, selected),
-        ],
       ]),
     ));
   }
 
-  Widget _hapus(BuildContext context, Set<String> selected) => AppButton(
+  Widget _hapus(BuildContext context, Set<String> selected,
+          {bool compact = false}) =>
+      AppButton(
         label: 'Hapus (${selected.length})',
         icon: Icons.delete_outline,
         variant: AppButtonVariant.destructiveOutlined,
-        expand: context.layoutBreakpoint == LayoutBreakpoint.compact,
+        expand: false,
+        size: compact ? AppButtonSize.compact : AppButtonSize.regular,
         onPressed: selected.isEmpty
             ? null
             : () => showBulkBatalkanSetoranDialog(context),
