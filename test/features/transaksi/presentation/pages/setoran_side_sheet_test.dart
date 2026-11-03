@@ -277,6 +277,23 @@ void main() {
     await settleToasts(tester);
   });
 
+  testWidgets('a tutorial step is no wider than the panel it points inside',
+      (tester) async {
+    await openHost(tester, const Size(1440, 900));
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pilih nasabah'), findsOneWidget,
+        reason: 'the first-time tutorial opens with the panel');
+
+    final panel = tester.getRect(find.byType(AppPanelHeader));
+    final description = tester.getRect(find.textContaining('Ketuk kolom ini'));
+
+    expect(description.width, lessThan(panel.width - 120),
+        reason: 'the tooltip adds padding around its text, and must still '
+            'sit inside the panel and not over the page behind it');
+    expect(description.left, greaterThan(panel.left));
+  });
+
   testWidgets('the form closing itself closes the panel, not the page beneath',
       (tester) async {
     await openHost(tester, const Size(1440, 900));
