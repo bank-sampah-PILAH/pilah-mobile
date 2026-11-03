@@ -176,6 +176,7 @@ void main() {
       'autocapture': false,
       'capture_pageview': false,
       'enable_heatmaps': false,
+      'capture_performance': true,
     });
   });
 
