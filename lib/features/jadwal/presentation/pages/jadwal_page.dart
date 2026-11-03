@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/jadwal/analytics/jadwal_analytics.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
@@ -249,10 +251,15 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
   }
 
   Future<void> _changeStatus(JadwalEntity item, JadwalAction action) async {
+    final analytics = ref.read(analyticsClientProvider);
     final failure = await ref.read(jadwalProvider.notifier).changeStatus(
           item.id,
           action.wireValue,
         );
+    if (failure == null) {
+      jadwalStatusChanged(analytics,
+          action: action.wireValue, statusBefore: item.status);
+    }
     if (!mounted || failure == null) return;
     AppNotification.showError(
       context,
@@ -1074,11 +1081,14 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
   late String _audience;
   late DateTime _startsAt;
   late DateTime _endsAt;
+  late final JadwalFormAnalytics _analytics;
 
   @override
   void initState() {
     super.initState();
     final initial = widget.initial;
+    _analytics = JadwalFormAnalytics(ref.read(analyticsClientProvider))
+      ..opened(editing: initial != null);
     _locationController = TextEditingController(text: initial?.lokasi ?? '');
     _descriptionController = TextEditingController(
       text: initial?.keterangan ?? '',
@@ -1167,8 +1177,13 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    _analytics.submitTapped();
+    if (!_formKey.currentState!.validate()) {
+      _analytics.rejected(JadwalProblem.requiredFieldEmpty);
+      return;
+    }
     if (widget.initial == null && _startsAt.isBefore(DateTime.now())) {
+      _analytics.rejected(JadwalProblem.startInPast);
       AppNotification.showWarning(
         context,
         title: 'Waktu tidak valid',
@@ -1177,6 +1192,7 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
       return;
     }
     if (!_endsAt.isAfter(_startsAt)) {
+      _analytics.rejected(JadwalProblem.endBeforeStart);
       AppNotification.showWarning(
         context,
         title: 'Waktu tidak valid',
@@ -1202,6 +1218,13 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
         );
     if (!mounted) return;
     if (failure == null) {
+      _analytics.saved(
+        editing: initial != null,
+        activity: _activity,
+        audience: _audience,
+        startsAt: _startsAt,
+        endsAt: _endsAt,
+      );
       final close = widget.onClose;
       if (close != null) {
         close();
