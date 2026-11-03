@@ -155,12 +155,15 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
 
   /// The pengurus agreed: remember it, then start recording.
   Future<void> grant() async {
+    // Only a pengurus can agree. The switch and the dialog are only shown to
+    // one, but this is where recording starts, so it is checked here too.
     final eligible = ref.read(analyticsEligibleProvider);
+    if (!eligible) return;
     final userId = ref.read(analyticsUserIdProvider);
     await ref.read(analyticsConsentStoreProvider).grant(userId);
     // The choice is saved, but whoever is signed in now may not be recorded,
     // or may be somebody else: starting would record the wrong person.
-    if (_changedSince(eligible, userId) || !eligible) return;
+    if (_changedSince(eligible, userId)) return;
     await ref.read(analyticsClientProvider).start();
     _recordingFor = userId;
     _announceStart();
@@ -193,7 +196,8 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
   void _announceStart() {
     final client = ref.read(analyticsClientProvider);
     final auth = ref.read(authenticationProvider);
-    if (auth is Authenticated) {
+    // The id is only sent for a pengurus, whoever called this.
+    if (auth is Authenticated && ref.read(analyticsEligibleProvider)) {
       final id = auth.authEntity.id;
       if (id != null && id.isNotEmpty) client.identify(id);
       client.register({'peran': auth.authEntity.role});

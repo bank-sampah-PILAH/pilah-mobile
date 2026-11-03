@@ -48,6 +48,9 @@ class PosthogWebClient implements AnalyticsClient {
   /// the same thing, and must not leave the first one's caller dropped.
   int _stops = 0;
 
+  /// The library is loaded and set up, so its methods can be called.
+  bool _ready = false;
+
   @override
   bool get isAvailable => true;
 
@@ -80,7 +83,13 @@ class PosthogWebClient implements AnalyticsClient {
     final starting = _starting;
     // Never started, so there is nothing to stop and nothing to load.
     if (starting == null) return;
-    await starting;
+    try {
+      await starting;
+    } catch (_) {
+      // The library never loaded, so nothing is running that could be stopped.
+      // Failing here would stop a pengurus's withdrawal from being saved.
+      return;
+    }
 
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     posthog.callMethod('opt_out_capturing'.toJS);
@@ -116,7 +125,7 @@ class PosthogWebClient implements AnalyticsClient {
   @override
   void reset() {
     // Never loaded: nothing was identified, so there is nothing to forget.
-    if (_starting == null) return;
+    if (!_ready) return;
     _posthog.callMethod('reset'.toJS);
   }
 
@@ -164,6 +173,7 @@ class PosthogWebClient implements AnalyticsClient {
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     posthog.callMethod('init'.toJS, apiKey.toJS, _options().jsify());
+    _ready = true;
     // PostHog keeps an opt-out across page reloads, so one made on an earlier
     // visit would still be in force. start() is only called once the pengurus
     // has agreed, so switch capturing on.
@@ -180,8 +190,11 @@ class PosthogWebClient implements AnalyticsClient {
   }
 
   /// A rough size of the screen, to tell a phone from a desktop in the results.
-  static String _screenClass() {
-    final width = web.window.innerWidth;
+  static String _screenClass() => screenClassFor(web.window.innerWidth);
+
+  /// The class of a window [width] pixels wide. Public so a test can reach the
+  /// boundaries without resizing a browser window.
+  static String screenClassFor(num width) {
     if (width < 600) return 'ponsel';
     if (width < 1024) return 'tablet';
     return 'desktop';

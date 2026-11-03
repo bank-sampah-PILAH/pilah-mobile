@@ -112,9 +112,9 @@ abstract final class AnalyticsProps {
   /// that returns null instead, so nobody is identified by it.
   static String? cleanId(String id) {
     final problem = id.isEmpty ? 'it is empty' : _problemWithText(id);
-    if (problem == null) return id;
-    assert(false, 'Analytics id refused: $problem');
-    return null;
+    final clean = problem == null ? id : null;
+    assert(clean != null, 'Analytics id refused: $problem');
+    return clean;
   }
 
   static String? _problemWith(String name, Object value) {
