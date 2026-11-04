@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+import 'package:pilah_mobile/core/bases/request_cancellation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart';
@@ -9,6 +9,24 @@ import '../../../support/nasabah_support.dart';
 import '../../../support/stub_api.dart';
 
 void main() {
+  test('an already cancelled signal prevents HTTP dispatch', () async {
+    final api = StubApi();
+    final useCase = GetNasabahUseCase(
+      NasabahRepositoryImpl(NasabahRemoteDataSourceImpl(api.network)),
+    );
+    final cancellation = RequestCancellation()
+      ..cancel('Session reset')
+      ..cancel('Repeated cancellation');
+    final result = await useCase.execute(GetNasabahParams(
+      search: '000123',
+      cancellation: cancellation,
+    ));
+    expect(result.fold((failure) => failure, (_) => null),
+        isA<RequestCancelled>());
+    expect(api.requests, isEmpty);
+    expect(cancellation.reason, 'Session reset');
+  });
+
   testWidgets('cancellation reaches Dio through the real customer search stack',
       (tester) async {
     final api = StubApi()
@@ -17,13 +35,13 @@ void main() {
     final useCase = GetNasabahUseCase(
       NasabahRepositoryImpl(NasabahRemoteDataSourceImpl(api.network)),
     );
-    final token = CancelToken();
+    final token = RequestCancellation();
     NetworkException? failure;
     var completed = false;
     final request = useCase
         .execute(GetNasabahParams(
       search: '000123',
-      cancelToken: token,
+      cancellation: token,
     ))
         .then((result) {
       result.fold(

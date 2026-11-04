@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:dio/dio.dart';
+import 'package:pilah_mobile/core/bases/request_cancellation.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
@@ -9,7 +9,7 @@ abstract class NasabahRepository {
     int? pageSize,
     String status,
     String? search,
-    CancelToken? cancelToken,
+    RequestCancellation? cancellation,
   });
   Future<Either<NetworkException, HalamanNasabah>> getActiveNasabah();
   Future<Either<NetworkException, NasabahRingkasan>> getNasabahRingkasan(

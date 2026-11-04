@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
+import 'package:pilah_mobile/core/bases/request_cancellation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -64,7 +64,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
   bool _listNeedsReload = false;
 
   Timer? _jedaCari;
-  CancelToken? _listCancelToken;
+  RequestCancellation? _listCancelToken;
 
   bool? _isActiveTab = true;
   String _searchQuery = '';
@@ -236,7 +236,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
 
   void _startListRequest() {
     _listCancelToken?.cancel('Customer list superseded');
-    _listCancelToken = CancelToken();
+    _listCancelToken = RequestCancellation();
   }
 
   GetNasabahParams _params(int halaman) => GetNasabahParams(
@@ -245,7 +245,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
         status: _statusParam,
         // Server mengabaikan kata kunci di bawah dua huruf, jadi jangan dikirim.
         search: _searchQuery.length >= 2 ? _searchQuery : null,
-        cancelToken: _listCancelToken,
+        cancellation: _listCancelToken,
       );
 
   String get _statusParam {

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart' show Either, Left, Right;
-import 'package:dio/dio.dart';
+import 'package:pilah_mobile/core/bases/request_cancellation.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -96,11 +96,12 @@ void main() {
 
   tearDown(() => harness.dispose());
 
-  test('logout reset cancels the request and keeps the initial state', () async {
+  test('logout reset cancels the request and keeps the initial state',
+      () async {
     final response = Completer<Either<NetworkException, HalamanNasabah>>();
-    CancelToken? token;
+    RequestCancellation? token;
     when(() => getUseCase.execute(any())).thenAnswer((call) {
-      token = (call.positionalArguments.first as GetNasabahParams).cancelToken;
+      token = (call.positionalArguments.first as GetNasabahParams).cancellation;
       return response.future;
     });
     final load = cubit.loadNasabah();
@@ -114,9 +115,9 @@ void main() {
 
   test('disposing the provider cancels its in-flight request', () async {
     final response = Completer<Either<NetworkException, HalamanNasabah>>();
-    CancelToken? token;
+    RequestCancellation? token;
     when(() => getUseCase.execute(any())).thenAnswer((call) {
-      token = (call.positionalArguments.first as GetNasabahParams).cancelToken;
+      token = (call.positionalArguments.first as GetNasabahParams).cancellation;
       return response.future;
     });
     final load = cubit.loadNasabah();
@@ -148,11 +149,11 @@ void main() {
       (tester) async {
     await cubit.loadNasabah();
     final oldResponse = Completer<Either<NetworkException, HalamanNasabah>>();
-    CancelToken? oldToken;
+    RequestCancellation? oldToken;
     when(() => getUseCase.execute(any())).thenAnswer((call) {
       final params = call.positionalArguments.first as GetNasabahParams;
       if (params.search == 'old') {
-        oldToken = params.cancelToken;
+        oldToken = params.cancellation;
         return oldResponse.future;
       }
       return Future.value(Right(_page([
