@@ -19,7 +19,11 @@ class AnalyticsConfig {
     return AnalyticsConfig(
       apiKey: Secret.posthogApiKey,
       host: Secret.posthogHost,
-      environment: Secret.posthogEnvironment,
+      // Only the deploy script checks the name against the flavor, so a local
+      // build may leave it empty; its events must still say where they came from.
+      environment: Secret.posthogEnvironment.isEmpty
+          ? 'local'
+          : Secret.posthogEnvironment,
     );
   }
 }
