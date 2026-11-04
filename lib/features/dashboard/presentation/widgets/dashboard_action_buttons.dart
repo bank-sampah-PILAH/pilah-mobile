@@ -3,18 +3,38 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/transaksi_chooser_sheet.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/draft_pencairan_routes.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
+/// Transaksi yang terbuka untuk Pengurus.
+///
+/// Pencairan ditutup dulu (CPBI-31), jadi hanya setoran. Membukanya kembali
+/// berarti menambahkannya di sini, lalu membuka kembali route-nya di
+/// [draftPencairanRoutes], lalu merilis ulang aplikasi — hardcode, tanpa
+/// pengaturan jarak jauh, sebagaimana diminta CPBI-31.
+const transaksiPilihanTerbuka = {TransaksiPilihan.setoran};
+
 /// Pengurus dashboard action area: the two things done most, side by side.
-/// Which transactions Transaksi Baru offers is [_transaksiAksi]; everything
-/// else is a destination in the navigation, not a button.
+/// Which transactions Transaksi Baru offers is [terbuka]; everything else is
+/// a destination in the navigation, not a button.
 class DashboardActionButtons extends StatelessWidget {
-  const DashboardActionButtons({super.key, this.isWeb});
+  const DashboardActionButtons({
+    super.key,
+    this.isWeb,
+    this.terbuka = transaksiPilihanTerbuka,
+  });
 
   /// Diteruskan ke [openSetoranBaru], yang memutuskan panel atau halaman
   /// penuh. Null berarti pakai `kIsWeb`.
   final bool? isWeb;
+
+  /// Transaksi yang bisa dicatat dari tombol ini. Bawaannya
+  /// [transaksiPilihanTerbuka]; pemanggil lain hanya ada di pengujian, yang
+  /// memakainya untuk menyatakan bahwa membuka kembali sebuah transaksi tidak
+  /// menuntut kode baru.
+  final Set<TransaksiPilihan> terbuka;
 
   @override
   Widget build(BuildContext context) {
@@ -54,29 +74,30 @@ class DashboardActionButtons extends StatelessWidget {
   }
 
   Future<void> _openTransaksiChooser(BuildContext context, bool? isWeb) async {
-    final aksi = _transaksiAksi(context, isWeb);
     final choice = await showAdaptiveSurface<TransaksiPilihan>(
       context,
-      builder: (context) => TransaksiChooserSheet(tersedia: aksi.keys.toSet()),
+      builder: (context) => TransaksiChooserSheet(tersedia: terbuka),
     );
     if (choice == null || !context.mounted) return;
-    await aksi[choice]?.call();
+    await _openForm(context, choice, isWeb);
   }
 
-  /// Formulir yang dimiliki tombol Transaksi Baru, satu per transaksi yang
-  /// sedang dibuka.
+  /// Formulir yang mencatat transaksi yang dipilih.
   ///
-  /// Daftar ini **satu-satunya tempat** yang menentukan transaksi apa saja
-  /// yang bisa dicatat: pemilihnya menawarkan kuncinya, dan tidak ada cabang
-  /// lain yang perlu disesuaikan. Pencairan ditutup untuk handover (CPBI-31),
-  /// jadi tidak ada entrinya; mengembalikannya berarti menambahkan satu entri
-  /// di sini — yang membuka alur draft pencairan — lalu merilis ulang
-  /// aplikasi, hardcode tanpa pengaturan jarak jauh seperti diminta CPBI-31.
-  Map<TransaksiPilihan, Future<void> Function()> _transaksiAksi(
+  /// Pencairan tetap punya cabangnya walaupun sedang ditutup: penguncian
+  /// dinyatakan di [terbuka] dan di route-nya, bukan dengan menghapus jalan
+  /// masuknya dari sini, supaya keduanya bisa dibuka kembali tanpa menulis
+  /// ulang apa pun — dan supaya tidak ada cabang yang tak bisa diuji.
+  Future<void> _openForm(
     BuildContext context,
+    TransaksiPilihan choice,
     bool? isWeb,
-  ) =>
-      {
-        TransaksiPilihan.setoran: () => openSetoranBaru(context, isWeb: isWeb),
-      };
+  ) async {
+    switch (choice) {
+      case TransaksiPilihan.setoran:
+        await openSetoranBaru(context, isWeb: isWeb);
+      case TransaksiPilihan.pencairan:
+        await context.push(DraftListPage.route);
+    }
+  }
 }
