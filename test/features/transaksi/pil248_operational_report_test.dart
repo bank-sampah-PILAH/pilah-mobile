@@ -322,6 +322,8 @@ void main() {
       () => RiwayatAktivitasNotifier(feed, _Export()),
     );
     addTearDown(harness.dispose);
+    // Pencairan and saldo only show beside setoran when both are listed.
+    harness.notifier.setTipeFilter(AktivitasTipeFilter.semua);
     await tester.pumpWidget(MaterialApp(
         home: UncontrolledProviderScope(
       container: harness.container,
@@ -377,6 +379,7 @@ void main() {
       );
       final cubit = harness.notifier;
       addTearDown(harness.dispose);
+      cubit.setTipeFilter(AktivitasTipeFilter.semua);
       await cubit.load();
       await tester.pumpWidget(MaterialApp(
           builder: (context, child) => MediaQuery(
@@ -429,6 +432,7 @@ void main() {
     );
     final cubit = harness.notifier;
     addTearDown(harness.dispose);
+    cubit.setTipeFilter(AktivitasTipeFilter.semua);
     await cubit.load();
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(

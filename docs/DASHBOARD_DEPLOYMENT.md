@@ -86,13 +86,13 @@ changes require separate authorization; this delivery does not perform them.
 
 ## Pipeline and serving behavior
 
-- `CI` now verifies `staging` pushes as well as PRs/existing `main` pushes.
-  `deploy_web_staging` runs automatically **only after successful CI verify on
-  a staging push**, using the exact triggering checkout; PRs never deploy.
-- Existing `v*` production release tags also call a separate web job, gated by
-  the `production` environment. Tags run their own analyze/tests before the
-  production web build. Web jobs do not depend on the APK job, Android signing
-  secrets or Firebase config. Existing APK delivery remains as before.
+- `CI` verifies `staging` and `main` pushes as well as PRs.
+  `deploy_web_staging` sends staging pushes to Fly after successful verification,
+  using the exact triggering checkout. PRs and main pushes do not deploy web.
+- Production web deployment remains on `v*` release tags via a separate job,
+  gated by the `production` environment. Tags run their own analyze/tests before
+  the production web build. Web jobs do not depend on the APK job, Android
+  signing secrets or Firebase config. Existing APK delivery remains as before.
 - Flutter is pinned to 3.41.3. Each job installs the locked dependencies,
   generates code, writes sanitized public settings, builds release web once,
   uploads a 14-day Actions artifact, then serves the same `build/web` through

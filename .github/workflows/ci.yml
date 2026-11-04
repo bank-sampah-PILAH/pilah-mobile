@@ -428,7 +428,7 @@ jobs:
 
   deploy_web_staging:
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    if: ${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/staging' }}
     uses: ./.github/workflows/deploy-web.yml
     with:
       flavor: staging
