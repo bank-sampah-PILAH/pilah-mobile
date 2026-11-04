@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';

@@ -1,19 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/core/storage/app_storage.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/services/di.dart';
-
-/// The client for this build. Where none is registered (a test, or a build
-/// without analytics) it is the no-op one, so the app behaves as if analytics
-/// is off instead of failing, and nobody is ever recorded by accident.
-final analyticsClientProvider = Provider<AnalyticsClient>((ref) =>
-    di.isRegistered<AnalyticsClient>()
-        ? di<AnalyticsClient>()
-        : NoopAnalyticsClient());
 
 /// Where choices are kept. Like the client, it does not insist on being
 /// registered: without it the store is built over the same storage the module
