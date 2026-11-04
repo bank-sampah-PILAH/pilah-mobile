@@ -113,8 +113,11 @@ void main() {
   test('start fails instead of hanging when the library never answers',
       () async {
     // A new address each time, so the browser cannot answer from its cache.
+    // The empty library: taking the script out again does not cancel a request
+    // already sent, so the script may still run during a later test, and it
+    // must not define `posthog` then.
     final uncachedUrl =
-        '$_fakeLibraryUrl?t=${DateTime.now().microsecondsSinceEpoch}';
+        '$_emptyLibraryUrl?t=${DateTime.now().microsecondsSinceEpoch}';
     final client = PosthogWebClient(
       apiKey: 'phc_test_key',
       host: 'https://us.i.posthog.com',
