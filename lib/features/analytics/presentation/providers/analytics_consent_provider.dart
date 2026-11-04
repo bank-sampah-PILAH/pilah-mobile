@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
@@ -14,8 +15,14 @@ final analyticsClientProvider = Provider<AnalyticsClient>((ref) =>
         ? di<AnalyticsClient>()
         : NoopAnalyticsClient());
 
-final analyticsConsentStoreProvider =
-    Provider<AnalyticsConsentStore>((ref) => di<AnalyticsConsentStore>());
+/// Where choices are kept. Like the client, it does not insist on being
+/// registered: without it the store is built over the same storage the module
+/// would have used.
+final analyticsConsentStoreProvider = Provider<AnalyticsConsentStore>((ref) =>
+    di.isRegistered<AnalyticsConsentStore>()
+        ? di<AnalyticsConsentStore>()
+        : AnalyticsConsentStore(
+            di<AppStorage>(instanceName: 'shared_preferences')));
 
 /// Who is signed in, as the id a choice is kept under. Empty when nobody is,
 /// or when the account has no id.
