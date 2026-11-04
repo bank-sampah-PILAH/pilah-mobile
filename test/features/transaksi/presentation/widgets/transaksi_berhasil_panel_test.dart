@@ -90,6 +90,26 @@ void main() {
     expect(button(tester, 'Selesai').onPressed, isNotNull);
   });
 
+  testWidgets(
+      'once finishing is chosen the panel is leaving: no second finish and no message',
+      (tester) async {
+    await open(tester);
+
+    await tester.tap(find.text('Selesai'));
+    await tester.pump();
+
+    // The sheet is still hit-testable while its exit animation plays.
+    expect(button(tester, 'Selesai').onPressed, isNull);
+    await tester.tap(find.text('Selesai'), warnIfMissed: false);
+    final primary = find.byType(AppButton).first;
+    expect(tester.widget<AppButton>(primary).isLoading, isTrue);
+    await tester.tap(primary, warnIfMissed: false);
+    await tester.pump();
+
+    expect(selesai, 1, reason: 'a second tap must not leave twice');
+    expect(whatsApp, 0, reason: 'the panel already left without a message');
+  });
+
   testWidgets('finishing is the quieter choice, sending is the main one',
       (tester) async {
     await open(tester);
