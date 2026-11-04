@@ -160,7 +160,8 @@ jobs:
 
       - name: Cover the web analytics client factory
         run: >-
-          flutter test --platform chrome --coverage
+          dart run test --platform chrome
+          --dart2js-args=-O0
           --coverage-path=coverage/browser-analytics-factory.info
           test/core/analytics/analytics_client_factory_web_test.dart
 

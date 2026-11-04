@@ -1,7 +1,7 @@
 @TestOn('browser')
 library;
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
 import 'package:pilah_mobile/core/analytics/analytics_config.dart';

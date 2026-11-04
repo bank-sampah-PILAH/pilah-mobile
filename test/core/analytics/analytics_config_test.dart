@@ -1,15 +1,15 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/analytics/analytics_config.dart';
+import 'package:pilah_mobile/core/analytics/analytics_config_secrets.dart';
 
 void main() {
   tearDown(() => dotenv.loadFromString(envString: '', isOptional: true));
 
-  group('AnalyticsConfig.fromSecrets', () {
+  group('analyticsConfigFromSecrets', () {
     test('is off when ENABLE_POSTHOG is not set', () {
       dotenv.loadFromString(envString: '', isOptional: true);
 
-      expect(AnalyticsConfig.fromSecrets(), isNull);
+      expect(analyticsConfigFromSecrets(), isNull);
     });
 
     test('reads the key and environment, and defaults to the US host', () {
@@ -19,7 +19,7 @@ POSTHOG_API_KEY=phc_test_key
 POSTHOG_ENVIRONMENT=staging
 ''');
 
-      final config = AnalyticsConfig.fromSecrets();
+      final config = analyticsConfigFromSecrets();
 
       expect(config, isNotNull);
       expect(config!.apiKey, 'phc_test_key');
@@ -33,7 +33,7 @@ ENABLE_POSTHOG=true
 POSTHOG_ENVIRONMENT=staging
 ''');
 
-      expect(AnalyticsConfig.fromSecrets(), isNull);
+      expect(analyticsConfigFromSecrets(), isNull);
     });
 
     test(
@@ -44,7 +44,7 @@ ENABLE_POSTHOG=true
 POSTHOG_API_KEY=phc_test_key
 ''');
 
-      expect(AnalyticsConfig.fromSecrets()!.environment, 'local');
+      expect(analyticsConfigFromSecrets()!.environment, 'local');
     });
   });
 }
