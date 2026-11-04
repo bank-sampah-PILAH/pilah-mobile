@@ -53,9 +53,21 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
       _saving = true;
       _error = null;
     });
+    // Read before the await: the dialog may be gone when the answer arrives.
+    final selection = ref.read(aktivitasSelectionProvider.notifier);
+    final riwayat = ref.read(riwayatAktivitasProvider.notifier);
+    final route = ModalRoute.of(context);
     final result = await ref.read(transaksiProvider.notifier).batalkanTransaksi(
         TransaksiBatalRequest(id: widget.id, alasan: _alasan.text));
-    if (!mounted) return;
+    if (result.detail != null) {
+      // The setoran is voided on the server whether or not this dialog is
+      // still open, so the feed and the selection always follow it.
+      selection.clear();
+      riwayat.load(silent: true);
+    }
+    // Closed by other means while the request was in flight. Popping now
+    // would close the route underneath (the Riwayat page) instead.
+    if (!mounted || route?.isCurrent != true) return;
     if (result.detail == null) {
       setState(() {
         _saving = false;
@@ -63,8 +75,6 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
       });
       return;
     }
-    ref.read(aktivitasSelectionProvider.notifier).clear();
-    ref.read(riwayatAktivitasProvider.notifier).load(silent: true);
     Navigator.of(context).pop(true);
     AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
           ctx,
@@ -76,6 +86,15 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // While the void is sent, a barrier tap or the back button must not close
+    // the dialog: only its answer does. Idle, both still close it.
+    return PopScope(
+      canPop: !_saving,
+      child: _dialog(context),
+    );
+  }
+
+  Widget _dialog(BuildContext context) {
     return AppDialog(
       title: 'Hapus Setoran?',
       // A short form: on a wide window the message would stretch it edge to edge.
