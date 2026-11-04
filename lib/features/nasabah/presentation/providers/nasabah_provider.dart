@@ -394,6 +394,8 @@ class NasabahNotifier extends Notifier<NasabahState> {
   /// this notifier is an app-scoped singleton that outlives a session).
   void reset() {
     _jedaCari?.cancel();
+    _listCancelToken?.cancel('Session reset');
+    _listCancelToken = null;
     _listRequestGeneration++;
     _activeCountRequestGeneration++;
     _listNeedsReload = false;
