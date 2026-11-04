@@ -6,12 +6,12 @@ import sys
 from urllib.parse import urlsplit
 
 
-ANALYTICS_KEYS = ("ENABLE_ANALYTICS", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
+ANALYTICS_KEYS = ("ENABLE_POSTHOG", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
 
 
 def analytics_lines(flavor, values):
     """Analytics settings to ship, or nothing: it stays off unless explicitly enabled."""
-    if values.get("ENABLE_ANALYTICS", "").lower() != "true":
+    if values.get("ENABLE_POSTHOG", "").lower() != "true":
         return ""
     api_key = values.get("POSTHOG_API_KEY", "")
     host = values.get("POSTHOG_HOST") or "https://us.i.posthog.com"
@@ -23,7 +23,7 @@ def analytics_lines(flavor, values):
         raise ValueError("POSTHOG_HOST must be https://us.i.posthog.com")
     if environment != flavor:
         raise ValueError("POSTHOG_ENVIRONMENT must be " + flavor)
-    return (f"ENABLE_ANALYTICS=true\nPOSTHOG_API_KEY={api_key}\n"
+    return (f"ENABLE_POSTHOG=true\nPOSTHOG_API_KEY={api_key}\n"
             f"POSTHOG_HOST={host}\nPOSTHOG_ENVIRONMENT={environment}\n")
 
 

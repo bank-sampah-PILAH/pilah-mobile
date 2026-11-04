@@ -38,10 +38,10 @@ These are maintainer provisioning steps, not actions performed by this PR.
    API path, and malformed client IDs fail before build. Do not put server
    secrets in browser settings. The script never sources shell dotenv values.
 
-   Session recording is optional and off by default. To enable it, add these
+   Usage analytics (PostHog) is optional and off by default. To enable it, add these
    lines to the same secret:
    ```dotenv
-   ENABLE_ANALYTICS=true
+   ENABLE_POSTHOG=true
    POSTHOG_API_KEY=phc_YOUR_PROJECT_KEY
    POSTHOG_ENVIRONMENT=staging
    ```
@@ -49,7 +49,7 @@ These are maintainer provisioning steps, not actions performed by this PR.
    both share one PostHog project. `POSTHOG_HOST` is optional and must be
    `https://us.i.posthog.com`. The key must be a project key (`phc_`), never a
    personal one (`phx_`). The build fails on any other value. Enabling this
-   only makes recording possible: nothing is recorded until the app starts the
+   only makes analytics possible: nothing is sent until the app starts the
    client after the user agrees.
 3. Provision **separate** Fly app `pilah-web-staging` in the intended organization
    and allocate its provider hostname/networking as required by Fly. Put an

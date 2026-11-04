@@ -8,7 +8,7 @@ abstract class Secret {
       (dotenv.env['ENABLE_DEMO_LOGIN'] ?? 'false').toLowerCase() == 'true';
 
   static bool get analyticsEnabled =>
-      (dotenv.env['ENABLE_ANALYTICS'] ?? 'false').toLowerCase() == 'true';
+      (dotenv.env['ENABLE_POSTHOG'] ?? 'false').toLowerCase() == 'true';
 
   static String get posthogApiKey => dotenv.env['POSTHOG_API_KEY'] ?? '';
 

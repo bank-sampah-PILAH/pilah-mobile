@@ -1,6 +1,6 @@
 import 'package:pilah_mobile/core/constants/secrets.dart';
 
-/// Settings for the session-recording tool, or `null` when analytics is off.
+/// Settings for the analytics tool (PostHog), or `null` when analytics is off.
 class AnalyticsConfig {
   const AnalyticsConfig({
     required this.apiKey,
