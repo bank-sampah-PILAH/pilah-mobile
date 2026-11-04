@@ -190,6 +190,8 @@ class PosthogWebClient implements AnalyticsClient {
   }
 
   /// A rough size of the screen, to tell a phone from a desktop in the results.
+  /// It is measured once, when the library starts: resizing the window later
+  /// keeps the first value, which is accurate enough for a bucket.
   static String _screenClass() => screenClassFor(web.window.innerWidth);
 
   /// The class of a window [width] pixels wide. Public so a test can reach the
