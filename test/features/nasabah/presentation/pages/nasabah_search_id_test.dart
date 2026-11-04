@@ -26,5 +26,26 @@ void main() {
 
       expect(find.text('Cari nama, ID, atau nomor HP...'), findsOneWidget);
     });
+
+    testWidgets('a ${layout.name} row shows the ID that the search matches',
+        (tester) async {
+      final api = StubApi()
+        ..on('GET', _path,
+            json: nasabahPage([nasabahRow('000123', nama: 'Siti Aminah')]));
+      await pumpRouted(
+        tester,
+        NasabahPage(isWeb: layout.isWeb),
+        wrap: (app) => withNasabahProvider(buildNasabahNotifier(api), app),
+        size: layout.size,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Text &&
+            widget.data == (layout.isWeb ? 'NAS-000123' : 'ID: NAS-000123')),
+        findsOneWidget,
+      );
+    });
   }
 }
