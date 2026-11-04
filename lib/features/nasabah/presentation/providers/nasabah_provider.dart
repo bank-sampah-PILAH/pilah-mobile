@@ -138,17 +138,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
     final result = await getNasabahUseCase.execute(_params(1));
     if (!ref.mounted || requestGeneration != _listRequestGeneration) return;
     result.fold(
-      (failure) {
-        if (failure is RequestCancelled) {
-          if (state is NasabahLoaded) {
-            _emitLoaded();
-          } else {
-            state = NasabahInitial();
-          }
-          return;
-        }
-        state = NasabahError(failure.displayMessage);
-      },
+      _handleListFailure,
       (data) {
         _items = data.items;
         _hasMore = data.hasMore;
@@ -160,6 +150,19 @@ class NasabahNotifier extends Notifier<NasabahState> {
         _emitLoaded();
       },
     );
+  }
+
+  /// A current cancellation keeps loaded rows without exposing an error.
+  void _handleListFailure(NetworkException failure) {
+    if (failure is RequestCancelled) {
+      if (state is NasabahLoaded) {
+        _emitLoaded();
+      } else {
+        state = NasabahInitial();
+      }
+      return;
+    }
+    state = NasabahError(failure.displayMessage);
   }
 
   /// Replaces the visible rows with one server page, for numbered web controls.
