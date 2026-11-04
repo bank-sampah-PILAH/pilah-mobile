@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
@@ -16,6 +19,9 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_s
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 
+import '../../../../support/dashboard_support.dart';
+import '../../../../support/nasabah_support.dart';
+import '../../../../support/pencairan_support.dart';
 import '../../../../support/stub_api.dart';
 import '../../../../support/transaksi_support.dart';
 
@@ -87,24 +93,33 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      final transaksi = buildTransaksiNotifier(api);
       await tester.pumpWidget(withTransaksiProviders(
-        transaksi: buildTransaksiNotifier(api),
+        transaksi: transaksi,
         riwayat: feed,
-        child: MaterialApp(
-          home: Consumer(builder: (context, ref, _) {
-            container = ProviderScope.containerOf(context);
-            final selecting = ref.watch(aktivitasSelectionProvider) != null;
-            return Scaffold(
-              body: Column(children: [
-                if (selecting)
-                  AktivitasSelectionBar(
-                    onEdit: (id) => showEditSetoranSheet(context, id),
-                    onHapus: (id) => showBatalkanSetoranDialog(context, id),
-                  ),
-                const Expanded(child: AktivitasListView(isWeb: false)),
-              ]),
-            );
-          }),
+        nasabah: buildNasabahNotifier(api),
+        child: ProviderScope(
+          overrides: [
+            dashboardProvider.overrideWith(() => buildDashboardNotifier(api)),
+            recentActivityProvider.overrideWith(() => RecentActivityNotifier(
+                transaksi.getTransaksiUseCase, buildPencairanUseCases(api))),
+          ],
+          child: MaterialApp(
+            home: Consumer(builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              final selecting = ref.watch(aktivitasSelectionProvider) != null;
+              return Scaffold(
+                body: Column(children: [
+                  if (selecting)
+                    AktivitasSelectionBar(
+                      onEdit: (id) => showEditSetoranSheet(context, id),
+                      onHapus: (id) => showBatalkanSetoranDialog(context, id),
+                    ),
+                  const Expanded(child: AktivitasListView(isWeb: false)),
+                ]),
+              );
+            }),
+          ),
         ),
       ));
       await tester.pump();
@@ -169,6 +184,63 @@ void main() {
       expect(api.last.json, {'alasan': 'Dobel'});
       expect(find.text('Hapus Setoran?'), findsNothing);
       expect(container.read(aktivitasSelectionProvider), isNull);
+      expect(feed.loads, 1);
+    });
+
+    testWidgets(
+        'a void also reloads the dashboard, recent activity and nasabah '
+        'already open', (tester) async {
+      api
+        ..on('POST', _batalkan, json: _dibatalkan())
+        ..on('GET', '/api/v1/dashboard/stats', json: {
+          'total_nilai_bulan_ini': 0,
+          'nasabah_aktif': 1,
+          'total_sampah_kg_bulan_ini': 0,
+          'transaksi_bulan_ini': 0,
+        })
+        ..on('GET', '/api/v1/transaksi', json: {'results': []})
+        ..on('GET', '/api/v1/pencairan', json: {'results': [], 'next': null})
+        ..on('GET', '/api/v1/nasabah',
+            json: nasabahPage([nasabahRow('n1', saldo: '0')]));
+      final container = await pumpFeed(tester);
+      // A pengurus who opened Dashboard and Nasabah before Riwayat.
+      container
+        ..read(dashboardProvider)
+        ..read(recentActivityProvider)
+        ..read(nasabahProvider);
+      await tester.pumpAndSettle();
+      api.requests.clear();
+
+      await openHapus(tester);
+      await tester.enterText(
+          find.byKey(BatalkanSetoranDialog.alasanKey), 'Dobel');
+      await tester.tap(confirm());
+      await tester.pumpAndSettle();
+
+      expect(
+          api.requests.where((r) => r.method == 'GET').map((r) => r.path),
+          containsAll([
+            '/api/v1/dashboard/stats',
+            '/api/v1/transaksi',
+            '/api/v1/pencairan',
+            '/api/v1/nasabah',
+          ]));
+    });
+
+    testWidgets('a void does not load screens that were never opened',
+        (tester) async {
+      api.on('POST', _batalkan, json: _dibatalkan());
+      final container = await pumpFeed(tester);
+
+      await openHapus(tester);
+      await tester.enterText(
+          find.byKey(BatalkanSetoranDialog.alasanKey), 'Dobel');
+      await tester.tap(confirm());
+      await tester.pumpAndSettle();
+
+      expect(api.requests.where((r) => r.method == 'GET'), isEmpty);
+      expect(container.exists(dashboardProvider), isFalse);
+      expect(container.exists(recentActivityProvider), isFalse);
       expect(feed.loads, 1);
     });
 
