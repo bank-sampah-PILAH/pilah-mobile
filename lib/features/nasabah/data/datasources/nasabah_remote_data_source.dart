@@ -11,6 +11,7 @@ abstract class NasabahRemoteDataSource {
     int? pageSize,
     String status,
     String? search,
+    String urutan = 'nomor',
   });
 
   /// Legacy one-page snapshot of active nasabah; paginated consumers should
