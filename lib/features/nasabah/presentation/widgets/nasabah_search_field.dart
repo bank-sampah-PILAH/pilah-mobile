@@ -41,7 +41,7 @@ class _NasabahSearchFieldState extends ConsumerState<NasabahSearchField> {
     });
     return CustomSearchField(
       controller: _controller,
-      hintText: 'Cari nama nasabah...',
+      hintText: 'Cari nama, ID, atau nomor HP...',
       onChanged: ref.read(nasabahProvider.notifier).searchNasabah,
     );
   }
