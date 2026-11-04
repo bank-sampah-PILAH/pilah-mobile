@@ -111,6 +111,10 @@ class SetoranAnalytics {
         'template_wa_dipakai': templateUsed,
       });
 
+  /// The pengurus finished from the success panel without sending the message.
+  void finishedWithoutMessage() =>
+      _send('setoran_aksi_sesudah_simpan', {'aksi': 'selesai'});
+
   /// The pengurus left the form without saving.
   void leftWithoutSaving(SetoranStep step) {
     if (_flowId == null || _saved) return;

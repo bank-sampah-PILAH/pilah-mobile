@@ -566,6 +566,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
           }
         },
         onSelesai: () {
+          _analytics.finishedWithoutMessage();
           // Nothing to wait for, so nothing separates these from the pop. The
           // container closes itself, as above: from inside the side sheet
           // `GoRouter.pop()` would pop the page behind the panel.
