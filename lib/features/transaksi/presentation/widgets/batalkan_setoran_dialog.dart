@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -109,7 +110,7 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
               'Saldo nasabah dihitung ulang.',
               style: AppTextStyle.small,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             TextField(
               key: BatalkanSetoranDialog.alasanKey,
               controller: _alasan,
