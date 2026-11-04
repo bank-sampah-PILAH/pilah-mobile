@@ -57,6 +57,15 @@ void main() {
     expect(container.read(analyticsToggleVisibleProvider), isFalse);
   });
 
+  test('a registered store is the one the app uses', () {
+    final registered = AnalyticsConsentStore(FakeAppStorage());
+    di.registerSingleton<AnalyticsConsentStore>(registered);
+    addTearDown(() => di.reset());
+
+    expect(
+        containerForPengurus().read(analyticsConsentStoreProvider), registered);
+  });
+
   test('a client without a registered store still gets one, from the storage',
       () async {
     di.registerSingleton<AnalyticsClient>(FakeAnalyticsClient());
