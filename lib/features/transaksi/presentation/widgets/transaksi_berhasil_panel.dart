@@ -106,7 +106,9 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         const SizedBox(height: 32),
 
         // Action Buttons. Sending the message is the main choice; finishing is
-        // the quieter one. Neither can be taken while the message is prepared.
+        // the quieter one. The first choice locks both: while the message is
+        // prepared, and while the sheet plays its exit animation after Selesai
+        // (it stays hit-testable then, so a second tap would pop again).
         AppButton(
           label: 'Kirim WhatsApp',
           isLoading: _isSending,
@@ -121,7 +123,13 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         AppButton(
           label: 'Selesai',
           variant: AppButtonVariant.outlined,
-          onPressed: _isSending ? null : () => widget.onSelesai(),
+          onPressed: _isSending
+              ? null
+              : () {
+                  // Never reset: the panel is leaving, nothing to re-enable.
+                  setState(() => _isSending = true);
+                  widget.onSelesai();
+                },
         ),
       ],
     );
