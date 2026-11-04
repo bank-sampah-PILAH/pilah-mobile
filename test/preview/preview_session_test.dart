@@ -17,6 +17,8 @@ void main() {
       final registered = await session.registerGoogleUser(
           registrationToken: 't', role: GoogleRegistrationRole.nasabah);
       expect(registered.isRight(), isTrue);
+      final switched = await session.changeRole(GoogleRegistrationRole.nasabah);
+      expect(switched.isRight(), isTrue);
       expect((await session.saveToken('a', 'r')).isRight(), isTrue);
       expect(await session.hasSession(), isTrue);
 

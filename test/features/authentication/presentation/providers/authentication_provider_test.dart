@@ -276,6 +276,55 @@ void main() {
     ]);
   });
 
+  group('changing a mis-tapped role (PIL-451)', () {
+    const asPengurus = AuthEntity(
+      id: '1',
+      name: 'Test User',
+      email: 'test@example.com',
+      photoUrl: '',
+      token: 'old-token',
+      role: 'pengelola',
+      nextStep: 'complete_profile',
+    );
+    const asNasabah = AuthEntity(
+      id: '1',
+      name: 'Test User',
+      email: 'test@example.com',
+      photoUrl: '',
+      token: 'new-token',
+      role: 'nasabah',
+      nextStep: 'complete_profile',
+    );
+
+    test('switches the session to the new role', () async {
+      harness.seed(Authenticated(authEntity: asPengurus));
+      when(() => googleUseCase.changeRole(GoogleRegistrationRole.nasabah))
+          .thenAnswer((_) async => const Right(asNasabah));
+
+      final error =
+          await harness.notifier.changeRole(GoogleRegistrationRole.nasabah);
+
+      expect(error, isNull);
+      expect(harness.states, [Authenticated(authEntity: asNasabah)]);
+    });
+
+    test('a refusal keeps the current session and reports why', () async {
+      harness.seed(Authenticated(authEntity: asPengurus));
+      when(() => googleUseCase.changeRole(GoogleRegistrationRole.nasabah))
+          .thenAnswer((_) async => Left(ConflictException(
+              message:
+                  'Peran tidak dapat diganti setelah pendaftaran berjalan.')));
+
+      final error =
+          await harness.notifier.changeRole(GoogleRegistrationRole.nasabah);
+
+      expect(error, 'Peran tidak dapat diganti setelah pendaftaran berjalan.');
+      expect(harness.states, isEmpty);
+      expect(harness.container.read(authenticationProvider),
+          Authenticated(authEntity: asPengurus));
+    });
+  });
+
   test('role submission failure retains registration so it can be retried',
       () async {
     harness.seed(GoogleRegistrationPending(registration: registration));

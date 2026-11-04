@@ -15,6 +15,8 @@ import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -23,6 +25,13 @@ class RoleSelectionPage extends ConsumerStatefulWidget {
   const RoleSelectionPage({super.key});
 
   static const route = '/choose-role';
+
+  /// The title a role is offered under here, for screens that name the role
+  /// being registered; null for a role this page does not offer.
+  static String? titleFor(String? role) => _roleOptions
+      .where((option) => option.value.wireValue == role)
+      .firstOrNull
+      ?.title;
 
   @override
   ConsumerState<RoleSelectionPage> createState() => _RoleSelectionPageState();
@@ -35,14 +44,28 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
   bool _acceptedPrivacyPolicy = false;
   bool _acceptedTermsAndConditions = false;
 
+  /// The signed-in account picking again (PIL-451): its role was saved when it
+  /// first tapped Lanjutkan, and it may still change it while the profile step
+  /// is unfinished. Null when this page serves a fresh Google registration.
+  AuthEntity? _account;
+  bool _isChangingRole = false;
+
+  /// A signed-in account agreed to the policies when it registered, so only
+  /// a fresh registration asks again.
   bool get _canContinue =>
       _selectedRole != null &&
-      _acceptedPrivacyPolicy &&
-      _acceptedTermsAndConditions;
+      (_account != null ||
+          (_acceptedPrivacyPolicy && _acceptedTermsAndConditions));
 
+  /// Lanjutkan: a fresh registration creates the account with the role; a
+  /// signed-in account switches to it.
   void _continueRegistration() {
     final role = _selectedRole;
     if (!_canContinue || role == null) return;
+    if (_account != null) {
+      _changeRole(role);
+      return;
+    }
     if (ref.read(authenticationProvider) is GoogleRegistrationSubmitting) {
       return;
     }
@@ -52,7 +75,16 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
   @override
   void initState() {
     super.initState();
-    _registration = _registrationFrom(ref.read(authenticationProvider));
+    final state = ref.read(authenticationProvider);
+    _registration = _registrationFrom(state);
+    if (_registration == null &&
+        state is Authenticated &&
+        state.authEntity.nextStep == 'complete_profile') {
+      _account = state.authEntity;
+      _selectedRole = GoogleRegistrationRole.values
+          .where((role) => role.wireValue == state.authEntity.role)
+          .firstOrNull;
+    }
   }
 
   GoogleRegistrationRequired? _registrationFrom(AuthenticationStates state) {
@@ -69,6 +101,12 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     if (registration != null) _registration = registration;
 
     if (state is Authenticated) {
+      // A draft typed for the old role must not prefill the new role's form.
+      // Re-picking the same role is a no-op on the server, so it keeps it.
+      final account = _account;
+      if (account != null && state.authEntity.role != account.role) {
+        ref.read(onboardingProvider.notifier).clearProfileDraft();
+      }
       context.go(locationForAuthStep(
         state.authEntity.nextStep,
         hasPendingInvite: di<InviteTokenStore>().hasToken,
@@ -90,6 +128,22 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
         ),
       );
     }
+  }
+
+  /// Lanjutkan for a signed-in account. Success arrives as a new
+  /// [Authenticated] session, which [_listen] routes on; a refusal keeps the
+  /// account where it was and says why.
+  Future<void> _changeRole(GoogleRegistrationRole role) async {
+    setState(() => _isChangingRole = true);
+    final error =
+        await ref.read(authenticationProvider.notifier).changeRole(role);
+    if (!mounted || error == null) return;
+    setState(() => _isChangingRole = false);
+    AppNotification.showError(
+      context,
+      title: 'Ganti Peran Gagal',
+      message: error,
+    );
   }
 
   Future<void> _changeAccount() async {
@@ -121,14 +175,15 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     });
     final state = ref.watch(authenticationProvider);
     final registration = _registration;
-    if (registration == null) {
+    final account = _account;
+    if (registration == null && account == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go(LoginPage.route);
       });
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    final isLoading = state is GoogleRegistrationSubmitting;
+    final isLoading = state is GoogleRegistrationSubmitting || _isChangingRole;
     final isBusy = isLoading || _isChangingAccount;
     final roleOptions = _roleOptions
         .where((option) => isRoleSupportedOnPlatform(
@@ -141,7 +196,14 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
       body: OnboardingFlowLayout(
         title: 'Daftar Akun',
         subtitle: 'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
-        onExit: isBusy ? null : _changeAccount,
+        // The account already exists once a role was saved; leaving it is
+        // the profile step's logout, not a Google account switch.
+        onExit: isBusy
+            ? null
+            : account != null
+                ? () => confirmExitOnboarding(context,
+                    title: 'Batal Lengkapi Profil?')
+                : _changeAccount,
         progress: const OnboardingProgress(currentStep: 0),
         actions: OnboardingActions(
             primary: AppButton(
@@ -154,37 +216,40 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _VerifiedIdentity(
-              name: registration.name,
-              email: registration.email,
+              name: registration?.name ?? account!.name,
+              email: registration?.email ?? account!.email,
+              showChangeAccount: registration != null,
               onChangeAccount: isBusy ? null : _changeAccount,
             ),
             const SizedBox(height: 24),
             Text('Saya ingin mendaftar sebagai', style: AppTextStyle.title1),
             const SizedBox(height: 16),
             _buildRoleOptions(roleOptions, isBusy),
-            const SizedBox(height: 24),
-            Text('Persetujuan', style: AppTextStyle.title1),
-            const SizedBox(height: 8),
-            _legalConsent(
-              context: context,
-              document: LegalDocument.privacyPolicy,
-              title: 'Kebijakan Privasi',
-              accepted: _acceptedPrivacyPolicy,
-              enabled: !isBusy,
-              onChanged: (accepted) => setState(
-                () => _acceptedPrivacyPolicy = accepted,
+            if (account == null) ...[
+              const SizedBox(height: 24),
+              Text('Persetujuan', style: AppTextStyle.title1),
+              const SizedBox(height: 8),
+              _legalConsent(
+                context: context,
+                document: LegalDocument.privacyPolicy,
+                title: 'Kebijakan Privasi',
+                accepted: _acceptedPrivacyPolicy,
+                enabled: !isBusy,
+                onChanged: (accepted) => setState(
+                  () => _acceptedPrivacyPolicy = accepted,
+                ),
               ),
-            ),
-            _legalConsent(
-              context: context,
-              document: LegalDocument.termsAndConditions,
-              title: 'Syarat & Ketentuan',
-              accepted: _acceptedTermsAndConditions,
-              enabled: !isBusy,
-              onChanged: (accepted) => setState(
-                () => _acceptedTermsAndConditions = accepted,
+              _legalConsent(
+                context: context,
+                document: LegalDocument.termsAndConditions,
+                title: 'Syarat & Ketentuan',
+                accepted: _acceptedTermsAndConditions,
+                enabled: !isBusy,
+                onChanged: (accepted) => setState(
+                  () => _acceptedTermsAndConditions = accepted,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -280,11 +345,13 @@ Widget _legalConsent({
 class _VerifiedIdentity extends StatelessWidget {
   final String name;
   final String email;
+  final bool showChangeAccount;
   final VoidCallback? onChangeAccount;
 
   const _VerifiedIdentity({
     required this.name,
     required this.email,
+    required this.showChangeAccount,
     required this.onChangeAccount,
   });
 
@@ -316,6 +383,7 @@ class _VerifiedIdentity extends StatelessWidget {
             ],
           )),
         ]);
+        if (!showChangeAccount) return identity;
         final changeAccount = TextButton(
             onPressed: onChangeAccount, child: const Text('Ganti akun'));
         if (constraints.maxWidth < LayoutBreakpoint.mediumMinWidth ||

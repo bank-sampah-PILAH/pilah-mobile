@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
@@ -18,6 +19,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/providers/onboardi
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acceptance_notice.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
@@ -158,6 +160,35 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         _dobController.text = _displayDate(parsed);
       }
     }
+  }
+
+  /// A role changed from the role page (PIL-451): this State survives the
+  /// trip there and back, so its fields would still hold input typed for the
+  /// old role. A refreshed session for the same role is not a change.
+  static bool _roleChanged(
+    AuthenticationStates? previous,
+    AuthenticationStates current,
+  ) =>
+      previous is Authenticated &&
+      current is Authenticated &&
+      previous.authEntity.role != current.authEntity.role;
+
+  /// Starts the form over for the new role, from what the account itself has
+  /// saved, as a first visit would. The role page drops the banked draft.
+  void _resetForNewRole() {
+    for (final controller in [
+      _nameController,
+      _dobController,
+      _phoneController,
+      _alamatController,
+    ]) {
+      controller.clear();
+    }
+    setState(() {
+      _gender = null;
+      _selectedDob = null;
+      _prefillFromSavedProfile();
+    });
   }
 
   String _displayDate(DateTime date) =>
@@ -418,6 +449,16 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     AppNotification.showError(context, title: title, message: message);
   }
 
+  /// The title of the role this account registers as, while it may still be
+  /// changed (PIL-451): the role was saved on the role page and stays
+  /// changeable until a bank sampah is registered for it. An invite fixes the
+  /// role, so it gets none. Null when the note should not show.
+  String? _changeableRoleTitle(AuthenticationStates state) {
+    if (_isInviteMode || state is! Authenticated) return null;
+    if (state.authEntity.bankSampahStatus != null) return null;
+    return RoleSelectionPage.titleFor(state.authEntity.role);
+  }
+
   /// Intercepts a back-navigation attempt. [canPop] on the [PopScope] is false,
   /// so the pop is already blocked when this fires; we only need to offer the
   /// exit confirmation.
@@ -426,11 +467,22 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     confirmExitOnboarding(context, title: 'Batal Lengkapi Profil?');
   }
 
+  /// A logout sends the user to login; a role changed from the role page
+  /// starts the form over for the new role.
+  void _onAuthChanged(
+    AuthenticationStates? previous,
+    AuthenticationStates current,
+  ) {
+    if (current is Unauthenticated) context.go(LoginPage.route);
+    if (_roleChanged(previous, current)) _resetForNewRole();
+  }
+
   @override
   Widget build(BuildContext context) {
-    ref.listen(authenticationProvider, (previous, current) {
-      if (current is Unauthenticated) context.go(LoginPage.route);
-    });
+    ref.listen(authenticationProvider, _onAuthChanged);
+    // Watched, not only listened to: a role changed from the role page comes
+    // back to this same screen, which must then draw the new role's form.
+    final roleTitle = _changeableRoleTitle(ref.watch(authenticationProvider));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
@@ -465,6 +517,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (roleTitle != null) _RoleNote(roleTitle: roleTitle),
                 Text('Data diri', style: AppTextStyle.title1),
                 const SizedBox(height: 8),
                 Text('Semua kolom bertanda * wajib diisi.',
@@ -567,6 +620,35 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Names the role being registered, with the way back to the role page for an
+/// account that tapped the wrong one (PIL-451). Pushed, so back returns here.
+class _RoleNote extends StatelessWidget {
+  const _RoleNote({required this.roleTitle});
+
+  final String roleTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      // The flow layout already sets the side gutters.
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Mendaftar sebagai $roleTitle',
+            style: AppTextStyle.small.copyWith(color: AppColors.inkSoft),
+          ),
+          TextButton(
+            onPressed: () => context.push(RoleSelectionPage.route),
+            child: const Text('Ganti peran'),
+          ),
+        ],
       ),
     );
   }

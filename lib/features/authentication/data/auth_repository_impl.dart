@@ -97,6 +97,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<NetworkException, AuthEntity>> changeRole(
+      GoogleRegistrationRole role) async {
+    try {
+      final payload = await _remoteDataSources.changeRole(role.wireValue);
+      return Right(await _persistSession(AuthResponse.fromJson(payload)));
+    } on Exception catch (error) {
+      return Left(NetworkException.handleException(error));
+    } catch (error) {
+      return Left(GeneralException(message: error.toString()));
+    }
+  }
+
+  @override
   Future<Either<Exception, void>> saveToken(
       String accessToken, String refreshToken) async {
     try {
