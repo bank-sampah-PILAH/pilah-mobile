@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../support/setoran_form_support.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 void main() {
   testWidgets('two main buttons, side by side, and no Pengumuman entry',
@@ -56,7 +58,12 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (_, __) => const Scaffold(body: DashboardActionButtons()),
+          // On the web, because that is the only platform where the chooser
+          // leads to a panel rather than the form's own page. `kIsWeb` is a
+          // compile-time constant and false under the VM, so a test that
+          // means "web" has to say so.
+          builder: (_, __) =>
+              const Scaffold(body: DashboardActionButtons(isWeb: true)),
         ),
         GoRoute(
           path: TransaksiBaruPage.route,
@@ -66,10 +73,13 @@ void main() {
           path: DraftListPage.route,
           builder: (_, __) => const Scaffold(body: Text('Daftar Pencairan')),
         ),
+        setoranSideSheetRoute(),
       ],
     );
     addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(withSetoranFormProviders(
+      child: MaterialApp.router(routerConfig: router),
+    ));
     await tester.tap(find.text('Transaksi Baru'));
     await tester.pumpAndSettle();
     return router;
@@ -116,7 +126,9 @@ void main() {
     await tester.tap(find.text('Catat Setoran'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Form Setoran'), findsOneWidget);
+    // A wide window gets the form as a panel over the dashboard, so the
+    // form itself is the evidence rather than the stub route behind it.
+    expect(find.text('PILIH NASABAH'), findsOneWidget);
   });
 
   testWidgets('cannot navigate from the disabled Pencairan choice',

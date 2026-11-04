@@ -131,7 +131,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       const DashboardStatisticsSection(),
                     ],
                     const SizedBox(height: 24),
-                    const DashboardActionButtons(),
+                    DashboardActionButtons(isWeb: widget.isWeb),
                     const SizedBox(height: 32),
                     if (isPengurusWeb) ...[
                       DashboardReportsSection(
