@@ -293,6 +293,31 @@ void main() {
       expect(find.text('Edit'), findsWidgets);
     });
 
+    testWidgets('Hapus with one row checked is the single void, not bulk',
+        (tester) async {
+      await pumpPage(tester, 1200);
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(AppButton, 'Hapus (1)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hapus Setoran?'), findsOneWidget);
+      expect(find.text('Hapus 1 setoran?'), findsNothing);
+    });
+
+    testWidgets('once a row is checked, tapping another row adds it',
+        (tester) async {
+      await pumpPage(tester, 1200);
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+
+      await tapText(tester, 'Sari');
+
+      expect(selection(tester), {'s1', 's2'});
+      expect(api.requests, isEmpty);
+    });
+
     testWidgets('the header checkbox is mixed while only some are checked',
         (tester) async {
       await pumpPage(tester, 1200);

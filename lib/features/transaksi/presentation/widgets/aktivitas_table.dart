@@ -130,10 +130,17 @@ class AktivitasTable extends StatelessWidget {
     ];
     final chosen = ids.where(selectedIds!.contains).length;
     final all = ids.isNotEmpty && chosen == ids.length;
+    // Checked when all are, mixed (null) when only some are, else unchecked.
+    bool? value = false;
+    if (all) {
+      value = true;
+    } else if (chosen > 0) {
+      value = null;
+    }
     return Checkbox(
       key: selectAllKey,
       tristate: true,
-      value: all ? true : (chosen > 0 ? null : false),
+      value: value,
       semanticLabel: 'Pilih semua setoran di halaman ini',
       onChanged: ids.isEmpty || onSelectAll == null
           ? null
