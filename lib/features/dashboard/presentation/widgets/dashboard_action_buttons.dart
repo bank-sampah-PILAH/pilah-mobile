@@ -44,7 +44,7 @@ class DashboardActionButtons extends StatelessWidget {
           child: AppButton(
             label: 'Transaksi Baru',
             icon: Icons.add,
-            onPressed: () => _openTransaksiChooser(context, isWeb),
+            onPressed: () => _openTransaksiBaru(context, isWeb),
           ),
         ),
         const SizedBox(width: 12),
@@ -73,11 +73,17 @@ class DashboardActionButtons extends StatelessWidget {
     );
   }
 
-  Future<void> _openTransaksiChooser(BuildContext context, bool? isWeb) async {
-    final choice = await showAdaptiveSurface<TransaksiPilihan>(
-      context,
-      builder: (context) => TransaksiChooserSheet(tersedia: terbuka),
-    );
+  Future<void> _openTransaksiBaru(BuildContext context, bool? isWeb) async {
+    // Satu transaksi yang terbuka bukan pilihan: memintanya dipilih hanya
+    // menghabiskan satu ketukan, dan pemilih berisi satu isi adalah kontrol
+    // mati yang sama dengan yang dilarang CPBI-31 (alasan yang sama dipakai
+    // PIL-435 untuk menyembunyikan pemilih tipe di Riwayat).
+    final choice = terbuka.length == 1
+        ? terbuka.single
+        : await showAdaptiveSurface<TransaksiPilihan>(
+            context,
+            builder: (context) => TransaksiChooserSheet(tersedia: terbuka),
+          );
     if (choice == null || !context.mounted) return;
     await _openForm(context, choice, isWeb);
   }
