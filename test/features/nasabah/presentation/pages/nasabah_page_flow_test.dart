@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.da
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
@@ -15,8 +16,10 @@ const _path = '/api/v1/nasabah';
 void main() {
   late StubApi api;
   late NasabahNotifier notifier;
+  late FakeAnalyticsClient analytics;
 
   setUp(() {
+    analytics = FakeAnalyticsClient();
     api = StubApi();
     notifier = buildNasabahNotifier(api);
   });
@@ -27,7 +30,7 @@ void main() {
       // A non-const instance so the constructor itself runs.
       // ignore: prefer_const_constructors
       NasabahPage(),
-      wrap: (app) => withNasabahProvider(notifier, app),
+      wrap: (app) => withNasabahProvider(notifier, app, analytics: analytics),
       size: const Size(590, 2000),
     );
     await tester.pumpAndSettle();
@@ -80,6 +83,38 @@ void main() {
 
     expect(api.last.query['search'], 'zzz');
     expect(find.text('Nasabah Tidak Ditemukan'), findsOneWidget);
+    // One event for the whole search, which says nothing of what was typed.
+    final searched =
+        analytics.events.where((e) => e.name == 'nasabah_dicari').single;
+    expect(searched.properties, {
+      'ada_hasil': false,
+      'filter': 'aktif',
+      'jumlah_hasil_kelas': '0',
+    });
+  });
+
+  testWidgets('a one-letter search is not reported', (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester);
+
+    await tester.enterText(find.byType(TextField).first, 'z');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.where((e) => e.name == 'nasabah_dicari'), isEmpty);
+  });
+
+  testWidgets('the add button on the page says where the form came from',
+      (tester) async {
+    listAs([]);
+    await open(tester);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    final opened =
+        analytics.events.where((e) => e.name == 'nasabah_tambah_dimulai');
+    expect(opened.single.properties['sumber'], 'halaman_nasabah');
   });
 
   testWidgets('a failed load can be retried by pulling down', (tester) async {

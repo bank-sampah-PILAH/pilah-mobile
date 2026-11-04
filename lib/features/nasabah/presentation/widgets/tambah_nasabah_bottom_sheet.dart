@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
@@ -9,7 +11,13 @@ import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_fields.dart';
 
 class TambahNasabahBottomSheet extends ConsumerStatefulWidget {
-  const TambahNasabahBottomSheet({super.key});
+  const TambahNasabahBottomSheet({
+    super.key,
+    this.source = 'halaman_nasabah',
+  });
+
+  /// Where the form was opened from, for usage analytics.
+  final String source;
 
   @override
   ConsumerState<TambahNasabahBottomSheet> createState() =>
@@ -32,6 +40,7 @@ class _TambahNasabahBottomSheetState
   final _whatsappController = TextEditingController();
   final _alamatController = TextEditingController();
 
+  late final NasabahAddAnalytics _analytics;
   String? _jenisKelamin;
   bool _isSaving = false;
   // Duplicate-ID errors are surfaced via a full-width AppNotification: the ID
@@ -40,6 +49,13 @@ class _TambahNasabahBottomSheetState
   bool _kodeHasError = false;
   String? _serverPhoneError;
   String? _serverEmailError;
+
+  @override
+  void initState() {
+    super.initState();
+    _analytics = NasabahAddAnalytics(ref.read(analyticsClientProvider))
+      ..opened(widget.source);
+  }
 
   @override
   void dispose() {
@@ -130,7 +146,17 @@ class _TambahNasabahBottomSheetState
   }
 
   Future<void> _handleSimpan() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    _analytics.submitTapped();
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _analytics.rejected(nasabahInvalidFields(
+        nama: _namaController.text,
+        kode: _idNasabahController.text,
+        email: _emailController.text,
+        noHp: _whatsappController.text,
+        alamat: _alamatController.text,
+      ));
+      return;
+    }
 
     final notifier = ref.read(nasabahProvider.notifier);
     final state = ref.read(nasabahProvider);
@@ -171,6 +197,7 @@ class _TambahNasabahBottomSheetState
     setState(() => _isSaving = false);
 
     if (error == null) {
+      _analytics.saved();
       context.pop();
       AppNotification.showSuccess(
         context,

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -48,6 +50,26 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
         builder: (context) => const TambahNasabahBottomSheet(),
       );
 
+  /// A search finished: tell analytics whether it found anything.
+  void _reportSearch(NasabahState? before, NasabahState now) {
+    if (now is! NasabahLoaded ||
+        now.isReloading ||
+        now.searchQuery.length < 2) {
+      return;
+    }
+    final previous = before is NasabahLoaded ? before : null;
+    final sameSearch = previous != null &&
+        !previous.isReloading &&
+        previous.searchQuery == now.searchQuery &&
+        previous.isActiveTab == now.isActiveTab;
+    if (sameSearch) return;
+    nasabahSearched(
+      ref.read(analyticsClientProvider),
+      activeTab: now.isActiveTab,
+      resultCount: now.totalCount,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +87,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
   Widget build(BuildContext context) {
     final state = ref.watch(nasabahProvider);
     final notifier = ref.read(nasabahProvider.notifier);
+    ref.listen<NasabahState>(nasabahProvider, _reportSearch);
     if (context.layoutBreakpoint != LayoutBreakpoint.compact) {
       return Scaffold(
         backgroundColor:

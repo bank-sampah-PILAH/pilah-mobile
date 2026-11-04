@@ -11,6 +11,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasaba
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
@@ -20,8 +21,10 @@ const _path = '/api/v1/nasabah';
 void main() {
   late StubApi api;
   late NasabahNotifier notifier;
+  late FakeAnalyticsClient analytics;
 
   setUp(() {
+    analytics = FakeAnalyticsClient();
     api = StubApi();
     notifier = buildNasabahNotifier(api);
   });
@@ -31,7 +34,7 @@ void main() {
     await pumpRouted(
       tester,
       NasabahPage(),
-      wrap: (app) => withNasabahProvider(notifier, app),
+      wrap: (app) => withNasabahProvider(notifier, app, analytics: analytics),
       size: size,
     );
     await tester.pumpAndSettle();
@@ -146,6 +149,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(TambahNasabahBottomSheet), findsOneWidget);
+    expect(
+        analytics.events
+            .singleWhere((e) => e.name == 'nasabah_tambah_dimulai')
+            .properties['sumber'],
+        'halaman_nasabah');
     expect(find.byType(Dialog), findsOneWidget);
     expect(find.byType(BottomSheet), findsNothing);
   });
@@ -311,6 +319,10 @@ void main() {
       await pumpToast(tester);
 
       expect(api.requests.any((r) => r.path == '$_path/p1/approve'), isTrue);
+      final decided = analytics.events.single;
+      expect(decided.name, 'nasabah_pengajuan_diproses');
+      expect(decided.properties['keputusan'], 'setuju');
+      expect(decided.properties['durasi_sejak_dibuka_detik'], isA<int>());
       await settleToasts(tester);
     });
 
@@ -326,6 +338,7 @@ void main() {
       await pumpToast(tester);
 
       expect(find.text('Sudah diputuskan'), findsOneWidget);
+      expect(analytics.events, isEmpty, reason: 'a refused decision');
       await settleToasts(tester);
     });
 
@@ -339,6 +352,7 @@ void main() {
       await pumpToast(tester);
 
       expect(api.requests.any((r) => r.path == '$_path/p1/reject'), isTrue);
+      expect(analytics.events.single.properties['keputusan'], 'tolak');
       await settleToasts(tester);
     });
   });

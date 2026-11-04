@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
@@ -14,8 +15,10 @@ const _path = '/api/v1/nasabah';
 void main() {
   late StubApi api;
   late NasabahNotifier notifier;
+  late FakeAnalyticsClient analytics;
 
   setUp(() {
+    analytics = FakeAnalyticsClient();
     api = StubApi();
     notifier = buildNasabahNotifier(api);
     api.on('GET', _path, json: nasabahPage([]));
@@ -37,7 +40,7 @@ void main() {
           ),
         ),
       ),
-      wrap: (app) => withNasabahProvider(notifier, app),
+      wrap: (app) => withNasabahProvider(notifier, app, analytics: analytics),
       size: const Size(800, 2600),
     );
     await tester.tap(find.text('open'));
@@ -69,6 +72,45 @@ void main() {
     await tester.tap(find.text('Simpan Nasabah'));
     await pumpToast(tester);
   }
+
+  List<String> names() => analytics.events.map((e) => e.name).toList();
+
+  testWidgets('opening the form, refusing it and saving it tell analytics',
+      (tester) async {
+    api.on('POST', _path, status: 201, json: nasabahRow('9'));
+    await open(tester);
+    expect(names(), ['nasabah_tambah_dimulai']);
+    expect(analytics.events.single.properties['sumber'], 'halaman_nasabah');
+
+    await save(tester);
+    final refused = analytics.events[1];
+    expect(refused.name, 'validasi_gagal');
+    expect(refused.properties['tugas'], 'tambah_nasabah');
+    expect(refused.properties['bidang'],
+        ['nama', 'id_nasabah', 'email', 'no_hp', 'alamat']);
+    expect(refused.properties['jumlah_masalah'], 5);
+
+    await fill(tester);
+    await save(tester);
+    final saved = analytics.events.last;
+    expect(saved.name, 'nasabah_ditambah');
+    expect(saved.properties['percobaan_ke'], 2);
+    expect(saved.properties['alur_id'],
+        analytics.events.first.properties['alur_id']);
+    expect(names(), hasLength(3));
+    await settleToasts(tester);
+  });
+
+  testWidgets('a failed save is not reported as added', (tester) async {
+    api.on('POST', _path, status: 500, json: {'error': 'boom'});
+    await open(tester);
+
+    await fill(tester);
+    await save(tester);
+
+    expect(names(), ['nasabah_tambah_dimulai']);
+    await settleToasts(tester);
+  });
 
   testWidgets('the phone field carries the shared +62 prefix', (tester) async {
     await open(tester);
