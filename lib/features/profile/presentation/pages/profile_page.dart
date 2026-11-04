@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -85,6 +87,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
   String? _createdInviteUrl;
+  Timer? _inviteCountdownTimer;
+  Timer? _inviteExpiryTimer;
+  String? _expiredInviteUrl;
 
   /// Di browser halaman ini berada di dalam shell dengan rail, bukan didorong
   /// di atasnya, jadi memakai gutter dan judul halaman tab web.
@@ -133,6 +138,13 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
 
     // Seed cached state before refreshing so revisits keep their form values.
     _seed(ref.read(profileProvider));
+    _scheduleInviteExpiry(ref.read(profileProvider).invite);
+    _inviteCountdownTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) {
+        if (mounted) setState(() {});
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(profileProvider.notifier).load(silent: true);
     });
@@ -154,6 +166,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     _namaBankController.dispose();
     _alamatBankController.dispose();
     _hpBankController.dispose();
+    _inviteCountdownTimer?.cancel();
+    _inviteExpiryTimer?.cancel();
     super.dispose();
   }
 
@@ -295,7 +309,14 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   }
 
   Future<void> _onCopyInvite(TeamInvite invite) async {
-    if (!invite.isValid || ref.read(profileProvider).inviteError != null) {
+    final state = ref.read(profileProvider);
+    if (state.inviteError != null) {
+      _snack(state.inviteError!, error: true);
+      return;
+    }
+    if (!invite.isValid || _expiredInviteUrl == invite.url) {
+      _snack('Link undangan sudah kedaluwarsa. Buat link baru untuk dibagikan.',
+          error: true);
       return;
     }
     await Clipboard.setData(ClipboardData(text: invite.url!));
@@ -328,12 +349,28 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     }
   }
 
+  void _scheduleInviteExpiry(TeamInvite? invite) {
+    _inviteExpiryTimer?.cancel();
+    _expiredInviteUrl = null;
+    final expiresAt = invite?.expiresAt;
+    final url = invite?.url;
+    if (expiresAt == null || url == null) return;
+    final delay = expiresAt.difference(DateTime.now());
+    _inviteExpiryTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+      if (mounted) setState(() => _expiredInviteUrl = url);
+    });
+  }
+
   String _remainingInviteTime(DateTime expiresAt) {
     final remaining = expiresAt.difference(DateTime.now());
     if (remaining.isNegative || remaining.inSeconds == 0) return 'Kedaluwarsa';
-    if (remaining.inDays > 0) return 'Tersisa ${remaining.inDays} hari';
-    if (remaining.inHours > 0) return 'Tersisa ${remaining.inHours} jam';
-    return 'Tersisa ${remaining.inMinutes.clamp(1, 59)} menit';
+    if (remaining.inHours >= 24) {
+      return 'Tersisa ${(remaining.inHours + 23) ~/ 24} hari';
+    }
+    if (remaining.inHours > 0) {
+      return 'Tersisa ${(remaining.inMinutes + 59) ~/ 60} jam';
+    }
+    return 'Tersisa ${((remaining.inSeconds + 59) ~/ 60).clamp(1, 59)} menit';
   }
 
   Widget _buildInviteActions(ProfileState state) {
@@ -387,7 +424,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
       );
     }
 
-    final valid = invite.isValid;
+    final valid = invite.isValid && _expiredInviteUrl != invite.url;
     final expiresAt = invite.expiresAt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,7 +472,10 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(profileProvider, (_, next) => _seed(next));
+    ref.listen(profileProvider, (_, next) {
+      _seed(next);
+      _scheduleInviteExpiry(next.invite);
+    });
     ref.listen(authenticationProvider, (_, state) {
       _onLoggedOut(context, state);
     });
