@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/core/router/locked_routes.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
@@ -206,30 +207,17 @@ class AppRouterConfig {
         name: PilihNasabahPencairanPage.route,
         builder: (context, state) => const PilihNasabahPencairanPage(),
       ),
-      // Pengumuman is locked for handover (PIL-436). The paths stay declared
-      // as pure redirects instead of being deleted: an unknown route renders
-      // go_router's "page not found" screen, and PIL-392 forbids a visible
-      // error as firmly as it forbids the page. AppLocations.dashboard then
-      // passes back through the global role redirect, so a nasabah following
-      // an old link is forwarded to their own home rather than a staff page.
-      //
-      // The paths come from [pengumumanRoutes] rather than being retyped here,
-      // so the locked set cannot drift from the real one: that list holds the
-      // routes as they were, guards included, compiled and tested but not
-      // registered. Re-enabling the feature is registering it in place of this
-      // loop.
-      for (final route in pengumumanRoutes)
-        GoRoute(
-          path: route.path,
-          redirect: (_, __) => AppLocations.dashboard,
-        ),
+      // Pengumuman is locked for handover (PIL-436); [lockedRoutes] carries
+      // why a lock is a redirect rather than a deletion. The paths come from
+      // [pengumumanRoutes] rather than being retyped here, so the locked set
+      // cannot drift from the real one: that list holds the routes as they
+      // were, guards included, compiled and tested but not registered.
+      // Re-enabling the feature is registering it in place of this call.
+      ...lockedRoutes(pengumumanRoutes),
       // Kelola Pengumuman is not in that list because it was a shell branch,
       // not a top-level route, so its lock is declared here on its own and
       // restoring it means bringing the branch and its rail destination back.
-      GoRoute(
-        path: PengumumanKelolaPage.route,
-        redirect: (_, __) => AppLocations.dashboard,
-      ),
+      lockedRoute(PengumumanKelolaPage.route),
       GoRoute(
         path: DraftEditorPage.route,
         name: DraftEditorPage.route,
