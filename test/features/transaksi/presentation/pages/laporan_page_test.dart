@@ -338,7 +338,14 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester, textScale: 2);
-    await tester.drag(find.byType(NestedScrollView), const Offset(0, -600));
+    // Scroll until the row shows instead of by a fixed distance: how far the
+    // list can move depends on the rows above it, and a distance tuned to one
+    // fixture overshoots as soon as the feed gets shorter or its rows change.
+    await tester.dragUntilVisible(
+      find.text('Budi Santoso'),
+      find.byType(NestedScrollView),
+      const Offset(0, -100),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Budi Santoso').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
