@@ -346,7 +346,7 @@ void main() {
 
       expect(find.text('Hapus Setoran?'), findsNothing);
       expect(api.requests, isEmpty);
-      expect(container.read(aktivitasSelectionProvider), 't1');
+      expect(container.read(aktivitasSelectionProvider), {'t1'});
     });
 
     testWidgets('a voided row cannot be selected', (tester) async {

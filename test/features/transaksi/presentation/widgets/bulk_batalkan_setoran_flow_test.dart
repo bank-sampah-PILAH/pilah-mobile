@@ -123,30 +123,12 @@ void main() {
         };
       });
 
+  /// Same state the long-press and tap (phone) or the checkboxes (wide) leave.
   Future<void> select(WidgetTester tester, {bool both = true}) async {
-    await tester.tap(find.text('Opsi'));
+    final selection = container.read(aktivitasSelectionProvider.notifier);
+    selection.select('s1');
+    if (both) selection.toggle('s2');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Pilih Setoran'));
-    await tester.pumpAndSettle();
-    if (find.byType(NestedScrollView).evaluate().isNotEmpty) {
-      await tester.scrollUntilVisible(
-        find.byWidgetPredicate((w) =>
-            w is Checkbox && w.semanticLabel == 'Pilih setoran Budi Santoso'),
-        200,
-        scrollable: find
-            .descendant(
-                of: find.byType(NestedScrollView),
-                matching: find.byType(Scrollable))
-            .first,
-      );
-      await tester.pumpAndSettle();
-    }
-    await tester.tap(find.byType(Checkbox).first);
-    await tester.pumpAndSettle();
-    if (both) {
-      await tester.tap(find.byType(Checkbox).last);
-      await tester.pumpAndSettle();
-    }
   }
 
   Finder submit() => find.byWidgetPredicate(
@@ -161,20 +143,6 @@ void main() {
         find.byKey(const ValueKey('bulk-void-alasan')),
         '  Salah pencatatan  ',
       );
-
-  testWidgets('empty selection disables bulk Hapus', (tester) async {
-    await pumpPage(tester);
-    await tester.tap(find.text('Opsi'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Pilih Setoran'));
-    await tester.pumpAndSettle();
-    expect(
-        tester
-            .widget<AppButton>(find.widgetWithText(AppButton, 'Hapus (0)'))
-            .onPressed,
-        isNull);
-    expect(api.requests, isEmpty);
-  });
 
   testWidgets(
       'confirmation names count and requires a nonblank reason before calls',
@@ -197,7 +165,7 @@ void main() {
     await openDialog(tester);
     await tester.tap(find.text('Kembali'));
     await tester.pumpAndSettle();
-    expect(container.read(aktivitasBulkSelectionProvider), {'s1', 's2'});
+    expect(container.read(aktivitasSelectionProvider), {'s1', 's2'});
     expect(api.requests, isEmpty);
   });
 
@@ -221,7 +189,7 @@ void main() {
       expect(api.requests.every((r) => r.json['alasan'] == 'Salah pencatatan'),
           isTrue);
       expect(find.text('2 setoran berhasil dibatalkan.'), findsOneWidget);
-      expect(container.read(aktivitasBulkSelectionProvider), isNull);
+      expect(container.read(aktivitasSelectionProvider), isNull);
       expect(feed.loads, 2);
       await tester.tap(find.text('Selesai'));
       await tester.pumpAndSettle();
@@ -246,7 +214,7 @@ void main() {
     expect(find.text('1 setoran berhasil dibatalkan.'), findsOneWidget);
     expect(find.text(error), findsOneWidget);
     expect(find.textContaining('Sari Wijaya'), findsWidgets);
-    expect(container.read(aktivitasBulkSelectionProvider), {'s2'});
+    expect(container.read(aktivitasSelectionProvider), {'s2'});
     expect(api.requests, hasLength(2));
   });
 
@@ -291,7 +259,7 @@ void main() {
     expect(find.text('Terlalu banyak permintaan'), findsOneWidget);
     expect(find.text('Belum diproses'), findsOneWidget);
     expect(find.textContaining('Batas permintaan tercapai'), findsOneWidget);
-    expect(container.read(aktivitasBulkSelectionProvider), {'s1', 's2'});
+    expect(container.read(aktivitasSelectionProvider), {'s1', 's2'});
   });
 
   testWidgets('processing locks submission, cancellation and back navigation',
@@ -336,14 +304,13 @@ void main() {
   testWidgets('stale selection is cleared without opening a confirmation',
       (tester) async {
     await pumpPage(tester);
-    final selection = container.read(aktivitasBulkSelectionProvider.notifier);
-    selection.start();
-    selection.toggle('no-longer-in-history');
+    final selection = container.read(aktivitasSelectionProvider.notifier);
+    selection.select('no-longer-in-history');
     await showBulkBatalkanSetoranDialog(
         tester.element(find.byType(LaporanPage)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
-    expect(container.read(aktivitasBulkSelectionProvider), isNull);
+    expect(container.read(aktivitasSelectionProvider), isNull);
     expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
     expect(find.text('Pilihan tidak tersedia'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
@@ -368,7 +335,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.requests, hasLength(1));
     expect(feed.loads, loads, reason: 'old session must not refresh caches');
-    expect(container.read(aktivitasBulkSelectionProvider), isNull);
+    expect(container.read(aktivitasSelectionProvider), isNull);
     expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
     expect(find.text('Hasil pembatalan'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -388,7 +355,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.requests, hasLength(2));
     expect(feed.loads, 2);
-    expect(container.read(aktivitasBulkSelectionProvider), isNull);
+    expect(container.read(aktivitasSelectionProvider), isNull);
     expect(find.byType(BulkBatalkanSetoranDialog), findsNothing);
     expect(find.text('Hasil pembatalan'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -407,7 +374,7 @@ void main() {
     expect(find.text('2 setoran berhasil dibatalkan.'), findsOneWidget);
     expect(find.textContaining('riwayat belum berhasil dimuat ulang'),
         findsOneWidget);
-    expect(container.read(aktivitasBulkSelectionProvider), isNull);
+    expect(container.read(aktivitasSelectionProvider), isNull);
     expect(api.requests, hasLength(2));
     expect(tester.takeException(), isNull);
   });

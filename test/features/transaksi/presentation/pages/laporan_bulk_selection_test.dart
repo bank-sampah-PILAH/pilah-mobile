@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
@@ -110,149 +113,229 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> enterSelection(WidgetTester tester) async {
-    await tester.tap(find.text('Opsi'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Pilih Setoran'));
+  void selectBudi(WidgetTester tester) =>
+      ProviderScope.containerOf(tester.element(find.byType(LaporanPage)))
+          .read(aktivitasSelectionProvider.notifier)
+          .select('s1');
+
+  Future<void> hold(WidgetTester tester, String name) async {
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.text(name)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await gesture.up();
     await tester.pumpAndSettle();
   }
 
-  for (final (width, isWeb) in [
-    (390.0, true),
-    (390.0, false),
-    (1200.0, true)
-  ]) {
-    testWidgets('Opsi starts empty multi-selection at $width, web=$isWeb',
-        (tester) async {
-      await pumpPage(tester, width, isWeb: isWeb);
-      await enterSelection(tester);
+  Future<void> tapText(WidgetTester tester, String name) async {
+    await tester.tap(find.text(name).first);
+    await tester.pumpAndSettle();
+  }
 
-      expect(find.text('0 dipilih'), findsOneWidget);
-      expect(find.byType(Checkbox), findsNWidgets(2));
-      if (width == 390) {
-        final sharedBar = find.byType(AktivitasSelectionBar);
-        expect(sharedBar, findsOneWidget);
+  Set<String>? selection(WidgetTester tester) =>
+      ProviderScope.containerOf(tester.element(find.byType(LaporanPage)))
+          .read(aktivitasSelectionProvider);
+
+  for (final isWeb in [true, false]) {
+    group('phone, web=$isWeb', () {
+      testWidgets('there is no Opsi menu and no checkbox before selecting',
+          (tester) async {
+        await pumpPage(tester, 390, isWeb: isWeb);
+
+        expect(find.text('Opsi'), findsNothing);
+        expect(find.byType(Checkbox), findsNothing);
+        expect(find.textContaining('dipilih'), findsNothing);
+      });
+
+      testWidgets('holding a row selects it; tapping others adds them',
+          (tester) async {
+        await pumpPage(tester, 390, isWeb: isWeb);
+
+        await hold(tester, 'Budi');
+        expect(find.text('1 dipilih'), findsOneWidget);
+        expect(find.byKey(AktivitasSelectionBar.editKey), findsOneWidget);
+
+        await tapText(tester, 'Sari');
+        expect(find.text('2 dipilih'), findsOneWidget);
+        expect(selection(tester), {'s1', 's2'});
+        expect(find.byKey(AktivitasSelectionBar.editKey), findsNothing);
+        expect(find.widgetWithText(AppButton, 'Hapus (2)'), findsOneWidget);
+        expect(find.byType(Checkbox), findsNothing);
+        expect(api.requests, isEmpty,
+            reason: 'selecting must not load details or void anything');
+      });
+
+      testWidgets('the bar is the green header with close before the count',
+          (tester) async {
+        await pumpPage(tester, 390, isWeb: isWeb);
+        await hold(tester, 'Budi');
+        await tapText(tester, 'Sari');
+
         final surface = tester.widget<Material>(find
-            .descendant(of: sharedBar, matching: find.byType(Material))
+            .descendant(
+                of: find.byType(AktivitasSelectionBar),
+                matching: find.byType(Material))
             .first);
         expect(surface.color, AppColors.greenDark);
         expect(tester.getTopLeft(find.byKey(AktivitasSelectionBar.closeKey)).dx,
-            lessThan(tester.getTopLeft(find.text('0 dipilih')).dx));
-        expect(
-            tester
-                .widget<AppButton>(find.widgetWithText(AppButton, 'Hapus (0)'))
-                .onPressed,
-            isNull);
-      } else {
-        expect(find.byType(AktivitasSelectionBar), findsNothing);
-      }
-      expect(api.requests, isEmpty);
-      expect(tester.takeException(), isNull);
-    });
+            lessThan(tester.getTopLeft(find.text('2 dipilih')).dx));
+      });
 
-    testWidgets('two rows toggle independently at $width, web=$isWeb',
-        (tester) async {
-      await pumpPage(tester, width, isWeb: isWeb);
-      await enterSelection(tester);
+      testWidgets('deselecting back to one brings Edit back; the last exits',
+          (tester) async {
+        await pumpPage(tester, 390, isWeb: isWeb);
+        await hold(tester, 'Budi');
+        await tapText(tester, 'Sari');
 
-      await tester.tap(find.text('Budi'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Sari'));
-      await tester.pumpAndSettle();
-      expect(find.text('2 dipilih'), findsOneWidget);
-      expect(
-          tester
-              .widgetList<Checkbox>(find.byType(Checkbox))
-              .every((box) => box.value == true),
-          isTrue);
+        await tapText(tester, 'Sari');
+        expect(find.text('1 dipilih'), findsOneWidget);
+        expect(find.byKey(AktivitasSelectionBar.editKey), findsOneWidget);
 
-      await tester.tap(find.byType(Checkbox).first);
-      await tester.pumpAndSettle();
-      expect(find.text('1 dipilih'), findsOneWidget);
-      expect(api.requests, isEmpty,
-          reason: 'selecting must not load details or void anything');
-    });
+        await tapText(tester, 'Budi');
+        expect(selection(tester), isNull);
+        expect(find.textContaining('dipilih'), findsNothing);
+      });
 
-    testWidgets(
-        'voided setoran and pencairan cannot join at $width, web=$isWeb',
-        (tester) async {
-      await pumpPage(tester, width, isWeb: isWeb);
-      await enterSelection(tester);
-      await tester.tap(find.text('Sudah batal'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Pencairan Ani'));
-      await tester.pumpAndSettle();
+      testWidgets('voided setoran and pencairan cannot join', (tester) async {
+        await pumpPage(tester, 390, isWeb: isWeb);
+        await hold(tester, 'Budi');
+        await tapText(tester, 'Sudah batal');
+        await tapText(tester, 'Pencairan Ani');
 
-      expect(find.text('0 dipilih'), findsOneWidget);
-      expect(api.requests, isEmpty);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.text('1 dipilih'), findsOneWidget);
+        expect(selection(tester), {'s1'});
+        expect(api.requests, isEmpty);
+      });
 
-    testWidgets(
-        'deselecting last row keeps mode until explicit exit $width, web=$isWeb',
-        (tester) async {
-      await pumpPage(tester, width, isWeb: isWeb);
-      await enterSelection(tester);
-      await tester.tap(find.text('Budi'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Budi'));
-      await tester.pumpAndSettle();
-      expect(find.text('0 dipilih'), findsOneWidget);
+      testWidgets('Hapus with one selected is the single void; with two, bulk',
+          (tester) async {
+        await pumpPage(tester, 390, isWeb: isWeb);
+        await hold(tester, 'Budi');
+        await tester.tap(find.byKey(AktivitasSelectionBar.hapusKey));
+        await tester.pumpAndSettle();
+        expect(find.text('Hapus Setoran?'), findsOneWidget);
+        await tester.tap(find.text('Batal'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Batal memilih setoran'));
-      await tester.pumpAndSettle();
-      expect(find.text('0 dipilih'), findsNothing);
-      expect(find.byType(Checkbox), findsNothing);
-      expect(api.requests, isEmpty);
+        await tapText(tester, 'Sari');
+        await tester.tap(find.widgetWithText(AppButton, 'Hapus (2)'));
+        await tester.pumpAndSettle();
+        expect(find.text('Hapus 2 setoran?'), findsOneWidget);
+      });
     });
   }
 
-  testWidgets('changing search or page exits selection', (tester) async {
-    await pumpPage(tester, 390);
-    await enterSelection(tester);
-    await tester.tap(find.text('Budi'));
-    await tester.pumpAndSettle();
-    feed.changeSearch();
-    await tester.pumpAndSettle();
-    expect(find.byType(Checkbox), findsNothing);
+  group('wide table', () {
+    testWidgets('checkboxes are visible with no menu step', (tester) async {
+      await pumpPage(tester, 1200);
 
-    await enterSelection(tester);
-    await tester.tap(find.text('Budi').last);
-    await tester.pumpAndSettle();
-    feed.changePage();
-    await tester.pumpAndSettle();
-    expect(find.byType(Checkbox), findsNothing);
+      expect(find.text('Opsi'), findsNothing);
+      // Two selectable setoran plus the select-all box in the header.
+      expect(find.byType(Checkbox), findsNWidgets(3));
+      expect(find.textContaining('dipilih'), findsNothing);
+      expect(find.text('Edit'), findsWidgets);
+    });
+
+    testWidgets('checking a row shows the bar and hides the row buttons',
+        (tester) async {
+      await pumpPage(tester, 1200);
+
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 dipilih'), findsOneWidget);
+      expect(selection(tester), {'s1'});
+      expect(find.text('Edit'), findsNothing);
+      expect(api.requests, isEmpty);
+    });
+
+    testWidgets('the header checkbox selects every eligible row, then clears',
+        (tester) async {
+      await pumpPage(tester, 1200);
+
+      await tester.tap(find.byKey(AktivitasTable.selectAllKey));
+      await tester.pumpAndSettle();
+      expect(find.text('2 dipilih'), findsOneWidget);
+      expect(selection(tester), {'s1', 's2'});
+      expect(
+          tester
+              .widget<Checkbox>(find.byKey(AktivitasTable.selectAllKey))
+              .value,
+          isTrue);
+
+      await tester.tap(find.byKey(AktivitasTable.selectAllKey));
+      await tester.pumpAndSettle();
+      expect(selection(tester), isNull);
+      expect(find.text('Edit'), findsWidgets);
+    });
+
+    testWidgets('the header checkbox is mixed while only some are checked',
+        (tester) async {
+      await pumpPage(tester, 1200);
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+
+      final box =
+          tester.widget<Checkbox>(find.byKey(AktivitasTable.selectAllKey));
+      expect(box.tristate, isTrue);
+      expect(box.value, isNull);
+    });
+
+    testWidgets('tapping a row expands it until something is selected',
+        (tester) async {
+      await pumpPage(tester, 1200);
+
+      await tapText(tester, 'Budi');
+      expect(selection(tester), isNull);
+      expect(find.text('RINCIAN SETORAN'), findsOneWidget);
+    });
+
+    testWidgets('no selectable setoran: nothing to select all', (tester) async {
+      await pumpPage(tester, 1200, onlyVoided: true);
+
+      final box =
+          tester.widget<Checkbox>(find.byKey(AktivitasTable.selectAllKey));
+      expect(box.onChanged, isNull);
+    });
   });
 
-  testWidgets('refresh removes a selection that another pengurus voided',
-      (tester) async {
-    await pumpPage(tester, 390);
-    await enterSelection(tester);
-    await tester.tap(find.text('Budi'));
-    await tester.pumpAndSettle();
-    feed.markFirstVoided();
-    await tester.pumpAndSettle();
-    expect(find.text('0 dipilih'), findsOneWidget);
-    expect(find.byType(Checkbox), findsOneWidget);
-  });
+  for (final width in [390.0, 1200.0]) {
+    testWidgets('changing search or page exits selection at $width',
+        (tester) async {
+      await pumpPage(tester, width);
+      selectBudi(tester);
+      await tester.pumpAndSettle();
+      expect(selection(tester), {'s1'});
+      feed.changeSearch();
+      await tester.pumpAndSettle();
+      expect(selection(tester), isNull);
+
+      selectBudi(tester);
+      await tester.pumpAndSettle();
+      feed.changePage();
+      await tester.pumpAndSettle();
+      expect(selection(tester), isNull);
+    });
+
+    testWidgets(
+        'refresh removes a selection that another pengurus voided at $width',
+        (tester) async {
+      await pumpPage(tester, width);
+      selectBudi(tester);
+      await tester.pumpAndSettle();
+      feed.markFirstVoided();
+      await tester.pumpAndSettle();
+      expect(selection(tester), isNull);
+      expect(find.textContaining('dipilih'), findsNothing);
+    });
+  }
 
   testWidgets('selection controls fit a narrow phone with large text',
       (tester) async {
     await pumpPage(tester, 320, textScale: 2);
-    await enterSelection(tester);
-    expect(find.text('0 dipilih'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('no selectable setoran disables the selection menu entry',
-      (tester) async {
-    await pumpPage(tester, 390, onlyVoided: true);
-    await tester.tap(find.text('Opsi'));
+    selectBudi(tester);
     await tester.pumpAndSettle();
-    final entry = tester.widget<PopupMenuItem<String>>(find.ancestor(
-        of: find.text('Pilih Setoran'),
-        matching: find.byType(PopupMenuItem<String>)));
-    expect(entry.enabled, isFalse);
-    expect(api.requests, isEmpty);
+    expect(find.text('1 dipilih'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

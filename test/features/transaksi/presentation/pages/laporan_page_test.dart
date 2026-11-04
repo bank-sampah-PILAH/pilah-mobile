@@ -231,10 +231,7 @@ void main() {
     await pumpPage(tester);
 
     expect(tester.getTopLeft(find.text('Riwayat Aktivitas')).dx, 32);
-    final options = tester.getRect(find.byTooltip('Opsi'));
-    expect(options.right, 1000 - 32);
-    expect(
-        tester.getRect(find.byType(TextField)).right, lessThan(options.left));
+    expect(tester.getRect(find.byType(TextField)).right, 1000 - 32);
   });
 
   testWidgets('the activity list lines up with the header on a wide screen',
