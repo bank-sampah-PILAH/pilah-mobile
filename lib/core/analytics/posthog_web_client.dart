@@ -196,8 +196,10 @@ class PosthogWebClient implements AnalyticsClient {
 
   /// The class of a window [width] pixels wide. Public so a test can reach the
   /// boundaries without resizing a browser window.
-  static String screenClassFor(num width) =>
-      width < 600 ? 'ponsel' : (width < 1024 ? 'tablet' : 'desktop');
+  static String screenClassFor(num width) {
+    final wider = (width >= 600 ? 1 : 0) + (width >= 1024 ? 1 : 0);
+    return const ['ponsel', 'tablet', 'desktop'][wider];
+  }
 
   /// Opting in sends an event of PostHog's own by default, which would reach
   /// PostHog without passing the sanitizer.
