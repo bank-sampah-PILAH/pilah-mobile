@@ -60,8 +60,11 @@ void main() {
     expect(invite!.url, 'https://pilah.test/invite/stored-token');
     expect(invite.token, 'stored-token');
     expect(invite.expiresAt, DateTime.utc(2030, 1, 4, 12));
-    expect(api.requests.where((request) => request.path == '/api/v1/team/invite')
-        .map((request) => request.method), ['GET']);
+    expect(
+        api.requests
+            .where((request) => request.path == '/api/v1/team/invite')
+            .map((request) => request.method),
+        ['GET']);
   });
 
   test('missing optional fields fall back to blanks', () async {
@@ -209,30 +212,44 @@ void main() {
     expect(error!.fieldError(['no_hp_pic']), 'Nomor tidak valid');
   });
 
-  test('generates a team invite link', () async {
-    api.on('POST', '/api/v1/team/invite',
-        json: {'invite_url': 'https://pilah.test/invite/abc'});
+  test('explicitly creates a replacement invite and stores its expiry',
+      () async {
+    stubProfile(api);
+    await notifier.load();
+    api.on('POST', '/api/v1/team/invite', json: {
+      'token': 'replacement-token',
+      'invite_url': 'https://pilah.test/invite/replacement-token',
+      'expires_at': '2030-01-04T12:00:00Z',
+    });
 
-    final result = await notifier.generateInvite();
+    final error = await notifier.createInvite();
 
-    expect(result.url, 'https://pilah.test/invite/abc');
-    expect(result.error, isNull);
+    expect(error, isNull);
+    expect(container.read(profileProvider).invite?.url,
+        'https://pilah.test/invite/replacement-token');
+    expect(container.read(profileProvider).invite?.expiresAt,
+        DateTime.utc(2030, 1, 4, 12));
+    expect(api.last.method, 'POST');
+    expect(api.last.json, isEmpty);
   });
 
-  test('an invite for a non-primary pengelola is refused', () async {
+  test('a replacement rejected by the backend leaves the invite unchanged',
+      () async {
+    stubProfile(api);
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'current-token',
+      'invite_url': 'https://pilah.test/invite/current-token',
+      'expires_at': '2030-01-04T12:00:00Z',
+    });
+    await notifier.load();
     api.on('POST', '/api/v1/team/invite',
         status: 403, json: {'error': 'Hanya pengelola utama'});
 
-    final result = await notifier.generateInvite();
+    final error = await notifier.createInvite();
 
-    expect(result.url, isNull);
-    expect(result.error!.displayMessage, 'Hanya pengelola utama');
-  });
-
-  test('an invite response without a URL reads as blank', () async {
-    api.on('POST', '/api/v1/team/invite', json: <String, dynamic>{});
-
-    expect((await notifier.generateInvite()).url, '');
+    expect(error!.displayMessage, 'Hanya pengelola utama');
+    expect(container.read(profileProvider).invite?.url,
+        'https://pilah.test/invite/current-token');
   });
 
   test('reset forgets everything', () async {

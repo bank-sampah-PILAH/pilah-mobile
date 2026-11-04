@@ -581,10 +581,14 @@ void main() {
     expect(urls, contains('https://img.test/logo.png'));
   });
 
-  testWidgets('the team tab lists members and copies the invite link',
+  testWidgets('the team tab copies only the currently stored invite',
       (tester) async {
-    api.on('POST', '/api/v1/team/invite',
-        json: {'invite_url': 'https://pilah.test/invite/abc'});
+    final expiry = DateTime.now().add(const Duration(days: 3)).toUtc();
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'abc',
+      'invite_url': 'https://pilah.test/invite/abc',
+      'expires_at': expiry.toIso8601String(),
+    });
     String? copied;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
@@ -606,27 +610,75 @@ void main() {
     expect(find.text('Pengurus'), findsWidgets);
     expect(find.text('Simpan Pengaturan'), findsNothing);
 
+    expect(find.text('Link undangan aktif'), findsOneWidget);
+    expect(find.textContaining('Tersisa 2 hari'), findsOneWidget);
     await tester.tap(find.text('Salin Link Undangan'));
     await pumpToast(tester);
 
     expect(copied, 'https://pilah.test/invite/abc');
+    expect(
+        api.requests
+            .where((request) => request.path == '/api/v1/team/invite')
+            .map((request) => request.method),
+        ['GET']);
     expect(find.text('Link undangan disalin ke clipboard!'), findsOneWidget);
     await settleToasts(tester);
   });
 
-  testWidgets('a failed invite shows the error and copies nothing',
+  testWidgets('a failed invite load shows the error and offers retry',
       (tester) async {
-    api.on('POST', '/api/v1/team/invite',
+    api.on('GET', '/api/v1/team/invite',
         status: 403, json: {'error': 'Hanya pengelola utama'});
     await openPage(tester);
 
     await tester.tap(find.text('Manajemen Tim'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Salin Link Undangan'));
-    await pumpToast(tester);
-
     expect(find.text('Hanya pengelola utama'), findsOneWidget);
-    await settleToasts(tester);
+    expect(find.text('Coba Lagi'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+  });
+
+  testWidgets('creating a new link warns before invalidating the old one',
+      (tester) async {
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'old-token',
+      'invite_url': 'https://pilah.test/invite/old-token',
+      'expires_at':
+          DateTime.now().add(const Duration(days: 2)).toUtc().toIso8601String(),
+    });
+    api.on('POST', '/api/v1/team/invite', json: {
+      'token': 'new-token',
+      'invite_url': 'https://pilah.test/invite/new-token',
+      'expires_at':
+          DateTime.now().add(const Duration(days: 3)).toUtc().toIso8601String(),
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Buat Link Baru'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('langsung membatalkan link undangan lama'),
+        findsOneWidget);
+    expect(api.requests.where((request) => request.method == 'POST'), isEmpty);
+
+    await tester.tap(find.text('Ganti Link'));
+    await tester.pumpAndSettle();
+    expect(api.last.method, 'POST');
+    expect(find.text('https://pilah.test/invite/new-token'), findsOneWidget);
+    expect(find.text('Salin Link Undangan Baru'), findsOneWidget);
+  });
+
+  testWidgets('inactive bank cannot create an invite', (tester) async {
+    stubProfile(api, bank: {...bankJson(), 'status': 'pending'});
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Undangan tersedia setelah bank sampah disetujui.'),
+        findsOneWidget);
+    expect(find.text('Buat Link Undangan'), findsNothing);
+    expect(api.requests.where((request) => request.method == 'POST'), isEmpty);
   });
 
   testWidgets('only the primary pengelola can invite; empty roster note',
@@ -638,6 +690,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Salin Link Undangan'), findsNothing);
+    expect(find.text('Buat Link Undangan'), findsNothing);
     expect(
         find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });
