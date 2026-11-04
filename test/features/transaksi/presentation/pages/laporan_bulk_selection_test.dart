@@ -24,15 +24,16 @@ class _GetAktivitas extends Mock implements GetAktivitasUseCase {}
 class _Export extends Mock implements ExportTransaksiUseCase {}
 
 class _Feed extends RiwayatAktivitasNotifier {
-  _Feed(this.items) : super(_GetAktivitas(), _Export());
+  _Feed(this.items, {this.total}) : super(_GetAktivitas(), _Export());
 
   final List<ActivitasEntity> items;
+  final int? total;
 
   @override
   RiwayatAktivitasState build() => RiwayatAktivitasState(
         status: AktivitasStatus.loaded,
         items: items,
-        totalCount: items.length,
+        totalCount: total ?? items.length,
       );
 
   @override
@@ -84,20 +85,23 @@ void main() {
   Future<void> pumpPage(WidgetTester tester, double width,
       {double textScale = 1,
       bool onlyVoided = false,
+      int? total,
       bool isWeb = true}) async {
     tester.view.physicalSize = Size(width, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     api = StubApi();
-    feed = _Feed(onlyVoided
-        ? [_setoran('s3', 'Sudah batal', voided: true)]
-        : [
-            _setoran('s1', 'Budi'),
-            _setoran('s2', 'Sari'),
-            _setoran('s3', 'Sudah batal', voided: true),
-            _pencairan(),
-          ]);
+    feed = _Feed(
+        onlyVoided
+            ? [_setoran('s3', 'Sudah batal', voided: true)]
+            : [
+                _setoran('s1', 'Budi'),
+                _setoran('s2', 'Sari'),
+                _setoran('s3', 'Sudah batal', voided: true),
+                _pencairan(),
+              ],
+        total: total);
     await tester.pumpWidget(withTransaksiProviders(
       transaksi: buildTransaksiNotifier(api),
       riwayat: feed,
@@ -226,6 +230,26 @@ void main() {
   }
 
   group('wide table', () {
+    testWidgets('says the selection covers only this page when more exist',
+        (tester) async {
+      await pumpPage(tester, 1200, total: 251);
+      await tester.tap(find.byKey(AktivitasTable.selectAllKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 dipilih'), findsOneWidget);
+      expect(find.text('Hanya di halaman ini, dari 251 transaksi'),
+          findsOneWidget);
+    });
+
+    testWidgets('has no page caveat when everything is on this page',
+        (tester) async {
+      await pumpPage(tester, 1200);
+      await tester.tap(find.byKey(AktivitasTable.selectAllKey));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Hanya di halaman ini'), findsNothing);
+    });
+
     testWidgets('checkboxes are visible with no menu step', (tester) async {
       await pumpPage(tester, 1200);
 
