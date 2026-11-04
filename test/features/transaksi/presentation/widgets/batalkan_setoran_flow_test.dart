@@ -20,6 +20,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_se
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 
 import '../../../../support/dashboard_support.dart';
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pencairan_support.dart';
 import '../../../../support/stub_api.dart';
@@ -77,8 +78,12 @@ Map<String, dynamic> _dibatalkan() => {
 void main() {
   late StubApi api;
   late _Feed feed;
+  late FakeAnalyticsClient analytics;
 
-  setUp(() => api = StubApi());
+  setUp(() {
+    api = StubApi();
+    analytics = FakeAnalyticsClient();
+  });
 
   group('Hapus from the phone selection header', () {
     Future<ProviderContainer> pumpFeed(WidgetTester tester,
@@ -98,6 +103,7 @@ void main() {
         transaksi: transaksi,
         riwayat: feed,
         nasabah: buildNasabahNotifier(api),
+        analytics: analytics,
         child: ProviderScope(
           overrides: [
             dashboardProvider.overrideWith(() => buildDashboardNotifier(api)),
@@ -242,6 +248,36 @@ void main() {
       expect(container.exists(dashboardProvider), isFalse);
       expect(container.exists(recentActivityProvider), isFalse);
       expect(feed.loads, 1);
+    });
+
+    testWidgets('a void reports one setoran voided one by one', (tester) async {
+      api.on('POST', _batalkan, json: _dibatalkan());
+      await pumpFeed(tester);
+      await openHapus(tester);
+
+      await tester.enterText(
+          find.byKey(BatalkanSetoranDialog.alasanKey), 'Dobel');
+      await tester.tap(confirm());
+      await tester.pumpAndSettle();
+
+      expect(analytics.events.single.name, 'riwayat_setoran_dibatalkan');
+      expect(analytics.events.single.properties,
+          {'cara': 'satuan', 'jumlah_setoran': 1});
+    });
+
+    testWidgets('a refused or empty void reports nothing', (tester) async {
+      api.on('POST', _batalkan, status: 409, json: {'error': 'Ditolak'});
+      await pumpFeed(tester);
+      await openHapus(tester);
+
+      await tester.tap(confirm());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byKey(BatalkanSetoranDialog.alasanKey), 'Dobel');
+      await tester.tap(confirm());
+      await tester.pumpAndSettle();
+
+      expect(analytics.events, isEmpty);
     });
 
     testWidgets('a refused void keeps the dialog open with the reason',

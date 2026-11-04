@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/stub_api.dart';
 import '../../../../support/transaksi_support.dart';
 
@@ -89,9 +90,11 @@ void main() {
   late _TestRiwayatNotifier feedNotifier;
   late TransaksiNotifier transaksi;
   late StubApi api;
+  late FakeAnalyticsClient analytics;
 
   setUp(() {
     api = StubApi();
+    analytics = FakeAnalyticsClient();
     transaksi = buildTransaksiNotifier(api);
   });
 
@@ -104,6 +107,7 @@ void main() {
         builder: (_, __) => withTransaksiProviders(
           riwayat: feedNotifier,
           transaksi: transaksi,
+          analytics: analytics,
           child: Scaffold(
             body: AktivitasListView(now: () => _now, isWeb: isWeb),
           ),
@@ -224,6 +228,98 @@ void main() {
     await tester.tap(find.text('Ani'));
     await tester.pumpAndSettle();
     expect(find.text('Botol Kaca'), findsNothing);
+  });
+
+  group('what opening a detail reports', () {
+    List<Map<String, Object>> opened() => [
+          for (final e in analytics.events)
+            if (e.name == 'riwayat_detail_dibuka') e.properties
+        ];
+
+    testWidgets('expanding a setoran in the wide table says it was a setoran',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      api.on('GET', '/api/v1/transaksi/t1', json: {
+        'nasabah_nama': 'Ani',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '42000',
+        'items': [],
+      });
+      await pumpList(
+        tester,
+        RiwayatAktivitasState(
+          status: AktivitasStatus.loaded,
+          items: [_setoran('Ani', _now, id: 't1')],
+        ),
+      );
+
+      await tester.tap(find.text('Ani'));
+      await tester.pumpAndSettle();
+      expect(opened(), [
+        {'jenis_aktivitas': 'setoran'}
+      ]);
+
+      // Closing it again is not opening a detail.
+      await tester.tap(find.text('Ani'));
+      await tester.pumpAndSettle();
+      expect(opened(), hasLength(1));
+    });
+
+    testWidgets('expanding a setoran on a phone says it was a setoran',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      api.on('GET', '/api/v1/transaksi/t1', json: {
+        'nasabah_nama': 'Ani',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '42000',
+        'items': [],
+      });
+      await pumpList(
+        tester,
+        RiwayatAktivitasState(
+          status: AktivitasStatus.loaded,
+          items: [_setoran('Ani', _now, id: 't1')],
+        ),
+      );
+
+      await tester.tap(find.text('Ani'));
+      await tester.pumpAndSettle();
+      expect(opened(), [
+        {'jenis_aktivitas': 'setoran'}
+      ]);
+
+      await tester.tap(find.text('Ani'));
+      await tester.pumpAndSettle();
+      expect(opened(), hasLength(1));
+    });
+
+    testWidgets('opening a pencairan says it was a pencairan', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpList(
+        tester,
+        RiwayatAktivitasState(
+          status: AktivitasStatus.loaded,
+          items: [_pencairan('Budi', _now)],
+        ),
+        isWeb: true,
+      );
+
+      await tester.tap(find.text('Budi'));
+      await tester.pumpAndSettle();
+
+      expect(opened(), [
+        {'jenis_aktivitas': 'pencairan'}
+      ]);
+    });
   });
 
   testWidgets('a pencairan row still opens its detail in the wide table',

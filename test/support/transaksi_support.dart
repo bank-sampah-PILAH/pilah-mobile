@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/core/analytics/analytics_client.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
@@ -24,6 +26,7 @@ Widget withTransaksiProviders({
   RiwayatAktivitasNotifier? riwayat,
   NasabahNotifier? nasabah,
   HargaNotifier? harga,
+  AnalyticsClient? analytics,
 }) =>
     ProviderScope(
       overrides: [
@@ -32,6 +35,8 @@ Widget withTransaksiProviders({
           riwayatAktivitasProvider.overrideWith(() => riwayat),
         if (nasabah != null) nasabahProvider.overrideWith(() => nasabah),
         if (harga != null) hargaProvider.overrideWith(() => harga),
+        if (analytics != null)
+          analyticsClientProvider.overrideWithValue(analytics),
       ],
       child: child,
     );
