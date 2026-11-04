@@ -78,7 +78,7 @@ void main() {
         _MockExport(),
         _MockResendWa(),
         _MockEdit(),
-        _MockBatalkan(),
+        (useCase: _MockBatalkan(), sessionKey: null),
       ),
     );
     cubit = harness.notifier;
