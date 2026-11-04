@@ -105,11 +105,17 @@ void main() {
       expect(find.text('Perekaman sesi'), findsOneWidget);
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
 
+      // Where the switch lands depends on the fonts of the machine running the
+      // test, so scroll to it first.
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
       expect(client.calls, ['start']);
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
 
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
       expect(client.calls, ['start', 'stop']);
