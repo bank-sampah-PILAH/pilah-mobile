@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
-import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/transaksi/analytics/setoran_analytics.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
