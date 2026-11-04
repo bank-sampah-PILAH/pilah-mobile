@@ -74,16 +74,12 @@ void main() {
 
       expect(find.text('Transaksi'), findsOneWidget);
       expect(find.text('Setoran'), findsOneWidget);
-      expect(find.text('Pencairan'), findsOneWidget);
+      expect(find.text('Pencairan'), findsNothing);
       expect(find.text('Tambah Transaksi'), findsNothing);
       expect(
         tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
-      final pencairan = tester
-          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.pencairanKey));
-      expect(pencairan.enabled, isFalse);
-      expect(pencairan.onTap, isNull);
 
       await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
@@ -298,7 +294,7 @@ void main() {
         lessThan(tester.getTopLeft(find.text('Setoran')).dy),
       );
       expect(
-        tester.getTopLeft(find.text('Pencairan')).dy,
+        tester.getTopLeft(find.text('Setoran')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
     });

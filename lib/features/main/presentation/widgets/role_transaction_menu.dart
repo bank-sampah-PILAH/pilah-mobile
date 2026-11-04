@@ -19,6 +19,10 @@ class RoleTransactionMenu extends StatelessWidget {
   static const menuKey = ValueKey('transaction-menu');
   static const headerKey = ValueKey('transaction-menu-header');
   static const setoranKey = ValueKey('transaction-menu-setoran');
+
+  /// Pencairan tidak lagi digambar (PIL-434). Kuncinya tetap ada supaya
+  /// pengujian bisa menyatakan ketidakhadirannya, dan supaya baris itu kembali
+  /// dengan kunci yang sama ketika fiturnya dibuka lagi.
   static const pencairanKey = ValueKey('transaction-menu-pencairan');
   static const riwayatKey = ValueKey('transaction-menu-riwayat');
 
@@ -46,34 +50,20 @@ class RoleTransactionMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectionColor = selected ? AppColors.greenDark : AppColors.inkSoft;
     if (compact) {
+      // Setoran adalah satu-satunya transaksi yang terbuka (PIL-434), dan
+      // menu dengan satu isi menghabiskan satu ketukan untuk pilihan yang
+      // bukan pilihan. Jadi ikonnya langsung membuka Setoran. Ikon dan
+      // keadaan terpilihnya tetap milik kelompok Transaksi, karena itulah
+      // yang diwakili slot ini pada rail; tooltipnya yang menyebut apa yang
+      // terjadi saat ditekan.
       return SizedBox(
         width: 48,
         height: 48,
-        child: PopupMenuButton<_TransactionAction>(
+        child: IconButton(
           key: menuKey,
-          tooltip: 'Transaksi',
+          tooltip: 'Setoran',
           icon: Icon(Icons.receipt_long_outlined, color: selectionColor),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              key: setoranKey,
-              value: _TransactionAction.setoran,
-              child: _PopupMenuLabel(
-                icon: Icons.add_circle_outline,
-                label: 'Setoran',
-                selected: selected,
-              ),
-            ),
-            const PopupMenuItem(
-              key: pencairanKey,
-              enabled: false,
-              child: _PopupMenuLabel(
-                icon: Icons.payments_outlined,
-                label: 'Pencairan',
-                enabled: false,
-              ),
-            ),
-          ],
-          onSelected: (_) => _openSetoran(),
+          onPressed: _openSetoran,
         ),
       );
     }
@@ -157,11 +147,6 @@ class _TransactionAccordionState extends State<_TransactionAccordion> {
                         label: 'Setoran',
                         selected: widget.selected,
                         onTap: widget.onSetoran,
-                      ),
-                      const RoleMenuRow(
-                        key: RoleTransactionMenu.pencairanKey,
-                        icon: Icons.payments_outlined,
-                        label: 'Pencairan',
                       ),
                     ],
                   ),
@@ -291,39 +276,4 @@ class _PillInkResponse extends InkResponse {
 
   @override
   RectCallback? getRectCallback(RenderBox referenceBox) => () => pill;
-}
-
-enum _TransactionAction { setoran }
-
-class _PopupMenuLabel extends StatelessWidget {
-  const _PopupMenuLabel({
-    required this.icon,
-    required this.label,
-    this.enabled = true,
-    this.selected = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool enabled;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = !enabled
-        ? AppColors.grey100
-        : selected
-            ? AppColors.greenDark
-            : AppColors.inkSoft;
-    return Row(
-      children: [
-        Icon(icon, color: color),
-        const SizedBox(width: AppSpacing.md),
-        Text(
-          label,
-          style: AppTextStyle.small.copyWith(color: color),
-        ),
-      ],
-    );
-  }
 }
