@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/design_ratchet.dart';
+
 /// Keeps a corner radius from being written as a number outside `lib/design/`.
 ///
 /// `AppRadius` (4, 8, 12, 16, 24 and `pill`) is the scale of the app, so a
@@ -14,14 +16,11 @@ final _literal = RegExp(r'Radius\.circular\(\s*[0-9]');
 
 Map<String, int> _scan([Directory? root]) {
   final found = <String, int>{};
-  final dir = root ?? Directory('lib');
-  for (final entity in dir.listSync(recursive: true)) {
-    if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    final path = entity.path;
-    final relative = path.substring(dir.path.length + 1);
-    if (relative == 'design/constants/radius.dart') continue;
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
-    final count = _literal.allMatches(entity.readAsStringSync()).length;
+  for (final source in designSources(root)) {
+    final path = source.path;
+    if (source.relativePath == 'design/constants/radius.dart') continue;
+    if (source.isGenerated) continue;
+    final count = _literal.allMatches(source.read()).length;
     if (count > 0) found[path] = count;
   }
   return found;
@@ -47,7 +46,8 @@ void main() {
         ..writeAsStringSync('final r = BorderRadius.circular(10);');
     }
 
-    expect(_scan(root).keys, ['${root.path}/features/radius.dart']);
+    expect(_scan(root).keys,
+        ['${root.path.replaceAll(r'\', '/')}/features/radius.dart']);
   });
 
   test('no file writes a corner radius as a bare number', () {

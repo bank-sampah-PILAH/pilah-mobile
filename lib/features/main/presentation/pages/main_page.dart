@@ -18,10 +18,11 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/setoran_sheet_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 /// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
 const _profileBranch = 7;
-const _pengumumanBranch = 8;
 
 class MainPage extends ConsumerWidget {
   const MainPage({
@@ -186,8 +187,7 @@ class _ShellContent extends ConsumerWidget {
   bool _isOffDestination(int selected, bool limitedNasabah) =>
       selected < 0 &&
       ((RoleNavigationBar.isStaff(role) &&
-              (navigationShell.currentIndex == _profileBranch ||
-                  navigationShell.currentIndex == _pengumumanBranch)) ||
+              navigationShell.currentIndex == _profileBranch) ||
           (role == 'nasabah' &&
               !limitedNasabah &&
               navigationShell.currentIndex == 4));
@@ -273,9 +273,12 @@ class _ShellContent extends ConsumerWidget {
           onProfile: () => navigationShell.goBranch(_profileBranch),
           onHome: () => navigationShell.goBranch(0, initialLocation: true),
           onAddTransaction: role == 'pengelola'
-              ? () => context.push(TransaksiBaruPage.route)
+              ? () => openSetoranBaru(context, isWeb: isWebOverride ?? kIsWeb)
               : null,
-          transactionSelected: currentPath == TransaksiBaruPage.route,
+          // Panel samping tidak mengubah path, jadi path saja tidak lagi
+          // cukup untuk menyorot menunya.
+          transactionSelected: currentPath == TransaksiBaruPage.route ||
+              ref.watch(setoranSheetProvider),
           profileSelected: currentPath == AppLocations.profile,
           onSelected: onSelected,
         );

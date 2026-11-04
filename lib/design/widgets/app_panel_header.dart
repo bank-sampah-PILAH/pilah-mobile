@@ -18,6 +18,8 @@ class AppPanelHeader extends StatelessWidget {
     this.subtitle,
     this.onBack,
     this.onClose,
+    this.onHelp,
+    this.helpTooltip = 'Bantuan',
   });
 
   /// Tinggi tetap supaya isi di bawahnya tidak bergeser antar tampilan.
@@ -27,6 +29,10 @@ class AppPanelHeader extends StatelessWidget {
   final String? subtitle;
   final VoidCallback? onBack;
   final VoidCallback? onClose;
+
+  /// Membuka panduan tampilan ini. Tombolnya duduk di kiri tombol tutup.
+  final VoidCallback? onHelp;
+  final String helpTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +70,14 @@ class AppPanelHeader extends StatelessWidget {
               ],
             ),
           ),
+          if (onHelp != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            _HeaderIconButton(
+              icon: Icons.help_outline,
+              tooltip: helpTooltip,
+              onPressed: onHelp!,
+            ),
+          ],
           if (onClose != null) ...[
             const SizedBox(width: AppSpacing.sm),
             _HeaderIconButton(
