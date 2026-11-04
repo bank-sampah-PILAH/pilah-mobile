@@ -451,7 +451,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             label: invite.url == _createdInviteUrl
                 ? 'Salin Link Undangan Baru'
                 : 'Salin Link Undangan',
-            variant: AppButtonVariant.outlined,
+            variant: AppButtonVariant.tonal,
             icon: Icons.copy,
             onPressed: () => _onCopyInvite(invite),
           ),
@@ -459,7 +459,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         ],
         AppButton(
           label: 'Buat Link Baru',
-          variant: AppButtonVariant.outlined,
+          variant: AppButtonVariant.tonal,
           isLoading: state.isCreatingInvite,
           onPressed:
               state.isCreatingInvite ? null : () => _onCreateInvite(invite),
