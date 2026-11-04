@@ -120,13 +120,13 @@ void main() {
 
     test('refuses an email address or a phone number as an id', () {
       expect(() => AnalyticsProps.cleanId('siti@example.com'),
-          throwsAssertionError);
-      expect(
-          () => AnalyticsProps.cleanId('081234567890'), throwsAssertionError);
+          throwsA(isA<AssertionError>()));
+      expect(() => AnalyticsProps.cleanId('081234567890'),
+          throwsA(isA<AssertionError>()));
     });
 
     test('refuses an empty id', () {
-      expect(() => AnalyticsProps.cleanId(''), throwsAssertionError);
+      expect(() => AnalyticsProps.cleanId(''), throwsA(isA<AssertionError>()));
     });
   });
 }
