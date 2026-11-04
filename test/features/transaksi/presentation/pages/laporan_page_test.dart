@@ -71,6 +71,8 @@ void main() {
             _pencairan('Ani Wijaya', DateTime(2026, 9, 22, 10))),
         ActivitasEntity.fromTransaksi(
             _setoran('Budi Santoso', DateTime(2026, 9, 22, 8))),
+        ActivitasEntity.fromTransaksi(
+            _setoran('Citra Lestari', DateTime(2026, 9, 22, 7))),
       ]
           .where((item) =>
               (filter.tipe == null ||
@@ -274,13 +276,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester);
-    await tester.enterText(find.byType(TextField), 'Ani');
+    await tester.enterText(find.byType(TextField), 'Citra');
     await tester.pumpAndSettle();
     tester.view.physicalSize = const Size(390, 844);
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'Ani');
-    expect(find.text('Ani Wijaya'), findsOneWidget);
+        'Citra');
+    expect(find.text('Citra Lestari'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsNothing);
   });
 
@@ -291,40 +293,31 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  testWidgets('shows both setoran and pencairan in one feed', (tester) async {
+  testWidgets('lists setoran only, with no type selector (PIL-435)',
+      (tester) async {
     usePhone(tester);
     await pumpPage(tester);
 
     expect(find.text('Riwayat Aktivitas'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsOneWidget);
-    expect(find.text('Ani Wijaya'), findsOneWidget);
-    expect(find.text('Semua'), findsOneWidget);
-    expect(find.text('Setoran'), findsOneWidget);
-    expect(find.text('Pencairan'), findsOneWidget);
+    expect(find.text('Citra Lestari'), findsOneWidget);
+    expect(find.text('Ani Wijaya'), findsNothing);
+    expect(find.text('Semua'), findsNothing);
+    expect(find.text('Pencairan'), findsNothing);
     expect(find.text('22/09/2026'), findsNWidgets(2));
     expect(find.text('08:00'), findsOneWidget);
-    expect(find.text('10:00'), findsOneWidget);
+    expect(find.text('07:00'), findsOneWidget);
+    expect(find.text('10:00'), findsNothing);
     if (!kIsWeb) expect(find.byType(WebPaginationBar), findsNothing);
   });
 
-  testWidgets('the Pencairan filter hides setoran rows', (tester) async {
-    usePhone(tester);
+  testWidgets('searching narrows the feed by name', (tester) async {
     await pumpPage(tester);
 
-    await tester.tap(find.text('Pencairan'));
+    await tester.enterText(find.byType(TextField), 'citra');
     await tester.pumpAndSettle();
 
-    expect(find.text('Ani Wijaya'), findsOneWidget);
-    expect(find.text('Budi Santoso'), findsNothing);
-  });
-
-  testWidgets('searching narrows both feeds by name', (tester) async {
-    await pumpPage(tester);
-
-    await tester.enterText(find.byType(TextField), 'ani');
-    await tester.pumpAndSettle();
-
-    expect(find.text('Ani Wijaya'), findsOneWidget);
+    expect(find.text('Citra Lestari'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsNothing);
   });
   testWidgets('the period button and export icon fit without overflow at 360px',
@@ -348,14 +341,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester, textScale: 2);
-    await tester.scrollUntilVisible(
+    // Scroll until the row shows instead of by a fixed distance: how far the
+    // list can move depends on the rows above it, and a distance tuned to one
+    // fixture overshoots as soon as the feed gets shorter or its rows change.
+    await tester.dragUntilVisible(
       find.text('Budi Santoso'),
-      200,
-      scrollable: find
-          .descendant(
-              of: find.byType(NestedScrollView),
-              matching: find.byType(Scrollable))
-          .first,
+      find.byType(NestedScrollView),
+      const Offset(0, -100),
     );
     await tester.pumpAndSettle();
     expect(find.text('Budi Santoso').hitTestable(), findsOneWidget);
@@ -399,7 +391,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester);
-    await tester.enterText(find.byType(TextField), 'Ani');
+    await tester.enterText(find.byType(TextField), 'Citra');
     await tester.pumpAndSettle();
 
     ProviderScope.containerOf(

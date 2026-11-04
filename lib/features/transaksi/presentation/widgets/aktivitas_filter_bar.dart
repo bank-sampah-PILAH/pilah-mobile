@@ -17,7 +17,10 @@ import 'package:pilah_mobile/design/constants/font_weight.dart';
 /// ekspor. Menggantikan tiga chip tipe, sembilan chip periode, tombol rentang
 /// tanggal, dan tombol XLSX yang dulu memenuhi tiga baris.
 class AktivitasFilterBar extends ConsumerWidget {
-  const AktivitasFilterBar({super.key});
+  const AktivitasFilterBar({
+    super.key,
+    this.tipeTersedia = aktivitasTipeTersedia,
+  });
 
   static const tipeLabels = {
     AktivitasTipeFilter.semua: 'Semua',
@@ -25,15 +28,21 @@ class AktivitasFilterBar extends ConsumerWidget {
     AktivitasTipeFilter.pencairan: 'Pencairan',
   };
 
+  /// Tipe yang bisa dipilih Pengurus, dalam urutan [tipeLabels]. Dengan satu
+  /// tipe saja tidak ada yang bisa dipilih, jadi pemilihnya disembunyikan.
+  final Set<AktivitasTipeFilter> tipeTersedia;
+
   static bool _bukanBawaan(RiwayatAktivitasState s) =>
-      s.tipeFilter != AktivitasTipeFilter.semua ||
+      s.tipeFilter != aktivitasTipeBawaan ||
       s.periode != periodeBawaan ||
       s.search.isNotEmpty;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(riwayatAktivitasProvider);
-    final tipe = _TipeSegments(state: state);
+    final tipe = tipeTersedia.length > 1
+        ? _TipeSegments(state: state, tipeTersedia: tipeTersedia)
+        : null;
     final periode = _PeriodeButton(state: state);
     final reset = _bukanBawaan(state)
         ? AppButton(
@@ -55,7 +64,11 @@ class AktivitasFilterBar extends ConsumerWidget {
                 spacing: AppSpacing.md,
                 runSpacing: AppSpacing.sm,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                children: [tipe, periode, if (reset != null) reset],
+                children: [
+                  if (tipe != null) tipe,
+                  periode,
+                  if (reset != null) reset,
+                ],
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -72,8 +85,10 @@ class AktivitasFilterBar extends ConsumerWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          tipe,
-          const SizedBox(height: AppSpacing.sm),
+          if (tipe != null) ...[
+            tipe,
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Row(
             children: [
               Expanded(child: _PeriodeField(state: state)),
@@ -102,9 +117,10 @@ class AktivitasFilterBar extends ConsumerWidget {
 }
 
 class _TipeSegments extends ConsumerWidget {
-  const _TipeSegments({required this.state});
+  const _TipeSegments({required this.state, required this.tipeTersedia});
 
   final RiwayatAktivitasState state;
+  final Set<AktivitasTipeFilter> tipeTersedia;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -112,7 +128,8 @@ class _TipeSegments extends ConsumerWidget {
       showSelectedIcon: false,
       segments: [
         for (final entry in AktivitasFilterBar.tipeLabels.entries)
-          ButtonSegment(value: entry.key, label: Text(entry.value)),
+          if (tipeTersedia.contains(entry.key))
+            ButtonSegment(value: entry.key, label: Text(entry.value)),
       ],
       selected: {state.tipeFilter},
       onSelectionChanged: (selection) => ref

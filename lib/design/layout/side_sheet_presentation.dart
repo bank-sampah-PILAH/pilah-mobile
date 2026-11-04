@@ -276,13 +276,23 @@ class _SideSheetRoute<T> extends PageRoute<T> {
 /// ditanyai dua kali: sekali oleh `PopScope`, sekali lagi oleh `onExit` atas
 /// pop yang baru saja disetujui.
 class SideSheetGuard {
-  SideSheetGuard({required this.hasUnsavedInput});
+  SideSheetGuard({required this.hasUnsavedInput, required this.isBusy});
 
   /// Dibaca saat panel hendak ditutup, bukan saat dibangun.
   ///
   /// Formulir baru menjadi kotor jauh setelah panel dibangun, jadi nilai yang
   /// dihitung saat build selalu basi.
   final bool Function() hasUnsavedInput;
+
+  /// Benar selagi isi panel mengerjakan sesuatu yang tidak bisa ditarik
+  /// kembali, misalnya permintaan simpan yang sudah terkirim.
+  ///
+  /// Panel tidak ditutup saat itu, dan tidak ada pertanyaan juga: tidak ada
+  /// yang tersisa untuk diputuskan. Menutupnya meninggalkan formulir yang
+  /// hilang padahal simpannya tetap sampai, tercatat di server tetapi tak
+  /// pernah terlihat oleh orang yang membuatnya. Dibaca saat panel hendak
+  /// ditutup, seperti [hasUnsavedInput].
+  final bool Function() isBusy;
 
   bool _answered = false;
 
@@ -303,6 +313,14 @@ class SideSheetGuard {
   /// lebih dulu "untuk nanti".
   void allowNextExit() => _answered = true;
 
+  /// Melupakan kunci yang dinyalakan [allowNextExit] tetapi tak pernah
+  /// dihabiskan.
+  ///
+  /// Penjaga bisa hidup lebih lama daripada satu panel: di panel setoran ia
+  /// objek tingkat atas. Kunci sisa dari satu sesi akan meloloskan penutupan
+  /// panel berikutnya tanpa bertanya. Dipanggil setiap kali panel dibuka.
+  void reset() => _answered = false;
+
   /// Jalan keluar lewat `Navigator.maybePop`: scrim dan Esc.
   Future<void> handlePopAttempt(BuildContext context) async {
     // Navigator diambil sebelum await. Sesudahnya element pemanggil bisa sudah
@@ -310,6 +328,8 @@ class SideSheetGuard {
     // kelas bug yang sama dengan yang pernah muncul pada panel harga dan
     // jadwal.
     final navigator = Navigator.of(context);
+
+    if (isBusy()) return;
 
     // [allowNextExit] berlaku untuk jalan keluar ini juga. Formulir yang baru
     // berhasil menyimpan lalu keluar lewat maybePop — tombol kembali platform,
@@ -338,6 +358,7 @@ class SideSheetGuard {
   /// yang kebetulan dipakai aplikasi, dan pemanggilnya tinggal mengabaikan
   /// argumen kedua.
   Future<bool> confirmExit(BuildContext context) async {
+    if (isBusy()) return false;
     if (_answered) {
       _answered = false;
       return true;

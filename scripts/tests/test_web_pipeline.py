@@ -29,11 +29,16 @@ class WebPipelineTest(unittest.TestCase):
         )
         job = ci["jobs"]["deploy_web_staging"]
         self.assertEqual(job["needs"], "verify")
-        self.assertEqual(job["if"], "github.event_name == 'push' && github.ref == 'refs/heads/staging'")
+        self.assertEqual(
+            job["if"],
+            "${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/staging' }}",
+        )
         self.assertEqual(job["with"]["flavor"], "staging")
         self.assertEqual(job["uses"], "./.github/workflows/deploy-web.yml")
 
     def test_production_follows_tags_and_web_jobs_do_not_need_android_secrets(self):
+        ci = workflow("ci.yml")
+        self.assertNotIn("deploy_web_production", ci["jobs"])
         release = workflow("cd-production.yml")
         self.assertEqual(release["on"]["push"]["tags"], ["v*"])
         job = release["jobs"]["deploy_web_production"]
