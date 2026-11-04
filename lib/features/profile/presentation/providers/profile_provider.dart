@@ -44,7 +44,10 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// the page has nothing to render, so a real loading state is emitted.
   Future<void> load({bool silent = false}) async {
     if (!silent || state.status != ProfileStatus.loaded) {
-      state = const ProfileState(status: ProfileStatus.loading);
+      state = const ProfileState(
+        status: ProfileStatus.loading,
+        isLoadingInvite: true,
+      );
     }
 
     final bankEither = await apiCall<BankSampahProfile>(
@@ -65,12 +68,19 @@ class ProfileNotifier extends Notifier<ProfileState> {
           func: _dataSource.getTeam(),
           mapper: (value) => value as List<TeamMember>,
         );
+        final inviteEither = await apiCall<TeamInvite?>(
+          func: _dataSource.getTeamInvite(),
+          mapper: (value) => value as TeamInvite?,
+        );
         if (!ref.mounted) return;
         state = ProfileState(
           status: ProfileStatus.loaded,
           bankSampah: bank,
           waTemplate: waEither.fold((_) => null, (value) => value),
           team: teamEither.fold((_) => const <TeamMember>[], (value) => value),
+          invite: inviteEither.fold((_) => null, (value) => value),
+          inviteError:
+              inviteEither.fold((error) => error.displayMessage, (_) => null),
         );
       },
     );
@@ -202,17 +212,30 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// Pending logo bytes must not be uploaded by the next signed-in user.
   void reset() => state = const ProfileState();
 
-  /// Generates a team invite link. Returns the URL on success, otherwise the
-  /// [NetworkException] (e.g. 403 when the current user is not the primary
-  /// pengelola).
-  Future<({String? url, NetworkException? error})> generateInvite() async {
-    final either = await apiCall<String>(
-      func: _dataSource.generateInviteUrl(),
-      mapper: (value) => value as String,
+  /// Explicitly creates or replaces the team's invitation link.
+  Future<NetworkException?> createInvite() async {
+    state = state.copyWith(isCreatingInvite: true, clearInviteError: true);
+    final either = await apiCall<TeamInvite>(
+      func: _dataSource.createTeamInvite(),
+      mapper: (value) => value as TeamInvite,
     );
+    if (!ref.mounted) return null;
     return either.fold(
-      (error) => (url: null, error: error),
-      (url) => (url: url, error: null),
+      (error) {
+        state = state.copyWith(
+          isCreatingInvite: false,
+          inviteError: error.displayMessage,
+        );
+        return error;
+      },
+      (invite) {
+        state = state.copyWith(
+          isCreatingInvite: false,
+          invite: invite,
+          clearInviteError: true,
+        );
+        return null;
+      },
     );
   }
 }

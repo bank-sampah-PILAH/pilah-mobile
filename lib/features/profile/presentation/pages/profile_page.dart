@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -83,6 +84,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   bool _bankSeeded = false;
   // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
+  String? _createdInviteUrl;
 
   /// Di browser halaman ini berada di dalam shell dengan rail, bukan didorong
   /// di atasnya, jadi memakai gutter dan judul halaman tab web.
@@ -292,17 +294,141 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     }
   }
 
-  Future<void> _onCopyInvite() async {
-    final (:url, :error) =
-        await ref.read(profileProvider.notifier).generateInvite();
+  Future<void> _onCopyInvite(TeamInvite invite) async {
+    if (!invite.isValid || ref.read(profileProvider).inviteError != null) {
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: invite.url!));
+    if (!mounted) return;
+    _snack('Link undangan disalin ke clipboard!');
+  }
+
+  Future<void> _onCreateInvite(TeamInvite? currentInvite) async {
+    if (currentInvite != null) {
+      final confirmed = await showAppConfirmDialog(
+        context,
+        title: 'Ganti link undangan?',
+        message: 'Link baru akan langsung membatalkan link undangan lama yang '
+            'mungkin masih dibagikan. Lanjutkan?',
+        confirmLabel: 'Ganti Link',
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    final error = await ref.read(profileProvider.notifier).createInvite();
     if (!mounted) return;
     if (error != null) {
       _snack(error.displayMessage, error: true);
       return;
     }
-    await Clipboard.setData(ClipboardData(text: url ?? ''));
-    if (!mounted) return;
-    _snack('Link undangan disalin ke clipboard!');
+    final created = ref.read(profileProvider).invite;
+    if (created?.isValid == true) {
+      setState(() => _createdInviteUrl = created!.url);
+      _snack('Link undangan baru berhasil dibuat');
+    }
+  }
+
+  String _remainingInviteTime(DateTime expiresAt) {
+    final remaining = expiresAt.difference(DateTime.now());
+    if (remaining.isNegative || remaining.inSeconds == 0) return 'Kedaluwarsa';
+    if (remaining.inDays > 0) return 'Tersisa ${remaining.inDays} hari';
+    if (remaining.inHours > 0) return 'Tersisa ${remaining.inHours} jam';
+    return 'Tersisa ${remaining.inMinutes.clamp(1, 59)} menit';
+  }
+
+  Widget _buildInviteActions(ProfileState state) {
+    final bankStatus = state.bankSampah?.status.toLowerCase();
+    if (bankStatus != 'active') {
+      return Text(
+        bankStatus == 'pending'
+            ? 'Undangan tersedia setelah bank sampah disetujui.'
+            : 'Undangan hanya tersedia untuk bank sampah yang aktif.',
+        style: AppTextStyle.small.copyWith(color: Colors.white),
+      );
+    }
+
+    if (state.isLoadingInvite) {
+      return Text('Memuat link undangan…',
+          style: AppTextStyle.small.copyWith(color: Colors.white));
+    }
+    if (state.inviteError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(state.inviteError!,
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Coba Lagi',
+            variant: AppButtonVariant.outlined,
+            onPressed: () =>
+                ref.read(profileProvider.notifier).load(silent: true),
+          ),
+        ],
+      );
+    }
+
+    final invite = state.invite;
+    if (invite == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Belum ada link undangan.',
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Buat Link Undangan',
+            variant: AppButtonVariant.outlined,
+            isLoading: state.isCreatingInvite,
+            onPressed:
+                state.isCreatingInvite ? null : () => _onCreateInvite(null),
+          ),
+        ],
+      );
+    }
+
+    final valid = invite.isValid;
+    final expiresAt = invite.expiresAt;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          valid
+              ? 'Link undangan aktif'
+              : 'Link undangan sudah kedaluwarsa. Buat link baru untuk membagikan undangan.',
+          style: AppTextStyle.small.copyWith(color: Colors.white),
+        ),
+        if (valid && invite.url != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          SelectableText(invite.url!,
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          if (expiresAt != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '${_remainingInviteTime(expiresAt)} · Berlaku sampai ${DateFormat('dd/MM/yyyy HH:mm').format(expiresAt.toLocal())}',
+              style: AppTextStyle.small.copyWith(color: Colors.white),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: invite.url == _createdInviteUrl
+                ? 'Salin Link Undangan Baru'
+                : 'Salin Link Undangan',
+            variant: AppButtonVariant.outlined,
+            icon: Icons.copy,
+            onPressed: () => _onCopyInvite(invite),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        AppButton(
+          label: 'Buat Link Baru',
+          variant: AppButtonVariant.outlined,
+          isLoading: state.isCreatingInvite,
+          onPressed:
+              state.isCreatingInvite ? null : () => _onCreateInvite(invite),
+        ),
+      ],
+    );
   }
 
   // ── Build ───────────────────────────────────────────────────────────
@@ -874,19 +1000,14 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
+                        'Undang pengurus lain untuk bergabung ke bank sampah Anda.',
                         style: AppTextStyle.small.copyWith(
                           color: Colors.white.withValues(alpha: 0.8),
                           height: 1.4,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      AppButton(
-                        label: 'Salin Link Undangan',
-                        variant: AppButtonVariant.outlined,
-                        icon: Icons.copy,
-                        onPressed: _onCopyInvite,
-                      ),
+                      _buildInviteActions(state),
                     ],
                   ),
                 ),
