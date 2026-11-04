@@ -611,7 +611,7 @@ void main() {
     expect(find.text('Simpan Pengaturan'), findsNothing);
 
     expect(find.text('Link undangan aktif'), findsOneWidget);
-    expect(find.textContaining('Tersisa 2 hari'), findsOneWidget);
+    expect(find.textContaining('Tersisa 3 hari'), findsOneWidget);
     await tester.tap(find.text('Salin Link Undangan'));
     await pumpToast(tester);
 
@@ -622,6 +622,17 @@ void main() {
             .map((request) => request.method),
         ['GET']);
     expect(find.text('Link undangan disalin ke clipboard!'), findsOneWidget);
+    await settleToasts(tester);
+
+    await tester.tap(find.text('Salin Link Undangan'));
+    await pumpToast(tester);
+    expect(copied, 'https://pilah.test/invite/abc');
+    expect(
+      api.requests
+          .where((request) => request.path == '/api/v1/team/invite')
+          .map((request) => request.method),
+      ['GET'],
+    );
     await settleToasts(tester);
   });
 
@@ -649,11 +660,13 @@ void main() {
     await tester.pumpAndSettle();
 
     final staleCopy = tester
-        .widget<AppButton>(find.widgetWithText(AppButton, 'Salin Link Undangan'))
+        .widget<AppButton>(
+            find.widgetWithText(AppButton, 'Salin Link Undangan'))
         .onPressed!;
     expect(find.text('Link undangan aktif'), findsOneWidget);
     await tester.pump(const Duration(seconds: 31));
-    expect(find.textContaining('Link undangan sudah kedaluwarsa'), findsOneWidget);
+    expect(
+        find.textContaining('Link undangan sudah kedaluwarsa'), findsOneWidget);
     expect(find.text('Salin Link Undangan'), findsNothing);
     staleCopy();
     await pumpToast(tester);
