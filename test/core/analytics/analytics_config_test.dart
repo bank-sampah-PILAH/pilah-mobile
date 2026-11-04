@@ -35,5 +35,16 @@ POSTHOG_ENVIRONMENT=staging
 
       expect(AnalyticsConfig.fromSecrets(), isNull);
     });
+
+    test(
+        'names a local build when no environment is set, so its events are '
+        'never mistaken for staging or production', () {
+      dotenv.loadFromString(envString: '''
+ENABLE_ANALYTICS=true
+POSTHOG_API_KEY=phc_test_key
+''');
+
+      expect(AnalyticsConfig.fromSecrets()!.environment, 'local');
+    });
   });
 }
