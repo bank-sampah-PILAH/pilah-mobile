@@ -8,4 +8,4 @@ import 'package:pilah_mobile/services/di.dart';
 final analyticsClientProvider = Provider<AnalyticsClient>((ref) =>
     di.isRegistered<AnalyticsClient>()
         ? di<AnalyticsClient>()
-        : NoopAnalyticsClient());
+        : const NoopAnalyticsClient());
