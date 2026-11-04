@@ -494,6 +494,15 @@ void main() {
 
       await expectLater(client.stop(), completes);
     });
+
+    test('stopping while the library is still failing to load is kept too',
+        () async {
+      final client = failingClient();
+      final started = client.start().then<void>((_) {}, onError: (Object _) {});
+
+      await expectLater(client.stop(), completes);
+      await started;
+    });
   });
 
   test('the screen class follows the width of the window', () {
