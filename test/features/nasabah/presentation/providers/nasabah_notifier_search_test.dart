@@ -96,6 +96,22 @@ void main() {
 
   tearDown(() => harness.dispose());
 
+  test('logout reset cancels the request and keeps the initial state', () async {
+    final response = Completer<Either<NetworkException, HalamanNasabah>>();
+    CancelToken? token;
+    when(() => getUseCase.execute(any())).thenAnswer((call) {
+      token = (call.positionalArguments.first as GetNasabahParams).cancelToken;
+      return response.future;
+    });
+    final load = cubit.loadNasabah();
+    cubit.reset();
+    final cancelledAtLogout = token!.isCancelled;
+    response.complete(Left(RequestCancelled()));
+    await load;
+    expect(cancelledAtLogout, isTrue);
+    expect(cubit.state, isA<NasabahInitial>());
+  });
+
   test('disposing the provider cancels its in-flight request', () async {
     final response = Completer<Either<NetworkException, HalamanNasabah>>();
     CancelToken? token;
