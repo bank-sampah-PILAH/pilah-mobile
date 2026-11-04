@@ -46,6 +46,24 @@ void main() {
     expect(state.team.last.isPrimary, isFalse);
   });
 
+  test('loads the stored invite without creating or renewing it', () async {
+    stubProfile(api);
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'stored-token',
+      'invite_url': 'https://pilah.test/invite/stored-token',
+      'expires_at': '2030-01-04T12:00:00Z',
+    });
+
+    await notifier.load();
+
+    final invite = container.read(profileProvider).invite;
+    expect(invite!.url, 'https://pilah.test/invite/stored-token');
+    expect(invite.token, 'stored-token');
+    expect(invite.expiresAt, DateTime.utc(2030, 1, 4, 12));
+    expect(api.requests.where((request) => request.path == '/api/v1/team/invite')
+        .map((request) => request.method), ['GET']);
+  });
+
   test('missing optional fields fall back to blanks', () async {
     stubProfile(api,
         bank: <String, dynamic>{},
