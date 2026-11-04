@@ -3,4 +3,4 @@ import 'package:pilah_mobile/core/analytics/analytics_config.dart';
 
 /// Outside the web there is no native client yet, so analytics stays off.
 AnalyticsClient createAnalyticsClient(AnalyticsConfig? config) =>
-    NoopAnalyticsClient();
+    const NoopAnalyticsClient();
