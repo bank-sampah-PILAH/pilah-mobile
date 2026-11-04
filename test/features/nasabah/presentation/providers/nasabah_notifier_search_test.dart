@@ -96,6 +96,33 @@ void main() {
 
   tearDown(() => harness.dispose());
 
+  test('logout cancels an active-count refresh after a mutation', () async {
+    await cubit.setActiveTab(false);
+    when(() => cubit.activateNasabahUseCase.execute(any()))
+        .thenAnswer((_) async => const Right(null));
+    final countResponse = Completer<Either<NetworkException, HalamanNasabah>>();
+    final countStarted = Completer<void>();
+    RequestCancellation? countCancellation;
+    when(() => getUseCase.execute(any())).thenAnswer((call) {
+      final params = call.positionalArguments.first as GetNasabahParams;
+      if (params.status == 'aktif' && params.pageSize == 1) {
+        countCancellation = params.cancellation;
+        countStarted.complete();
+        return countResponse.future;
+      }
+      return Future.value(Right(_page([])));
+    });
+    final mutation = cubit.setNasabahStatus('n-1', true);
+    await countStarted.future;
+    cubit.reset();
+    final cancelled = countCancellation?.isCancelled ?? false;
+    countResponse.complete(Left(RequestCancelled()));
+    await mutation;
+    expect(cancelled, isTrue);
+    expect(cubit.activeCount, 0);
+    expect(cubit.state, isA<NasabahInitial>());
+  });
+
   test('logout reset cancels the request and keeps the initial state',
       () async {
     final response = Completer<Either<NetworkException, HalamanNasabah>>();
