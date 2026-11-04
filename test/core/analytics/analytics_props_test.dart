@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 
 void main() {
@@ -27,29 +27,29 @@ void main() {
   test('refuses a property name that is not on the list', () {
     expect(
       () => AnalyticsProps.sanitize({'nama_nasabah': 'Siti'}),
-      throwsAssertionError,
+      throwsA(isA<AssertionError>()),
     );
   });
 
   test('refuses personal data even under an allowed name', () {
     expect(
       () => AnalyticsProps.sanitize({'langkah': 'siti@example.com'}),
-      throwsAssertionError,
+      throwsA(isA<AssertionError>()),
     );
     expect(
       () => AnalyticsProps.sanitize({'langkah': '+62 812-3456-7890'}),
-      throwsAssertionError,
+      throwsA(isA<AssertionError>()),
     );
     expect(
       () => AnalyticsProps.sanitize({'langkah': '081234567890'}),
-      throwsAssertionError,
+      throwsA(isA<AssertionError>()),
     );
   });
 
   test('refuses a value that is not a string, number or boolean', () {
     expect(
       () => AnalyticsProps.sanitize({'langkah': DateTime(2026)}),
-      throwsAssertionError,
+      throwsA(isA<AssertionError>()),
     );
   });
 
@@ -85,7 +85,7 @@ void main() {
       () => AnalyticsProps.sanitize({
         'masalah': ['berat_nol', 'siti@example.com'],
       }),
-      throwsAssertionError,
+      throwsA(isA<AssertionError>()),
     );
   });
 
@@ -94,7 +94,7 @@ void main() {
       () => AnalyticsProps.sanitize({
         'masalah': ['berat_nol', 3],
       }),
-      throwsAssertionError,
+      throwsA(isA<AssertionError>()),
     );
   });
 }
