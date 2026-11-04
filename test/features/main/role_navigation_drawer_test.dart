@@ -1,4 +1,4 @@
-import 'dart:ui' show SemanticsAction, Tristate;
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -132,38 +132,13 @@ void main() {
           reason: 'the index is the menu position, not the branch index');
     });
 
-    testWidgets('keeps Pengumuman visible but disabled', (tester) async {
-      final selected = await mountDrawer(tester);
-      final destinationFinder =
-          find.byKey(RoleNavigationDrawer.destinationKey(5));
-      final destination =
-          tester.getSemantics(destinationFinder).getSemanticsData();
+    testWidgets('draws no Pengumuman destination at all', (tester) async {
+      await mountDrawer(tester);
 
-      expect(find.text('Pengumuman'), findsOneWidget);
-      expect(destination.flagsCollection.isEnabled, Tristate.isFalse);
-      expect(destination.hasAction(SemanticsAction.tap), isFalse);
-      final disabledIcon = tester.widget<Icon>(find.descendant(
-        of: destinationFinder,
-        matching: find.byType(Icon),
-      ));
-      final disabledLabel = tester.widget<Text>(find.descendant(
-        of: destinationFinder,
-        matching: find.text('Pengumuman'),
-      ));
-      final disabledIconContainer = tester.widget<Container>(find.descendant(
-        of: destinationFinder,
-        matching: find.byType(Container),
-      ));
-      expect(disabledIcon.color, AppColors.grey100);
-      expect(disabledLabel.style?.color, AppColors.grey100);
-      expect(
-        (disabledIconContainer.decoration as BoxDecoration).color,
-        isNull,
-      );
-
-      await tester.tap(find.text('Pengumuman'));
-      await tester.pumpAndSettle();
-      expect(selected, isEmpty);
+      expect(find.text('Pengumuman'), findsNothing);
+      expect(find.byIcon(Icons.campaign_outlined), findsNothing);
+      expect(find.byKey(RoleNavigationDrawer.destinationKey(5)), findsNothing,
+          reason: 'the staff drawer now ends at the fifth destination');
     });
 
     testWidgets('marks the current destination as selected', (tester) async {
