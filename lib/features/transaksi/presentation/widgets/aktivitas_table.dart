@@ -28,9 +28,22 @@ class AktivitasTable extends StatelessWidget {
     this.toolbar,
     this.pagination,
     this.page,
+    this.selectedIds,
+    this.onToggleSelection,
+    this.onSelectAll,
   });
 
+  static const selectAllKey = ValueKey('aktivitas-select-all');
+
   final List<ActivitasEntity> items;
+
+  /// Non-null shows the checkbox column (always visible on wide screens); an
+  /// empty set means nothing is checked yet.
+  final Set<String>? selectedIds;
+  final ValueChanged<String>? onToggleSelection;
+
+  /// Replaces the selection with these ids; an empty list clears it.
+  final ValueChanged<Iterable<String>>? onSelectAll;
   final ValueChanged<ActivitasEntity> onTap;
 
   /// Dipanggil dari kolom Aksi pada baris setoran. Null menyembunyikan kolom.
@@ -75,6 +88,7 @@ class AktivitasTable extends StatelessWidget {
     return DataTableCard(
       toolbar: toolbar,
       header: DataTableCard.head([
+        if (selectedIds != null) SizedBox(width: 48, child: _selectAllBox()),
         _cell(0, Text('WAKTU', style: _headStyle)),
         _cell(1, Text('NASABAH', style: _headStyle)),
         _cell(2, Text('TIPE', style: _headStyle)),
@@ -99,10 +113,38 @@ class AktivitasTable extends StatelessWidget {
                 onEdit: onEdit == null ? null : () => onEdit!(items[i]),
                 onHapus: onHapus == null ? null : () => onHapus!(items[i]),
                 loadSetoranDetail: loadSetoranDetail,
+                selectedIds: selectedIds,
+                onToggleSelection: onToggleSelection,
               ),
       ),
       footer: pagination,
       pageKey: page,
+    );
+  }
+
+  /// Selects every selectable setoran on this page, or clears when all are.
+  Widget _selectAllBox() {
+    final ids = [
+      for (final item in items)
+        if (item.isSelectableSetoran) item.transaksi!.id,
+    ];
+    final chosen = ids.where(selectedIds!.contains).length;
+    final all = ids.isNotEmpty && chosen == ids.length;
+    // Checked when all are, mixed (null) when only some are, else unchecked.
+    bool? value = false;
+    if (all) {
+      value = true;
+    } else if (chosen > 0) {
+      value = null;
+    }
+    return Checkbox(
+      key: selectAllKey,
+      tristate: true,
+      value: value,
+      semanticLabel: 'Pilih semua setoran di halaman ini',
+      onChanged: ids.isEmpty || onSelectAll == null
+          ? null
+          : (_) => onSelectAll!(all ? const [] : ids),
     );
   }
 
@@ -132,6 +174,8 @@ class _Row extends StatefulWidget {
     this.onEdit,
     this.onHapus,
     this.loadSetoranDetail,
+    this.selectedIds,
+    this.onToggleSelection,
   });
 
   final ActivitasEntity item;
@@ -139,6 +183,8 @@ class _Row extends StatefulWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onHapus;
   final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
+  final Set<String>? selectedIds;
+  final ValueChanged<String>? onToggleSelection;
 
   @override
   State<_Row> createState() => _RowState();
@@ -154,6 +200,8 @@ class _RowState extends State<_Row> {
 
   /// Only a setoran still tercatat can be edited or cancelled.
   bool get _bisaDiubah => item.tipe == ActivitasTipe.setoran && !_dibatalkan;
+  bool get _selectable => item.isSelectableSetoran;
+  bool get _anySelected => widget.selectedIds?.isNotEmpty ?? false;
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +216,7 @@ class _RowState extends State<_Row> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildDataRow(context, expandable),
-            if (expandable) _buildExpandedDetail(context),
+            if (expandable && !_anySelected) _buildExpandedDetail(context),
           ],
         ),
       ),
@@ -209,6 +257,10 @@ class _RowState extends State<_Row> {
   }
 
   void _handleTap(bool expandable) {
+    if (_anySelected) {
+      if (_selectable) widget.onToggleSelection?.call(item.transaksi!.id);
+      return;
+    }
     if (expandable) {
       setState(() => _expanded = !_expanded);
     } else {
@@ -220,6 +272,18 @@ class _RowState extends State<_Row> {
     final waktu = item.trailingCaptions;
     return Row(
       children: [
+        if (widget.selectedIds != null)
+          SizedBox(
+            width: 48,
+            child: _selectable
+                ? Checkbox(
+                    value: widget.selectedIds!.contains(item.transaksi!.id),
+                    semanticLabel: 'Pilih setoran ${item.title}',
+                    onChanged: (_) =>
+                        widget.onToggleSelection?.call(item.transaksi!.id),
+                  )
+                : null,
+          ),
         AktivitasTable._cell(
           0,
           Wrap(
@@ -325,7 +389,7 @@ class _RowState extends State<_Row> {
   Widget _editCell() => AktivitasTable._aksiCell(
         Align(
           alignment: Alignment.centerLeft,
-          child: _bisaDiubah
+          child: _bisaDiubah && !_anySelected
               ? Wrap(
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,

@@ -56,6 +56,9 @@ TransaksiNotifier buildTransaksiNotifier(StubApi api) {
     ExportTransaksiUseCase(repository),
     ResendWaUseCase(repository),
     EditTransaksiUseCase(repository),
-    BatalkanTransaksiUseCase(repository),
+    (
+      useCase: BatalkanTransaksiUseCase(repository),
+      sessionKey: () => api.utils.accessToken
+    ),
   );
 }

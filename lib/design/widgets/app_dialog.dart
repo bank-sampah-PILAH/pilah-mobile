@@ -23,6 +23,7 @@ class AppDialog extends StatelessWidget {
     this.cancelLabel = 'Batal',
     this.destructive = false,
     this.isLoading = false,
+    this.showCancelAction = true,
   }) : assert(message == null || content == null,
             'give a message or a content, not both');
 
@@ -37,6 +38,7 @@ class AppDialog extends StatelessWidget {
   final VoidCallback onCancel;
   final bool destructive;
   final bool isLoading;
+  final bool showCancelAction;
 
   @override
   Widget build(BuildContext context) {
@@ -45,16 +47,17 @@ class AppDialog extends StatelessWidget {
       content: content ??
           (message == null ? null : Text(message!, style: AppTextStyle.small)),
       actions: [
-        TextButton(
-          onPressed: isLoading ? null : onCancel,
-          child: Text(
-            cancelLabel,
-            style: AppTextStyle.small.copyWith(
-              color: AppColors.grey100,
-              fontWeight: AppFontWeight.semibold,
+        if (showCancelAction)
+          TextButton(
+            onPressed: isLoading ? null : onCancel,
+            child: Text(
+              cancelLabel,
+              style: AppTextStyle.small.copyWith(
+                color: AppColors.grey100,
+                fontWeight: AppFontWeight.semibold,
+              ),
             ),
           ),
-        ),
         AppButton(
           label: confirmLabel,
           variant: destructive
