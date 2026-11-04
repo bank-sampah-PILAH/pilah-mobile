@@ -169,18 +169,12 @@ void main() {
         onAddTransaction: () {},
       );
 
-      final menu = tester.widget<PopupMenuButton<dynamic>>(
-          find.byKey(RoleTransactionMenu.menuKey));
-      expect((menu.icon! as Icon).color, AppColors.greenDark);
-      await tester.tap(find.byTooltip('Transaksi'));
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<Text>(find.text('Setoran')).style?.color,
-        AppColors.greenDark,
-      );
+      final shortcut =
+          tester.widget<IconButton>(find.byKey(RoleTransactionMenu.menuKey));
+      expect((shortcut.icon as Icon).color, AppColors.greenDark);
     });
 
-    testWidgets('collapsed rail opens both transaction actions',
+    testWidgets('collapsed rail opens Setoran with one tap, without a menu',
         (tester) async {
       var added = false;
       await taps(
@@ -190,13 +184,57 @@ void main() {
         onAddTransaction: () => added = true,
       );
 
-      await tester.tap(find.byTooltip('Transaksi'));
+      await tester.tap(find.byKey(RoleTransactionMenu.menuKey));
       await tester.pumpAndSettle();
+
+      expect(added, isTrue);
+      // Setoran is the only transaction left open (PIL-434), and a menu with
+      // one entry is a tap spent on a choice that is not a choice.
+      expect(find.byType(PopupMenuButton<dynamic>), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.setoranKey), findsNothing);
+    });
+
+    testWidgets('the collapsed shortcut offers no Pencairan', (tester) async {
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(720, 900),
+        onAddTransaction: () {},
+      );
+
+      await tester.tap(find.byKey(RoleTransactionMenu.menuKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pencairan'), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.pencairanKey), findsNothing);
+      expect(find.byIcon(Icons.payments_outlined), findsNothing);
+    });
+
+    testWidgets('the wide rail keeps Riwayat and Setoran, and nothing dead',
+        (tester) async {
+      var added = false;
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(1440, 900),
+        onAddTransaction: () => added = true,
+      );
+
+      expect(find.text('Transaksi'), findsOneWidget);
+      expect(find.text('Riwayat'), findsOneWidget);
       expect(find.text('Setoran'), findsOneWidget);
-      expect(find.text('Pencairan'), findsOneWidget);
-      final pencairan = tester.widget<PopupMenuItem<dynamic>>(
-          find.byKey(RoleTransactionMenu.pencairanKey));
-      expect(pencairan.enabled, isFalse);
+      expect(find.text('Pencairan'), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.pencairanKey), findsNothing);
+
+      // Every row drawn in the accordion can be used: none is inert.
+      final rows = tester
+          .widgetList<RoleMenuRow>(find.byType(RoleMenuRow))
+          .where((row) => row.key != RoleTransactionMenu.headerKey);
+      expect(rows, isNotEmpty);
+      for (final row in rows) {
+        expect(row.enabled, isTrue, reason: '${row.label} is a dead control');
+      }
+
       await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
       expect(added, isTrue);

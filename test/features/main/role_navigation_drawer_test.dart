@@ -138,6 +138,16 @@ void main() {
           reason: 'the staff drawer now ends at the fifth destination');
     });
 
+    testWidgets('draws no Pencairan row at all', (tester) async {
+      await mountDrawer(tester, onAddTransaction: () {});
+
+      expect(find.text('Pencairan'), findsNothing);
+      expect(find.byIcon(Icons.payments_outlined), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.pencairanKey), findsNothing,
+          reason: 'creating a pencairan is closed for handover (PIL-434), and '
+              'a row that cannot be tapped is the dead menu PIL-392 forbids');
+    });
+
     testWidgets('marks the current destination as selected', (tester) async {
       await mountDrawer(tester, currentIndex: 3);
       final selected = tester
