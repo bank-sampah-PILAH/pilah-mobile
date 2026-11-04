@@ -9,6 +9,7 @@ import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';

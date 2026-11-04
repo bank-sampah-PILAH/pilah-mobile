@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';

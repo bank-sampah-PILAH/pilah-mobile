@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/analytics/analytics_screen_tracker.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
-import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 
 /// Reports the app's screens to analytics, for as long as it is read.
 ///
