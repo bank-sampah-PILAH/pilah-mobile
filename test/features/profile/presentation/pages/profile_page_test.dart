@@ -625,6 +625,45 @@ void main() {
     await settleToasts(tester);
   });
 
+  testWidgets('an invite expires while open and stale copy reports failure',
+      (tester) async {
+    final expiresAt = DateTime.now().add(const Duration(seconds: 30)).toUtc();
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'short-lived-token',
+      'invite_url': 'https://pilah.test/invite/short-lived-token',
+      'expires_at': expiresAt.toIso8601String(),
+    });
+    String? copied;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String?;
+      }
+      return null;
+    });
+    addTearDown(() => TestDefaultBinaryMessengerBinding
+        .instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    final staleCopy = tester
+        .widget<AppButton>(find.widgetWithText(AppButton, 'Salin Link Undangan'))
+        .onPressed!;
+    expect(find.text('Link undangan aktif'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 31));
+    expect(find.textContaining('Link undangan sudah kedaluwarsa'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+    staleCopy();
+    await pumpToast(tester);
+
+    expect(copied, isNull);
+    expect(find.text('Gagal'), findsOneWidget);
+    expect(find.textContaining('sudah kedaluwarsa'), findsWidgets);
+    await settleToasts(tester);
+  });
+
   testWidgets('a failed invite load shows the error and offers retry',
       (tester) async {
     api.on('GET', '/api/v1/team/invite',
