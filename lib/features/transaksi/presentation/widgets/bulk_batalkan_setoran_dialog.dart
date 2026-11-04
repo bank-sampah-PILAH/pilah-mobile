@@ -101,10 +101,8 @@ class _BulkBatalkanSetoranDialogState
       },
     );
     // Voided on the server whether or not this dialog is still open.
-    if (result.berhasil > 0) {
-      riwayatSetoranVoided(ref.read(analyticsClientProvider),
-          count: result.berhasil, bulk: true);
-    }
+    riwayatSetoranVoided(ref.read(analyticsClientProvider),
+        count: result.berhasil, bulk: true);
     if (!mounted) return;
     if (notifier.sessionKey != session) {
       ref.read(aktivitasSelectionProvider.notifier).clear();

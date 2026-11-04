@@ -36,13 +36,15 @@ void riwayatExported(AnalyticsClient client, {required bool success}) =>
     client.capture('riwayat_diekspor', {'format': 'xlsx', 'berhasil': success});
 
 /// [count] setoran were voided, one by one from a row or several at once from
-/// the selection.
+/// the selection. Nothing is sent when none was.
 void riwayatSetoranVoided(
   AnalyticsClient client, {
   required int count,
   required bool bulk,
-}) =>
-    client.capture('riwayat_setoran_dibatalkan', {
-      'cara': bulk ? 'massal' : 'satuan',
-      'jumlah_setoran': count,
-    });
+}) {
+  if (count < 1) return;
+  client.capture('riwayat_setoran_dibatalkan', {
+    'cara': bulk ? 'massal' : 'satuan',
+    'jumlah_setoran': count,
+  });
+}
