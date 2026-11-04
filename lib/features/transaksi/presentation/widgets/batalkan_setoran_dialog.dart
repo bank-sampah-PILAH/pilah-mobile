@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/setoran_refresh.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 
 /// Membuka konfirmasi "Hapus" untuk setoran [id]. Menjawab `true` bila
@@ -54,16 +54,15 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
       _error = null;
     });
     // Read before the await: the dialog may be gone when the answer arrives.
-    final selection = ref.read(aktivitasSelectionProvider.notifier);
-    final riwayat = ref.read(riwayatAktivitasProvider.notifier);
+    final container = ProviderScope.containerOf(context, listen: false);
     final route = ModalRoute.of(context);
     final result = await ref.read(transaksiProvider.notifier).batalkanTransaksi(
         TransaksiBatalRequest(id: widget.id, alasan: _alasan.text));
     if (result.detail != null) {
       // The setoran is voided on the server whether or not this dialog is
       // still open, so the feed and the selection always follow it.
-      selection.clear();
-      riwayat.load(silent: true);
+      container.read(aktivitasSelectionProvider.notifier).clear();
+      reloadAfterSetoranChange(container);
     }
     // Closed by other means while the request was in flight. Popping now
     // would close the route underneath (the Riwayat page) instead.
