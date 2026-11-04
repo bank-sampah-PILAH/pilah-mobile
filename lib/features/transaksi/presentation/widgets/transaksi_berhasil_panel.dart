@@ -17,7 +17,7 @@ class TransaksiBerhasilPanel extends StatefulWidget {
   final Future<void> Function() onKirimWa;
 
   /// Closes the form without sending anything.
-  final Future<void> Function() onSelesai;
+  final VoidCallback onSelesai;
 
   const TransaksiBerhasilPanel({
     super.key,

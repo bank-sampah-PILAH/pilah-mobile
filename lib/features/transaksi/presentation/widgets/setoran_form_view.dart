@@ -550,10 +550,15 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
             );
           }
         },
-        onSelesai: () async {
+        onSelesai: () {
           // Nothing to wait for, so nothing separates these from the pop. The
           // container closes itself, as above: from inside the side sheet
           // `GoRouter.pop()` would pop the page behind the panel.
+          //
+          // Invariant: no `await` may come before `Navigator.of(sheetContext)`
+          // below. Unlike onKirimWa this does not capture the navigator ahead
+          // of time, so an await here would resolve a context whose route may
+          // already be gone. If this ever needs to wait, capture first.
           _leaveAndNotify(
             Navigator.of(sheetContext),
             widget.onClose,
