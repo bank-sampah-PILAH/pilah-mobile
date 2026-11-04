@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
@@ -11,6 +12,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/bulk_batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 
 /// Header while setoran are selected: count and an explicit action; selecting
 /// alone never submits a void. One selection edits or voids that setoran as
@@ -23,6 +25,9 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
     final selected = ref.watch(aktivitasSelectionProvider);
     if (selected == null) return const SizedBox.shrink();
     final single = selected.length == 1 ? selected.single : null;
+    final feed = ref.watch(riwayatAktivitasProvider);
+    final total = feed.totalCount;
+    final otherPages = total > feed.items.length;
     if (context.layoutBreakpoint == LayoutBreakpoint.compact) {
       if (single != null) {
         return AktivitasSelectionBar(
@@ -48,8 +53,19 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
             Expanded(
               child: Semantics(
                 liveRegion: true,
-                child: Text('${selected.length} dipilih',
-                    style: AppTextStyle.title1),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${selected.length} dipilih',
+                        style: AppTextStyle.title1),
+                    if (otherPages)
+                      Text(
+                        'Hanya di halaman ini, dari $total transaksi',
+                        style: AppTextStyle.small
+                            .copyWith(color: AppColors.grey100),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
