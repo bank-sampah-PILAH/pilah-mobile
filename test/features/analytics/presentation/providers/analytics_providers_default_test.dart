@@ -50,6 +50,15 @@ void main() {
     expect(client.isAvailable, isFalse);
   });
 
+  test('with nothing registered the client is one shared constant', () {
+    final container = containerForPengurus();
+
+    expect(
+        identical(container.read(analyticsClientProvider),
+            const NoopAnalyticsClient()),
+        isTrue);
+  });
+
   test('with nothing registered nobody is asked and nothing is switchable', () {
     final container = containerForPengurus();
 
