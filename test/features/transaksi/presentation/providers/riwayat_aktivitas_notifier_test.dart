@@ -66,7 +66,7 @@ void main() {
     cubit.resetFilters();
     await Future<void>.delayed(Duration.zero);
 
-    expect(cubit.state.tipeFilter, AktivitasTipeFilter.semua);
+    expect(cubit.state.tipeFilter, AktivitasTipeFilter.setoran);
     expect(cubit.state.periode, 'bulan_ini');
     expect(cubit.state.search, isEmpty);
     expect(cubit.state.status, AktivitasStatus.loaded);

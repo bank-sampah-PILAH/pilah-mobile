@@ -40,7 +40,10 @@ class AktivitasSummaryView extends StatelessWidget {
           }
           return Padding(
             padding: const EdgeInsets.only(top: AppSpacing.md),
-            child: _SummaryCard(summary: summary),
+            child: _SummaryCard(
+              summary: summary,
+              denganPencairan: _denganPencairan(state),
+            ),
           );
         },
       );
@@ -62,15 +65,27 @@ class AktivitasSummaryStrip extends StatelessWidget {
               summary.jumlahTransaksi == 0) {
             return const SizedBox.shrink();
           }
-          return _SummaryStripRow(summary: summary);
+          return _SummaryStripRow(
+            summary: summary,
+            denganPencairan: _denganPencairan(state),
+          );
         },
       );
 }
 
+/// Hanya setoran yang tampil: pencairan selalu nol dan saldo sama dengan
+/// setoran, jadi keduanya disembunyikan.
+bool _denganPencairan(RiwayatAktivitasState state) =>
+    state.tipeFilter != AktivitasTipeFilter.setoran;
+
 class _SummaryStripRow extends StatelessWidget {
-  const _SummaryStripRow({required this.summary});
+  const _SummaryStripRow({
+    required this.summary,
+    required this.denganPencairan,
+  });
 
   final AktivitasSummary summary;
+  final bool denganPencairan;
 
   @override
   Widget build(BuildContext context) {
@@ -104,15 +119,17 @@ class _SummaryStripRow extends StatelessWidget {
           item('Berat', _beratLabel(summary)),
           item('Setoran', CurrencyFormatter.formatRupiah(summary.totalSetoran),
               color: AppColors.greenDark),
-          item('Pencairan',
-              CurrencyFormatter.formatRupiah(summary.totalPencairan),
-              color: AppColors.danger),
-          Tooltip(
-            message:
-                'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.',
-            child: item('Saldo', _saldoLabel(summary),
-                color: AppColors.greenDark, bold: true),
-          ),
+          if (denganPencairan) ...[
+            item('Pencairan',
+                CurrencyFormatter.formatRupiah(summary.totalPencairan),
+                color: AppColors.danger),
+            Tooltip(
+              message:
+                  'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.',
+              child: item('Saldo', _saldoLabel(summary),
+                  color: AppColors.greenDark, bold: true),
+            ),
+          ],
         ],
       ),
     );
@@ -127,9 +144,10 @@ String _saldoLabel(AktivitasSummary summary) => summary.saldo < 0
     : CurrencyFormatter.formatRupiah(summary.saldo);
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.summary});
+  const _SummaryCard({required this.summary, required this.denganPencairan});
 
   final AktivitasSummary summary;
+  final bool denganPencairan;
 
   String get _berat => _beratLabel(summary);
 
@@ -176,8 +194,7 @@ class _SummaryCard extends StatelessWidget {
           label: 'Total Transaksi', value: '${summary.jumlahTransaksi}'),
       _SummaryMetric(label: 'Total Berat Sampah', value: _berat),
       _setoran,
-      _pencairan,
-      _saldoMetric,
+      if (denganPencairan) ...[_pencairan, _saldoMetric],
     ];
     return IntrinsicHeight(
       child: Row(
@@ -192,22 +209,25 @@ class _SummaryCard extends StatelessWidget {
   }
 
   // Telepon: setoran dan pencairan berdampingan, saldo di bawahnya selebar
-  // penuh, tanpa geser ke samping.
+  // penuh, tanpa geser ke samping. Tanpa pencairan, setoran selebar penuh.
   Widget _phone() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        IntrinsicHeight(
-          child: Row(
-            children: [
-              Expanded(child: _setoran),
-              const VerticalDivider(width: 1, color: AppColors.border),
-              Expanded(child: _pencairan),
-            ],
+        if (denganPencairan) ...[
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                Expanded(child: _setoran),
+                const VerticalDivider(width: 1, color: AppColors.border),
+                Expanded(child: _pencairan),
+              ],
+            ),
           ),
-        ),
-        const Divider(height: 1, color: AppColors.border),
-        _saldoMetric,
+          const Divider(height: 1, color: AppColors.border),
+          _saldoMetric,
+        ] else
+          _setoran,
         const Divider(height: 1, color: AppColors.border),
         Padding(
           padding: const EdgeInsets.symmetric(
