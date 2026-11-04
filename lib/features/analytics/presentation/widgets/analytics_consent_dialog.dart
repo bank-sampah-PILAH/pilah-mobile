@@ -9,7 +9,7 @@ import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 ///
 /// The text promises that sensitive data is covered; that is true only once the
 /// masking of PIL-417 is in place, so analytics must stay switched off
-/// (`ENABLE_ANALYTICS`) until then.
+/// (`ENABLE_POSTHOG`) until then.
 Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
   return showDialog<bool>(
     context: context,
