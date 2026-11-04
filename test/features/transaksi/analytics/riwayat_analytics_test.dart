@@ -38,6 +38,12 @@ void main() {
     expect(last(), {'format': 'xlsx', 'berhasil': false});
   });
 
+  test('voiding none says nothing', () {
+    riwayatSetoranVoided(client, count: 0, bulk: true);
+
+    expect(client.events, isEmpty);
+  });
+
   test('voiding says how many setoran, and one by one or several at once', () {
     riwayatSetoranVoided(client, count: 3, bulk: true);
     expect(client.events.last.name, 'riwayat_setoran_dibatalkan');
