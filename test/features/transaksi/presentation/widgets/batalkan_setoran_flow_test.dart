@@ -190,6 +190,81 @@ void main() {
       expect(feed.loads, 0);
     });
 
+    testWidgets(
+        'while the void is in flight, a tap outside or back keeps the dialog',
+        (tester) async {
+      api
+        ..latency = const Duration(seconds: 1)
+        ..on('POST', _batalkan, json: _dibatalkan());
+      await pumpFeed(tester);
+      await openHapus(tester);
+      await tester.enterText(
+          find.byKey(BatalkanSetoranDialog.alasanKey), 'Dobel');
+      await tester.tap(confirm());
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.binding.handlePopRoute();
+      // Past any dialog exit animation, before the answer arrives.
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Hapus Setoran?'), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+      expect(find.text('Hapus Setoran?'), findsNothing);
+      expect(feed.loads, 1);
+      expect(find.byType(AktivitasListView), findsOneWidget);
+    });
+
+    testWidgets(
+        'a void that succeeds after its dialog is gone still clears and reloads',
+        (tester) async {
+      api
+        ..latency = const Duration(seconds: 1)
+        ..on('POST', _batalkan, json: _dibatalkan());
+      final container = await pumpFeed(tester);
+      await openHapus(tester);
+      await tester.enterText(
+          find.byKey(BatalkanSetoranDialog.alasanKey), 'Dobel');
+      await tester.tap(confirm());
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // The route goes away by other means (a forced pop, a redirect), and
+      // has finished closing before the answer arrives.
+      Navigator.of(tester.element(find.byType(BatalkanSetoranDialog))).pop();
+      for (var frame = 0; frame < 5; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.byType(BatalkanSetoranDialog), findsNothing);
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(container.read(aktivitasSelectionProvider), isNull);
+      expect(feed.loads, 1);
+    });
+
+    testWidgets(
+        'an answer that lands while the dialog is closing leaves the page open',
+        (tester) async {
+      api
+        ..latency = const Duration(seconds: 1)
+        ..on('POST', _batalkan, json: _dibatalkan());
+      await pumpFeed(tester);
+      await openHapus(tester);
+      await tester.enterText(
+          find.byKey(BatalkanSetoranDialog.alasanKey), 'Dobel');
+      await tester.tap(confirm());
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Popped, then the answer arrives in the same frame, while the dialog
+      // is still mounted for its exit animation.
+      Navigator.of(tester.element(find.byType(BatalkanSetoranDialog))).pop();
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(find.text('Hapus Setoran?'), findsNothing);
+      expect(feed.loads, 1);
+      expect(find.byType(AktivitasListView), findsOneWidget);
+    });
+
     testWidgets('Batal closes the dialog and sends nothing', (tester) async {
       final container = await pumpFeed(tester);
       await openHapus(tester);
