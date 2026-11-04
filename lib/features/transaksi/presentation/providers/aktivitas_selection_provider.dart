@@ -1,54 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Setoran yang sedang dipilih di Riwayat Aktivitas (id transaksi). Null
-/// berarti daftar tidak dalam mode pilih. Hanya satu setoran yang bisa dipilih
-/// sekarang (memilih banyak sekaligus ada di isu lain), dan hanya setoran;
+/// berarti tidak ada yang dipilih dan daftar tidak dalam mode pilih; set tidak
+/// pernah kosong. Hanya setoran yang masih tercatat yang bisa dipilih;
 /// pencairan punya alur ubahnya sendiri.
 final aktivitasSelectionProvider =
-    NotifierProvider<AktivitasSelectionNotifier, String?>(
+    NotifierProvider<AktivitasSelectionNotifier, Set<String>?>(
   AktivitasSelectionNotifier.new,
 );
 
-class AktivitasSelectionNotifier extends Notifier<String?> {
-  @override
-  String? build() => null;
-
-  /// Memilih [id], menggantikan pilihan sebelumnya.
-  void select(String id) => state = id;
-
-  /// Memilih [id], atau melepasnya bila sudah terpilih, yang keluar dari mode
-  /// pilih.
-  void toggle(String id) => state = state == id ? null : id;
-
-  void clear() => state = null;
-}
-
-/// PIL-429: null is browsing; an empty set is selection mode with no choices.
-/// Separate from PIL-428's single selection so its edit/void flow stays intact.
-final aktivitasBulkSelectionProvider =
-    NotifierProvider<AktivitasBulkSelectionNotifier, Set<String>?>(
-  AktivitasBulkSelectionNotifier.new,
-);
-
-class AktivitasBulkSelectionNotifier extends Notifier<Set<String>?> {
+class AktivitasSelectionNotifier extends Notifier<Set<String>?> {
   @override
   Set<String>? build() => null;
 
-  void start() => state = const {};
+  /// Memulai pilihan dengan hanya [id], menggantikan yang sebelumnya.
+  void select(String id) => state = id.isEmpty ? null : Set.unmodifiable({id});
 
+  /// Menambah [id] ke pilihan, atau melepasnya bila sudah terpilih. Melepas
+  /// yang terakhir keluar dari mode pilih.
   void toggle(String id) {
-    final selected = state;
-    if (selected == null || id.isEmpty) return;
-    final updated = {...selected};
+    if (id.isEmpty) return;
+    final updated = {...?state};
     if (!updated.remove(id)) updated.add(id);
-    state = Set.unmodifiable(updated);
+    state = updated.isEmpty ? null : Set.unmodifiable(updated);
   }
 
-  /// Drop records no longer visible or selectable after a refresh.
+  /// Memilih tepat [ids] (misalnya semua baris yang bisa dipilih di halaman).
+  void selectAll(Iterable<String> ids) {
+    final all = {...ids}..remove('');
+    state = all.isEmpty ? null : Set.unmodifiable(all);
+  }
+
+  /// Buang yang sudah tidak terlihat atau tidak bisa dipilih setelah muat ulang.
   void retain(Set<String> eligibleIds) {
     final selected = state;
     if (selected == null || selected.every(eligibleIds.contains)) return;
-    state = Set.unmodifiable(selected.intersection(eligibleIds));
+    final kept = selected.intersection(eligibleIds);
+    state = kept.isEmpty ? null : Set.unmodifiable(kept);
   }
 
   void clear() => state = null;

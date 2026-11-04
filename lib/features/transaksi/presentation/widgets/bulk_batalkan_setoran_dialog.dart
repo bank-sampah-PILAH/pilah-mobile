@@ -19,7 +19,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_akti
 
 Future<void> showBulkBatalkanSetoranDialog(BuildContext context) async {
   final container = ProviderScope.containerOf(context, listen: false);
-  final selected = container.read(aktivitasBulkSelectionProvider);
+  final selected = container.read(aktivitasSelectionProvider);
   if (selected == null || selected.isEmpty) return;
   final targets = container
       .read(riwayatAktivitasProvider)
@@ -36,7 +36,7 @@ Future<void> showBulkBatalkanSetoranDialog(BuildContext context) async {
         : a.transaksi!.id.compareTo(b.transaksi!.id);
   });
   if (targets.isEmpty) {
-    container.read(aktivitasBulkSelectionProvider.notifier).clear();
+    container.read(aktivitasSelectionProvider.notifier).clear();
     AppNotification.showWarning(
       context,
       title: 'Pilihan tidak tersedia',
@@ -100,18 +100,18 @@ class _BulkBatalkanSetoranDialogState
     );
     if (!mounted) return;
     if (notifier.sessionKey != session) {
-      ref.read(aktivitasBulkSelectionProvider.notifier).clear();
+      ref.read(aktivitasSelectionProvider.notifier).clear();
       Navigator.of(context).pop();
       return;
     }
     await _refreshAffectedViews();
     if (!mounted) return;
     if (notifier.sessionKey != session) {
-      ref.read(aktivitasBulkSelectionProvider.notifier).clear();
+      ref.read(aktivitasSelectionProvider.notifier).clear();
       Navigator.of(context).pop();
       return;
     }
-    final selection = ref.read(aktivitasBulkSelectionProvider.notifier);
+    final selection = ref.read(aktivitasSelectionProvider.notifier);
     if (result.remainingIds.isEmpty) {
       selection.clear();
     } else {

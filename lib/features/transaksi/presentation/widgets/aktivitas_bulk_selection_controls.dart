@@ -5,64 +5,34 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_setoran_dialog.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/bulk_batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 
-/// Entry point to bulk selection. Choosing records never changes a setoran.
-class AktivitasOptionsMenu extends ConsumerWidget {
-  const AktivitasOptionsMenu({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final feed = ref.watch(riwayatAktivitasProvider);
-    final selecting = ref.watch(aktivitasBulkSelectionProvider) != null;
-    final hasSelectable = feed.status == AktivitasStatus.loaded &&
-        feed.items.any((item) => item.isSelectableSetoran);
-    return PopupMenuButton<String>(
-      tooltip: 'Opsi',
-      enabled: !selecting,
-      onSelected: (_) {
-        ref.read(aktivitasSelectionProvider.notifier).clear();
-        ref.read(aktivitasBulkSelectionProvider.notifier).start();
-      },
-      itemBuilder: (_) => [
-        PopupMenuItem<String>(
-          value: 'select',
-          enabled: hasSelectable,
-          child: const Text('Pilih Setoran'),
-        ),
-      ],
-      child: const Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Opsi'),
-            SizedBox(width: AppSpacing.xs),
-            Icon(Icons.arrow_drop_down),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Count and an explicit action; selecting alone never submits a void.
+/// Header while setoran are selected: count and an explicit action; selecting
+/// alone never submits a void. One selection edits or voids that setoran as
+/// before (PIL-427/428); several void together (PIL-429).
 class AktivitasBulkSelectionBar extends ConsumerWidget {
   const AktivitasBulkSelectionBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(aktivitasBulkSelectionProvider);
+    final selected = ref.watch(aktivitasSelectionProvider);
     if (selected == null) return const SizedBox.shrink();
+    final single = selected.length == 1 ? selected.single : null;
     if (context.layoutBreakpoint == LayoutBreakpoint.compact) {
+      if (single != null) {
+        return AktivitasSelectionBar(
+          onEdit: (id) => showEditSetoranSheet(context, id),
+          onHapus: (id) => showBatalkanSetoranDialog(context, id),
+        );
+      }
       return AktivitasSelectionBar.bulk(
         count: selected.length,
-        onClose: ref.read(aktivitasBulkSelectionProvider.notifier).clear,
+        onClose: ref.read(aktivitasSelectionProvider.notifier).clear,
         action: _hapus(context, selected, compact: true),
       );
     }
@@ -83,13 +53,12 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            _hapus(context, selected),
+            _hapus(context, selected, single: single),
             const SizedBox(width: AppSpacing.md),
             AppIconButton(
               icon: Icons.close,
               tooltip: 'Batal memilih setoran',
-              onPressed:
-                  ref.read(aktivitasBulkSelectionProvider.notifier).clear,
+              onPressed: ref.read(aktivitasSelectionProvider.notifier).clear,
             ),
           ],
         ),
@@ -98,15 +67,15 @@ class AktivitasBulkSelectionBar extends ConsumerWidget {
   }
 
   Widget _hapus(BuildContext context, Set<String> selected,
-          {bool compact = false}) =>
+          {bool compact = false, String? single}) =>
       AppButton(
         label: 'Hapus (${selected.length})',
         icon: Icons.delete_outline,
         variant: AppButtonVariant.destructiveOutlined,
         expand: false,
         size: compact ? AppButtonSize.compact : AppButtonSize.regular,
-        onPressed: selected.isEmpty
-            ? null
-            : () => showBulkBatalkanSetoranDialog(context),
+        onPressed: () => single != null
+            ? showBatalkanSetoranDialog(context, single)
+            : showBulkBatalkanSetoranDialog(context),
       );
 }

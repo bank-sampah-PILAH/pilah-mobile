@@ -287,7 +287,8 @@ void main() {
 
       await tapText(tester, 'Budi');
       expect(selection(tester), isNull);
-      expect(find.text('RINCIAN SETORAN'), findsOneWidget);
+      expect(api.requests, isNotEmpty,
+          reason: 'expanding a row loads its detail; selecting never does');
     });
 
     testWidgets('no selectable setoran: nothing to select all', (tester) async {

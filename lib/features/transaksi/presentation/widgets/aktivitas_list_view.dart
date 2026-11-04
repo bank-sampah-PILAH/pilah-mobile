@@ -154,9 +154,12 @@ class AktivitasListView extends StatelessWidget {
         padding: side.add(const EdgeInsets.only(bottom: AppSpacing.xl)),
         child: Consumer(
             builder: (context, ref, _) => AktivitasTable(
-                  selectedIds: ref.watch(aktivitasBulkSelectionProvider),
+                  selectedIds:
+                      ref.watch(aktivitasSelectionProvider) ?? const {},
                   onToggleSelection:
-                      ref.read(aktivitasBulkSelectionProvider.notifier).toggle,
+                      ref.read(aktivitasSelectionProvider.notifier).toggle,
+                  onSelectAll:
+                      ref.read(aktivitasSelectionProvider.notifier).selectAll,
                   items: state.items,
                   onTap: (item) => _openPencairanDetail(context, item),
                   loadSetoranDetail: (id) => ProviderScope.containerOf(
@@ -327,10 +330,8 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     // A voided setoran is final: nothing to edit or cancel again.
     final selectable = item.isSelectableSetoran;
     final selection = ref.watch(aktivitasSelectionProvider);
-    final bulkSelection = ref.watch(aktivitasBulkSelectionProvider);
-    final selecting = selection != null || bulkSelection != null;
-    final selected = selectable &&
-        (selection == id || (bulkSelection?.contains(id) ?? false));
+    final selecting = selection != null;
+    final selected = selectable && (selection?.contains(id) ?? false);
 
     return HoldToSelect(
       enabled: selectable && !selecting,
@@ -351,11 +352,11 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
                 selecting,
                 selected,
               ),
-              if (expandable && bulkSelection == null) _buildDetails(id),
+              if (expandable && !selecting) _buildDetails(id),
             ],
           ),
           if (selected) _selectedTint(),
-          if (selected && bulkSelection == null) _selectionIndicator(),
+          if (selected) _selectionIndicator(),
         ],
       ),
     );
@@ -392,15 +393,6 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
           ),
           child: Row(
             children: [
-              if (ref.watch(aktivitasBulkSelectionProvider) != null &&
-                  selectable)
-                Checkbox(
-                  value: selected,
-                  semanticLabel: 'Pilih setoran ${item.title}',
-                  onChanged: (_) => ref
-                      .read(aktivitasBulkSelectionProvider.notifier)
-                      .toggle(id),
-                ),
               Expanded(
                 child: ActivityItem(
                   avatarText: item.avatarText,
@@ -443,15 +435,9 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     bool selectable,
     bool selecting,
   ) {
-    if (ref.read(aktivitasBulkSelectionProvider) != null) {
-      if (selectable) {
-        setState(() => _expanded = false);
-        ref.read(aktivitasBulkSelectionProvider.notifier).toggle(id);
-      }
-      return;
-    }
     if (selecting) {
       if (selectable) {
+        setState(() => _expanded = false);
         ref.read(aktivitasSelectionProvider.notifier).toggle(id);
       }
       return;

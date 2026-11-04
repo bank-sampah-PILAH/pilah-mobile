@@ -10,9 +10,6 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
@@ -39,7 +36,6 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(aktivitasSelectionProvider.notifier).clear();
-        ref.read(aktivitasBulkSelectionProvider.notifier).clear();
         ref
             .read(riwayatAktivitasProvider.notifier)
             .load(pageSize: widget.isWeb ? 10 : null);
@@ -58,7 +54,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
 
   void _syncBulkSelection(
       RiwayatAktivitasState? previous, RiwayatAktivitasState current) {
-    final selection = ref.read(aktivitasBulkSelectionProvider.notifier);
+    final selection = ref.read(aktivitasSelectionProvider.notifier);
     final scopeChanged = previous != null &&
         (previous.search != current.search ||
             previous.periode != current.periode ||
@@ -85,12 +81,12 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
       }
       _syncBulkSelection(previous, current);
     });
-    final bulkSelecting = ref.watch(aktivitasBulkSelectionProvider) != null;
+    final selecting = ref.watch(aktivitasSelectionProvider) != null;
     return PopScope(
-      canPop: !bulkSelecting,
+      canPop: !selecting,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
-          ref.read(aktivitasBulkSelectionProvider.notifier).clear();
+          ref.read(aktivitasSelectionProvider.notifier).clear();
         }
       },
       child: Scaffold(
@@ -102,7 +98,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
           child: ContentFrame(
             child: Column(
               children: [
-                if (bulkSelecting) const AktivitasBulkSelectionBar(),
+                if (selecting) const AktivitasBulkSelectionBar(),
                 Expanded(
                   child: _webPadding(context) ? _dataPage() : _phonePage(),
                 ),
@@ -119,7 +115,6 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
         children: [
           AppPageHeader(
             title: 'Riwayat Aktivitas',
-            actions: const [AktivitasOptionsMenu()],
             search: CustomSearchField(
               hintText: 'Cari nama pelanggan...',
               controller: _searchController,
@@ -161,25 +156,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
   /// Telepon: header, penyaring, dan ringkasan bergulir bersama daftar. Saat
   /// ada setoran terpilih, header mode pilih menumpuk di atasnya dan tombol
   /// kembali melepas pilihan lebih dulu.
-  Widget _phonePage() {
-    final selecting = ref.watch(aktivitasSelectionProvider) != null;
-    return PopScope(
-      canPop: !selecting,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) ref.read(aktivitasSelectionProvider.notifier).clear();
-      },
-      child: Column(
-        children: [
-          if (selecting)
-            AktivitasSelectionBar(
-              onEdit: (id) => showEditSetoranSheet(context, id),
-              onHapus: (id) => showBatalkanSetoranDialog(context, id),
-            ),
-          Expanded(child: _phoneList()),
-        ],
-      ),
-    );
-  }
+  Widget _phonePage() => _phoneList();
 
   Widget _phoneList() => NestedScrollView(
         // Let filters and totals scroll away on short screens or with a keyboard.

@@ -8,8 +8,8 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 
-/// Shared phone selection header: close, count, then actions. Single selection
-/// supplies Edit/Hapus; bulk selection supplies its count and Hapus action.
+/// Shared phone selection header: close, count, then actions. Exactly one
+/// selected setoran supplies Edit/Hapus; several supply a count and one Hapus.
 class AktivitasSelectionBar extends ConsumerWidget {
   const AktivitasSelectionBar({
     super.key,
@@ -43,7 +43,8 @@ class AktivitasSelectionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(aktivitasSelectionProvider);
+    final chosen = ref.watch(aktivitasSelectionProvider);
+    final selected = chosen?.length == 1 ? chosen!.single : null;
     final notifier = ref.read(aktivitasSelectionProvider.notifier);
     return Material(
       color: AppColors.greenDark,
@@ -76,7 +77,7 @@ class AktivitasSelectionBar extends ConsumerWidget {
                     Semantics(
                       liveRegion: true,
                       child: Text(
-                        '${count ?? 1} dipilih',
+                        '${count ?? chosen?.length ?? 1} dipilih',
                         style:
                             AppTextStyle.title1.copyWith(color: Colors.white),
                       ),
