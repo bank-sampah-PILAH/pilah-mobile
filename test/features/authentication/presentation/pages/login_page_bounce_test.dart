@@ -77,5 +77,18 @@ void main() {
       expect(find.text('Peran Tidak Didukung'), findsNothing);
       await settleToasts(tester);
     });
+
+    testWidgets('a flagged bounce still clears the armed one-shot',
+        (tester) async {
+      // The shell arms the flag for this same redirect; the query alone must
+      // not leave it armed, or the next ordinary login replays the warning.
+      WebRoleBounceNotice.arm();
+      await pumpLogin(tester, location: '/login?$webRoleBounceFlag=1');
+      await settleToasts(tester);
+
+      await pumpLogin(tester, location: '/login');
+      expect(find.text('Peran Tidak Didukung'), findsNothing,
+          reason: 'the bounce it described was already shown');
+    });
   });
 }

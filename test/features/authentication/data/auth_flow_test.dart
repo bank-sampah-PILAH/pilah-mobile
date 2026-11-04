@@ -346,6 +346,8 @@ void main() {
         result.fold((f) => f.displayMessage, (_) => ''),
         'Profil sudah lengkap.',
       );
+      // The session ends either way, so no token may outlive the refusal.
+      expect(await stack.database.getString('token'), isNull);
     });
 
     test('a malformed body is a general failure, not a crash', () async {

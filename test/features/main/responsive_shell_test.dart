@@ -45,9 +45,7 @@ void main() {
     required bool isWeb,
     String initialLocation = '/home',
     ProfileNotifier? profile,
-    bool warmProfile = false,
   }) async {
-    ProviderContainer? profileContainer;
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -101,18 +99,11 @@ void main() {
       overrides: [
         nasabahApprovalProvider.overrideWith(() => approval),
         authenticationProvider.overrideWith(() => auth),
-        if (profile != null) profileProvider.overrideWith(() => profile),
+        // The shell watches the profile for its logo; mounts that do not care
+        // about it answer the silent load without a data source.
+        profileProvider.overrideWith(() => profile ?? SilentProfileNotifier()),
       ],
-      child: Builder(builder: (context) {
-        // exists(provider) is false until the provider is read once; the real
-        // app warms it through shell reads, so a test that needs the shell's
-        // lazy seeding warms it here first.
-        if (warmProfile && profile != null) {
-          profileContainer = ProviderScope.containerOf(context, listen: false);
-          profileContainer!.read(profileProvider.notifier);
-        }
-        return MaterialApp.router(routerConfig: router);
-      }),
+      child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
     return router;
@@ -482,8 +473,7 @@ void main() {
           role: 'pengelola',
           window: const Size(1440, 900),
           isWeb: true,
-          profile: profile,
-          warmProfile: true);
+          profile: profile);
       await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)));
       debugImage.finish();
@@ -510,12 +500,51 @@ void main() {
           role: 'pengelola',
           window: const Size(1440, 900),
           isWeb: true,
-          profile: profile,
-          warmProfile: true);
+          profile: profile);
       await tester.pump();
 
       expect(loaded, 1,
           reason: 'the shell seeds the profile the session never opened');
+    });
+
+    testWidgets('a logo that arrives after the first frame still appears',
+        (tester) async {
+      final debugImage = FakeImageDownload.install();
+      final profile = _CountingProfileNotifier((_) {});
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1440, 900),
+          isWeb: true,
+          profile: profile);
+
+      profile.setStateForTest(const ProfileState(
+        status: ProfileStatus.loaded,
+        bankSampah: BankSampahProfile(
+          id: 'bank-1',
+          nama: 'Bank Sampah Melati',
+          alamat: 'Jl. Melati',
+          kota: 'Depok',
+          noHpPic: '+62812',
+          status: 'active',
+          fotoLogo: 'https://media.test/late-logo.png',
+        ),
+      ));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      debugImage.finish();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+
+      final logos = tester
+          .widgetList<Image>(find.byType(Image))
+          .where((i) => i.image is NetworkImage)
+          .map((i) => (i.image as NetworkImage).url)
+          .toList();
+      expect(logos, contains('https://media.test/late-logo.png'),
+          reason: 'the shell must watch the profile, not read it once');
+      FakeImageDownload.uninstall();
     });
   });
 }

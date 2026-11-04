@@ -16,8 +16,10 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import '../../../../support/approved_membership.dart';
 import '../../../../support/auth_support.dart';
+import '../../../../support/profile_support.dart';
 
 class _Environment extends Mock implements AppEnvironment {}
 
@@ -85,6 +87,8 @@ void main() {
       overrides: [
         nasabahApprovalProvider.overrideWith(() => approval),
         authenticationProvider.overrideWith(() => auth),
+        // The shell watches the profile for its logo; no data source here.
+        profileProvider.overrideWith(SilentProfileNotifier.new),
       ],
       child: MaterialApp.router(routerConfig: router),
     ));

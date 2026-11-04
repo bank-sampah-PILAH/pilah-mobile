@@ -90,17 +90,15 @@ class _RoleShell extends ConsumerWidget {
     // Rail/drawer heads draw the bank logo once loaded. The profile notifier
     // is app-scoped and lazy: without this, a session that never opened the
     // Profile page keeps initials forever. Silent — rail must not flash a
-    // spinner for it. Guarded: building profileProvider touches DI (it is
-    // constructed with GetIt factories), and lightweight test harnesses
-    // register no data sources.
-    final container = ProviderScope.containerOf(context, listen: false);
-    if (container.exists(profileProvider)) {
-      final profile = container.read(profileProvider);
-      if (profile.status == ProfileStatus.initial) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          container.read(profileProvider.notifier).load(silent: true);
-        });
-      }
+    // spinner for it. Watched, not read: a logo that lands after the first
+    // frame still reaches the rail.
+    final profile = ref.watch(profileProvider);
+    if (profile.status == ProfileStatus.initial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ref.read(profileProvider.notifier).load(silent: true);
+        }
+      });
     }
     return _ShellContent(
       role: role!,
@@ -136,7 +134,8 @@ class _ShellContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final approval = _watchApproval(context, ref);
     final limitedNasabah = _isLimitedNasabah(approval);
-    final bankSampahLogoUrl = _bankSampahLogoUrl(context, approval);
+    final bankSampahLogoUrl =
+        _bankSampahLogoUrl(ref.watch(profileProvider), approval);
     final form = NavigationForm.resolve(
       isWeb: isWebOverride ?? kIsWeb,
       width: MediaQuery.sizeOf(context).width,
@@ -171,19 +170,14 @@ class _ShellContent extends ConsumerWidget {
   }
 
   /// Logo bank sampah untuk kepala rail/drawer. Pengurus memperbarui logo
-  /// lewat GET /bank-sampah/me (di-watch profileProvider, jadi simpanan di
+  /// lewat GET /bank-sampah/me (profileProvider di-watch, jadi simpanan di
   /// halaman Profil langsung tercermin di sini); nasabah memakai logo yang
-  /// datang bersama keanggotaannya dari GET /nasabah/me. Dijaga `exists`:
-  /// profileProvider dibangun dari pabrik DI, dan harness uji ringan tidak
-  /// mendaftarkan sumber datanya.
+  /// datang bersama keanggotaannya dari GET /nasabah/me.
   String? _bankSampahLogoUrl(
-    BuildContext context,
+    ProfileState profile,
     NasabahApprovalState? approval,
   ) {
-    final container = ProviderScope.containerOf(context, listen: false);
     if (role != 'nasabah') {
-      if (!container.exists(profileProvider)) return null;
-      final profile = container.read(profileProvider);
       return profile.status == ProfileStatus.loaded
           ? profile.bankSampah?.fotoLogo
           : null;

@@ -25,10 +25,12 @@ import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_f
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../support/approved_membership.dart';
 import '../../../support/auth_support.dart';
 import '../../../support/fake_riwayat.dart';
+import '../../../support/profile_support.dart';
 
 /// Counts calls to [home] so a pull-to-refresh test can assert the load ran
 /// again, without caring how many times the widget tree rebuilds.
@@ -155,7 +157,11 @@ void main() {
     router.go(LoginPage.route);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [nasabahApprovalProvider.overrideWith(() => approval)],
+        overrides: [
+          nasabahApprovalProvider.overrideWith(() => approval),
+          // The shell watches the profile for its logo; no data source here.
+          profileProvider.overrideWith(SilentProfileNotifier.new),
+        ],
         child: withAuthenticationProvider(
           auth,
           MaterialApp.router(routerConfig: router),

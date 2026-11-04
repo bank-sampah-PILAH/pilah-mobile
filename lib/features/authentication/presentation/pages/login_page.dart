@@ -67,7 +67,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       } on GoError catch (_) {
         queryHasFlag = false;
       }
-      if (queryHasFlag || WebRoleBounceNotice.consume()) {
+      // Consume even when the query already says so: the shell arms the same
+      // one-shot for this redirect, and a flag left armed would replay a
+      // stale warning on a later ordinary login.
+      final armed = WebRoleBounceNotice.consume();
+      if (queryHasFlag || armed) {
         _showWebRoleBounceNotice(context);
       }
     });

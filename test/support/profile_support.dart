@@ -38,6 +38,16 @@ class _ThrowingProfileDataSource implements ProfileRemoteDataSource {
       throw UnimplementedError('profile data source is stubbed away');
 }
 
+/// The shell watches [ProfileNotifier] and asks it to load when it has never
+/// loaded; a mount that does not care about the profile answers that request
+/// without touching a data source.
+class SilentProfileNotifier extends TestProfileNotifier {
+  SilentProfileNotifier() : super.noDataSource();
+
+  @override
+  Future<void> load({bool silent = false}) async {}
+}
+
 /// A real [ProfileNotifier] with HTTP stubbed and media plugins mocked.
 TestProfileNotifier buildProfileNotifier(
   StubApi api, {
