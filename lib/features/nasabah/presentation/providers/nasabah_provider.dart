@@ -65,6 +65,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
 
   Timer? _jedaCari;
   RequestCancellation? _listCancelToken;
+  RequestCancellation? _activeCountCancellation;
 
   bool? _isActiveTab = true;
   String _searchQuery = '';
@@ -92,6 +93,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
     ref.onDispose(() {
       _jedaCari?.cancel();
       _listCancelToken?.cancel('Customer list disposed');
+      _activeCountCancellation?.cancel('Customer list disposed');
     });
     return NasabahInitial();
   }
@@ -283,9 +285,12 @@ class NasabahNotifier extends Notifier<NasabahState> {
   }
 
   Future<void> _refreshActiveCount() async {
+    _activeCountCancellation?.cancel('Active count superseded');
+    _activeCountCancellation = RequestCancellation();
     final requestGeneration = ++_activeCountRequestGeneration;
     final result = await getNasabahUseCase.execute(
-      const GetNasabahParams(status: 'aktif', pageSize: 1),
+      GetNasabahParams(
+          status: 'aktif', pageSize: 1, cancellation: _activeCountCancellation),
     );
     if (!ref.mounted || requestGeneration != _activeCountRequestGeneration) {
       return;
@@ -396,6 +401,8 @@ class NasabahNotifier extends Notifier<NasabahState> {
     _jedaCari?.cancel();
     _listCancelToken?.cancel('Session reset');
     _listCancelToken = null;
+    _activeCountCancellation?.cancel('Session reset');
+    _activeCountCancellation = null;
     _listRequestGeneration++;
     _activeCountRequestGeneration++;
     _listNeedsReload = false;
