@@ -262,6 +262,23 @@ void main() {
       expect(api.requests.any((r) => r.query['page'] == '2'), isTrue);
     });
 
+    testWidgets('loading more of a search is not a new search', (tester) async {
+      api.on('GET', _path, json: nasabahPage(many, count: 60, hasNext: true));
+      await open(tester, size: const Size(1280, 800));
+      await tester.enterText(find.byType(TextField).first, 'nasabah');
+      await tester.pump(NasabahNotifier.jedaPencarian * 2);
+      await tester.pumpAndSettle();
+      expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+          hasLength(1));
+
+      await tester.drag(find.byType(ListView), const Offset(0, -6000));
+      await tester.pumpAndSettle();
+
+      expect(api.requests.any((r) => r.query['page'] == '2'), isTrue);
+      expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+          hasLength(1));
+    });
+
     testWidgets('does not ask when the last page is already loaded',
         (tester) async {
       api.on('GET', _path, json: nasabahPage(many));
