@@ -22,4 +22,10 @@ void main() {
 
     expect(createAnalyticsClient(config), isA<NoopAnalyticsClient>());
   });
+
+  test('the no-op client is one shared constant, not built again each time',
+      () {
+    expect(identical(createAnalyticsClient(null), createAnalyticsClient(null)),
+        isTrue);
+  });
 }
