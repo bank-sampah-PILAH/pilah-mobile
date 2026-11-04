@@ -26,10 +26,31 @@ void main() {
       changes: routerChanges,
       currentPath: () => currentPath,
       clock: () => now,
-    )..attach();
+    )
+      ..attach()
+      ..reportCurrent();
   });
 
   tearDown(() => tracker.dispose());
+
+  test(
+      'listening alone sends nothing: the first screen goes out only when '
+      'asked for, so it can never be sent twice', () {
+    final other = FakeAnalyticsClient();
+    final fresh = AnalyticsScreenTracker(
+      client: other,
+      changes: routerChanges,
+      currentPath: () => currentPath,
+      clock: () => now,
+    )..attach();
+    addTearDown(fresh.dispose);
+
+    expect(other.screens, isEmpty);
+
+    fresh.reportCurrent();
+
+    expect(other.screens, ['dashboard']);
+  });
 
   test('reports the screen it starts on', () {
     expect(client.screens, ['dashboard']);
