@@ -510,5 +510,8 @@ void main() {
     expect(PosthogWebClient.screenClassFor(600), 'tablet');
     expect(PosthogWebClient.screenClassFor(1023), 'tablet');
     expect(PosthogWebClient.screenClassFor(1024), 'desktop');
+    expect(PosthogWebClient.screenClassFor(0), 'ponsel');
+    expect(PosthogWebClient.screenClassFor(1023.9), 'tablet');
+    expect(PosthogWebClient.screenClassFor(5000), 'desktop');
   });
 }
