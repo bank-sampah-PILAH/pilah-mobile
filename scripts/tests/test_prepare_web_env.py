@@ -69,14 +69,14 @@ class PrepareWebEnvTest(unittest.TestCase):
                 result, output = self.prepare(
                     flavor,
                     f"{key}={origin}\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
-                    f"ENABLE_ANALYTICS=true\nPOSTHOG_API_KEY={POSTHOG_KEY}\n"
+                    f"ENABLE_POSTHOG=true\nPOSTHOG_API_KEY={POSTHOG_KEY}\n"
                     f"POSTHOG_ENVIRONMENT={flavor}\n",
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(
                     output,
                     f"{key}={origin}\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
-                    "ENABLE_DEMO_LOGIN=false\nENABLE_ANALYTICS=true\n"
+                    "ENABLE_DEMO_LOGIN=false\nENABLE_POSTHOG=true\n"
                     f"POSTHOG_API_KEY={POSTHOG_KEY}\n"
                     "POSTHOG_HOST=https://us.i.posthog.com\n"
                     f"POSTHOG_ENVIRONMENT={flavor}\n",
@@ -84,7 +84,7 @@ class PrepareWebEnvTest(unittest.TestCase):
 
     def test_reject_invalid_analytics_settings_without_writing(self):
         base = ("BASE_URL_DEV=https://pilah-be-staging.fly.dev\n"
-                f"GOOGLE_SERVER_CLIENT_ID={CLIENT}\nENABLE_ANALYTICS=true\n")
+                f"GOOGLE_SERVER_CLIENT_ID={CLIENT}\nENABLE_POSTHOG=true\n")
         valid = base + f"POSTHOG_API_KEY={POSTHOG_KEY}\nPOSTHOG_ENVIRONMENT=staging\n"
         cases = {
             "missing key": base + "POSTHOG_ENVIRONMENT=staging\n",
@@ -107,7 +107,7 @@ class PrepareWebEnvTest(unittest.TestCase):
                 self.assertNotIn(POSTHOG_KEY, result.stdout + result.stderr)
 
     def test_ship_nothing_for_analytics_that_is_not_enabled(self):
-        for flag in ("ENABLE_ANALYTICS=false\n", ""):
+        for flag in ("ENABLE_POSTHOG=false\n", ""):
             with self.subTest(flag=flag):
                 result, output = self.prepare(
                     "staging",
@@ -117,7 +117,7 @@ class PrepareWebEnvTest(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertNotIn("POSTHOG", output)
-                self.assertNotIn("ENABLE_ANALYTICS", output)
+                self.assertNotIn("ENABLE_POSTHOG", output)
 
 
 if __name__ == "__main__":
