@@ -20,6 +20,7 @@ import '../../../../support/stub_api.dart';
 void main() {
   late StubApi api;
   late FakeAnalyticsClient client;
+  late TestProfileNotifier notifier;
 
   setUp(() {
     api = StubApi();
@@ -28,7 +29,7 @@ void main() {
   });
 
   Future<void> openPage(WidgetTester tester) async {
-    final notifier = buildProfileNotifier(api);
+    notifier = buildProfileNotifier(api);
     final auth = authNotifierIn(Authenticated(authEntity: testAuth()));
     await pumpRouted(
       tester,
@@ -90,6 +91,24 @@ void main() {
 
       expect(client.events.single.properties, {
         'bidang_diubah': ['template_wa'],
+      });
+      await settleToasts(tester);
+    });
+
+    testWidgets('names the logo when a new one was picked', (tester) async {
+      api.on('PUT', '/api/v1/bank-sampah/me', json: bankJson());
+      api.on('PUT', '/api/v1/pengaturan/wa-template', json: {});
+      await openPage(tester);
+      notifier.setStateForTest(notifier.state.copyWith(
+        selectedLogoBytes: Uint8List.fromList([1, 2, 3]),
+        selectedLogoFilename: 'logo.png',
+      ));
+      await tester.pumpAndSettle();
+
+      await save(tester);
+
+      expect(client.events.single.properties, {
+        'bidang_diubah': ['logo'],
       });
       await settleToasts(tester);
     });
