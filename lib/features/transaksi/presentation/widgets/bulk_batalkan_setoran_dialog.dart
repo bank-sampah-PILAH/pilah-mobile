@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -98,6 +100,11 @@ class _BulkBatalkanSetoranDialogState
         if (mounted) setState(() => _completed = completed);
       },
     );
+    // Voided on the server whether or not this dialog is still open.
+    if (result.berhasil > 0) {
+      riwayatSetoranVoided(ref.read(analyticsClientProvider),
+          count: result.berhasil, bulk: true);
+    }
     if (!mounted) return;
     if (notifier.sessionKey != session) {
       ref.read(aktivitasSelectionProvider.notifier).clear();

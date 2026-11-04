@@ -1,3 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -263,6 +266,12 @@ class _RowState extends State<_Row> {
     }
     if (expandable) {
       setState(() => _expanded = !_expanded);
+      if (_expanded) {
+        riwayatDetailOpened(
+            ProviderScope.containerOf(context, listen: false)
+                .read(analyticsClientProvider),
+            'setoran');
+      }
     } else {
       widget.onTap();
     }

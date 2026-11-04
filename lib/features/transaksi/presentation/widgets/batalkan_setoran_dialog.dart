@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -62,6 +64,8 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
     if (result.detail != null) {
       // The setoran is voided on the server whether or not this dialog is
       // still open, so the feed and the selection always follow it.
+      riwayatSetoranVoided(container.read(analyticsClientProvider),
+          count: 1, bulk: false);
       container.read(aktivitasSelectionProvider.notifier).clear();
       reloadAfterSetoranChange(container);
     }

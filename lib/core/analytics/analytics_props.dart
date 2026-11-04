@@ -63,6 +63,7 @@ abstract final class AnalyticsProps {
     'jumlah_masalah',
     'jumlah_nasabah_kelas',
     'jumlah_pencarian',
+    'jumlah_setoran',
     'jumlah_variabel_dipakai',
     'kedalaman',
     'kelas_layar',

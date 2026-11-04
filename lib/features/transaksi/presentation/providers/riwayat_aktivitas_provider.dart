@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../domain/entities/aktivitas_entity.dart';
 import '../../domain/entities/transaksi_filter.dart';
@@ -148,10 +150,15 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
     return '${item.tipe.name}:$id';
   }
 
+  void _filterChanged(RiwayatFilterKind kind, {String? value}) =>
+      riwayatFilterChanged(ref.read(analyticsClientProvider), kind,
+          value: value);
+
   void setPeriode(String periode) {
     if (state.periode == periode && state.dariTanggal == null) return;
     state = RiwayatAktivitasState(
         periode: periode, tipeFilter: state.tipeFilter, search: state.search);
+    _filterChanged(RiwayatFilterKind.periode, value: periode);
     load();
   }
 
@@ -162,24 +169,28 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
         sampaiTanggal: end,
         tipeFilter: state.tipeFilter,
         search: state.search);
+    _filterChanged(RiwayatFilterKind.periode, value: 'kustom');
     load();
   }
 
   void setTipeFilter(AktivitasTipeFilter tipe) {
     if (state.tipeFilter == tipe) return;
     state = state.copyWith(tipeFilter: tipe, items: []);
+    _filterChanged(RiwayatFilterKind.tipe, value: tipe.name);
     load();
   }
 
   void search(String query) {
     if (state.search == query.trim()) return;
     state = state.copyWith(search: query.trim(), items: []);
+    _filterChanged(RiwayatFilterKind.pencarian);
     load();
   }
 
   /// Kembali ke periode, tipe, dan pencarian bawaan, lalu memuat ulang.
   void resetFilters() {
     state = const RiwayatAktivitasState();
+    _filterChanged(RiwayatFilterKind.reset);
     load();
   }
 
