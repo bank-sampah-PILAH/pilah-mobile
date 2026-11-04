@@ -61,6 +61,9 @@ class ActivitasEntity {
       title: t.name,
       subtitleLines: [t.subtitle],
       amount: t.amount,
+      // Dibatalkan: still listed, but grey so it does not read as money in.
+      amountColor: t.isDibatalkan ? AppColors.grey100 : null,
+      badge: t.isDibatalkan ? 'Dibatalkan' : null,
       trailingCaptions: t.tanggal != null
           ? _timestamp(t.tanggal!)
           : [if (t.time != null) t.time!],

@@ -22,6 +22,7 @@ class AktivitasTable extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.onEdit,
+    this.onHapus,
     this.loadSetoranDetail,
     this.footer = const [],
     this.toolbar,
@@ -34,6 +35,9 @@ class AktivitasTable extends StatelessWidget {
 
   /// Dipanggil dari kolom Aksi pada baris setoran. Null menyembunyikan kolom.
   final ValueChanged<ActivitasEntity>? onEdit;
+
+  /// Tombol Hapus di kolom Aksi, di samping Edit (PIL-428).
+  final ValueChanged<ActivitasEntity>? onHapus;
 
   /// Fetches full details when a setoran row is expanded.
   final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
@@ -93,6 +97,7 @@ class AktivitasTable extends StatelessWidget {
                 item: items[i],
                 onTap: () => onTap(items[i]),
                 onEdit: onEdit == null ? null : () => onEdit!(items[i]),
+                onHapus: onHapus == null ? null : () => onHapus!(items[i]),
                 loadSetoranDetail: loadSetoranDetail,
               ),
       ),
@@ -125,12 +130,14 @@ class _Row extends StatefulWidget {
     required this.item,
     required this.onTap,
     this.onEdit,
+    this.onHapus,
     this.loadSetoranDetail,
   });
 
   final ActivitasEntity item;
   final VoidCallback onTap;
   final VoidCallback? onEdit;
+  final VoidCallback? onHapus;
   final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
 
   @override
@@ -142,6 +149,11 @@ class _RowState extends State<_Row> {
   bool _expanded = false;
 
   ActivitasEntity get item => widget.item;
+
+  bool get _dibatalkan => item.transaksi?.isDibatalkan ?? false;
+
+  /// Only a setoran still tercatat can be edited or cancelled.
+  bool get _bisaDiubah => item.tipe == ActivitasTipe.setoran && !_dibatalkan;
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +235,7 @@ class _RowState extends State<_Row> {
         _typeCell(expandable),
         _detailCell(muted, expandable),
         _amountCell(base),
-        if (widget.onEdit != null) _editCell(expandable),
+        if (widget.onEdit != null) _editCell(),
       ],
     );
   }
@@ -256,16 +268,25 @@ class _RowState extends State<_Row> {
 
   Widget _typeCell(bool expandable) => AktivitasTable._cell(
         2,
-        Align(
-          alignment: Alignment.centerLeft,
-          child: CustomStatusBadge(
-            statusText: expandable ? 'Setoran' : 'Pencairan',
-            backgroundColor:
-                expandable ? AppColors.greenLight : AppColors.warningLight,
-            textColor: expandable ? AppColors.greenDark : AppColors.warning,
-          ),
-        ),
+        Align(alignment: Alignment.centerLeft, child: _typeBadge(expandable)),
       );
+
+  /// A voided setoran reads Dibatalkan in place of its type (PIL-428).
+  Widget _typeBadge(bool expandable) {
+    if (_dibatalkan) {
+      return const CustomStatusBadge(
+        statusText: 'Dibatalkan',
+        backgroundColor: AppColors.fill,
+        textColor: AppColors.grey100,
+      );
+    }
+    return CustomStatusBadge(
+      statusText: expandable ? 'Setoran' : 'Pencairan',
+      backgroundColor:
+          expandable ? AppColors.greenLight : AppColors.warningLight,
+      textColor: expandable ? AppColors.greenDark : AppColors.warning,
+    );
+  }
 
   Widget _detailCell(TextStyle muted, bool expandable) => AktivitasTable._cell(
         3,
@@ -301,18 +322,34 @@ class _RowState extends State<_Row> {
         ),
       );
 
-  Widget _editCell(bool expandable) => AktivitasTable._aksiCell(
+  Widget _editCell() => AktivitasTable._aksiCell(
         Align(
           alignment: Alignment.centerLeft,
-          child: expandable
-              ? AppButton(
-                  key: const ValueKey('aktivitas-edit'),
-                  label: 'Edit',
-                  icon: Icons.edit_outlined,
-                  variant: AppButtonVariant.outlined,
-                  size: AppButtonSize.compact,
-                  expand: false,
-                  onPressed: widget.onEdit,
+          child: _bisaDiubah
+              ? Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    AppButton(
+                      key: const ValueKey('aktivitas-edit'),
+                      label: 'Edit',
+                      icon: Icons.edit_outlined,
+                      variant: AppButtonVariant.outlined,
+                      size: AppButtonSize.compact,
+                      expand: false,
+                      onPressed: widget.onEdit,
+                    ),
+                    if (widget.onHapus != null)
+                      AppButton(
+                        key: const ValueKey('aktivitas-hapus'),
+                        label: 'Hapus',
+                        icon: Icons.delete_outline,
+                        variant: AppButtonVariant.destructiveOutlined,
+                        size: AppButtonSize.compact,
+                        expand: false,
+                        onPressed: widget.onHapus,
+                      ),
+                  ],
                 )
               : const SizedBox.shrink(),
         ),

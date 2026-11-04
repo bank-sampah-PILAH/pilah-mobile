@@ -4,6 +4,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/batalkan_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
@@ -19,6 +20,7 @@ final transaksiProvider = NotifierProvider<TransaksiNotifier, TransaksiState>(
     di<ExportTransaksiUseCase>(),
     di<ResendWaUseCase>(),
     di<EditTransaksiUseCase>(),
+    di<BatalkanTransaksiUseCase>(),
   ),
 );
 
@@ -29,6 +31,7 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
   final ExportTransaksiUseCase exportTransaksiUseCase;
   final ResendWaUseCase resendWaUseCase;
   final EditTransaksiUseCase editTransaksiUseCase;
+  final BatalkanTransaksiUseCase batalkanTransaksiUseCase;
 
   List<TransaksiGroupEntity> _allTransaksi = [];
   String _periode = 'bulan_ini';
@@ -43,6 +46,7 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
     this.exportTransaksiUseCase,
     this.resendWaUseCase,
     this.editTransaksiUseCase,
+    this.batalkanTransaksiUseCase,
   );
 
   @override
@@ -120,6 +124,17 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
   Future<({TransaksiDetailEntity? detail, String? error})> editTransaksi(
       TransaksiEditRequest request) async {
     final result = await editTransaksiUseCase.execute(request);
+    return result.fold(
+      (failure) => (detail: null, error: failure.displayMessage),
+      (detail) => (detail: detail, error: null),
+    );
+  }
+
+  /// Voids ("hapus") a setoran (PIL-428). Like [editTransaksi], a refusal such
+  /// as "saldonya sudah dicairkan" reaches the pengurus in the backend's words.
+  Future<({TransaksiDetailEntity? detail, String? error})> batalkanTransaksi(
+      TransaksiBatalRequest request) async {
+    final result = await batalkanTransaksiUseCase.execute(request);
     return result.fold(
       (failure) => (detail: null, error: failure.displayMessage),
       (detail) => (detail: detail, error: null),
