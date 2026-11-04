@@ -30,7 +30,9 @@ class AnalyticsScreenTracker {
   String? _screen;
   DateTime? _since;
 
-  /// Starts listening, and reports the screen showing now.
+  /// Starts listening and notes the screen showing now, without reporting it:
+  /// the first screen goes out only through [reportCurrent], so it cannot be
+  /// sent twice however the tracker and the start of analytics are ordered.
   void attach() {
     changes.addListener(_onChange);
     _onChange();
@@ -56,10 +58,15 @@ class AnalyticsScreenTracker {
     final previous = _screen;
     final since = _since;
     final now = _clock();
+    if (previous == null) {
+      _screen = screen;
+      _since = now;
+      return;
+    }
     client.screen(screen, {
       // One event per move: it says where the user came from and how long they
       // stayed there.
-      if (previous != null && since != null) ...{
+      if (since != null) ...{
         'layar_sebelumnya': previous,
         'durasi_layar_sebelumnya_detik': now.difference(since).inSeconds,
       },
