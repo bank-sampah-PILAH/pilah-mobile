@@ -722,7 +722,7 @@ void main() {
       await addItem(tester, 'Botol PET');
       await save(tester);
 
-      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await tester.tap(find.text('Kirim WhatsApp'));
       await pumpToast(tester);
 
       final after = analytics.events
@@ -731,6 +731,30 @@ void main() {
       expect(after.properties['berhasil'], isA<bool>());
       expect(after.properties['template_wa_dipakai'], isA<bool>());
       // Finishing after a save is not walking away from it.
+      expect(names(analytics), isNot(contains('setoran_dibatalkan')));
+      await settleToasts(tester);
+    });
+
+    testWidgets('finishing without sending the message is reported too',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 201, json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await save(tester);
+
+      await tester.tap(find.text('Selesai'));
+      await pumpToast(tester);
+
+      final after = analytics.events
+          .singleWhere((e) => e.name == 'setoran_aksi_sesudah_simpan');
+      expect(after.properties, {'aksi': 'selesai', 'alur_id': isA<String>()});
       expect(names(analytics), isNot(contains('setoran_dibatalkan')));
       await settleToasts(tester);
     });

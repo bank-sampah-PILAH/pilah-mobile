@@ -115,6 +115,16 @@ void main() {
     expect(last()['template_wa_dipakai'], false);
   });
 
+  test('finishing without sending the message is its own action', () {
+    setoran.started();
+
+    setoran.finishedWithoutMessage();
+
+    expect(client.events.last.name, 'setoran_aksi_sesudah_simpan');
+    expect(last()['aksi'], 'selesai');
+    expect(last().containsKey('berhasil'), isFalse);
+  });
+
   test('leaving before saving says where the pengurus stopped', () {
     setoran.started();
     after(40);
