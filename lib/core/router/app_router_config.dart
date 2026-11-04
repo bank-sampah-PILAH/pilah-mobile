@@ -194,9 +194,14 @@ class AppRouterConfig {
       // tombol kembali mem-pop halaman di belakang panel dan membuang isian
       // yang belum tersimpan tanpa bertanya.
       setoranSideSheetRoute(),
-      // Alur pembuatan pencairan; penjaganya ada bersama daftarnya di
-      // [draftPencairanRoutes].
-      ...draftPencairanRoutes,
+      // Creating a pencairan is locked for handover (PIL-434), the same way
+      // and for the same reason as pengumuman below: the paths come from
+      // [draftPencairanRoutes], which keeps the routes as they were, the
+      // editor's guard included, compiled and tested but not registered.
+      // Re-enabling the flow is registering that list in place of this call -
+      // together with putting Pencairan back in transaksiPilihanTerbuka, the
+      // other half of the lock.
+      ...lockedRoutes(draftPencairanRoutes),
       // Pengumuman is locked for handover (PIL-436); [lockedRoutes] carries
       // why a lock is a redirect rather than a deletion. The paths come from
       // [pengumumanRoutes] rather than being retyped here, so the locked set
