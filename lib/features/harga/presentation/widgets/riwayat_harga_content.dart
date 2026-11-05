@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/harga/analytics/harga_analytics.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
@@ -29,6 +31,7 @@ class _RiwayatHargaContentState extends ConsumerState<RiwayatHargaContent> {
   @override
   void initState() {
     super.initState();
+    hargaHistoryOpened(ref.read(analyticsClientProvider));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(riwayatHargaProvider.notifier).load(widget.jenisId);
     });
@@ -38,6 +41,7 @@ class _RiwayatHargaContentState extends ConsumerState<RiwayatHargaContent> {
   void didUpdateWidget(covariant RiwayatHargaContent oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.jenisId != widget.jenisId) {
+      hargaHistoryOpened(ref.read(analyticsClientProvider));
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ref.read(riwayatHargaProvider.notifier).load(widget.jenisId);
