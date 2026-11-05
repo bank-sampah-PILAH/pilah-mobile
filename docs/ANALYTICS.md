@@ -1,9 +1,9 @@
 # Usage analytics
 
 PILAH sends a small number of events to PostHog so the team can see where
-pengurus slow down, give up, or run into errors. **On the web no screen is
-recorded. In the Android and iOS apps it is, with every text and image hidden**
-(see "Screen recording" below). Events say *what* a pengurus did (which step, how long, how many, what went
+pengurus slow down, give up, or run into errors. **The screen is recorded on
+Android, iOS and the web, with every text and image hidden** (see "Screen
+recording" below). Events say *what* a pengurus did (which step, how long, how many, what went
 wrong), never *who* they are or what was on their screen.
 
 Nothing is sent until a pengurus has agreed in the consent dialog, and nothing
@@ -73,10 +73,11 @@ expect(analytics.events.single.properties, {'jumlah_item': 1});
 `ENABLE_POSTHOG`, `POSTHOG_API_KEY`, `POSTHOG_HOST` and `POSTHOG_ENVIRONMENT`
 in the web `.env` (see `.env.example` and `docs/DASHBOARD_DEPLOYMENT.md`).
 Staging and production share one PostHog project, so every event can be filtered
-by `environment`. On the web, recording, automatic capture and heatmaps are switched off in the
-client; only load time is measured automatically.
+by `environment`. On the web, automatic capture and heatmaps are switched off in the client and
+only load time is measured automatically; the screen recording is described
+below.
 
-## Screen recording (Android and iOS only)
+## Screen recording (Android, iOS and web)
 
 The mobile apps also record the screen (PIL-473), so the team can open the
 session of a pengurus who got stuck and see what went wrong. The recording is
@@ -100,9 +101,18 @@ for anything new that draws figures itself.
 - Agreements given before recording existed are not honoured for it: the
   pengurus is asked again with the new text (`AnalyticsConsentStore.read(screen:
   true)`). A refusal stays a refusal.
-- The web does not record. Flutter web draws on one canvas, so the browser
-  library has nothing to replay, and recording the canvas was rejected
-  (PIL-415, PIL-465).
+- The web records too, as pictures of Flutter's one canvas. A DOM mask cannot
+  reach text drawn on a canvas, so the plugin walks the widget tree and sends
+  the rectangles to cover through `canvasCapture.maskRegionsFn` (posthog-js
+  1.408 or newer). A frame without rectangles is skipped, not sent. The page's
+  own text is masked (`maskTextSelector: '*'`), the accessibility copy of the
+  widgets (`flt-semantics-host`) is blocked, and neither the browser console
+  nor network requests are recorded: a debug build prints what the server
+  answered in the console, and that holds names. Proven on 5 Nov 2026 by
+  decoding the `$snapshot` frames of a real session: every text and icon was a
+  black box, and no name or email was found in the payload.
+- posthog-js treats a headless browser as a bot and drops every event, so an
+  automated check must run with a normal user agent.
 - The recorder (`PostHogWidget`) is put around the app by
   `AnalyticsRecordingRoot` once analytics has started. The app is kept under a
   global key, so adding the recorder does not rebuild it.
