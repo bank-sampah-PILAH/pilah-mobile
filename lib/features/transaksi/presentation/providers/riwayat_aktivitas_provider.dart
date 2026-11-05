@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/core/analytics/search_analytics.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -21,7 +22,13 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
   RiwayatAktivitasNotifier(this._getAktivitas, this._export);
 
   @override
-  RiwayatAktivitasState build() => const RiwayatAktivitasState();
+  RiwayatAktivitasState build() {
+    ref.onDispose(_search.closed);
+    return const RiwayatAktivitasState();
+  }
+
+  late final SearchAnalytics _search =
+      SearchAnalytics(ref.read(analyticsClientProvider), area: 'riwayat');
   final GetAktivitasUseCase _getAktivitas;
   final ExportTransaksiUseCase _export;
   int _generation = 0;
@@ -72,6 +79,7 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
             pageSize: _pageSize ?? 20,
             totalCount: page.totalCount,
             hasNext: page.hasNext);
+        _search.resultsSettled(query: state.search, count: page.totalCount);
       },
     );
   }
@@ -183,13 +191,22 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
   void search(String query) {
     if (state.search == query.trim()) return;
     state = state.copyWith(search: query.trim(), items: []);
-    _filterChanged(RiwayatFilterKind.pencarian);
+    _search.queryChanged(state.search);
     load();
+  }
+
+  /// A row of the report was opened. When the report is showing a search, that
+  /// is the row it led to, and its position in the results is reported.
+  void rowOpened(ActivitasEntity item) {
+    final key = _key(item);
+    final index = state.items.indexWhere((other) => _key(other) == key);
+    if (index >= 0) _search.picked(position: index + 1);
   }
 
   /// Kembali ke periode, tipe, dan pencarian bawaan, lalu memuat ulang.
   void resetFilters() {
     state = const RiwayatAktivitasState();
+    _search.queryChanged('');
     _filterChanged(RiwayatFilterKind.reset);
     load();
   }
@@ -203,6 +220,7 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
   }
 
   void reset() {
+    _search.closed();
     _generation++;
     _page = 0;
     _pageSize = null;

@@ -1,10 +1,10 @@
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 
-/// What part of the Riwayat the pengurus filtered by.
+/// What part of the Riwayat the pengurus filtered by. A search is not one of
+/// these: it has its own session events (`SearchAnalytics`).
 enum RiwayatFilterKind {
   periode('periode'),
   tipe('tipe'),
-  pencarian('pencarian'),
   reset('reset');
 
   const RiwayatFilterKind(this.wire);
@@ -14,8 +14,7 @@ enum RiwayatFilterKind {
 }
 
 /// A Riwayat filter changed. [value] is a class of value (a period preset, a
-/// type, or `kustom` for a range of dates), never the dates or the words that
-/// were typed in a search.
+/// type, or `kustom` for a range of dates), never the dates.
 void riwayatFilterChanged(
   AnalyticsClient client,
   RiwayatFilterKind kind, {

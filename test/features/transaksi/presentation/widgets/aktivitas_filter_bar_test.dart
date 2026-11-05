@@ -302,7 +302,9 @@ void main() {
 
       notifier.search('Siti Aminah');
 
-      expect(analytics.events.single.properties, {'jenis_filter': 'pencarian'});
+      expect(analytics.events.single.name, 'pencarian_dimulai');
+      expect(analytics.events.toString(), isNot(contains('Siti')));
+      expect(analytics.events.toString(), isNot(contains('Aminah')));
     });
 
     testWidgets('a failed export is reported as not worked', (tester) async {

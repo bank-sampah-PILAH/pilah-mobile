@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
@@ -267,10 +268,11 @@ class _RowState extends State<_Row> {
     if (expandable) {
       setState(() => _expanded = !_expanded);
       if (_expanded) {
-        riwayatDetailOpened(
-            ProviderScope.containerOf(context, listen: false)
-                .read(analyticsClientProvider),
-            'setoran');
+        final container = ProviderScope.containerOf(context, listen: false);
+        riwayatDetailOpened(container.read(analyticsClientProvider), 'setoran');
+        if (container.exists(riwayatAktivitasProvider)) {
+          container.read(riwayatAktivitasProvider.notifier).rowOpened(item);
+        }
       }
     } else {
       widget.onTap();

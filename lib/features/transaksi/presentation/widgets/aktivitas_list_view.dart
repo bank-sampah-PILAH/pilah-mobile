@@ -301,10 +301,11 @@ class AktivitasListView extends StatelessWidget {
 
 /// Opens a payout's detail sheet with its Pengurus-only edit actions.
 void _openPencairanDetail(BuildContext context, ActivitasEntity item) {
-  riwayatDetailOpened(
-      ProviderScope.containerOf(context, listen: false)
-          .read(analyticsClientProvider),
-      'pencairan');
+  final container = ProviderScope.containerOf(context, listen: false);
+  riwayatDetailOpened(container.read(analyticsClientProvider), 'pencairan');
+  if (container.exists(riwayatAktivitasProvider)) {
+    container.read(riwayatAktivitasProvider.notifier).rowOpened(item);
+  }
   showPencairanDetailSheet(
     context,
     item.pencairan!,
@@ -452,6 +453,9 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
       setState(() => _expanded = !_expanded);
       if (_expanded) {
         riwayatDetailOpened(ref.read(analyticsClientProvider), 'setoran');
+        if (ref.exists(riwayatAktivitasProvider)) {
+          ref.read(riwayatAktivitasProvider.notifier).rowOpened(item);
+        }
       }
     } else {
       _openPencairanDetail(context, item);
