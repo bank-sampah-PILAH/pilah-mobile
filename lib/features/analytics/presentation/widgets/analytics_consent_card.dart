@@ -7,8 +7,8 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 
-/// Lets a pengurus see, and change, whether their screen is recorded. Shown
-/// only where it applies: to a pengurus, on a platform that can record.
+/// Lets a pengurus see, and change, whether the steps they take are noted.
+/// Shown only where it applies: to a pengurus, on a platform that can send.
 class AnalyticsConsentCard extends ConsumerWidget {
   const AnalyticsConsentCard({super.key});
 
@@ -17,7 +17,7 @@ class AnalyticsConsentCard extends ConsumerWidget {
     if (!ref.watch(analyticsToggleVisibleProvider)) {
       return const SizedBox.shrink();
     }
-    final recording =
+    final allowed =
         ref.watch(analyticsConsentProvider).value == ConsentChoice.granted;
     final consent = ref.read(analyticsConsentProvider.notifier);
 
@@ -35,13 +35,16 @@ class AnalyticsConsentCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Perekaman sesi',
+                  'Analitik penggunaan',
                   style: AppTextStyle.title1.copyWith(color: AppColors.black),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Izinkan PILAH merekam layar agar kami bisa meningkatkan '
-                  'pengalaman pemakaian aplikasi. Data sensitif akan ditutup.',
+                  'Izinkan PILAH mencatat langkah pemakaian aplikasi agar kami '
+                  'bisa meningkatkannya. Data dikirim ke PostHog, penyedia '
+                  'analitik di luar negeri, bersama jenis perangkat, peramban, '
+                  'dan perkiraan lokasi dari alamat IP. Isi layar dan alamat '
+                  'halaman tidak dicatat.',
                   style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
               ],
@@ -49,7 +52,7 @@ class AnalyticsConsentCard extends ConsumerWidget {
           ),
           const SizedBox(width: AppSpacing.lg),
           Switch(
-            value: recording,
+            value: allowed,
             onChanged: (agreed) => agreed ? consent.grant() : consent.revoke(),
           ),
         ],

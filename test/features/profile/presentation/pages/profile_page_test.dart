@@ -102,7 +102,7 @@ void main() {
           isWeb: true,
           extraOverrides: analytics());
 
-      expect(find.text('Perekaman sesi'), findsOneWidget);
+      expect(find.text('Analitik penggunaan'), findsOneWidget);
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
 
       // Where the switch lands depends on the fonts of the machine running the
@@ -128,7 +128,7 @@ void main() {
           isWeb: false,
           extraOverrides: analytics());
 
-      final card = tester.getTopLeft(find.text('Perekaman sesi')).dy;
+      final card = tester.getTopLeft(find.text('Analitik penggunaan')).dy;
       expect(card,
           greaterThan(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dy));
       expect(
@@ -143,7 +143,7 @@ void main() {
         (tester) async {
       await openPage(tester, size: const Size(1440, 900), isWeb: true);
 
-      expect(find.text('Perekaman sesi'), findsNothing);
+      expect(find.text('Analitik penggunaan'), findsNothing);
       expect(find.byType(Switch), findsNothing);
     });
   });
