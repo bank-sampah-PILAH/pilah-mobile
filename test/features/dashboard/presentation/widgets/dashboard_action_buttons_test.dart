@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_a
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/transaksi_chooser_sheet.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import '../../../../support/analytics_scope.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 void main() {
@@ -13,9 +14,9 @@ void main() {
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(375, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(body: DashboardActionButtons()),
-    ));
+    )));
 
     expect(find.text('Transaksi Baru'), findsOneWidget);
     expect(find.text('Tambah Nasabah'), findsOneWidget);
@@ -43,7 +44,8 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester
+        .pumpWidget(withAnalytics(MaterialApp.router(routerConfig: router)));
 
     await tester.tap(find.textContaining('Tambah'));
     await tester.pump();
@@ -83,9 +85,9 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    await tester.pumpWidget(withSetoranFormProviders(
+    await tester.pumpWidget(withAnalytics(withSetoranFormProviders(
       child: MaterialApp.router(routerConfig: router),
-    ));
+    )));
     await tester.tap(find.text('Transaksi Baru'));
     await tester.pumpAndSettle();
     return router;

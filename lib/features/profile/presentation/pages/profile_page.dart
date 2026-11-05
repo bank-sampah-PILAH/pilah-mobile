@@ -20,6 +20,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_consent_card.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
@@ -34,6 +35,7 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/analytics/profile_analytics.dart';
 import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
@@ -121,6 +123,18 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   void _rebuildOnEdit() {
     if (mounted) setState(() {});
   }
+
+  /// The settings that differ from what was last saved, by their fixed names.
+  Set<ProfileSettingsField> get _changedFields => {
+        if (_namaBankController.text != _baseNama)
+          ProfileSettingsField.bankName,
+        if (_alamatBankController.text != _baseAlamat)
+          ProfileSettingsField.address,
+        if (_hpBankController.text != _baseHp) ProfileSettingsField.phone,
+        if (ref.read(profileProvider).selectedLogoBytes != null)
+          ProfileSettingsField.logo,
+        if (_waController.text != _baseWa) ProfileSettingsField.waTemplate,
+      };
 
   void _markSaved() {
     _baseWa = _waController.text;
@@ -261,6 +275,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   Future<void> _onSaveSettings() async {
     if (!(_bankFormKey.currentState?.validate() ?? false)) return;
     final cubit = ref.read(profileProvider.notifier);
+    final changed = _changedFields;
+    final analytics = ref.read(analyticsClientProvider);
 
     // One flag for the whole save rather than the provider's `isSavingTemplate`,
     // which only covers the template write: the bank profile is saved first, and
@@ -288,7 +304,10 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     // user made purely for the bank fields.
     final waErr = await cubit.saveWaTemplate(_waController.text.trim());
     if (!mounted) return;
-    if (waErr == null) _markSaved();
+    if (waErr == null) {
+      profileSettingsSaved(analytics, changed);
+      _markSaved();
+    }
     setState(() => _isSavingSettings = false);
     _snack(
       waErr == null ? 'Pengaturan berhasil disimpan' : waErr.displayMessage,
@@ -312,16 +331,19 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   Future<void> _onCopyInvite(TeamInvite invite) async {
     final state = ref.read(profileProvider);
     if (state.inviteError != null) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
       _snack(state.inviteError!, error: true);
       return;
     }
     if (!invite.isValid || _expiredInviteUrl == invite.url) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
       _snack('Link undangan sudah kedaluwarsa. Buat link baru untuk dibagikan.',
           error: true);
       return;
     }
     await Clipboard.setData(ClipboardData(text: invite.url!));
     if (!mounted) return;
+    inviteLinkCopied(ref.read(analyticsClientProvider), success: true);
     _snack('Link undangan disalin ke clipboard!');
   }
 

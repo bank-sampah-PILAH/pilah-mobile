@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_range_filter.dart';
+import '../../../../support/analytics_scope.dart';
 
 void main() {
   final june = DashboardReportRange(
@@ -13,7 +14,7 @@ void main() {
       WidgetTester tester, List<DashboardReportRange> changes,
       {DashboardReportRange? initialRange}) async {
     var range = initialRange ?? june;
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
           body: StatefulBuilder(
               builder: (context, setState) => DashboardReportRangeFilter(
@@ -22,7 +23,7 @@ void main() {
                     changes.add(value);
                     setState(() => range = value);
                   }))),
-    ));
+    )));
   }
 
   Future<void> open(WidgetTester tester) async {
