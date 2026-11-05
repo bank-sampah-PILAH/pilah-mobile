@@ -217,6 +217,10 @@ jobs:
       - name: Prepare production environment
         env:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+          ENABLE_POSTHOG: ${{ secrets.ENABLE_POSTHOG }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          POSTHOG_ENVIRONMENT: ${{ secrets.POSTHOG_ENVIRONMENT }}
         run: |
           if [ -z "$APP_ENV_FILE" ]; then
             echo "::error::The production environment secret APP_ENV_FILE is required."

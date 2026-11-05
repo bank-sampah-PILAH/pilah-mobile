@@ -11,11 +11,17 @@ POSTHOG_KEY = "phc_" + "aB3dE5gH7jK9mN1pQ3sT5vW7yZ9bC1dE3fG5hJ7"
 
 
 class PrepareWebEnvTest(unittest.TestCase):
-    def prepare(self, flavor, contents):
+    def prepare(self, flavor, contents, overrides=None):
         with tempfile.TemporaryDirectory() as directory:
             target = pathlib.Path(directory) / ".env"
+            env = {
+                name: value
+                for name, value in os.environ.items()
+                if name not in ("ENABLE_POSTHOG", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
+            }
+            env.update({"APP_ENV_FILE": contents, **(overrides or {})})
             result = subprocess.run(["python3", str(ROOT / "scripts/prepare_web_env.py"), flavor, str(target)],
-                                    env={**os.environ, "APP_ENV_FILE": contents}, capture_output=True, text=True)
+                                    env=env, capture_output=True, text=True, check=False)
             return result, target.read_text() if target.exists() else None
 
     def test_normalize_api_base_to_origin_and_ship_only_public_settings(self):
@@ -82,6 +88,32 @@ class PrepareWebEnvTest(unittest.TestCase):
                     f"POSTHOG_ENVIRONMENT={flavor}\n",
                 )
 
+    def test_environment_secrets_override_posthog_values_in_app_env_file(self):
+        contents = (
+            "BASE_URL_PROD=https://backend.run.app\n"
+            f"GOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
+            "ENABLE_POSTHOG=false\nPOSTHOG_API_KEY=old\nPOSTHOG_ENVIRONMENT=staging\n"
+        )
+        overrides = {
+            "ENABLE_POSTHOG": "true",
+            "POSTHOG_API_KEY": POSTHOG_KEY,
+            "POSTHOG_HOST": "https://us.i.posthog.com",
+            "POSTHOG_ENVIRONMENT": "production",
+        }
+        result, output = self.prepare("production", contents, overrides)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            output,
+            "BASE_URL_PROD=https://backend.run.app\n"
+            f"GOOGLE_SERVER_CLIENT_ID={CLIENT}\nENABLE_DEMO_LOGIN=false\n"
+            f"ENABLE_POSTHOG=true\nPOSTHOG_API_KEY={POSTHOG_KEY}\n"
+            "POSTHOG_HOST=https://us.i.posthog.com\nPOSTHOG_ENVIRONMENT=production\n",
+        )
+
+        result, output = self.prepare("production", contents, {"ENABLE_POSTHOG": "true"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIsNone(output)
+
     def test_reject_invalid_analytics_settings_without_writing(self):
         base = ("BASE_URL_DEV=https://pilah-be-staging.fly.dev\n"
                 f"GOOGLE_SERVER_CLIENT_ID={CLIENT}\nENABLE_POSTHOG=true\n")
@@ -116,6 +148,8 @@ class PrepareWebEnvTest(unittest.TestCase):
                     f"POSTHOG_API_KEY={POSTHOG_KEY}\nPOSTHOG_ENVIRONMENT=staging\n",
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIsNotNone(output)
+                assert output is not None
                 self.assertNotIn("POSTHOG", output)
                 self.assertNotIn("ENABLE_POSTHOG", output)
 

@@ -5,7 +5,6 @@ import re
 import sys
 from urllib.parse import urlsplit
 
-
 ANALYTICS_KEYS = ("ENABLE_POSTHOG", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
 
 
@@ -45,6 +44,11 @@ def prepare(flavor, target):
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
             value = value[1:-1]
         values[name] = value
+    overrides = {name: os.environ[name] for name in ANALYTICS_KEYS if name in os.environ}
+    if overrides:
+        if len(overrides) != len(ANALYTICS_KEYS):
+            raise ValueError("all PostHog environment secrets must be set")
+        values.update(overrides)
     if any(not values.get(name) for name in required):
         raise ValueError("APP_ENV_FILE must provide " + key + " and GOOGLE_SERVER_CLIENT_ID")
     api = values[key]
