@@ -365,6 +365,9 @@ void main() {
           .dartify()! as List<Object?>;
       final options = args[1]! as Map<Object?, Object?>;
       expect(options['disable_session_recording'], isFalse);
+      // The browser console is not recorded: a debug build prints what the
+      // server answered there, and that holds names.
+      expect(options['enable_recording_console_log'], isFalse);
       final recordingOptions = options['session_recording']! as Map;
       expect(recordingOptions['maskAllInputs'], isTrue);
       // The page's own text is masked wholesale, and the mirror Flutter keeps
