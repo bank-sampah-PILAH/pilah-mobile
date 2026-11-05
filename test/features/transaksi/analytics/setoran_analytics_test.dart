@@ -184,7 +184,88 @@ void main() {
         'jumlah_item': 2,
         'bidang_diubah': ['item'],
         'durasi_detik': 50,
+        'jumlah_item_ditambah': 0,
+        'jumlah_item_dihapus': 0,
+        'jumlah_item_diubah_jenis': 0,
+        'jumlah_item_diubah_berat': 0,
       });
+    });
+
+    test('a saved edit says what kind of change was made to the items', () {
+      edit.started();
+
+      edit.saved(
+        itemCount: 3,
+        itemsChanged: true,
+        noteChanged: false,
+        changes: const ItemChangeCounts(
+          added: 1,
+          removed: 2,
+          jenisChanged: 3,
+          beratChanged: 4,
+        ),
+      );
+
+      expect(last()['jumlah_item_ditambah'], 1);
+      expect(last()['jumlah_item_dihapus'], 2);
+      expect(last()['jumlah_item_diubah_jenis'], 3);
+      expect(last()['jumlah_item_diubah_berat'], 4);
+    });
+
+    test('how long after the setoran was made is told in classes', () {
+      final seen = <Object?>[];
+      for (final days in [0, 1, 7, 8, 40]) {
+        edit
+          ..started()
+          ..saved(
+            itemCount: 1,
+            itemsChanged: true,
+            noteChanged: false,
+            recordedAt: now.subtract(Duration(days: days)),
+          );
+        seen.add(last()['jeda_sejak_dibuat_hari_kelas']);
+      }
+
+      expect(seen,
+          ['hari_ini', '1_7_hari', '1_7_hari', 'lebih_7_hari', 'lebih_7_hari']);
+    });
+
+    test('when it is not known how old the setoran is, nothing is said', () {
+      edit
+        ..started()
+        ..saved(itemCount: 1, itemsChanged: true, noteChanged: false);
+
+      expect(last().containsKey('jeda_sejak_dibuat_hari_kelas'), isFalse);
+    });
+
+    test('closing the sheet without saving is reported once, with its time',
+        () {
+      edit.started();
+      after(30);
+
+      edit
+        ..closed()
+        ..closed();
+
+      expect(client.events.map((e) => e.name),
+          ['setoran_ubah_dimulai', 'setoran_ubah_dibatalkan']);
+      expect(last(), {'alur_id': _flow, 'durasi_detik': 30});
+    });
+
+    test('closing the sheet after a save is not a cancellation', () {
+      edit
+        ..started()
+        ..saved(itemCount: 1, itemsChanged: true, noteChanged: false)
+        ..closed();
+
+      expect(client.events.map((e) => e.name),
+          ['setoran_ubah_dimulai', 'setoran_diubah']);
+    });
+
+    test('a sheet that was never opened has nothing to cancel', () {
+      edit.closed();
+
+      expect(client.events, isEmpty);
     });
 
     test('a changed note is named too', () {
@@ -257,6 +338,77 @@ void main() {
       setoran.itemFilled('baris-1');
 
       expect(filled().single.keys.toSet(), {'alur_id', 'item_ke'});
+    });
+  });
+
+  group('counting what kind of change an edit made to the items', () {
+    test('nothing changed, nothing counted', () {
+      final counts = ItemChangeCounts.between(
+        before: [(jenisSampahId: 'j1', berat: 2.0)],
+        after: [(origin: 0, jenisSampahId: 'j1', berat: 2.0)],
+      );
+
+      expect((
+        counts.added,
+        counts.removed,
+        counts.jenisChanged,
+        counts.beratChanged
+      ), (
+        0,
+        0,
+        0,
+        0
+      ));
+    });
+
+    test('a new row is added, a missing row is removed', () {
+      final counts = ItemChangeCounts.between(
+        before: [
+          (jenisSampahId: 'j1', berat: 2.0),
+          (jenisSampahId: 'j2', berat: 1.0),
+        ],
+        after: [
+          (origin: 0, jenisSampahId: 'j1', berat: 2.0),
+          (origin: null, jenisSampahId: 'j3', berat: 5.0),
+        ],
+      );
+
+      expect(counts.added, 1);
+      expect(counts.removed, 1);
+      expect(counts.jenisChanged, 0);
+      expect(counts.beratChanged, 0);
+    });
+
+    test('a row whose jenis changed is not a removal and an addition', () {
+      final counts = ItemChangeCounts.between(
+        before: [(jenisSampahId: 'j1', berat: 2.0)],
+        after: [(origin: 0, jenisSampahId: 'j2', berat: 2.0)],
+      );
+
+      expect(counts.jenisChanged, 1);
+      expect(counts.added, 0);
+      expect(counts.removed, 0);
+      expect(counts.beratChanged, 0);
+    });
+
+    test('a row changed in both ways counts in both', () {
+      final counts = ItemChangeCounts.between(
+        before: [(jenisSampahId: 'j1', berat: 2.0)],
+        after: [(origin: 0, jenisSampahId: 'j2', berat: 3.5)],
+      );
+
+      expect(counts.jenisChanged, 1);
+      expect(counts.beratChanged, 1);
+    });
+
+    test('a row that was blanked counts as a change of jenis only when set',
+        () {
+      final counts = ItemChangeCounts.between(
+        before: [(jenisSampahId: 'j1', berat: 2.0)],
+        after: [(origin: 0, jenisSampahId: null, berat: 2.0)],
+      );
+
+      expect(counts.jenisChanged, 1);
     });
   });
 }

@@ -255,6 +255,42 @@ void main() {
     expect(saved.values.whereType<String>(), isNot(contains('Salah timbang')));
   });
 
+  testWidgets('the edit says what kind of change was made, and how late',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('PATCH', _path, json: _detail());
+    await open(tester, analytics: analytics);
+
+    await tester.enterText(find.widgetWithText(TextFormField, '2'), '3');
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
+    await tester.pump();
+    await tester.ensureVisible(save());
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    final saved = analytics.events.last.properties;
+    expect(saved['jumlah_item_ditambah'], 0);
+    expect(saved['jumlah_item_dihapus'], 0);
+    expect(saved['jumlah_item_diubah_jenis'], 0);
+    expect(saved['jumlah_item_diubah_berat'], 1);
+    expect(saved['jeda_sejak_dibuat_hari_kelas'], 'lebih_7_hari');
+  });
+
+  testWidgets('leaving the sheet without saving is reported as cancelled',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    await open(tester, analytics: analytics);
+
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.map((e) => e.name),
+        ['setoran_ubah_dimulai', 'setoran_ubah_dibatalkan']);
+    expect(analytics.events.last.properties.keys.toSet(),
+        {'alur_id', 'durasi_detik'});
+  });
+
   testWidgets('a note-only edit is reported as a change to the note',
       (tester) async {
     final analytics = FakeAnalyticsClient();
@@ -398,6 +434,24 @@ void main() {
     // Kardus costs 1.000 today but was 800 when the setoran was recorded.
     expect(find.text('800'), findsOneWidget);
     expect(find.text('1.000'), findsNothing);
+  });
+
+  testWidgets('adding a row is counted as an added item', (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('PATCH', _path, json: _detail());
+    await open(tester, analytics: analytics);
+
+    await addKardus(tester);
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Ada yang terlewat');
+    await tester.pump();
+    await tester.ensureVisible(save());
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    final saved = analytics.events.last.properties;
+    expect(saved['jumlah_item_ditambah'], 1);
+    expect(saved['jumlah_item_diubah_berat'], 0);
   });
 
   testWidgets('a jenis with no price on the setoran date gets none',
