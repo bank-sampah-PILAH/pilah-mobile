@@ -12,34 +12,6 @@ void main() {
 
   Map<String, Object> last() => client.events.last.properties;
 
-  group('search', () {
-    test('names the tab and whether anything was found, not the text', () {
-      nasabahSearched(client, activeTab: true, resultCount: 0);
-      expect(client.events.single.name, 'nasabah_dicari');
-      expect(last(), {
-        'ada_hasil': false,
-        'filter': 'aktif',
-        'jumlah_hasil_kelas': '0',
-      });
-    });
-
-    test('buckets the number of results and knows every tab', () {
-      final seen = <(bool?, int), Map<String, Object>>{};
-      for (final tab in [true, false, null]) {
-        for (final count in [1, 5, 6, 20, 21]) {
-          nasabahSearched(client, activeTab: tab, resultCount: count);
-          seen[(tab, count)] = last();
-        }
-      }
-      expect(
-          [1, 5, 6, 20, 21].map((c) => seen[(true, c)]!['jumlah_hasil_kelas']),
-          ['1_5', '1_5', '6_20', '6_20', 'lebih_20']);
-      expect(seen[(false, 1)]!['filter'], 'tidak_aktif');
-      expect(seen[(null, 1)]!['filter'], 'menunggu');
-      expect(seen[(null, 1)]!['ada_hasil'], isTrue);
-    });
-  });
-
   test('a decision says which way and how long it took', () {
     nasabahDecided(client,
         approved: true, sinceOpened: const Duration(seconds: 12));
@@ -95,6 +67,48 @@ void main() {
       add.saved();
       expect(client.events.last.name, 'nasabah_ditambah');
       expect(last(), {'alur_id': _flow, 'durasi_detik': 80, 'percobaan_ke': 2});
+    });
+
+    test('leaving without saving says how long and how many tries', () {
+      add.opened('halaman_nasabah');
+      add.submitTapped();
+      now = now.add(const Duration(seconds: 40));
+
+      add.closed();
+
+      expect(client.events.last.name, 'nasabah_tambah_dibatalkan');
+      expect(last(), {'alur_id': _flow, 'durasi_detik': 40, 'percobaan_ke': 1});
+    });
+
+    test('leaving without trying says so with zero attempts', () {
+      add.opened('dashboard');
+
+      add.closed();
+
+      expect(last()['percobaan_ke'], 0);
+    });
+
+    test('a saved nasabah is not also a cancelled one', () {
+      add.opened('dashboard');
+      add.sending();
+      add.saved();
+
+      add.closed();
+
+      expect(client.events.map((e) => e.name),
+          ['nasabah_tambah_dimulai', 'nasabah_ditambah']);
+    });
+
+    test('a save that fails after the form closed is a cancellation', () {
+      add.opened('dashboard');
+      add.submitTapped();
+      add.sending();
+      add.closed();
+      expect(client.events.map((e) => e.name), ['nasabah_tambah_dimulai']);
+
+      add.sendFailed();
+
+      expect(client.events.last.name, 'nasabah_tambah_dibatalkan');
     });
   });
 }

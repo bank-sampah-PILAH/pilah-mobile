@@ -268,14 +268,14 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'nasabah');
       await tester.pump(NasabahNotifier.jedaPencarian * 2);
       await tester.pumpAndSettle();
-      expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+      expect(analytics.events.where((e) => e.name == 'pencarian_hasil'),
           hasLength(1));
 
       await tester.drag(find.byType(ListView), const Offset(0, -6000));
       await tester.pumpAndSettle();
 
       expect(api.requests.any((r) => r.query['page'] == '2'), isTrue);
-      expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+      expect(analytics.events.where((e) => e.name == 'pencarian_hasil'),
           hasLength(1));
     });
 

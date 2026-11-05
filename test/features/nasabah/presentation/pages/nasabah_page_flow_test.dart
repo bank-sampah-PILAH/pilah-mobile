@@ -83,14 +83,18 @@ void main() {
 
     expect(api.last.query['search'], 'zzz');
     expect(find.text('Nasabah Tidak Ditemukan'), findsOneWidget);
-    // One event for the whole search, which says nothing of what was typed.
-    final searched =
-        analytics.events.where((e) => e.name == 'nasabah_dicari').single;
-    expect(searched.properties, {
-      'ada_hasil': false,
-      'filter': 'aktif',
+    // The session says what it found, and nothing of what was typed.
+    expect(analytics.events.map((e) => e.name),
+        ['pencarian_dimulai', 'pencarian_hasil']);
+    expect(analytics.events.last.properties, {
+      'alur_id': analytics.events.first.properties['alur_id'],
+      'area': 'nasabah',
       'jumlah_hasil_kelas': '0',
+      'panjang_kueri_kelas': '3_5',
+      'percobaan_ke': 1,
+      'filter': 'aktif',
     });
+    expect(analytics.events.toString(), isNot(contains('zzz')));
   });
 
   testWidgets('loading the same search again in another order is not new',
@@ -100,7 +104,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'budi');
     await tester.pump(NasabahNotifier.jedaPencarian * 2);
     await tester.pumpAndSettle();
-    expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+    expect(analytics.events.where((e) => e.name == 'pencarian_hasil'),
         hasLength(1));
 
     // Another order loads the same search again, through a reloading state.
@@ -112,7 +116,7 @@ void main() {
 
     expect(api.requests.length, greaterThan(before),
         reason: 'the new order reloaded the list');
-    expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+    expect(analytics.events.where((e) => e.name == 'pencarian_hasil'),
         hasLength(1));
   });
 
@@ -124,7 +128,74 @@ void main() {
     await tester.pump(NasabahNotifier.jedaPencarian * 2);
     await tester.pumpAndSettle();
 
-    expect(analytics.events.where((e) => e.name == 'nasabah_dicari'), isEmpty);
+    expect(
+        analytics.events.where((e) => e.name.startsWith('pencarian')), isEmpty);
+  });
+
+  testWidgets('the same words in another tab are another attempt',
+      (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester);
+    await tester.enterText(find.byType(TextField).first, 'budi');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Tidak Aktif'));
+    await tester.pumpAndSettle();
+
+    final results =
+        analytics.events.where((e) => e.name == 'pencarian_hasil').toList();
+    expect(results, hasLength(2));
+    expect(results.last.properties['filter'], 'tidak_aktif');
+    expect(results.last.properties['percobaan_ke'], 2);
+  });
+
+  testWidgets('opening a nasabah from the results ends the search',
+      (tester) async {
+    listAs([nasabahRow('1'), nasabahRow('2', nama: 'Budi Hartono')]);
+    api.on('GET', '$_path/2', json: <String, dynamic>{});
+    await open(tester);
+    await tester.enterText(find.byType(TextField).first, 'budi');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Budi Hartono'));
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.last.name, 'pencarian_dipilih');
+    expect(analytics.events.last.properties['posisi_hasil_kelas'], '2_3');
+    expect(analytics.events.last.properties['area'], 'nasabah');
+  });
+
+  testWidgets('clearing the words after results means giving up',
+      (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester);
+    await tester.enterText(find.byType(TextField).first, 'budi');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.map((e) => e.name),
+        contains('pencarian_ditinggalkan'));
+  });
+
+  testWidgets('closing the add form without saving is reported',
+      (tester) async {
+    listAs([]);
+    await open(tester);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.map((e) => e.name),
+        ['nasabah_tambah_dimulai', 'nasabah_tambah_dibatalkan']);
+    expect(analytics.events.last.properties['percobaan_ke'], 0);
   });
 
   testWidgets('the add button on the page says where the form came from',
