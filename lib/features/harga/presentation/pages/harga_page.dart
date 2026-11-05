@@ -107,7 +107,19 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
     _search.resultsSettled(
       query: state.searchQuery,
       count: state.jenisSampahList.length,
+      filter: state.isActiveTab ? 'aktif' : 'tidak_aktif',
     );
+  }
+
+  /// The tab changed while words are in the search: the list now shows another
+  /// set of rows, so what the words find is reported again, once typing and
+  /// switching have settled.
+  void _tabChanged(HargaState? previous, HargaState current) {
+    if (previous is! HargaLoaded || current is! HargaLoaded) return;
+    if (previous.isActiveTab == current.isActiveTab) return;
+    if (current.searchQuery.trim().length < SearchAnalytics.minLength) return;
+    _searchReport?.cancel();
+    _searchReport = Timer(_searchReportDelay, _reportResults);
   }
 
   /// A row of the list was opened. When the list is showing a search, that is
@@ -117,7 +129,10 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
     if (state is! HargaLoaded) return;
     final index = state.jenisSampahList.indexWhere((e) => e.id == item.id);
     if (index < 0) return;
-    _reportResults();
+    // Only a try that is still waiting is reported first. The session ends with
+    // the pick, so settling again on a later tap would start a session that
+    // nobody searched for.
+    if (_searchReport?.isActive ?? false) _reportResults();
     _search.picked(position: index + 1);
   }
 
@@ -219,6 +234,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(hargaProvider, _tabChanged);
     ref.listen(hargaProvider, (previous, current) {
       if (widget.isWeb &&
           current is HargaLoaded &&
