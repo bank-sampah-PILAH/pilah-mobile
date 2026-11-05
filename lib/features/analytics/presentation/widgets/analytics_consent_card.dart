@@ -46,7 +46,7 @@ class AnalyticsConsentCard extends ConsumerWidget {
                   'bisa meningkatkannya. Data dikirim ke PostHog, penyedia '
                   'analitik di luar negeri, bersama jenis perangkat, peramban, '
                   'dan perkiraan lokasi dari alamat IP. '
-                  '${recordsScreen ? 'Layar direkam dengan semua tulisan dan gambar disamarkan.' : 'Isi layar dan alamat halaman tidak dicatat.'}',
+                  '${recordsScreen ? 'Layar direkam. Data pribadi disamarkan, label tetap aplikasi tetap terlihat.' : 'Isi layar dan alamat halaman tidak dicatat.'}',
                   style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
               ],
