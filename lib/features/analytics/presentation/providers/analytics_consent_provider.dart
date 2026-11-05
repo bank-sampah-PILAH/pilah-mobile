@@ -86,6 +86,9 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
     final userId = ref.watch(analyticsUserIdProvider);
     final client = ref.read(analyticsClientProvider);
     final choice = await ref.read(analyticsConsentStoreProvider).read(userId);
+    // Somebody signed in or out while the saved choice was being read: this
+    // run knows an old answer, and the newer run is the one that decides.
+    if (_changedSince(eligible, userId)) return choice;
     if (!eligible) {
       // Whoever is signed in now may not be recorded, and the page may still
       // be recording the pengurus who just left.
@@ -103,10 +106,20 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
     return choice;
   }
 
+  /// Whether who is signed in, or whether they may be recorded, is no longer
+  /// what it was when [eligible] and [userId] were read.
+  bool _changedSince(bool eligible, String userId) =>
+      ref.read(analyticsEligibleProvider) != eligible ||
+      ref.read(analyticsUserIdProvider) != userId;
+
   /// The pengurus agreed: remember it, then start recording.
   Future<void> grant() async {
+    final eligible = ref.read(analyticsEligibleProvider);
     final userId = ref.read(analyticsUserIdProvider);
     await ref.read(analyticsConsentStoreProvider).grant(userId);
+    // The choice is saved, but whoever is signed in now may not be recorded,
+    // or may be somebody else: starting would record the wrong person.
+    if (_changedSince(eligible, userId) || !eligible) return;
     await ref.read(analyticsClientProvider).start();
     _recordingFor = userId;
     state = const AsyncData(ConsentChoice.granted);
