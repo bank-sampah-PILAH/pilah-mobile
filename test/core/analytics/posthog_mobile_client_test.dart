@@ -35,7 +35,11 @@ class _FakePlatform extends PosthogFlutterPlatformInterface
   Future<void> disable() async => calls.add('disable');
 
   @override
-  Future<void> reset() async => calls.add('reset');
+  Future<void> reset() async {
+    // The SDK forgets what it was told when it is reset.
+    registered.clear();
+    calls.add('reset');
+  }
 
   @override
   Future<void> register(String key, Object value) async {
@@ -122,6 +126,19 @@ void main() {
     expect(config.optOut, isTrue);
     expect(platform.calls.first, 'setup');
     expect(platform.calls, contains('enable'));
+    expect(
+        platform.registered, {'platform': 'android', 'environment': 'staging'});
+  });
+
+  test('signing out and in again tells the SDK where this runs once more',
+      () async {
+    await client.start();
+    await client.stop();
+    client.reset();
+    expect(platform.registered, isEmpty);
+
+    await client.start();
+
     expect(
         platform.registered, {'platform': 'android', 'environment': 'staging'});
   });
