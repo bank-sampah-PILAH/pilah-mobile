@@ -13,7 +13,7 @@ enum DashboardQuickAction {
 
 /// The range the pengurus picked for the dashboard reports.
 enum DashboardRangeChoice {
-  today('1_hari'),
+  today('hari_ini'),
   week('7_hari'),
   month('30_hari'),
   custom('kustom');
@@ -33,9 +33,33 @@ void dashboardQuickActionTapped(
 ) =>
     client.capture('dashboard_aksi_cepat_ditekan', {'aksi': action.wire});
 
-/// The report range was changed. Which range is sent by name, never its dates.
+/// The report range was changed. Which range is sent by name, never its dates;
+/// a custom range also says how long it is, in a class ([customDays] counts
+/// both ends).
 void dashboardRangeChanged(
   AnalyticsClient client,
-  DashboardRangeChoice choice,
-) =>
-    client.capture('dashboard_rentang_diubah', {'periode': choice.wire});
+  DashboardRangeChoice choice, {
+  int? customDays,
+}) =>
+    client.capture('dashboard_periode_diubah', {
+      'periode': choice.wire,
+      if (customDays != null)
+        'lama_kustom_hari_kelas': _lengthClass(customDays),
+    });
+
+String _lengthClass(int days) {
+  if (days <= 7) return '1_7_hari';
+  return days <= 30 ? '8_30_hari' : 'lebih_30_hari';
+}
+
+/// The dashboard finished loading what it shows first. It says how long that
+/// took and how many of its parts failed, never what they show.
+void dashboardLoaded(
+  AnalyticsClient client, {
+  required Duration loadTime,
+  required int failedSections,
+}) =>
+    client.capture('dashboard_dimuat', {
+      'durasi_muat_detik': loadTime.inSeconds,
+      'jumlah_bagian_gagal': failedSections,
+    });

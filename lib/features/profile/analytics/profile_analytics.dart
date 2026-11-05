@@ -28,6 +28,7 @@ void profileSettingsSaved(
       ],
     });
 
-/// The invite link was copied. The link itself is never sent.
-void inviteLinkCopied(AnalyticsClient client) =>
-    client.capture('undangan_tautan_disalin');
+/// Copying the invite link was tried. It says whether it worked, and the link
+/// itself is never sent.
+void inviteLinkCopied(AnalyticsClient client, {required bool success}) =>
+    client.capture('undangan_tautan_disalin', {'berhasil': success});

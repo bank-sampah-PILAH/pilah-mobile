@@ -331,17 +331,19 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   Future<void> _onCopyInvite(TeamInvite invite) async {
     final state = ref.read(profileProvider);
     if (state.inviteError != null) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
       _snack(state.inviteError!, error: true);
       return;
     }
     if (!invite.isValid || _expiredInviteUrl == invite.url) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
       _snack('Link undangan sudah kedaluwarsa. Buat link baru untuk dibagikan.',
           error: true);
       return;
     }
     await Clipboard.setData(ClipboardData(text: invite.url!));
     if (!mounted) return;
-    inviteLinkCopied(ref.read(analyticsClientProvider));
+    inviteLinkCopied(ref.read(analyticsClientProvider), success: true);
     _snack('Link undangan disalin ke clipboard!');
   }
 
