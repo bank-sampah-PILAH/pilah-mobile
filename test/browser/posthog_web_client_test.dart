@@ -205,6 +205,11 @@ void main() {
         r'$referrer',
         r'$referring_domain',
         r'$host',
+        r'$initial_current_url',
+        r'$initial_pathname',
+        r'$initial_referrer',
+        r'$initial_referring_domain',
+        r'$initial_host',
       ],
       'capture_performance': true,
     });
