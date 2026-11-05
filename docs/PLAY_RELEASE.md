@@ -3,7 +3,7 @@
 ## Android identity and version
 
 - Keep the application ID `com.mobile.pilahapp`; it is the identity of the existing Play app.
-- `pubspec.yaml` uses `MAJOR.MINOR.PATCH+BUILD`. The replacement release is `2.0.1+8`, so its tag is `v2.0.1`. Play Console's last known highest uploaded version code was 6.
+- `pubspec.yaml` uses `MAJOR.MINOR.PATCH+BUILD`. The latest Alpha release is `2.0.1+8` (`v2.0.1`); this release is `2.0.2+9` (`v2.0.2`). Play Console's highest uploaded version code was confirmed as 8 before preparing this release.
 - The existing `v2.0.0` GitHub release (`2.0.0+7`) was rejected by Google Play for an upload-key mismatch before bundle registration. Its tag cannot be reused; replacement builds need a new version name and code.
 - Before creating the tag or uploading, recheck Play Console's highest version code and set `+BUILD` to a greater value. The workflow only enforces the known rejected-code lower bound of 6; it cannot query Play's latest version. Match the tag to the version name. Never reuse a version code or move an existing release tag.
 - Keep the existing upload key and Play App Signing configuration. Do not generate or rotate an upload key as part of a release.
