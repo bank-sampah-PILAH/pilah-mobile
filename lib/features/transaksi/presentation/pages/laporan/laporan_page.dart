@@ -43,6 +43,20 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
     });
   }
 
+  /// Whether the report is the tab being shown. The shell keeps the report of a
+  /// tab that is not shown and turns its tickers off, which is how it is told.
+  bool _shown = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shown = TickerMode.valuesOf(context).enabled;
+    if (_shown && !shown) {
+      ref.read(riwayatAktivitasProvider.notifier).searchLeft();
+    }
+    _shown = shown;
+  }
+
   @override
   void dispose() {
     _searchController.dispose();

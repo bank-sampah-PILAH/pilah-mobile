@@ -203,6 +203,11 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
     if (index >= 0) _search.picked(position: index + 1);
   }
 
+  /// The pengurus left the report while it was showing a search. The report
+  /// itself stays alive in the shell, so only this ends the search, and the
+  /// next words typed start a new one.
+  void searchLeft() => _search.closed();
+
   /// Kembali ke periode, tipe, dan pencarian bawaan, lalu memuat ulang.
   void resetFilters() {
     state = const RiwayatAktivitasState();
