@@ -663,6 +663,7 @@ void main() {
       expect(names(analytics), [
         'setoran_dimulai',
         'setoran_nasabah_dipilih',
+        'setoran_item_diisi',
         'setoran_simpan_ditekan',
         'setoran_disimpan',
       ]);
@@ -676,6 +677,38 @@ void main() {
       // Nobody and nothing worth money is named.
       expect(
           saved.values.whereType<String>(), isNot(contains(contains('Budi'))));
+    });
+
+    testWidgets('each item that gets filled is reported once, in order',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+
+      await addItem(tester, 'Botol PET');
+      await addItem(tester, 'Kardus');
+      // Editing the weight of a counted item is not a new item.
+      await tester.enterText(find.byType(TextFormField).first, '3');
+      await tester.pumpAndSettle();
+
+      final filled = analytics.events
+          .where((e) => e.name == 'setoran_item_diisi')
+          .toList();
+      expect(filled.map((e) => e.properties['item_ke']), [1, 2]);
+      expect(filled.first.properties.keys.toSet(), {'alur_id', 'item_ke'});
+    });
+
+    testWidgets('an item card that has no jenis yet is not reported',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+
+      await tester.ensureVisible(find.text('Tambah Item Setoran'));
+      await tester.tap(find.text('Tambah Item Setoran'));
+      await tester.pumpAndSettle();
+
+      expect(names(analytics), isNot(contains('setoran_item_diisi')));
     });
 
     testWidgets(

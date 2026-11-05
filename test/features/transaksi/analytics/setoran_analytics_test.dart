@@ -195,4 +195,68 @@ void main() {
       expect(last()['bidang_diubah'], ['item', 'catatan']);
     });
   });
+
+  group('filling in the items', () {
+    List<Map<String, Object>> filled() => [
+          for (final e in client.events)
+            if (e.name == 'setoran_item_diisi') e.properties,
+        ];
+
+    test('the first item that gets filled is item 1 of the flow', () {
+      setoran.started();
+
+      setoran.itemFilled('baris-1');
+
+      expect(filled(), [
+        {'alur_id': _flow, 'item_ke': 1},
+      ]);
+    });
+
+    test('each later item that gets filled counts on', () {
+      setoran.started();
+
+      setoran
+        ..itemFilled('baris-1')
+        ..itemFilled('baris-2')
+        ..itemFilled('baris-3');
+
+      expect(filled().map((p) => p['item_ke']), [1, 2, 3]);
+    });
+
+    test('editing an item that was already counted sends nothing more', () {
+      setoran.started();
+
+      setoran
+        ..itemFilled('baris-1')
+        ..itemFilled('baris-1')
+        ..itemFilled('baris-1');
+
+      expect(filled(), hasLength(1));
+    });
+
+    test('a new flow counts from 1 again', () {
+      setoran
+        ..started()
+        ..itemFilled('baris-1')
+        ..itemFilled('baris-2')
+        ..started()
+        ..itemFilled('baris-1');
+
+      expect(filled().map((p) => p['item_ke']), [1, 2, 1]);
+    });
+
+    test('before the form is opened there is no flow, so nothing is sent', () {
+      setoran.itemFilled('baris-1');
+
+      expect(client.events, isEmpty);
+    });
+
+    test('it names neither the jenis nor the weight', () {
+      setoran.started();
+
+      setoran.itemFilled('baris-1');
+
+      expect(filled().single.keys.toSet(), {'alur_id', 'item_ke'});
+    });
+  });
 }
