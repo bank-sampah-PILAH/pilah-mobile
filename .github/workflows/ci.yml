@@ -159,10 +159,11 @@ jobs:
           test/browser/posthog_web_client_test.dart
           test/core/analytics/analytics_props_test.dart
 
+      # The factory builds the recording client, which draws on Flutter, so
+      # `dart run test` cannot compile it: run it through `flutter test`.
       - name: Cover the web analytics client factory
         run: >-
-          dart run test --platform chrome
-          --dart2js-args=-O0
+          flutter test --platform chrome --coverage
           --coverage-path=coverage/browser-analytics-factory.info
           test/core/analytics/analytics_client_factory_web_test.dart
 
