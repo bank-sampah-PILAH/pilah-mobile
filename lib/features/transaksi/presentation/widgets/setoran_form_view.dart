@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/setoran_analytics.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
+import 'package:pilah_mobile/core/utils/uuid_v4.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -124,16 +125,7 @@ bool jenisSampahSudahAda(
 }
 
 @visibleForTesting
-String newTransaksiIdempotencyKey() {
-  final random = Random.secure();
-  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  final hex =
-      bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
-  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
-      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
-}
+String newTransaksiIdempotencyKey() => newUuidV4();
 
 /// Isi dan keadaan formulir setoran, tanpa rangka halaman.
 ///
@@ -176,7 +168,9 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   bool _hasSubmitted = false;
   bool _isSaving = false;
   bool _saved = false;
+  int _nextRow = 0;
   String? _idempotencyKey;
+  late final SetoranAnalytics _analytics;
   late final SetoranTutorialProgress _tutorialProgress;
   final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
   final _addItemTutorialKey = GlobalKey<State<StatefulWidget>>();
@@ -219,6 +213,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   @override
   void initState() {
     super.initState();
+    _analytics = SetoranAnalytics(ref.read(analyticsClientProvider))..started();
     _tutorialProgress = ref.read(_setoranTutorialProgressProvider);
     ShowcaseView.register(
       enableAutoScroll: true,
@@ -303,8 +298,15 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
 
   void _addItem() {
     setState(() {
-      setoranItems.add(
-          {'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': 1.0});
+      // `baris` tells the cards apart for analytics only; the card keeps it
+      // when it hands back the edited item.
+      setoranItems.add({
+        'jenis': null,
+        'jenis_sampah_id': null,
+        'harga': 0,
+        'berat': 1.0,
+        'baris': _nextRow++,
+      });
     });
   }
 
@@ -380,9 +382,11 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     if (_isSaving) return;
 
     setState(() => _hasSubmitted = true);
+    _analytics.saveTapped(itemCount: setoranItems.length);
 
     final problems = _draft.problems;
     if (problems.isNotEmpty) {
+      _analytics.validationFailed(problems);
       // Teks sebaris saja mudah terlewat ketika kartu yang bermasalah sudah
       // tergulir keluar layar, dan pada layar lebar tombol simpan berada di
       // panel kanan yang jauh dari kartunya.
@@ -445,9 +449,12 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
       return;
     }
 
-    ref.read(analyticsClientProvider).capture('setoran_disimpan', {
-      'jumlah_item': request.items.length,
-    });
+    _analytics.saved(
+      itemCount: request.items.length,
+      distinctJenis:
+          request.items.map((item) => item.jenisSampahId).toSet().length,
+      totalKg: request.items.fold(0.0, (sum, item) => sum + item.berat),
+    );
 
     // Refresh the shell tabs that stay alive and won't re-init on their own.
     // loadStats updates the dashboard metrics (Total Kas / Sampah / Transaksi);
@@ -522,6 +529,8 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
             // the transaksi is already saved, only the draft didn't open.
             opened = false;
           }
+          _analytics.afterSave(
+              opened: opened, templateUsed: waTemplate != null);
           if (!mounted) return;
 
           // Deferred rather than raised in this frame: see [_leaveAndNotify].
@@ -556,6 +565,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
           }
         },
         onSelesai: () {
+          _analytics.finishedWithoutMessage();
           // Nothing to wait for, so nothing separates these from the pop. The
           // container closes itself, as above: from inside the side sheet
           // `GoRouter.pop()` would pop the page behind the panel.
@@ -598,6 +608,12 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     AppNotification.afterNavigation(toast);
   }
 
+  /// How far the pengurus has got, for when they leave without saving.
+  SetoranStep get _currentStep {
+    if (selectedCustomer == null) return SetoranStep.nasabah;
+    return _draft.problems.isEmpty ? SetoranStep.siapSimpan : SetoranStep.item;
+  }
+
   int get grandTotal {
     return setoranItems.fold(0, (sum, item) {
       final harga = item['harga'] as int? ?? 0;
@@ -635,6 +651,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
 
   @override
   void dispose() {
+    _analytics.leftWithoutSaving(_currentStep);
     ShowcaseView.get().unregister();
     super.dispose();
   }
@@ -697,6 +714,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
                                     setState(() {
                                       selectedCustomer = customer;
                                     });
+                                    _analytics.nasabahChosen();
                                   },
                                   hasError:
                                       _hasSubmitted && selectedCustomer == null,
@@ -858,6 +876,17 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     );
   }
 
+  /// Tells analytics when a card first holds a jenis and a weight.
+  void _reportItemFilled(Map<String, dynamic> item) {
+    final row = item['baris'];
+    if (row == null) return;
+    final filled = SetoranItemDraft(
+      jenisSampahId: item['jenis_sampah_id'] as String?,
+      berat: (item['berat'] as num?)?.toDouble() ?? 0,
+    ).isValid;
+    if (filled) _analytics.itemFilled(row as Object);
+  }
+
   Widget _buildItemCard(int index) {
     return ItemSetoranCard(
       index: index,
@@ -876,6 +905,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
           return;
         }
         setState(() => setoranItems[index] = updatedItem);
+        _reportItemFilled(updatedItem);
       },
       onSubmitted: _handleSubmit,
       onDelete: () {

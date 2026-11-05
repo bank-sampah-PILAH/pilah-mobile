@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/analytics/search_analytics.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -47,16 +49,22 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
   bool _isLoadingMore = false;
   Object? _error;
   Object? _loadMoreError;
+  late final SearchAnalytics _analytics;
 
   @override
   void initState() {
     super.initState();
+    _analytics = SearchAnalytics(
+      ref.read(analyticsClientProvider),
+      area: 'pemilih_nasabah',
+    );
     _listController.addListener(_loadMoreWhenNearEnd);
     unawaited(_loadPage(page: 1, query: '', generation: _requestGeneration));
   }
 
   @override
   void dispose() {
+    _analytics.closed();
     _searchDebounce?.cancel();
     _searchController.dispose();
     _listController.dispose();
@@ -65,6 +73,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
 
   void _search(String value) {
     final query = value.trim();
+    _analytics.queryChanged(query);
     final generation = ++_requestGeneration;
     _searchDebounce?.cancel();
     setState(() {
@@ -153,6 +162,9 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
       _isLoading = false;
       _isLoadingMore = false;
     });
+    if (!append) {
+      _analytics.resultsSettled(query: searchQuery, count: _nasabah.length);
+    }
   }
 
   void _setLoadError(Object error, {required bool append}) {
@@ -248,7 +260,10 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
       customer.phone,
     ].join(' · ');
     return InkWell(
-      onTap: () => context.pop(customer),
+      onTap: () {
+        _analytics.picked(position: index + 1);
+        context.pop(customer);
+      },
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
