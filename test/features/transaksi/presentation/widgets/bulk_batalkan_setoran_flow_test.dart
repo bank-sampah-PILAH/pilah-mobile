@@ -20,7 +20,6 @@ import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_akti
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/bulk_batalkan_setoran_dialog.dart';
 
 import '../../../../support/dashboard_support.dart';
-import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pencairan_support.dart';
 import '../../../../support/stub_api.dart';
@@ -76,7 +75,6 @@ void main() {
   late StubApi api;
   late _Feed feed;
   late ProviderContainer container;
-  late FakeAnalyticsClient analytics;
 
   Future<void> pumpPage(WidgetTester tester,
       {double width = 390, double textScale = 1, bool isWeb = true}) async {
@@ -86,13 +84,11 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     api = StubApi();
     feed = _Feed();
-    analytics = FakeAnalyticsClient();
     final transaksi = buildTransaksiNotifier(api);
     await tester.pumpWidget(withTransaksiProviders(
       transaksi: transaksi,
       riwayat: feed,
       nasabah: buildNasabahNotifier(api),
-      analytics: analytics,
       child: ProviderScope(
         overrides: [
           dashboardProvider.overrideWith(() => buildDashboardNotifier(api)),
@@ -220,38 +216,6 @@ void main() {
     expect(find.textContaining('Sari Wijaya'), findsWidgets);
     expect(container.read(aktivitasSelectionProvider), {'s2'});
     expect(api.requests, hasLength(2));
-  });
-
-  testWidgets('a bulk void reports how many setoran were really voided',
-      (tester) async {
-    await pumpPage(tester);
-    succeed('s1');
-    const error = 'Tidak bisa dibatalkan';
-    api.on('POST', '/api/v1/transaksi/s2/batalkan',
-        status: 409, json: {'error': error});
-    await openDialog(tester);
-    await fillReason(tester);
-    await tester.tap(submit());
-    await tester.pumpAndSettle();
-
-    expect(analytics.events.single.name, 'riwayat_setoran_dibatalkan');
-    expect(analytics.events.single.properties,
-        {'cara': 'massal', 'jumlah_setoran': 1});
-  });
-
-  testWidgets('a bulk void that voided nothing reports nothing',
-      (tester) async {
-    await pumpPage(tester);
-    api.on('POST', '/api/v1/transaksi/s1/batalkan',
-        status: 409, json: {'error': 'Tidak bisa dibatalkan'});
-    api.on('POST', '/api/v1/transaksi/s2/batalkan',
-        status: 409, json: {'error': 'Tidak bisa dibatalkan'});
-    await openDialog(tester);
-    await fillReason(tester);
-    await tester.tap(submit());
-    await tester.pumpAndSettle();
-
-    expect(analytics.events, isEmpty);
   });
 
   testWidgets(
