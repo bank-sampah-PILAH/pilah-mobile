@@ -86,6 +86,19 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
     });
   }
 
+  /// Whether the list is the tab being shown. The shell keeps the list of a tab
+  /// that is not shown and turns its tickers off, which is how it is told. Only
+  /// leaving ends the search, so the next words typed start a new one.
+  bool _shown = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shown = TickerMode.valuesOf(context).enabled;
+    if (_shown && !shown) _search.closed();
+    _shown = shown;
+  }
+
   @override
   void dispose() {
     _search.closed();
