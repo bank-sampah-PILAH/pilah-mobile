@@ -35,23 +35,6 @@ void nasabahDecided(
       'durasi_sejak_dibuka_detik': sinceOpened.inSeconds,
     });
 
-/// The names of the add-nasabah fields that were left wrong, from the values
-/// typed (never the values themselves).
-List<String> nasabahInvalidFields({
-  required String nama,
-  required String kode,
-  required String email,
-  required String noHp,
-  required String alamat,
-}) =>
-    [
-      if (nama.trim().isEmpty) 'nama',
-      if (kode.trim().isEmpty) 'id_nasabah',
-      if (email.trim().isEmpty) 'email',
-      if (noHp.trim().isEmpty) 'no_hp',
-      if (alamat.trim().runes.length < 10) 'alamat',
-    ];
-
 /// The events of adding a nasabah, all with one flow id.
 class NasabahAddAnalytics {
   NasabahAddAnalytics(

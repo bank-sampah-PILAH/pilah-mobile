@@ -50,19 +50,21 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
         builder: (context) => const TambahNasabahBottomSheet(),
       );
 
+  /// The search that was last reported, whatever loading came since: loading
+  /// it again (another order, a further page) is not a new search.
+  ({String query, bool? tab})? _lastSearch;
+
   /// A search finished: tell analytics whether it found anything.
-  void _reportSearch(NasabahState? before, NasabahState now) {
-    if (now is! NasabahLoaded ||
-        now.isReloading ||
-        now.searchQuery.length < 2) {
+  void _reportSearch(NasabahState? _, NasabahState now) {
+    if (now is! NasabahLoaded || now.isReloading) return;
+    if (now.searchQuery.length < 2) {
+      // Searching for the same words again after clearing them is a new search.
+      _lastSearch = null;
       return;
     }
-    final previous = before is NasabahLoaded ? before : null;
-    final sameSearch = previous != null &&
-        !previous.isReloading &&
-        previous.searchQuery == now.searchQuery &&
-        previous.isActiveTab == now.isActiveTab;
-    if (sameSearch) return;
+    final search = (query: now.searchQuery, tab: now.isActiveTab);
+    if (search == _lastSearch) return;
+    _lastSearch = search;
     nasabahSearched(
       ref.read(analyticsClientProvider),
       activeTab: now.isActiveTab,

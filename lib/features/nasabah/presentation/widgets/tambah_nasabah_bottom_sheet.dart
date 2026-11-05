@@ -127,14 +127,7 @@ class _TambahNasabahBottomSheetState
         ),
         NasabahAddressField(
           controller: _alamatController,
-          validator: (value) {
-            final alamat = value?.trim() ?? '';
-            if (alamat.isEmpty) return 'Bagian ini wajib diisi.';
-            if (alamat.runes.length < 10) {
-              return 'Alamat minimal 10 karakter.';
-            }
-            return null;
-          },
+          validator: _alamatError,
         ),
       ],
       button: AppButton(
@@ -145,16 +138,38 @@ class _TambahNasabahBottomSheetState
     );
   }
 
+  static String? _alamatError(String? value) {
+    final alamat = value?.trim() ?? '';
+    if (alamat.isEmpty) return 'Bagian ini wajib diisi.';
+    if (alamat.runes.length < 10) return 'Alamat minimal 10 karakter.';
+    return null;
+  }
+
+  /// The names of the fields the form refused, by the same rules it showed the
+  /// errors with, so a field cannot be refused without being named. Only names,
+  /// never what was typed.
+  List<String> _invalidFields() => [
+        if (NasabahNameField.errorFor(_namaController.text) != null) 'nama',
+        if (_idNasabahController.text.trim().isEmpty) 'id_nasabah',
+        if (NasabahGenderField.errorFor(_jenisKelamin) != null) 'jenis_kelamin',
+        if (NasabahEmailField.errorFor(
+                _emailController.text, _serverEmailError) !=
+            null)
+          'email',
+        if (NasabahBirthDateField.errorFor(_tanggalLahirController.text) !=
+            null)
+          'tanggal_lahir',
+        if (NasabahPhoneField.errorFor(
+                _whatsappController.text, _serverPhoneError) !=
+            null)
+          'no_hp',
+        if (_alamatError(_alamatController.text) != null) 'alamat',
+      ];
+
   Future<void> _handleSimpan() async {
     _analytics.submitTapped();
     if (!(_formKey.currentState?.validate() ?? false)) {
-      _analytics.rejected(nasabahInvalidFields(
-        nama: _namaController.text,
-        kode: _idNasabahController.text,
-        email: _emailController.text,
-        noHp: _whatsappController.text,
-        alamat: _alamatController.text,
-      ));
+      _analytics.rejected(_invalidFields());
       return;
     }
 
