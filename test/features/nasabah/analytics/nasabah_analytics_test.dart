@@ -52,23 +52,6 @@ void main() {
     expect(last()['keputusan'], 'tolak');
   });
 
-  test('invalid fields are named from what was typed', () {
-    expect(
-      nasabahInvalidFields(
-          nama: ' ', kode: '', email: '', noHp: '', alamat: 'pendek'),
-      ['nama', 'id_nasabah', 'email', 'no_hp', 'alamat'],
-    );
-    expect(
-      nasabahInvalidFields(
-          nama: 'A',
-          kode: 'N1',
-          email: 'a@x.test',
-          noHp: '8123',
-          alamat: 'Jl. Mawar No. 1'),
-      isEmpty,
-    );
-  });
-
   group('adding', () {
     late DateTime now;
     late NasabahAddAnalytics add;

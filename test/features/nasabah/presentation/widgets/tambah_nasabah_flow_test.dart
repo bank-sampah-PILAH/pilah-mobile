@@ -48,7 +48,9 @@ void main() {
   }
 
   Future<void> fill(WidgetTester tester,
-      {String kode = 'NAS-9', String email = 'siti@x.test'}) async {
+      {String kode = 'NAS-9',
+      String email = 'siti@x.test',
+      String phone = '81234567890'}) async {
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'Siti Aminah');
     await tester.enterText(fields.at(1), kode);
@@ -63,7 +65,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    await tester.enterText(fields.at(4), '81234567890');
+    await tester.enterText(fields.at(4), phone);
     await tester.enterText(fields.at(5), 'Jl. Melati Nomor 5');
   }
 
@@ -86,9 +88,16 @@ void main() {
     final refused = analytics.events[1];
     expect(refused.name, 'validasi_gagal');
     expect(refused.properties['tugas'], 'tambah_nasabah');
-    expect(refused.properties['bidang'],
-        ['nama', 'id_nasabah', 'email', 'no_hp', 'alamat']);
-    expect(refused.properties['jumlah_masalah'], 5);
+    expect(refused.properties['bidang'], [
+      'nama',
+      'id_nasabah',
+      'jenis_kelamin',
+      'email',
+      'tanggal_lahir',
+      'no_hp',
+      'alamat',
+    ]);
+    expect(refused.properties['jumlah_masalah'], 7);
 
     await fill(tester);
     await save(tester);
@@ -98,6 +107,32 @@ void main() {
     expect(saved.properties['alur_id'],
         analytics.events.first.properties['alur_id']);
     expect(names(), hasLength(3));
+    await settleToasts(tester);
+  });
+
+  testWidgets('a badly formed email is named, not hidden as "lainnya"',
+      (tester) async {
+    await open(tester);
+    await fill(tester, email: 'bukan-email');
+
+    await save(tester);
+
+    final refused =
+        analytics.events.singleWhere((e) => e.name == 'validasi_gagal');
+    expect(refused.properties['bidang'], ['email']);
+    expect(refused.properties['jumlah_masalah'], 1);
+    await settleToasts(tester);
+  });
+
+  testWidgets('a badly formed phone number is named', (tester) async {
+    await open(tester);
+    await fill(tester, phone: '12345');
+
+    await save(tester);
+
+    final refused =
+        analytics.events.singleWhere((e) => e.name == 'validasi_gagal');
+    expect(refused.properties['bidang'], ['no_hp']);
     await settleToasts(tester);
   });
 

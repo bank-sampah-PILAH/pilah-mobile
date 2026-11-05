@@ -93,6 +93,29 @@ void main() {
     });
   });
 
+  testWidgets('loading the same search again in another order is not new',
+      (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester);
+    await tester.enterText(find.byType(TextField).first, 'budi');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+    expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+        hasLength(1));
+
+    // Another order loads the same search again, through a reloading state.
+    final before = api.requests.length;
+    await tester.tap(find.text('Nomor'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nama A–Z').last);
+    await tester.pumpAndSettle();
+
+    expect(api.requests.length, greaterThan(before),
+        reason: 'the new order reloaded the list');
+    expect(analytics.events.where((e) => e.name == 'nasabah_dicari'),
+        hasLength(1));
+  });
+
   testWidgets('a one-letter search is not reported', (tester) async {
     listAs([nasabahRow('1')]);
     await open(tester);
