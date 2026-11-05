@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 
 /// Which of the app's button looks to use.
 enum AppButtonVariant {
@@ -268,7 +269,9 @@ class AppButton extends StatelessWidget {
     // half-width button on a 360 dp phone, shrinks to fit rather than being cut.
     final text = FittedBox(
       fit: BoxFit.scaleDown,
-      child: Text(label, maxLines: 1, softWrap: false),
+      child: RevealInReplay(
+        child: Text(label, maxLines: 1, softWrap: false),
+      ),
     );
     final iconSize = size == AppButtonSize.compact ? 16.0 : 20.0;
     final iconData = icon;

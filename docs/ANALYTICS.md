@@ -80,11 +80,20 @@ client; only load time is measured automatically.
 
 The mobile apps also record the screen (PIL-473), so the team can open the
 session of a pengurus who got stuck and see what went wrong. The recording is
-masked: `maskAllTexts`, `maskAllImages` and `maskCustomPaint` are on, so only
-layout and where the finger touched are visible. No name, balance, address,
-photo, email or phone number can be read in it. Do not turn those off, and do not
-unmask a widget (`PostHogUnmaskWidget`) without checking it can never show
-personal data.
+masked: `maskAllTexts` and `maskAllImages` are on, so every text, icon and image
+is a black block and only layout and where the finger touched are visible. No
+name, balance, address, photo, email or phone number can be read in it. Do not
+turn those off.
+
+Three things are shown on purpose, so a viewer can tell which screen and which
+step it is: field captions (`AppFieldLabel`), page and sheet titles
+(`AppPageHeader`, `BottomSheetHeader`) and button labels (`AppButton`). They are
+wrapped in `RevealInReplay` (`lib/core/analytics/replay_masks.dart`). Before you
+reveal anything else, or pass a dynamic value to one of these widgets, check it
+can never hold what a pengurus typed or what the server sent (a name, an
+address, an amount, a note). The charts of the dashboard are drawn on a canvas
+that the masks do not reach, so they are wrapped in `HideInReplay`; do the same
+for anything new that draws figures itself.
 
 - It starts and stops together with analytics: after the pengurus agrees, never
   for a nasabah or a Super Admin, and not after they withdraw.

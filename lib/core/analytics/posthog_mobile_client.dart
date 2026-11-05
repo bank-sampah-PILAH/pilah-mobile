@@ -17,7 +17,10 @@ import 'package:posthog_flutter/posthog_flutter.dart';
 /// The one exception is the screen recording, which lets the team watch where
 /// a pengurus gets stuck. Every text and every image is masked in it, so what
 /// reaches PostHog is the layout and where the finger went, never a name, a
-/// balance, an address or a photo.
+/// balance, an address or a photo. Only fixed wording of the app is revealed
+/// (`RevealInReplay`: field captions, page titles, button labels), and the
+/// charts are hidden on purpose (`HideInReplay`), because they are drawn on a
+/// canvas that the text and image masks do not reach.
 class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
   /// [posthog] defaults to the SDK's own instance; tests pass one that runs on
   /// a fake platform so they never reach a device or the network.
@@ -147,8 +150,7 @@ class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
       ..sessionReplay = true
       ..sessionReplayConfig = (PostHogSessionReplayConfig()
         ..maskAllTexts = true
-        ..maskAllImages = true
-        ..maskCustomPaint = true)
+        ..maskAllImages = true)
       ..surveys = false
       ..preloadFeatureFlags = false
       ..capturePushNotificationSubscriptions = false

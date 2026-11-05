@@ -119,7 +119,6 @@ void main() {
     expect(config.sessionReplay, isTrue);
     expect(config.sessionReplayConfig.maskAllTexts, isTrue);
     expect(config.sessionReplayConfig.maskAllImages, isTrue);
-    expect(config.sessionReplayConfig.maskCustomPaint, isTrue);
     expect(config.captureApplicationLifecycleEvents, isFalse);
     expect(config.surveys, isFalse);
     expect(config.preloadFeatureFlags, isFalse);

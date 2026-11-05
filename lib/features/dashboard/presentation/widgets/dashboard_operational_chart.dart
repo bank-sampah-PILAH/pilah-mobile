@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 
 class DashboardOperationalChart extends StatelessWidget {
   final List<OperationalTrendBucket> buckets;
@@ -188,10 +189,12 @@ class DashboardOperationalChart extends StatelessWidget {
                   )
                 ],
               );
-              return Stack(children: [
-                BarChart(bars, duration: Duration.zero),
-                LineChart(line, duration: Duration.zero),
-              ]);
+              return HideInReplay(
+                child: Stack(children: [
+                  BarChart(bars, duration: Duration.zero),
+                  LineChart(line, duration: Duration.zero),
+                ]),
+              );
             }),
           ),
         ),
