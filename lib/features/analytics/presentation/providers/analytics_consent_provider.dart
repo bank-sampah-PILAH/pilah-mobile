@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/core/analytics/consent_revocation_channel.dart';
 import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
@@ -15,6 +18,15 @@ final analyticsConsentStoreProvider = Provider<AnalyticsConsentStore>((ref) =>
         ? di<AnalyticsConsentStore>()
         : AnalyticsConsentStore(
             di<AppStorage>(instanceName: 'shared_preferences')));
+
+/// How a withdrawal reaches the other tabs. Outside the web it tells nobody.
+final consentRevocationChannelProvider = Provider<ConsentRevocationChannel>(
+  (ref) {
+    final channel = createConsentRevocationChannel();
+    ref.onDispose(channel.close);
+    return channel;
+  },
+);
 
 /// Who is signed in, as the id a choice is kept under. Empty when nobody is,
 /// or when the account has no id.
@@ -73,6 +85,7 @@ final analyticsConsentProvider =
     analyticsUserIdProvider,
     analyticsClientProvider,
     analyticsConsentStoreProvider,
+    consentRevocationChannelProvider,
   ],
 );
 
@@ -80,8 +93,31 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
   /// Whose analytics the client is running for, or null when it is not.
   String? _recordingFor;
 
+  StreamSubscription<String>? _otherTabs;
+
+  /// Stops recording the signed-in user when another tab says they withdrew:
+  /// a withdrawal has to end the recording everywhere, not only where the
+  /// button was pressed.
+  void _listenForWithdrawals() {
+    _otherTabs ??= ref.read(consentRevocationChannelProvider).revoked.listen(
+      (userId) async {
+        if (userId.isEmpty || userId != ref.read(analyticsUserIdProvider)) {
+          return;
+        }
+        await ref.read(analyticsClientProvider).stop();
+        _recordingFor = null;
+        state = const AsyncData(ConsentChoice.denied);
+      },
+    );
+    ref.onDispose(() {
+      _otherTabs?.cancel();
+      _otherTabs = null;
+    });
+  }
+
   @override
   Future<ConsentChoice> build() async {
+    _listenForWithdrawals();
     final eligible = ref.watch(analyticsEligibleProvider);
     final userId = ref.watch(analyticsUserIdProvider);
     final client = ref.read(analyticsClientProvider);
@@ -138,9 +174,9 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
   Future<void> revoke() async {
     await ref.read(analyticsClientProvider).stop();
     _recordingFor = null;
-    await ref
-        .read(analyticsConsentStoreProvider)
-        .deny(ref.read(analyticsUserIdProvider));
+    final userId = ref.read(analyticsUserIdProvider);
+    await ref.read(analyticsConsentStoreProvider).deny(userId);
+    ref.read(consentRevocationChannelProvider).announce(userId);
     state = const AsyncData(ConsentChoice.denied);
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/core/analytics/consent_revocation_channel.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -28,10 +29,12 @@ void main() {
   late FakeAppStorage storage;
   late FakeAnalyticsClient client;
   late TestAuthenticationNotifier auth;
+  late _FakeChannel channel;
 
   setUp(() {
     storage = FakeAppStorage();
     client = FakeAnalyticsClient();
+    channel = _FakeChannel();
     auth = TestAuthenticationNotifier(initialState: _signedInAs('pengelola'));
   });
 
@@ -41,6 +44,7 @@ void main() {
       analyticsClientProvider.overrideWithValue(client),
       analyticsConsentStoreProvider
           .overrideWithValue(AnalyticsConsentStore(storage)),
+      consentRevocationChannelProvider.overrideWithValue(channel),
     ]);
     addTearDown(container.dispose);
     return container;
@@ -227,6 +231,46 @@ void main() {
         container.read(analyticsConsentProvider).value, ConsentChoice.denied);
   });
 
+  group('withdrawing in another tab', () {
+    test('withdrawing here tells the other tabs who withdrew', () async {
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      await container.read(analyticsConsentProvider.notifier).revoke();
+
+      expect(channel.announced, ['u1']);
+    });
+
+    test('stops recording the same pengurus when another tab withdrew',
+        () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+      expect(client.calls, ['start']);
+
+      channel.fromOtherTab('u1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(client.calls, ['start', 'stop']);
+      expect(
+          container.read(analyticsConsentProvider).value, ConsentChoice.denied);
+    });
+
+    test('ignores a withdrawal by somebody else', () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      channel.fromOtherTab('u2');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(client.calls, ['start']);
+      expect(container.read(analyticsConsentProvider).value,
+          ConsentChoice.granted);
+    });
+  });
+
   group('one device, more than one pengurus', () {
     test('a second pengurus is not recorded on the first one\'s agreement',
         () async {
@@ -341,4 +385,20 @@ class _GatedStore extends AnalyticsConsentStore {
     }
     return super.grant(userId);
   }
+}
+
+class _FakeChannel implements ConsentRevocationChannel {
+  final announced = <String>[];
+  final _incoming = StreamController<String>.broadcast();
+
+  void fromOtherTab(String userId) => _incoming.add(userId);
+
+  @override
+  void announce(String userId) => announced.add(userId);
+
+  @override
+  Stream<String> get revoked => _incoming.stream;
+
+  @override
+  void close() => _incoming.close();
 }
