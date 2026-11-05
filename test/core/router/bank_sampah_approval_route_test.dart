@@ -19,8 +19,10 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import '../../support/auth_support.dart';
 import '../../support/nasabah_approval_support.dart';
+import '../../support/profile_support.dart';
 
 class _MockAppealMembershipUseCase extends Mock
     implements AppealMembershipUseCase {}
@@ -115,6 +117,8 @@ void main() {
         overrides: [
           nasabahApprovalProvider.overrideWith(() => approvalNotifier),
           authenticationProvider.overrideWith(() => auth),
+          // The shell watches the profile for its logo; no data source here.
+          profileProvider.overrideWith(SilentProfileNotifier.new),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),

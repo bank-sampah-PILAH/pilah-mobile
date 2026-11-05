@@ -18,8 +18,10 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import '../../support/auth_support.dart';
 import '../../support/approved_membership.dart';
+import '../../support/profile_support.dart';
 import '../../support/jadwal_provider_support.dart';
 
 void main() {
@@ -99,6 +101,8 @@ void main() {
           jadwalProvider.overrideWith(() => jadwalNotifier),
           nasabahApprovalProvider.overrideWith(() => approval),
           authenticationProvider.overrideWith(() => auth),
+          // The shell watches the profile for its logo; no data source here.
+          profileProvider.overrideWith(SilentProfileNotifier.new),
         ],
         child: Consumer(
           builder: (context, ref, _) {

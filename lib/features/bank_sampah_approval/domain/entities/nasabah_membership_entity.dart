@@ -41,6 +41,9 @@ class NasabahMembershipEntity {
   final String bankSampahNama;
   final String bankSampahKota;
   final String bankSampahAlamat;
+
+  /// Logo bank sampah dari `GET /nasabah/me`; null bila kosong.
+  final String? bankSampahLogoUrl;
   final MembershipStatus status;
   final bool isActive;
 
@@ -57,6 +60,7 @@ class NasabahMembershipEntity {
     required this.bankSampahNama,
     required this.bankSampahKota,
     required this.bankSampahAlamat,
+    this.bankSampahLogoUrl,
     required this.status,
     required this.isActive,
     this.alasanPenolakan,
@@ -74,10 +78,27 @@ class NasabahMembershipEntity {
       bankSampahNama: bank['nama']?.toString() ?? '',
       bankSampahKota: bank['kota']?.toString() ?? '',
       bankSampahAlamat: bank['alamat']?.toString() ?? '',
+      bankSampahLogoUrl: bank['foto_logo']?.toString(),
       status: MembershipStatus.values.byName(json['status'] as String),
       isActive: json['is_active'] as bool? ?? false,
       alasanPenolakan: json['alasan_penolakan']?.toString(),
       riwayat: riwayat,
     );
   }
+
+  /// Pasca-peta: resolves `/media/...` against the API origin, a step the
+  /// datasource owns because `fromJson` has no network context.
+  NasabahMembershipEntity copyLogo(String? resolvedUrl) =>
+      NasabahMembershipEntity(
+        id: id,
+        bankSampahId: bankSampahId,
+        bankSampahNama: bankSampahNama,
+        bankSampahKota: bankSampahKota,
+        bankSampahAlamat: bankSampahAlamat,
+        bankSampahLogoUrl: resolvedUrl ?? bankSampahLogoUrl,
+        status: status,
+        isActive: isActive,
+        alasanPenolakan: alasanPenolakan,
+        riwayat: riwayat,
+      );
 }

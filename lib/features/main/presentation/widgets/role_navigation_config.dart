@@ -9,6 +9,7 @@ class RoleNavigationConfig {
     required this.currentIndex,
     required this.onSelected,
     this.bankSampahNama,
+    this.bankSampahLogoUrl,
     this.profileName,
     this.profileEmail,
     this.onProfile,
@@ -23,6 +24,10 @@ class RoleNavigationConfig {
   final int? currentIndex;
   final ValueChanged<int> onSelected;
   final String? bankSampahNama;
+
+  /// Logo bank sampah sesi ini, dari `GET /bank-sampah/me` atau `/nasabah/me`.
+  /// Null tetap menggambar inisial, seperti sebelum logo diperkenalkan.
+  final String? bankSampahLogoUrl;
   final String? profileName;
   final String? profileEmail;
   final VoidCallback? onProfile;

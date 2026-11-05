@@ -11,11 +11,13 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/provider
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 import '../../support/auth_support.dart';
 import '../../support/setoran_form_support.dart';
 import '../../support/nasabah_approval_support.dart';
+import '../../support/profile_support.dart';
 
 const pending = NasabahMembershipEntity(
   id: 'application-1',
@@ -108,6 +110,8 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     overrides: [
       nasabahApprovalProvider.overrideWith(() => approval),
       authenticationProvider.overrideWith(() => auth),
+      // The shell watches the profile for its logo; this suite does not.
+      profileProvider.overrideWith(SilentProfileNotifier.new),
     ],
     child: withSetoranFormProviders(
       child: MaterialApp.router(routerConfig: router),

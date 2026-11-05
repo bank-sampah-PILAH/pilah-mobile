@@ -212,7 +212,13 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
               setState(() => _serverKodeError = null);
             }
           },
-          validator: _validateKode,
+          // Hanya diisi manual bila pengurus mau; kosong berarti server
+          // menomori otomatis (UAT 2026-11). Saat mengisi, duplikasi tetap
+          // diperiksa — baris baru yang kosong memakai validator ringan.
+          validator: widget.initialData == null &&
+                  _kodeSampahController.text.trim().isEmpty
+              ? null
+              : _validateKode,
           decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
         ),
         const SizedBox(height: 4),

@@ -37,6 +37,10 @@ enum AppButtonVariant {
   /// A bare green label with no padding, for a link inside a line of content,
   /// such as "Detail Bank Sampah". It is only as wide as its label.
   text,
+
+  /// The [outlined] look in white, for a button on a dark surface (e.g. the
+  /// green invite banner): the stock outlined green-on-green is invisible.
+  outlinedOnDark,
 }
 
 /// How tall an [AppButton] is.
@@ -157,6 +161,18 @@ class AppButton extends StatelessWidget {
             padding: padding,
             tapTargetSize: tapTarget,
             textStyle: textStyle,
+          ),
+          child: child,
+        ),
+      AppButtonVariant.outlinedOnDark => OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            minimumSize: minimum,
+            padding: padding,
+            tapTargetSize: tapTarget,
+            textStyle: textStyle,
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Colors.white, width: 1.5),
           ),
           child: child,
         ),

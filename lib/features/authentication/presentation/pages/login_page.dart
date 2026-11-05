@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
-import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart'
+    show webRoleBounceFlag, WebRoleBounceNotice, locationForAuthStep;
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -40,6 +41,50 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // A web session whose role has no web shell was bounced here by the
+    // router's webRoleRedirect. The redirect lands within one frame, so a
+    // toast fired along the way died with the page that showed it (CPBI-21
+    // UAT finding). Raise it here instead, on the page the user actually
+    // lands on, and long enough to read.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // A URL flag alone cannot be trusted (the logout that carries the user
+      // here races the redirect that would have appended it), so the shell
+      // arms an in-memory one-shot. Direct deep links with the query still
+      // count; tests may build this page outside a GoRoute, where
+      // GoRouterState.of throws — reading the flag then is skipped.
+      bool queryHasFlag;
+      try {
+        queryHasFlag = GoRouterState.of(context)
+                .uri
+                .queryParameters[webRoleBounceFlag]
+                ?.isNotEmpty ??
+            false;
+      } on GoError catch (_) {
+        queryHasFlag = false;
+      }
+      // Consume even when the query already says so: the shell arms the same
+      // one-shot for this redirect, and a flag left armed would replay a
+      // stale warning on a later ordinary login.
+      final armed = WebRoleBounceNotice.consume();
+      if (queryHasFlag || armed) {
+        _showWebRoleBounceNotice(context);
+      }
+    });
+  }
+
+  void _showWebRoleBounceNotice(BuildContext context) {
+    AppNotification.showError(
+      context,
+      title: 'Peran Tidak Didukung',
+      message: 'Akun ini tidak memiliki peran Pengurus, sehingga tidak dapat '
+          'mengakses aplikasi web. Silakan masuk dengan akun Pengurus.',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

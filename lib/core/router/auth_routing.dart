@@ -20,6 +20,33 @@ const pengelolaIndukDashboardLocation = '/pengelola-induk-dashboard';
 
 const _webSupportedRoles = {'superadmin', 'pengelola', 'pengelola_induk'};
 
+/// Query flag the web router appends when a signed-in session's role has no
+/// web shell: the login page reads it to raise a visible toast explaining the
+/// bounce. Without the toast the redirect happens so fast the user only sees
+/// a flash and believes the login silently failed (CPBI-21 UAT finding).
+const webRoleBounceFlag = 'peran-tak-tertinggal';
+
+/// One-shot flag: the app shell arms it when it logs a web session out for
+/// having a role the web does not support, and the login page consumes it to
+/// raise its explanatory toast. In-memory only — the flag answers "why am I
+/// back at login", which no URL can carry reliably because the logout races
+/// the redirect that would have carried it (CPBI-21).
+bool _webRoleBounceArmed = false;
+
+class WebRoleBounceNotice {
+  static void arm() => _webRoleBounceArmed = true;
+
+  /// Consume: read once and reset, so the notice shows for the bounce it
+  /// describes and not again on the next manual login.
+  static bool consume({bool isWeb = true}) {
+    if (!isWeb || !_webRoleBounceArmed) return false;
+    _webRoleBounceArmed = false;
+    return true;
+  }
+
+  static void reset() => _webRoleBounceArmed = false;
+}
+
 bool isSupportedWebRole(String? role) => _webSupportedRoles.contains(role);
 
 bool isRoleSupportedOnPlatform(String? role, {required bool isWeb}) =>
@@ -31,7 +58,9 @@ String? webRoleRedirect({
   required String loginPath,
   required String? role,
 }) =>
-    isWeb && path != loginPath && !isSupportedWebRole(role) ? loginPath : null;
+    isWeb && path != loginPath && !isSupportedWebRole(role)
+        ? '$loginPath?$webRoleBounceFlag=1'
+        : null;
 
 /// Paths that make sense without a session, and so must not be bounced to the
 /// splash. `/splash` is where the restore itself happens.

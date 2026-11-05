@@ -83,6 +83,7 @@ class RoleNavigationDrawer extends StatelessWidget {
             _BankHeader(
               label: BankSampahLabel.of(navigation.bankSampahNama),
               initials: BankSampahLabel.initialsOf(navigation.bankSampahNama),
+              logoUrl: navigation.bankSampahLogoUrl,
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
@@ -165,10 +166,17 @@ class _BrandHeader extends StatelessWidget {
 }
 
 class _BankHeader extends StatelessWidget {
-  const _BankHeader({required this.label, required this.initials});
+  const _BankHeader({
+    required this.label,
+    required this.initials,
+    this.logoUrl,
+  });
 
   final String label;
   final String initials;
+
+  /// Logo tersimpan bank sampah; null/kosong menggambar inisial.
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -178,6 +186,11 @@ class _BankHeader extends StatelessWidget {
             CircleAvatar(
               radius: 18,
               backgroundColor: AppColors.greenDark,
+              foregroundImage: (logoUrl?.isNotEmpty ?? false)
+                  ? NetworkImage(logoUrl!)
+                  : null,
+              onForegroundImageError:
+                  (logoUrl?.isNotEmpty ?? false) ? (_, __) {} : null,
               child: Text(
                 initials,
                 style: AppTextStyle.extraSmall.copyWith(

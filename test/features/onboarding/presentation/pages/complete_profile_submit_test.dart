@@ -400,6 +400,45 @@ void main() {
 
       expect(find.text('route:/login'), findsOneWidget);
     });
+
+    testWidgets(
+        'a fresh registration exit deletes the account, not just logs '
+        'out', (tester) async {
+      await open(tester, _account());
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      expect(auth.discardFailure, isNull);
+      expect(auth.calls, contains('logout'),
+          reason: 'discardRegistration shares the exit path with logout');
+    });
+
+    testWidgets('an invite-mode exit keeps the account', (tester) async {
+      await open(tester, _account(), inviteMode: true);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Akun Tidak Dihapus'), findsNothing);
+    });
+
+    testWidgets('a backend refusal still logs out and explains itself',
+        (tester) async {
+      await open(tester, _account());
+      auth.discardFailure = 'Profil sudah lengkap.';
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, Keluar'));
+      await pumpToast(tester);
+
+      expect(find.text('Akun Tidak Dihapus'), findsOneWidget);
+      expect(find.text('Profil sudah lengkap.'), findsOneWidget);
+      await settleToasts(tester);
+    });
   });
 }
 

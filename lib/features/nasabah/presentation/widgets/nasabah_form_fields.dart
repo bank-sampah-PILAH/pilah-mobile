@@ -149,14 +149,15 @@ class NasabahIdField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
-    required this.validator,
+    // Kosong sejak server menomori ID otomatis untuk baris baru (UAT).
+    this.validator,
     this.onChanged,
     this.hasError = false,
   });
 
   final TextEditingController controller;
   final String hintText;
-  final FormFieldValidator<String> validator;
+  final FormFieldValidator<String>? validator;
   final VoidCallback? onChanged;
   final bool hasError;
 

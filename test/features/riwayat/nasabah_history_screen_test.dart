@@ -167,6 +167,19 @@ void main() {
     expect(find.text('Rp 494.000'), findsOneWidget);
   });
 
+  testWidgets('tab refresh (Muat ulang) reloads the saldo too', (tester) async {
+    final repository = _Repository();
+    await pumpScreen(tester, repository);
+    expect(repository.balanceRequests, 1);
+
+    repository.amount = '494000.00';
+    await tester.tap(find.byTooltip('Muat ulang'));
+    await tester.pumpAndSettle();
+
+    expect(repository.balanceRequests, 2);
+    expect(find.text('Rp 494.000'), findsOneWidget);
+  });
+
   testWidgets('opening a setoran loads its detail for this membership',
       (tester) async {
     await pumpScreen(tester, _Repository());

@@ -151,6 +151,35 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
     if (ref.mounted) _emitUnauthenticated();
   }
 
+  /// Leaves mid-registration and DELETES the fresh account, so signing in
+  /// again offers the role choice from scratch (UAT 2026-11: a wrong tap on
+  /// role selection used to be final).
+  ///
+  /// The Google identity stays signed in with Google itself — only PILAH's
+  /// account row goes. When the backend refuses (profile already complete,
+  /// membership attached) the session is kept so the user keeps their state;
+  /// a failure is reported through [onError].
+  Future<void> discardRegistration(
+      {void Function(String message)? onError}) async {
+    state = AuthenticationLoading();
+    if (_isWeb) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Account deletion must not depend on Google's sign-out succeeding.
+      }
+    }
+    final result = await _useCases.discardRegistration();
+    if (!ref.mounted) return;
+    result.fold(
+      (failure) {
+        onError?.call(failure.displayMessage);
+        _emitUnauthenticated();
+      },
+      (_) => _emitUnauthenticated(),
+    );
+  }
+
   /// Refreshes user data without a loading state and keeps the session on error.
   Future<void> refreshUser() async {
     final result = await _useCases.getMe();
