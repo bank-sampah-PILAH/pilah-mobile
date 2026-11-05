@@ -104,23 +104,91 @@ void main() {
     expect(client.events.single.properties, isEmpty);
   });
 
-  test('a search says whether it found anything, never what was typed', () {
-    hargaSearched(client, resultCount: 0);
-    hargaSearched(client, resultCount: 3);
+  group('leaving the form without saving', () {
+    late int flows;
+    late HargaFormAnalytics sequenced;
 
-    expect(client.events.map((e) => e.name).toSet(), {'harga_dicari'});
-    expect(client.events.map((e) => e.properties), [
-      {'ada_hasil': false, 'jumlah_hasil_kelas': '0'},
-      {'ada_hasil': true, 'jumlah_hasil_kelas': '1_5'},
-    ]);
-  });
+    setUp(() {
+      flows = 0;
+      sequenced = HargaFormAnalytics(client,
+          clock: () => now, newFlowId: () => 'flow-${++flows}');
+    });
 
-  test('a search counts its results in classes, at every edge', () {
-    for (final count in [0, 1, 5, 6, 20, 21]) {
-      hargaSearched(client, resultCount: count);
-    }
+    test('says how long it was open and how many times save was tried', () {
+      sequenced.opened(editing: true);
+      now = now.add(const Duration(seconds: 33));
+      sequenced
+        ..submitTapped()
+        ..submitTapped();
 
-    expect(client.events.map((e) => e.properties['jumlah_hasil_kelas']),
-        ['0', '1_5', '1_5', '6_20', '6_20', 'lebih_20']);
+      sequenced.closed();
+
+      expect(client.events.last.name, 'harga_dibatalkan');
+      expect(
+          last(), {'alur_id': 'flow-1', 'durasi_detik': 33, 'percobaan_ke': 2});
+    });
+
+    test('leaving without trying says so with zero attempts', () {
+      sequenced.opened(editing: false);
+
+      sequenced.closed();
+
+      expect(last()['percobaan_ke'], 0);
+    });
+
+    test('moving the panel to another row cancels the form of the first', () {
+      sequenced.opened(editing: true);
+
+      sequenced.opened(editing: true);
+
+      expect(client.events.map((e) => e.name),
+          ['harga_form_dibuka', 'harga_dibatalkan', 'harga_form_dibuka']);
+      expect(client.events[1].properties['alur_id'], 'flow-1');
+      expect(client.events[2].properties['alur_id'], 'flow-2');
+    });
+
+    test('a saved jenis is not also a cancelled one', () {
+      sequenced.opened(editing: true);
+      final flow = sequenced.sending();
+      sequenced.saved(
+          flow: flow, editing: true, priceChanged: false, category: 'kaca');
+
+      sequenced.closed();
+
+      expect(client.events.map((e) => e.name),
+          ['harga_form_dibuka', 'harga_disimpan']);
+    });
+
+    test('a save that lands after the panel moved belongs to its own flow', () {
+      sequenced.opened(editing: true);
+      final first = sequenced.sending();
+      sequenced.opened(editing: true);
+
+      sequenced.saved(
+          flow: first, editing: true, priceChanged: true, category: 'kaca');
+      sequenced.closed();
+
+      final saved =
+          client.events.singleWhere((e) => e.name == 'harga_disimpan');
+      expect(saved.properties['alur_id'], 'flow-1');
+      final cancelled =
+          client.events.where((e) => e.name == 'harga_dibatalkan').toList();
+      expect(cancelled.map((e) => e.properties['alur_id']), ['flow-2']);
+    });
+
+    test('a save refused after the panel moved makes the first a cancellation',
+        () {
+      sequenced.opened(editing: true);
+      final first = sequenced.sending();
+      sequenced.opened(editing: true);
+      expect(client.events.map((e) => e.name),
+          ['harga_form_dibuka', 'harga_form_dibuka']);
+
+      sequenced.sendFailed(first);
+
+      final cancelled =
+          client.events.where((e) => e.name == 'harga_dibatalkan').toList();
+      expect(cancelled.map((e) => e.properties['alur_id']), ['flow-1']);
+    });
   });
 }

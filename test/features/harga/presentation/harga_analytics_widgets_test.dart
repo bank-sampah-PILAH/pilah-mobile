@@ -151,6 +151,51 @@ void main() {
       await settleToasts(tester);
     });
 
+    testWidgets('closing the form without saving is reported as cancelled',
+        (tester) async {
+      await openSheet(tester);
+
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(names(), ['harga_form_dibuka', 'harga_dibatalkan']);
+      expect(analytics.events.last.properties['percobaan_ke'], 0);
+    });
+
+    testWidgets('a saved jenis is not also reported as cancelled',
+        (tester) async {
+      api.on('POST', '/api/v1/jenis-sampah', status: 201, json: {});
+      await openSheet(tester);
+      await fillNew(tester);
+
+      await tester.tap(find.text('Simpan Jenis Sampah'));
+      await pumpToast(tester);
+      await settleToasts(tester);
+      await tester.pumpAndSettle();
+
+      expect(names(), ['harga_form_dibuka', 'harga_disimpan']);
+    });
+
+    testWidgets('a refused save followed by leaving is a cancellation',
+        (tester) async {
+      api.on('POST', '/api/v1/jenis-sampah', status: 422, json: {
+        'errors': {
+          'kode': ['dipakai']
+        }
+      });
+      await openSheet(tester);
+      await fillNew(tester);
+      await tester.tap(find.text('Simpan Jenis Sampah'));
+      await pumpToast(tester);
+      await settleToasts(tester);
+
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(names().last, 'harga_dibatalkan');
+      expect(analytics.events.last.properties['percobaan_ke'], 1);
+    });
+
     testWidgets('a save the server refused is not reported as saved',
         (tester) async {
       api.on('POST', '/api/v1/jenis-sampah', status: 422, json: {
@@ -215,7 +260,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('typing a word reports one search once typing stops',
+    testWidgets('typing a word starts one session and reports it once settled',
         (tester) async {
       await openPage(tester);
 
@@ -223,15 +268,20 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'ka');
       await tester.enterText(find.byType(TextField).first, 'kar');
       await tester.pump(const Duration(milliseconds: 300));
-      expect(names(), isNot(contains('harga_dicari')));
+      expect(names(), ['pencarian_dimulai']);
 
       await tester.pump(const Duration(seconds: 2));
 
-      final searches = analytics.events.where((e) => e.name == 'harga_dicari');
-      expect(searches.single.properties,
-          {'ada_hasil': true, 'jumlah_hasil_kelas': '1_5'});
+      expect(names(), ['pencarian_dimulai', 'pencarian_hasil']);
+      expect(analytics.events.last.properties, {
+        'alur_id': analytics.events.first.properties['alur_id'],
+        'area': 'harga',
+        'jumlah_hasil_kelas': '1_5',
+        'panjang_kueri_kelas': '3_5',
+        'percobaan_ke': 1,
+      });
       expect(analytics.events.map((e) => e.properties).toString(),
-          isNot(contains('kar')));
+          isNot(contains('kar\'')));
     });
 
     testWidgets('a search with nothing found says so', (tester) async {
@@ -240,11 +290,8 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'zzz');
       await tester.pump(const Duration(seconds: 2));
 
-      expect(
-          analytics.events
-              .singleWhere((e) => e.name == 'harga_dicari')
-              .properties['ada_hasil'],
-          false);
+      expect(analytics.events.last.name, 'pencarian_hasil');
+      expect(analytics.events.last.properties['jumlah_hasil_kelas'], '0');
     });
 
     testWidgets('one letter is not a search', (tester) async {
@@ -253,7 +300,50 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'k');
       await tester.pump(const Duration(seconds: 2));
 
-      expect(names(), isNot(contains('harga_dicari')));
+      expect(analytics.events, isEmpty);
+    });
+
+    testWidgets('clearing the words after results means giving up',
+        (tester) async {
+      await openPage(tester);
+      await tester.enterText(find.byType(TextField).first, 'kar');
+      await tester.pump(const Duration(seconds: 2));
+
+      await tester.enterText(find.byType(TextField).first, '');
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(names().last, 'pencarian_ditinggalkan');
+      expect(analytics.events.last.properties['hasil_terakhir_kelas'], '1_5');
+    });
+
+    testWidgets('opening a row of the results ends the search', (tester) async {
+      await openPage(tester);
+      await tester.enterText(find.byType(TextField).first, 'kar');
+      await tester.pump(const Duration(seconds: 2));
+
+      await tester.tap(find.text('Kardus'));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(names().last, 'pencarian_dipilih');
+      expect(analytics.events.last.properties['posisi_hasil_kelas'], '1');
+      expect(analytics.events.last.properties['area'], 'harga');
+    });
+
+    testWidgets('opening a row before the typing settled still reports the try',
+        (tester) async {
+      await openPage(tester);
+      await tester.enterText(find.byType(TextField).first, 'kar');
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tap(find.text('Kardus'));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(names(), [
+        'pencarian_dimulai',
+        'pencarian_hasil',
+        'pencarian_dipilih',
+      ]);
+      expect(analytics.events.last.properties['percobaan_ke'], 1);
     });
   });
 
