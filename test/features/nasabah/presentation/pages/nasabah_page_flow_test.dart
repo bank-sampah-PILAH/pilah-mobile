@@ -209,6 +209,26 @@ void main() {
     expect(analytics.events.last.properties['area'], 'nasabah');
   });
 
+  testWidgets('the list loading again after a pick does not start a session',
+      (tester) async {
+    listAs([nasabahRow('1'), nasabahRow('2', nama: 'Budi Hartono')]);
+    api.on('GET', '$_path/2', json: <String, dynamic>{});
+    await open(tester);
+    await tester.enterText(find.byType(TextField).first, 'budi');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Budi Hartono'));
+    await tester.pumpAndSettle();
+    final sent = analytics.events.length;
+
+    // The list comes back from the detail and loads the same search again.
+    final reload = notifier.loadNasabah();
+    await tester.pumpAndSettle();
+    await reload;
+
+    expect(analytics.events.length, sent);
+  });
+
   testWidgets('clearing the words after results means giving up',
       (tester) async {
     listAs([nasabahRow('1')]);
