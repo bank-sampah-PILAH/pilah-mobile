@@ -156,6 +156,9 @@ class App extends StatelessWidget {
             enabled: isWeb,
             child: AnalyticsRecordingRoot(
               child: MaterialApp.router(
+                // The debug banner is a CustomPaint as wide as the screen, and the
+                // recording masks every CustomPaint, so it would hide it all.
+                debugShowCheckedModeBanner: false,
                 title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
                 theme: AppTheme.light,
                 // Material widgets (date pickers, dialog buttons) in
