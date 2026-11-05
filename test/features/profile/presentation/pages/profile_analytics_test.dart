@@ -183,11 +183,11 @@ void main() {
       await pumpToast(tester);
 
       expect(names(), ['undangan_tautan_disalin']);
-      expect(client.events.single.properties, isEmpty);
+      expect(client.events.single.properties, {'berhasil': true});
       await settleToasts(tester);
     });
 
-    testWidgets('a refused invite is not reported', (tester) async {
+    testWidgets('a refused invite is reported as not copied', (tester) async {
       api.on('POST', '/api/v1/team/invite',
           status: 403, json: {'error': 'Hanya pengelola utama'});
       await openPage(tester);
@@ -197,7 +197,8 @@ void main() {
       await tester.tap(find.text('Salin Link Undangan'));
       await pumpToast(tester);
 
-      expect(client.events, isEmpty);
+      expect(names(), ['undangan_tautan_disalin']);
+      expect(client.events.single.properties, {'berhasil': false});
       await settleToasts(tester);
     });
   });

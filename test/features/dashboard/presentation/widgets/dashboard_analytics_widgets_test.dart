@@ -97,9 +97,9 @@ void main() {
       await tester.tap(find.text('Hari ini'));
       await tester.pump();
 
-      expect(names(), List.filled(3, 'dashboard_rentang_diubah'));
+      expect(names(), List.filled(3, 'dashboard_periode_diubah'));
       expect(client.events.map((e) => e.properties['periode']),
-          ['7_hari', '30_hari', '1_hari']);
+          ['7_hari', '30_hari', 'hari_ini']);
     });
 
     testWidgets('pressing the range already shown is not a change',
@@ -133,8 +133,9 @@ void main() {
       await tester.tap(find.text('Terapkan'));
       await tester.pumpAndSettle();
 
-      expect(names(), ['dashboard_rentang_diubah']);
-      expect(client.events.single.properties, {'periode': 'kustom'});
+      expect(names(), ['dashboard_periode_diubah']);
+      expect(client.events.single.properties,
+          {'periode': 'kustom', 'lama_kustom_hari_kelas': '1_7_hari'});
     });
 
     testWidgets('opening or closing the calendar sends nothing',

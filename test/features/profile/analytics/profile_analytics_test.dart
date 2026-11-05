@@ -28,10 +28,15 @@ void main() {
         ['nama_bank', 'alamat', 'nomor_hp', 'logo', 'template_wa']);
   });
 
-  test('copying the invite link carries nothing but its name', () {
-    inviteLinkCopied(client);
+  test('copying the invite link says whether it worked, and nothing more', () {
+    inviteLinkCopied(client, success: true);
+    inviteLinkCopied(client, success: false);
 
-    expect(client.events.single.name, 'undangan_tautan_disalin');
-    expect(client.events.single.properties, isEmpty);
+    expect(
+        client.events.map((e) => e.name).toSet(), {'undangan_tautan_disalin'});
+    expect(client.events.map((e) => e.properties), [
+      {'berhasil': true},
+      {'berhasil': false},
+    ]);
   });
 }

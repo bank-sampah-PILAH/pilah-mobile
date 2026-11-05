@@ -27,9 +27,31 @@ void main() {
     }
 
     expect(
-        client.events.map((e) => e.name).toSet(), {'dashboard_rentang_diubah'});
+        client.events.map((e) => e.name).toSet(), {'dashboard_periode_diubah'});
     expect(client.events.map((e) => e.properties['periode']),
-        ['1_hari', '7_hari', '30_hari', 'kustom']);
+        ['hari_ini', '7_hari', '30_hari', 'kustom']);
     expect(client.events.every((e) => e.properties.length == 1), isTrue);
+  });
+
+  test('a custom range says how long it is, in classes, not its dates', () {
+    for (final days in [1, 7, 8, 30, 31]) {
+      dashboardRangeChanged(client, DashboardRangeChoice.custom,
+          customDays: days);
+    }
+
+    expect(client.events.map((e) => e.properties['lama_kustom_hari_kelas']),
+        ['1_7_hari', '1_7_hari', '8_30_hari', '8_30_hari', 'lebih_30_hari']);
+    expect(
+        client.events.map((e) => e.properties['periode']).toSet(), {'kustom'});
+  });
+
+  test('the dashboard loading says how long it took and how many parts failed',
+      () {
+    dashboardLoaded(client,
+        loadTime: const Duration(milliseconds: 2600), failedSections: 1);
+
+    expect(client.events.single.name, 'dashboard_dimuat');
+    expect(client.events.single.properties,
+        {'durasi_muat_detik': 2, 'jumlah_bagian_gagal': 1});
   });
 }
