@@ -236,4 +236,59 @@ void main() {
     expect(client.events.toString(), isNot(contains('Siti')));
     expect(client.events.toString(), isNot(contains('Aminah')));
   });
+
+  group('after a row was picked', () {
+    void pickedSearch() {
+      search
+        ..queryChanged('siti')
+        ..resultsSettled(query: 'siti', count: 3)
+        ..picked(position: 1);
+    }
+
+    test('the same words, loaded again, do not start a session', () {
+      pickedSearch();
+      final sent = client.events.length;
+
+      search
+        ..queryChanged('siti')
+        ..resultsSettled(query: 'siti', count: 3);
+
+      expect(client.events.length, sent);
+    });
+
+    test('other words start a new session', () {
+      pickedSearch();
+
+      search
+        ..queryChanged('budi')
+        ..resultsSettled(query: 'budi', count: 2);
+
+      expect(names().skip(3), ['pencarian_dimulai', 'pencarian_hasil']);
+      expect(last()['alur_id'], 'flow-2');
+      expect(last()['percobaan_ke'], 1);
+    });
+
+    test('clearing the words and typing them again starts a new session', () {
+      pickedSearch();
+
+      search
+        ..queryChanged('')
+        ..queryChanged('siti')
+        ..resultsSettled(query: 'siti', count: 3);
+
+      expect(names().skip(3), ['pencarian_dimulai', 'pencarian_hasil']);
+      expect(last()['alur_id'], 'flow-2');
+    });
+
+    test('leaving the list lets the same words start a new session', () {
+      pickedSearch();
+
+      search
+        ..closed()
+        ..queryChanged('siti')
+        ..resultsSettled(query: 'siti', count: 3);
+
+      expect(names().skip(3), ['pencarian_dimulai', 'pencarian_hasil']);
+    });
+  });
 }
