@@ -124,7 +124,9 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
     final eligible = ref.watch(analyticsEligibleProvider);
     final userId = ref.watch(analyticsUserIdProvider);
     final client = ref.read(analyticsClientProvider);
-    final choice = await ref.read(analyticsConsentStoreProvider).read(userId);
+    final choice = await ref
+        .read(analyticsConsentStoreProvider)
+        .read(userId, screen: client.recordsScreen);
     // Somebody signed in or out while the saved choice was being read: this
     // run knows an old answer, and the newer run is the one that decides.
     if (_changedSince(eligible, userId)) return choice;
@@ -160,7 +162,9 @@ class AnalyticsConsentController extends AsyncNotifier<ConsentChoice> {
     final eligible = ref.read(analyticsEligibleProvider);
     if (!eligible) return;
     final userId = ref.read(analyticsUserIdProvider);
-    await ref.read(analyticsConsentStoreProvider).grant(userId);
+    await ref
+        .read(analyticsConsentStoreProvider)
+        .grant(userId, screen: ref.read(analyticsClientProvider).recordsScreen);
     // The choice is saved, but whoever is signed in now may not be recorded,
     // or may be somebody else: starting would record the wrong person.
     if (_changedSince(eligible, userId)) return;

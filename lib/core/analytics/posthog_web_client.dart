@@ -20,6 +20,7 @@ class PosthogWebClient implements AnalyticsClient {
     required this.apiKey,
     required this.host,
     this.environment,
+    this.recordScreen = false,
     String? libraryUrl,
     this.loadTimeout = const Duration(seconds: 15),
   }) : libraryUrl = libraryUrl ?? _libraryUrlFor(host);
@@ -30,6 +31,12 @@ class PosthogWebClient implements AnalyticsClient {
   /// `staging` or `production`: both share one PostHog project, so every event
   /// says which one it came from.
   final String? environment;
+
+  /// Whether the library also records the screen. Flutter draws everything on
+  /// one canvas, so the recording is a picture of it: it is only safe together
+  /// with the masks `PosthogWebRecordingClient` supplies, and until those are
+  /// in place every frame is skipped.
+  final bool recordScreen;
   final String libraryUrl;
   final Duration loadTimeout;
 
@@ -53,6 +60,9 @@ class PosthogWebClient implements AnalyticsClient {
 
   @override
   bool get isAvailable => true;
+
+  @override
+  bool get recordsScreen => recordScreen;
 
   /// Starts the client. Throws a [StateError] when the library cannot be
   /// loaded, so a caller has to handle that. A failed start is not remembered:
@@ -173,7 +183,9 @@ class PosthogWebClient implements AnalyticsClient {
       );
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
-    posthog.callMethod('init'.toJS, apiKey.toJS, _options().jsify());
+    final options = _options().jsify() as JSObject;
+    if (recordScreen) _addRecording(options);
+    posthog.callMethod('init'.toJS, apiKey.toJS, options);
     _ready = true;
     // PostHog keeps an opt-out across page reloads, so one made on an earlier
     // visit would still be in force. start() is only called once the pengurus
@@ -212,12 +224,35 @@ class PosthogWebClient implements AnalyticsClient {
   /// PostHog without passing the sanitizer.
   static const _optInOptions = {'captureEventName': false};
 
+  /// What the recording may see. The canvas is sent as pictures with the
+  /// rectangles to cover; until the app has said which, the function below
+  /// answers null, which skips the frame instead of sending it uncovered.
+  /// Whatever the page itself shows (the field the keyboard types into, the
+  /// text of the page) is masked wholesale, and the copy of the widgets Flutter
+  /// keeps for screen readers is not recorded. No network request is kept: the
+  /// address of a call can carry an id.
+  void _addRecording(JSObject options) {
+    final recording = options.getProperty<JSObject>('session_recording'.toJS);
+    final canvasCapture = recording.getProperty<JSObject>('canvasCapture'.toJS);
+    canvasCapture.setProperty(
+      'maskRegionsFn'.toJS,
+      ((JSAny? _) => null).toJS,
+    );
+    recording.setProperty(
+      'maskCapturedNetworkRequestFn'.toJS,
+      ((JSAny? _) => null).toJS,
+    );
+  }
+
   Map<String, Object> _options() => {
         'api_host': host,
         // Only usage events are sent: no screen recording, no automatic
         // capture of clicks or page views, no heatmaps. Load time is the one
         // automatic measurement kept, to see how slow the app is to open.
-        'disable_session_recording': true,
+        'disable_session_recording': !recordScreen,
+        // The recording never carries the browser console: a debug build prints
+        // what the server answered there, and that holds names.
+        if (recordScreen) 'enable_recording_console_log': false,
         'autocapture': false,
         'capture_pageview': false,
         'enable_heatmaps': false,
@@ -244,5 +279,17 @@ class PosthogWebClient implements AnalyticsClient {
         'save_referrer': false,
         'save_campaign_params': false,
         'capture_performance': true,
+        if (recordScreen)
+          'session_recording': {
+            'maskAllInputs': true,
+            'maskTextSelector': '*',
+            'blockSelector': 'flt-semantics-host',
+            'captureCanvas': {
+              'recordCanvas': true,
+              'canvasFps': 2,
+              'canvasQuality': '0.4',
+            },
+            'canvasCapture': <String, Object>{},
+          },
       };
 }

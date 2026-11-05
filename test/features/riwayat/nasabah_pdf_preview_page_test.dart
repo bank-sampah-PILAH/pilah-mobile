@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfrx/pdfrx.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';
 
@@ -52,6 +54,21 @@ void main() {
     // The viewer writes its temp copy and starts loading the document.
     await tester.pump();
   }
+
+  testWidgets('the statement is hidden in the screen recording',
+      (tester) async {
+    await pumpPreview(tester);
+
+    // The viewer draws names and amounts on a canvas that the text masks do
+    // not reach, so the whole viewer sits under HideInReplay.
+    expect(
+      find.descendant(
+        of: find.byType(HideInReplay),
+        matching: find.byType(PdfViewer),
+      ),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('preview page shows the filename and the download action',
       (tester) async {

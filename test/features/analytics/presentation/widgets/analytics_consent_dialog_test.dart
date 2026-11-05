@@ -50,6 +50,85 @@ void main() {
     expect(find.text('Tolak'), findsOneWidget);
   });
 
+  testWidgets('where the screen is recorded, says so and that all is hidden',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () =>
+                  showAnalyticsConsentDialog(context, recordsScreen: true),
+              child: const Text('buka'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Kami juga merekam layar'), findsOneWidget);
+    expect(
+      find.textContaining('nomor telepon disamarkan sehingga tidak terlihat'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Kami tidak merekam layar'), findsNothing);
+  });
+
+  testWidgets(
+      'where the screen is recorded, says the fixed labels stay visible and '
+      'does not claim that only the layout can be seen', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () =>
+                  showAnalyticsConsentDialog(context, recordsScreen: true),
+              child: const Text('buka'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Label dan judul tetap dari aplikasi tetap terlihat'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('hanya tata letak'), findsNothing);
+    expect(find.textContaining('Semua tulisan dan gambar'), findsNothing);
+  });
+
+  testWidgets(
+      'where the screen is recorded, says the site address and its files are '
+      'part of the recording while the page route is not sent', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () =>
+                  showAnalyticsConsentDialog(context, recordsScreen: true),
+              child: const Text('buka'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Rute halaman tidak dikirim'), findsOneWidget);
+    expect(find.textContaining('Di web, alamat situs dan berkas bawaannya'),
+        findsOneWidget);
+    expect(find.textContaining('Alamat halaman tidak dikirim'), findsNothing);
+  });
+
   testWidgets('no longer says the screen is recorded or that data is covered',
       (tester) async {
     await open(tester);

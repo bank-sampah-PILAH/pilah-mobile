@@ -77,6 +77,10 @@ void main() {
     expect(_client().isAvailable, isTrue);
   });
 
+  test('records no screen unless it is asked to', () {
+    expect(_client().recordsScreen, isFalse);
+  });
+
   test('stop before start loads nothing and touches nothing', () async {
     await _client().stop();
 
@@ -330,6 +334,72 @@ void main() {
       'save_referrer': false,
       'save_campaign_params': false,
       'capture_performance': true,
+    });
+  });
+
+  group('when it records the screen', () {
+    PosthogWebClient recording() => PosthogWebClient(
+          apiKey: 'phc_test_key',
+          host: 'https://us.i.posthog.com',
+          libraryUrl: _fakeLibraryUrl,
+          recordScreen: true,
+        );
+
+    JSObject sessionRecording() {
+      final args = globalContext.getProperty<JSObject>('__initArgs'.toJS);
+      final options = args.getProperty<JSObject>(1.toJS);
+      return options.getProperty<JSObject>('session_recording'.toJS);
+    }
+
+    test('says so, and the plain client still does not', () {
+      expect(recording().recordsScreen, isTrue);
+      expect(_client().recordsScreen, isFalse);
+    });
+
+    test('turns the recording on and masks everything the page itself shows',
+        () async {
+      await recording().start();
+
+      final args = globalContext
+          .getProperty<JSAny?>('__initArgs'.toJS)
+          .dartify()! as List<Object?>;
+      final options = args[1]! as Map<Object?, Object?>;
+      expect(options['disable_session_recording'], isFalse);
+      // The browser console is not recorded: a debug build prints what the
+      // server answered there, and that holds names.
+      expect(options['enable_recording_console_log'], isFalse);
+      final recordingOptions = options['session_recording']! as Map;
+      expect(recordingOptions['maskAllInputs'], isTrue);
+      // The page's own text is masked wholesale, and the mirror Flutter keeps
+      // of its widgets for screen readers is not recorded at all.
+      expect(recordingOptions['maskTextSelector'], '*');
+      expect(recordingOptions['blockSelector'], 'flt-semantics-host');
+      expect(recordingOptions['captureCanvas'], {
+        'recordCanvas': true,
+        'canvasFps': 2,
+        'canvasQuality': '0.4',
+      });
+    });
+
+    test('skips every canvas frame until the app says what to mask', () async {
+      await recording().start();
+
+      final canvasCapture =
+          sessionRecording().getProperty<JSObject>('canvasCapture'.toJS);
+      final maskRegionsFn =
+          canvasCapture.getProperty<JSFunction>('maskRegionsFn'.toJS);
+      // posthog-js reads null as "do not send this frame".
+      expect(
+          maskRegionsFn.callAsFunction(null, web.HTMLCanvasElement()), isNull);
+    });
+
+    test('leaves no network request in the recording', () async {
+      await recording().start();
+
+      final mask = sessionRecording()
+          .getProperty<JSFunction>('maskCapturedNetworkRequestFn'.toJS);
+      expect(mask.callAsFunction(null, <String, Object>{'name': '/x'}.jsify()),
+          isNull);
     });
   });
 

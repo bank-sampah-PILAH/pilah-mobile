@@ -3,6 +3,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 
 /// Kepala halaman tab di shell web: judul, subjudul opsional, pencarian, dan
 /// aksi, dengan jarak yang sama di setiap halaman.
@@ -45,8 +46,10 @@ class AppPageHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: AppTextStyle.headline1.copyWith(color: AppColors.black)),
+        RevealInReplay(
+          child: Text(title,
+              style: AppTextStyle.headline1.copyWith(color: AppColors.black)),
+        ),
         if (subtitle != null) ...[
           const SizedBox(height: 2),
           DefaultTextStyle(

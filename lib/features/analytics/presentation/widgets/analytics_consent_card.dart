@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 
 /// Lets a pengurus see, and change, whether the steps they take are noted.
@@ -20,6 +21,7 @@ class AnalyticsConsentCard extends ConsumerWidget {
     final allowed =
         ref.watch(analyticsConsentProvider).value == ConsentChoice.granted;
     final consent = ref.read(analyticsConsentProvider.notifier);
+    final recordsScreen = ref.watch(analyticsClientProvider).recordsScreen;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -43,8 +45,8 @@ class AnalyticsConsentCard extends ConsumerWidget {
                   'Izinkan PILAH mencatat langkah pemakaian aplikasi agar kami '
                   'bisa meningkatkannya. Data dikirim ke PostHog, penyedia '
                   'analitik di luar negeri, bersama jenis perangkat, peramban, '
-                  'dan perkiraan lokasi dari alamat IP. Isi layar dan alamat '
-                  'halaman tidak dicatat.',
+                  'dan perkiraan lokasi dari alamat IP. '
+                  '${recordsScreen ? 'Layar direkam. Data pribadi disamarkan, label tetap aplikasi tetap terlihat.' : 'Isi layar dan alamat halaman tidak dicatat.'}',
                   style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
               ],

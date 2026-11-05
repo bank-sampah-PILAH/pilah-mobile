@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_consent_dialog.dart';
 
@@ -39,7 +40,10 @@ class _AnalyticsConsentPromptState
     // the first frame has been built.
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
-    final agreed = await showAnalyticsConsentDialog(context);
+    final agreed = await showAnalyticsConsentDialog(
+      context,
+      recordsScreen: ref.read(analyticsClientProvider).recordsScreen,
+    );
     if (!mounted) return;
     final consent = ref.read(analyticsConsentProvider.notifier);
     if (agreed == true) {

@@ -16,6 +16,10 @@ void main() {
     await expectLater(client.stop(), completes);
   });
 
+  test('NoopAnalyticsClient records no screen', () {
+    expect(NoopAnalyticsClient().recordsScreen, isFalse);
+  });
+
   test('NoopAnalyticsClient ignores events and screens', () {
     final client = NoopAnalyticsClient();
 

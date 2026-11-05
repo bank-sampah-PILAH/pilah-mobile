@@ -9,13 +9,20 @@ class FakeAnalyticsClient implements AnalyticsClient {
   /// With [enforceLifecycle] it behaves like the real client: events and
   /// screens are dropped until [start] and again after [stop]. Without it
   /// everything is recorded, which most tests want.
-  FakeAnalyticsClient({this.isAvailable = true, this.enforceLifecycle = false});
+  FakeAnalyticsClient({
+    this.isAvailable = true,
+    this.enforceLifecycle = false,
+    this.recordsScreen = false,
+  });
 
   final bool enforceLifecycle;
   bool _live = false;
 
   @override
   final bool isAvailable;
+
+  @override
+  final bool recordsScreen;
 
   /// Only `start` and `stop`, in order.
   final calls = <String>[];

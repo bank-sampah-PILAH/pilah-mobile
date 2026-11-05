@@ -21,9 +21,20 @@ class AnalyticsConsentStore {
 
   final AppStorage _storage;
 
-  Future<ConsentChoice> read(String userId) async {
+  static String _screenKey(String userId) => 'analytics_consent_screen:$userId';
+
+  /// [userId]'s choice. When the screen is recorded ([screen]), an agreement
+  /// only counts if it was given for that: one given before screens were
+  /// recorded promised the opposite, so the user is asked again. A refusal
+  /// stays a refusal.
+  Future<ConsentChoice> read(String userId, {bool screen = false}) async {
     if (userId.isEmpty) return ConsentChoice.unset;
     final stored = await _storage.get<String>(choiceKey(userId));
+    if (stored == 'granted' &&
+        screen &&
+        await _storage.get<String>(_screenKey(userId)) != 'true') {
+      return ConsentChoice.unset;
+    }
     return switch (stored) {
       'granted' => ConsentChoice.granted,
       'denied' => ConsentChoice.denied,
@@ -38,7 +49,14 @@ class AnalyticsConsentStore {
     return stored == null ? null : DateTime.tryParse(stored);
   }
 
-  Future<void> grant(String userId) => _decide(userId, ConsentChoice.granted);
+  /// Records an agreement. [screen] says that the user was told the screen is
+  /// recorded.
+  Future<void> grant(String userId, {bool screen = false}) async {
+    await _decide(userId, ConsentChoice.granted);
+    if (userId.isNotEmpty && screen) {
+      await _storage.put(_screenKey(userId), 'true');
+    }
+  }
 
   Future<void> deny(String userId) => _decide(userId, ConsentChoice.denied);
 

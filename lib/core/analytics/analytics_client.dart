@@ -5,6 +5,11 @@ abstract class AnalyticsClient {
   /// are not.
   bool get isAvailable;
 
+  /// Whether the screen is recorded as well as the steps taken. A consent
+  /// given before recording existed does not cover it, and the dialog has to
+  /// say so.
+  bool get recordsScreen;
+
   Future<void> start();
 
   /// Stops recording, for example when the user withdraws their consent.
@@ -40,6 +45,9 @@ class NoopAnalyticsClient implements AnalyticsClient {
 
   @override
   bool get isAvailable => false;
+
+  @override
+  bool get recordsScreen => false;
 
   @override
   Future<void> start() async {}

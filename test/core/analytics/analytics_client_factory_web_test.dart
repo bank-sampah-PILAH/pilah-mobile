@@ -1,11 +1,11 @@
 @TestOn('browser')
 library;
 
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
 import 'package:pilah_mobile/core/analytics/analytics_config.dart';
-import 'package:pilah_mobile/core/analytics/posthog_web_client.dart';
+import 'package:pilah_mobile/core/analytics/posthog_web_recording_client.dart';
 
 void main() {
   test('on the web, a configured build gets the PostHog client', () {
@@ -15,7 +15,7 @@ void main() {
       environment: 'staging',
     );
 
-    expect(createAnalyticsClient(config), isA<PosthogWebClient>());
+    expect(createAnalyticsClient(config), isA<PosthogWebRecordingClient>());
   });
 
   test('on the web, analytics that is off still gets the no-op client', () {

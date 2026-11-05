@@ -1,8 +1,9 @@
 # Usage analytics
 
 PILAH sends a small number of events to PostHog so the team can see where
-pengurus slow down, give up, or run into errors. **No screen is recorded.**
-Events say *what* a pengurus did (which step, how long, how many, what went
+pengurus slow down, give up, or run into errors. **The screen is recorded on
+Android, iOS and the web, with personal data hidden and only the fixed labels of
+the app readable** (see "Screen recording" below). Events say *what* a pengurus did (which step, how long, how many, what went
 wrong), never *who* they are or what was on their screen.
 
 Nothing is sent until a pengurus has agreed in the consent dialog, and nothing
@@ -72,10 +73,55 @@ expect(analytics.events.single.properties, {'jumlah_item': 1});
 `ENABLE_POSTHOG`, `POSTHOG_API_KEY`, `POSTHOG_HOST` and `POSTHOG_ENVIRONMENT`
 in the web `.env` (see `.env.example` and `docs/DASHBOARD_DEPLOYMENT.md`).
 Staging and production share one PostHog project, so every event can be filtered
-by `environment`. Recording, automatic capture and heatmaps are switched off in
-the client; only load time is measured automatically.
+by `environment`. On the web, automatic capture and heatmaps are switched off in the client and
+only load time is measured automatically; the screen recording is described
+below.
 
-The native Android app does not send events yet (PIL-416).
+## Screen recording (Android, iOS and web)
+
+The mobile apps also record the screen (PIL-473), so the team can open the
+session of a pengurus who got stuck and see what went wrong. The recording is
+masked: `maskAllTexts` and `maskAllImages` are on, so every text, icon and image
+is a black block, except what is revealed on purpose (below). No name, balance,
+address, photo, email or phone number can be read in it. Do not turn those off.
+The consent text says the same: personal data is masked and the fixed labels of
+the app stay visible. It must never say that only the layout is visible.
+
+Three things are shown on purpose, so a viewer can tell which screen and which
+step it is: field captions (`AppFieldLabel`), page and sheet titles
+(`AppPageHeader`, `BottomSheetHeader`) and button labels (`AppButton`). They are
+wrapped in `RevealInReplay` (`lib/core/analytics/replay_masks.dart`). Before you
+reveal anything else, or pass a dynamic value to one of these widgets, check it
+can never hold what a pengurus typed or what the server sent (a name, an
+address, an amount, a note). The charts of the dashboard are drawn on a canvas
+that the masks do not reach, so they are wrapped in `HideInReplay`; do the same
+for anything new that draws figures itself.
+
+- It starts and stops together with analytics: after the pengurus agrees, never
+  for a nasabah or a Super Admin, and not after they withdraw.
+- Agreements given before recording existed are not honoured for it: the
+  pengurus is asked again with the new text (`AnalyticsConsentStore.read(screen:
+  true)`). A refusal stays a refusal.
+- The web records too, as pictures of Flutter's one canvas. A DOM mask cannot
+  reach text drawn on a canvas, so the plugin walks the widget tree and sends
+  the rectangles to cover through `canvasCapture.maskRegionsFn` (posthog-js
+  1.408 or newer). A frame without rectangles is skipped, not sent. The page's
+  own text is masked (`maskTextSelector: '*'`), the accessibility copy of the
+  widgets (`flt-semantics-host`) is blocked, and neither the browser console
+  nor network requests are recorded: a debug build prints what the server
+  answered in the console, and that holds names. Proven on 5 Nov 2026 by
+  decoding the `$snapshot` frames of a real session: every text and icon was a
+  black box, and no name or email was found in the payload. The recording does
+  not carry the route of the page: no rrweb Meta event and no `#/…` route were
+  found in the frames. It does carry the site's origin and the addresses of its
+  static files, as part of the recorded page structure (`<base href>`, script
+  and icon links), so the consent text says the route is not sent but the site
+  address and its files are recorded.
+- posthog-js treats a headless browser as a bot and drops every event, so an
+  automated check must run with a normal user agent.
+- The recorder (`PostHogWidget`) is put around the app by
+  `AnalyticsRecordingRoot` once analytics has started. The app is kept under a
+  global key, so adding the recorder does not rebuild it.
 
 ## Who an event belongs to
 

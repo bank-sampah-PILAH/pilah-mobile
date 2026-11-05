@@ -31,6 +31,49 @@ void main() {
     expect(await store.read('u1'), ConsentChoice.denied);
   });
 
+  group('when the screen is recorded', () {
+    test('an agreement given before screens were recorded is asked again',
+        () async {
+      final store = AnalyticsConsentStore(storage);
+      await store.grant('u1');
+
+      expect(await store.read('u1', screen: true), ConsentChoice.unset);
+      // Where the screen is not recorded, nothing changes.
+      expect(await store.read('u1'), ConsentChoice.granted);
+    });
+
+    test('an agreement given for it holds, and survives reopening', () async {
+      await AnalyticsConsentStore(storage).grant('u1', screen: true);
+
+      expect(
+        await AnalyticsConsentStore(storage).read('u1', screen: true),
+        ConsentChoice.granted,
+      );
+    });
+
+    test('a refusal stays a refusal', () async {
+      final store = AnalyticsConsentStore(storage);
+      await store.deny('u1');
+
+      expect(await store.read('u1', screen: true), ConsentChoice.denied);
+    });
+
+    test('the agreement is per user', () async {
+      final store = AnalyticsConsentStore(storage);
+      await store.grant('u1', screen: true);
+      await store.grant('u2');
+
+      expect(await store.read('u2', screen: true), ConsentChoice.unset);
+    });
+
+    test('nobody without an id has an agreement to keep', () async {
+      final store = AnalyticsConsentStore(storage);
+      await store.grant('', screen: true);
+
+      expect(await store.read('', screen: true), ConsentChoice.unset);
+    });
+  });
+
   test('the choice survives reopening the app', () async {
     await AnalyticsConsentStore(storage).grant('u1');
 

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_recording_root.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_screen_tracker_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
@@ -153,14 +154,20 @@ class App extends StatelessWidget {
           child: _BrowserTitleUpdater(
             router: router,
             enabled: isWeb,
-            child: MaterialApp.router(
-              title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
-              theme: AppTheme.light,
-              // Material widgets (date pickers, dialog buttons) in Indonesian.
-              locale: const Locale('id'),
-              supportedLocales: const [Locale('id')],
-              localizationsDelegates: GlobalMaterialLocalizations.delegates,
-              routerConfig: router,
+            child: AnalyticsRecordingRoot(
+              child: MaterialApp.router(
+                // The banner is drawn over the whole screen, so it would be in
+                // every frame of the recording of a debug build.
+                debugShowCheckedModeBanner: false,
+                title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+                theme: AppTheme.light,
+                // Material widgets (date pickers, dialog buttons) in
+                // Indonesian.
+                locale: const Locale('id'),
+                supportedLocales: const [Locale('id')],
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                routerConfig: router,
+              ),
             ),
           ),
         );
