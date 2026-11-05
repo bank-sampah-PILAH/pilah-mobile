@@ -74,16 +74,12 @@ void main() {
 
       expect(find.text('Transaksi'), findsOneWidget);
       expect(find.text('Setoran'), findsOneWidget);
-      expect(find.text('Pencairan'), findsOneWidget);
+      expect(find.text('Pencairan'), findsNothing);
       expect(find.text('Tambah Transaksi'), findsNothing);
       expect(
         tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
-      final pencairan = tester
-          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.pencairanKey));
-      expect(pencairan.enabled, isFalse);
-      expect(pencairan.onTap, isNull);
 
       await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
@@ -136,6 +132,16 @@ void main() {
       expect(find.byIcon(Icons.campaign_outlined), findsNothing);
       expect(find.byKey(RoleNavigationDrawer.destinationKey(5)), findsNothing,
           reason: 'the staff drawer now ends at the fifth destination');
+    });
+
+    testWidgets('draws no Pencairan row at all', (tester) async {
+      await mountDrawer(tester, onAddTransaction: () {});
+
+      expect(find.text('Pencairan'), findsNothing);
+      expect(find.byIcon(Icons.payments_outlined), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.pencairanKey), findsNothing,
+          reason: 'creating a pencairan is closed for handover (PIL-434), and '
+              'a row that cannot be tapped is the dead menu PIL-392 forbids');
     });
 
     testWidgets('marks the current destination as selected', (tester) async {
@@ -288,7 +294,7 @@ void main() {
         lessThan(tester.getTopLeft(find.text('Setoran')).dy),
       );
       expect(
-        tester.getTopLeft(find.text('Pencairan')).dy,
+        tester.getTopLeft(find.text('Setoran')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
     });
