@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 
@@ -24,9 +23,6 @@ class FakeAnalyticsClient implements AnalyticsClient {
 
   @override
   final bool recordsScreen;
-
-  @override
-  Widget wrapApp(Widget app) => app;
 
   /// Only `start` and `stop`, in order.
   final calls = <String>[];

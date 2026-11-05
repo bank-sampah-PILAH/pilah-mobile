@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/core/analytics/screen_recorder.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_recording_root.dart';
@@ -14,7 +15,7 @@ import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/fake_app_storage.dart';
 
 /// Puts a frame around the app once it has started, as the real recorder does.
-class _FramingClient extends FakeAnalyticsClient {
+class _FramingClient extends FakeAnalyticsClient implements ScreenRecorder {
   _FramingClient() : super(recordsScreen: true);
 
   var started = false;

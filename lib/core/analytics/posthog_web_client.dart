@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
-import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 import 'package:web/web.dart' as web;
@@ -59,9 +58,6 @@ class PosthogWebClient implements AnalyticsClient {
   /// browser library to record, and recording the canvas was rejected.
   @override
   bool get recordsScreen => false;
-
-  @override
-  Widget wrapApp(Widget app) => app;
 
   /// Starts the client. Throws a [StateError] when the library cannot be
   /// loaded, so a caller has to handle that. A failed start is not remembered:

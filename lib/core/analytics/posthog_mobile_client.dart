@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
+import 'package:pilah_mobile/core/analytics/screen_recorder.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 /// PostHog for the Android and iOS apps.
@@ -17,7 +18,7 @@ import 'package:posthog_flutter/posthog_flutter.dart';
 /// a pengurus gets stuck. Every text and every image is masked in it, so what
 /// reaches PostHog is the layout and where the finger went, never a name, a
 /// balance, an address or a photo.
-class PosthogMobileClient implements AnalyticsClient {
+class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
   /// [posthog] defaults to the SDK's own instance; tests pass one that runs on
   /// a fake platform so they never reach a device or the network.
   PosthogMobileClient({

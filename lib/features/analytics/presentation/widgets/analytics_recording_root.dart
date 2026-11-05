@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/core/analytics/screen_recorder.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 
@@ -29,6 +30,8 @@ class _AnalyticsRecordingRootState
     // what makes the recorder appear.
     ref.watch(analyticsConsentProvider);
     final app = KeyedSubtree(key: _appKey, child: widget.child);
-    return ref.read(analyticsClientProvider).wrapApp(app);
+    final client = ref.read(analyticsClientProvider);
+    final Object recorder = client;
+    return recorder is ScreenRecorder ? recorder.wrapApp(app) : app;
   }
 }

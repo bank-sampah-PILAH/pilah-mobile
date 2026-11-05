@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
@@ -17,11 +16,8 @@ void main() {
     await expectLater(client.stop(), completes);
   });
 
-  test('NoopAnalyticsClient records no screen and leaves the app as it is', () {
-    const app = SizedBox();
-
+  test('NoopAnalyticsClient records no screen', () {
     expect(NoopAnalyticsClient().recordsScreen, isFalse);
-    expect(NoopAnalyticsClient().wrapApp(app), same(app));
   });
 
   test('NoopAnalyticsClient ignores events and screens', () {
