@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -95,6 +97,32 @@ void main() {
     // The place and the notes the pengurus typed never leave the app.
     expect(
         created.values.whereType<String>(), isNot(contains(contains('Balai'))));
+  });
+
+  testWidgets('a schedule saved after the form was closed is still reported',
+      (tester) async {
+    final saving = Completer<NetworkException?>();
+    await tester.pumpWidget(_app(
+      _notifier(JadwalLoaded(const []), onSave: (_) => saving.future),
+      analytics,
+    ));
+    await tester.pumpAndSettle();
+    await openForm(tester);
+    await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
+    final button = find.byType(ElevatedButton).last;
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pump();
+
+    // The pengurus leaves the form while the request is still running.
+    Navigator.of(tester.element(find.byKey(const ValueKey('jadwal-form'))))
+        .pop();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('jadwal-form')), findsNothing);
+    saving.complete(null);
+    await tester.pumpAndSettle();
+
+    expect(names(), contains('jadwal_dibuat'));
   });
 
   testWidgets('a schedule the server refuses is not reported as created',
