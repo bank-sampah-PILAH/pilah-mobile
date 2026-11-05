@@ -25,18 +25,22 @@ void main() {
     for (final choice in DashboardRangeChoice.values) {
       dashboardRangeChanged(client, choice);
     }
+    dashboardCustomRangeChanged(client, days: 3);
 
     expect(
         client.events.map((e) => e.name).toSet(), {'dashboard_periode_diubah'});
     expect(client.events.map((e) => e.properties['periode']),
         ['hari_ini', '7_hari', '30_hari', 'kustom']);
-    expect(client.events.every((e) => e.properties.length == 1), isTrue);
+    expect(
+        client.events
+            .where((e) => e.properties['periode'] != 'kustom')
+            .every((e) => e.properties.length == 1),
+        isTrue);
   });
 
   test('a custom range says how long it is, in classes, not its dates', () {
     for (final days in [1, 7, 8, 30, 31]) {
-      dashboardRangeChanged(client, DashboardRangeChoice.custom,
-          customDays: days);
+      dashboardCustomRangeChanged(client, days: days);
     }
 
     expect(client.events.map((e) => e.properties['lama_kustom_hari_kelas']),
