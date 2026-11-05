@@ -37,6 +37,20 @@ These are maintainer provisioning steps, not actions performed by this PR.
    Missing/duplicate keys, a non-HTTPS API, wrong staging API, an unexpected
    API path, and malformed client IDs fail before build. Do not put server
    secrets in browser settings. The script never sources shell dotenv values.
+
+   Usage analytics (PostHog) is optional and off by default. To enable it, add these
+   lines to the same secret:
+   ```dotenv
+   ENABLE_POSTHOG=true
+   POSTHOG_API_KEY=phc_YOUR_PROJECT_KEY
+   POSTHOG_ENVIRONMENT=staging
+   ```
+   Use `staging` for the staging flavor and `production` for production, since
+   both share one PostHog project. `POSTHOG_HOST` is optional and must be
+   `https://us.i.posthog.com`. The key must be a project key (`phc_`), never a
+   personal one (`phx_`). The build fails on any other value. Enabling this
+   only makes analytics possible: nothing is sent until the app starts the
+   client after the user agrees.
 3. Provision **separate** Fly app `pilah-web-staging` in the intended organization
    and allocate its provider hostname/networking as required by Fly. Put an
    app-scoped deploy token in staging secret `FLY_API_TOKEN` (not a backend
