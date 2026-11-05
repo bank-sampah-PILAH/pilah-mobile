@@ -86,7 +86,6 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   bool _bankSeeded = false;
   // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
-  String? _createdInviteUrl;
   Timer? _inviteCountdownTimer;
   Timer? _inviteExpiryTimer;
   String? _expiredInviteUrl;
@@ -344,7 +343,6 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     }
     final created = ref.read(profileProvider).invite;
     if (created?.isValid == true) {
-      setState(() => _createdInviteUrl = created!.url);
       _snack('Link undangan baru berhasil dibuat');
     }
   }
@@ -447,22 +445,32 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             ),
           ],
           const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: invite.url == _createdInviteUrl
-                ? 'Salin Link Undangan Baru'
-                : 'Salin Link Undangan',
-            variant: AppButtonVariant.tonal,
-            icon: Icons.copy,
-            onPressed: () => _onCopyInvite(invite),
-          ),
-          const SizedBox(height: AppSpacing.sm),
         ],
-        AppButton(
-          label: 'Buat Link Baru',
-          variant: AppButtonVariant.tonal,
-          isLoading: state.isCreatingInvite,
-          onPressed:
-              state.isCreatingInvite ? null : () => _onCreateInvite(invite),
+        Row(
+          children: [
+            if (valid && invite.url != null) ...[
+              Expanded(
+                child: AppButton(
+                  label: 'Salin Link Undangan',
+                  variant: AppButtonVariant.tonal,
+                  icon: Icons.copy,
+                  onPressed: () => _onCopyInvite(invite),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            Expanded(
+              child: AppButton(
+                label: 'Buat Link Baru',
+                variant:
+                    valid ? AppButtonVariant.neutral : AppButtonVariant.tonal,
+                isLoading: state.isCreatingInvite,
+                onPressed: state.isCreatingInvite
+                    ? null
+                    : () => _onCreateInvite(invite),
+              ),
+            ),
+          ],
         ),
       ],
     );
