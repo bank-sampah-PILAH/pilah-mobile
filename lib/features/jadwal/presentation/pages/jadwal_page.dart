@@ -252,10 +252,11 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
 
   Future<void> _changeStatus(JadwalEntity item, JadwalAction action) async {
     final analytics = ref.read(analyticsClientProvider);
-    final failure = await ref.read(jadwalProvider.notifier).changeStatus(
-          item.id,
-          action.wireValue,
-        );
+    final notifier = ref.read(jadwalProvider.notifier);
+    // A change that is skipped because another is running looks like a success
+    // to the caller, so it is not reported, and not tried, here.
+    if (!notifier.canChangeStatus) return;
+    final failure = await notifier.changeStatus(item.id, action.wireValue);
     if (failure == null) {
       jadwalStatusChanged(analytics,
           action: action.wireValue, statusBefore: item.status);
