@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
@@ -38,7 +39,10 @@ void main() {
     expect(createAnalyticsClient(null), isA<NoopAnalyticsClient>());
   });
 
-  test('createAnalyticsClient returns the no-op client outside the web', () {
+  test('createAnalyticsClient returns the no-op client on a desktop', () {
+    // Flutter's test platform is Android, which does get a native client.
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
     const config = AnalyticsConfig(
       apiKey: 'phc_test_key',
       host: 'https://us.i.posthog.com',
