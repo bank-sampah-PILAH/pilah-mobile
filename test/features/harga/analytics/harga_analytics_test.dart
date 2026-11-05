@@ -114,4 +114,13 @@ void main() {
       {'ada_hasil': true, 'jumlah_hasil_kelas': '1_5'},
     ]);
   });
+
+  test('a search counts its results in classes, at every edge', () {
+    for (final count in [0, 1, 5, 6, 20, 21]) {
+      hargaSearched(client, resultCount: count);
+    }
+
+    expect(client.events.map((e) => e.properties['jumlah_hasil_kelas']),
+        ['0', '1_5', '1_5', '6_20', '6_20', 'lebih_20']);
+  });
 }
