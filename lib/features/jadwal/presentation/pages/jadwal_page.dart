@@ -1216,7 +1216,8 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
             isOverlapping: initial?.isOverlapping ?? false,
           ),
         );
-    if (!mounted) return;
+    // The schedule was saved whether or not the form is still open, so the
+    // event goes out before the check that only guards what is drawn.
     if (failure == null) {
       _analytics.saved(
         editing: initial != null,
@@ -1225,6 +1226,9 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
         startsAt: _startsAt,
         endsAt: _endsAt,
       );
+    }
+    if (!mounted) return;
+    if (failure == null) {
       final close = widget.onClose;
       if (close != null) {
         close();
