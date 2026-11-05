@@ -136,11 +136,9 @@ class DashboardReportRangeFilter extends ConsumerWidget {
                     lastDate: lastDate,
                     onApply: (value) {
                       controller.close();
-                      dashboardRangeChanged(
+                      dashboardCustomRangeChanged(
                         ref.read(analyticsClientProvider),
-                        DashboardRangeChoice.custom,
-                        customDays:
-                            value.end.difference(value.start).inDays + 1,
+                        days: value.end.difference(value.start).inDays + 1,
                       );
                       onChanged(DashboardReportRange(
                         start: value.start,

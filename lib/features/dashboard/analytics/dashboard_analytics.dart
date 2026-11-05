@@ -11,12 +11,12 @@ enum DashboardQuickAction {
   final String wire;
 }
 
-/// The range the pengurus picked for the dashboard reports.
+/// A preset range the pengurus picked for the dashboard reports. A custom
+/// range has its own event function because it must also say how long it is.
 enum DashboardRangeChoice {
   today('hari_ini'),
   week('7_hari'),
-  month('30_hari'),
-  custom('kustom');
+  month('30_hari');
 
   const DashboardRangeChoice(this.wire);
 
@@ -33,18 +33,24 @@ void dashboardQuickActionTapped(
 ) =>
     client.capture('dashboard_aksi_cepat_ditekan', {'aksi': action.wire});
 
-/// The report range was changed. Which range is sent by name, never its dates;
-/// a custom range also says how long it is, in a class ([customDays] counts
-/// both ends).
+/// A preset report range was chosen. Which range is sent by name, never its
+/// dates.
 void dashboardRangeChanged(
   AnalyticsClient client,
-  DashboardRangeChoice choice, {
-  int? customDays,
+  DashboardRangeChoice choice,
+) =>
+    client.capture('dashboard_periode_diubah', {'periode': choice.wire});
+
+/// A custom report range was applied. It says how long it is, in a class
+/// ([days] counts both ends), never its dates. The duration is required so no
+/// custom event can be sent without it.
+void dashboardCustomRangeChanged(
+  AnalyticsClient client, {
+  required int days,
 }) =>
     client.capture('dashboard_periode_diubah', {
-      'periode': choice.wire,
-      if (customDays != null)
-        'lama_kustom_hari_kelas': _lengthClass(customDays),
+      'periode': 'kustom',
+      'lama_kustom_hari_kelas': _lengthClass(days),
     });
 
 String _lengthClass(int days) {
