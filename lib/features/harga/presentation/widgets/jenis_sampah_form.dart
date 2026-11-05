@@ -455,6 +455,13 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
     );
   }
 
+  /// A save is counted even when the panel has moved on: it did happen.
+  void _countSave(Object? error, bool editing, bool priceChanged, String kind) {
+    if (error != null) return;
+    _analytics.saved(
+        editing: editing, priceChanged: priceChanged, category: kind);
+  }
+
   Future<void> _handleSimpan() async {
     _analytics.submitTapped();
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -500,14 +507,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
       ));
       hanyaHargaGagal = error != null;
     }
-    // A save is counted even when the panel has moved on: it did happen.
-    if (error == null) {
-      _analytics.saved(
-        editing: isEditMode,
-        priceChanged: hargaBerubah,
-        category: harga.category,
-      );
-    }
+    _countSave(error, isEditMode, hargaBerubah, harga.category);
     if (!mounted) {
       if (error == null) {
         _kabarkanTanpaForm(pesanSimpanJenis(
