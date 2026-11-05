@@ -42,6 +42,7 @@ class SetoranAnalytics {
   late DateTime _lastStepAt;
   int _attempts = 0;
   bool _saved = false;
+  final _filledRows = <Object>{};
 
   static const _problemNames = {
     SetoranProblem.noNasabah: 'nasabah_belum_dipilih',
@@ -56,6 +57,7 @@ class SetoranAnalytics {
     _startedAt = _lastStepAt = _clock();
     _attempts = 0;
     _saved = false;
+    _filledRows.clear();
     _send('setoran_dimulai');
   }
 
@@ -63,6 +65,15 @@ class SetoranAnalytics {
   void nasabahChosen() => _send('setoran_nasabah_dipilih', {
         'durasi_langkah_detik': _sinceLastStep(),
       });
+
+  /// An item got a jenis and a weight for the first time. [row] tells the
+  /// items apart and is never sent. Each item is counted once however often it
+  /// is edited afterwards, and removing it does not take it back, so `item_ke`
+  /// is the order in which the items of this flow were filled in.
+  void itemFilled(Object row) {
+    if (_flowId == null || !_filledRows.add(row)) return;
+    _send('setoran_item_diisi', {'item_ke': _filledRows.length});
+  }
 
   /// The save button was pressed, counting how many times it has been.
   void saveTapped({required int itemCount}) {

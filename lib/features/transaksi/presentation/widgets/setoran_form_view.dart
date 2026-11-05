@@ -177,6 +177,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
   bool _hasSubmitted = false;
   bool _isSaving = false;
   bool _saved = false;
+  int _nextRow = 0;
   String? _idempotencyKey;
   late final SetoranAnalytics _analytics;
   late final SetoranTutorialProgress _tutorialProgress;
@@ -306,8 +307,15 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
 
   void _addItem() {
     setState(() {
-      setoranItems.add(
-          {'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': 1.0});
+      // `baris` tells the cards apart for analytics only; the card keeps it
+      // when it hands back the edited item.
+      setoranItems.add({
+        'jenis': null,
+        'jenis_sampah_id': null,
+        'harga': 0,
+        'berat': 1.0,
+        'baris': _nextRow++,
+      });
     });
   }
 
@@ -877,6 +885,17 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
     );
   }
 
+  /// Tells analytics when a card first holds a jenis and a weight.
+  void _reportItemFilled(Map<String, dynamic> item) {
+    final row = item['baris'];
+    if (row == null) return;
+    final filled = SetoranItemDraft(
+      jenisSampahId: item['jenis_sampah_id'] as String?,
+      berat: (item['berat'] as num?)?.toDouble() ?? 0,
+    ).isValid;
+    if (filled) _analytics.itemFilled(row as Object);
+  }
+
   Widget _buildItemCard(int index) {
     return ItemSetoranCard(
       index: index,
@@ -895,6 +914,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
           return;
         }
         setState(() => setoranItems[index] = updatedItem);
+        _reportItemFilled(updatedItem);
       },
       onSubmitted: _handleSubmit,
       onDelete: () {

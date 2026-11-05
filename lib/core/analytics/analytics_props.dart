@@ -38,6 +38,7 @@ abstract final class AnalyticsProps {
     'format',
     'halaman_ke',
     'http_status',
+    'item_ke',
     'jenis',
     'jenis_aktivitas',
     'jenis_error',
