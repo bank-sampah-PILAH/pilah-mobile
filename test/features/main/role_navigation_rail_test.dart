@@ -189,6 +189,26 @@ void main() {
       expect(find.byKey(RoleTransactionMenu.setoranKey), findsNothing);
     });
 
+    testWidgets('the collapsed shortcut names its group and its action',
+        (tester) async {
+      // The slot carries no visible label, so its tooltip is the only name
+      // it has, for a pointer and for a screen reader alike. It has to hold
+      // both halves: the Transaksi group the wide rail and drawer name, so
+      // someone looking for it finds it here too, and the Setoran that one
+      // tap actually does, since no chooser follows to say so.
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(720, 900),
+        onAddTransaction: () {},
+      );
+
+      final shortcut =
+          tester.widget<IconButton>(find.byKey(RoleTransactionMenu.menuKey));
+      expect(shortcut.tooltip, contains('Transaksi'));
+      expect(shortcut.tooltip, contains('Setoran'));
+    });
+
     testWidgets('the collapsed shortcut offers no Pencairan', (tester) async {
       await taps(
         tester,

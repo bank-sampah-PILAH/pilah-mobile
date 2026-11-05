@@ -54,14 +54,24 @@ class RoleTransactionMenu extends StatelessWidget {
       // menu dengan satu isi menghabiskan satu ketukan untuk pilihan yang
       // bukan pilihan. Jadi ikonnya langsung membuka Setoran. Ikon dan
       // keadaan terpilihnya tetap milik kelompok Transaksi, karena itulah
-      // yang diwakili slot ini pada rail; tooltipnya yang menyebut apa yang
-      // terjadi saat ditekan.
+      // yang diwakili slot ini pada rail.
+      //
+      // Tooltipnya menyebut keduanya: ikon tanpa label pada rail ringkas
+      // hanya dinamai oleh tooltip itu, jadi menyebut *Setoran* saja membuat
+      // kelompok Transaksi tak bisa ditemukan oleh pembaca layar yang
+      // mencarinya seperti pada rail lebar, sementara menyebut *Transaksi*
+      // saja menjanjikan pilihan yang tidak akan muncul.
+      //
+      // Membuka kembali Pencairan menuntut slot ini digarap sendiri — menu
+      // pilihannya dulu di sini sudah dihapus, jadi tanpa itu rail lebar dan
+      // drawer menampilkan barisnya sementara rail ringkas tetap langsung ke
+      // Setoran.
       return SizedBox(
         width: 48,
         height: 48,
         child: IconButton(
           key: menuKey,
-          tooltip: 'Setoran',
+          tooltip: 'Transaksi: Setoran',
           icon: Icon(Icons.receipt_long_outlined, color: selectionColor),
           onPressed: _openSetoran,
         ),
