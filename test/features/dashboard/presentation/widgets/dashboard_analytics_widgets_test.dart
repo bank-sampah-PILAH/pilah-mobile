@@ -57,8 +57,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      expect(names(), ['dashboard_aksi_cepat_ditekan']);
-      expect(client.events.single.properties, {'aksi': 'tambah_nasabah'});
+      expect(
+          names(), ['dashboard_aksi_cepat_ditekan', 'nasabah_tambah_dimulai']);
+      expect(client.events.first.properties, {'aksi': 'tambah_nasabah'});
+      expect(client.events.last.properties['sumber'], 'dashboard');
     });
   });
 

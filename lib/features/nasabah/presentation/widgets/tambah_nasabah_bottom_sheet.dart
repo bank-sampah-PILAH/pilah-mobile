@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
@@ -9,7 +11,13 @@ import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_fields.dart';
 
 class TambahNasabahBottomSheet extends ConsumerStatefulWidget {
-  const TambahNasabahBottomSheet({super.key});
+  const TambahNasabahBottomSheet({
+    super.key,
+    this.source = 'halaman_nasabah',
+  });
+
+  /// Where the form was opened from, for usage analytics.
+  final String source;
 
   @override
   ConsumerState<TambahNasabahBottomSheet> createState() =>
@@ -32,6 +40,7 @@ class _TambahNasabahBottomSheetState
   final _whatsappController = TextEditingController();
   final _alamatController = TextEditingController();
 
+  late final NasabahAddAnalytics _analytics;
   String? _jenisKelamin;
   bool _isSaving = false;
   // Duplicate-ID errors are surfaced via a full-width AppNotification: the ID
@@ -42,7 +51,15 @@ class _TambahNasabahBottomSheetState
   String? _serverEmailError;
 
   @override
+  void initState() {
+    super.initState();
+    _analytics = NasabahAddAnalytics(ref.read(analyticsClientProvider))
+      ..opened(widget.source);
+  }
+
+  @override
   void dispose() {
+    _analytics.closed();
     _namaController.dispose();
     _idNasabahController.dispose();
     _emailController.dispose();
@@ -111,14 +128,7 @@ class _TambahNasabahBottomSheetState
         ),
         NasabahAddressField(
           controller: _alamatController,
-          validator: (value) {
-            final alamat = value?.trim() ?? '';
-            if (alamat.isEmpty) return 'Bagian ini wajib diisi.';
-            if (alamat.runes.length < 10) {
-              return 'Alamat minimal 10 karakter.';
-            }
-            return null;
-          },
+          validator: _alamatError,
         ),
       ],
       button: AppButton(
@@ -129,8 +139,39 @@ class _TambahNasabahBottomSheetState
     );
   }
 
+  static String? _alamatError(String? value) {
+    final alamat = value?.trim() ?? '';
+    if (alamat.isEmpty) return 'Bagian ini wajib diisi.';
+    if (alamat.runes.length < 10) return 'Alamat minimal 10 karakter.';
+    return null;
+  }
+
+  /// The names of the fields the form refused, by the same rules it showed the
+  /// errors with, so a field cannot be refused without being named. Only names,
+  /// never what was typed.
+  List<String> _invalidFields() => [
+        if (NasabahNameField.errorFor(_namaController.text) != null) 'nama',
+        if (NasabahGenderField.errorFor(_jenisKelamin) != null) 'jenis_kelamin',
+        if (NasabahEmailField.errorFor(
+                _emailController.text, _serverEmailError) !=
+            null)
+          'email',
+        if (NasabahBirthDateField.errorFor(_tanggalLahirController.text) !=
+            null)
+          'tanggal_lahir',
+        if (NasabahPhoneField.errorFor(
+                _whatsappController.text, _serverPhoneError) !=
+            null)
+          'no_hp',
+        if (_alamatError(_alamatController.text) != null) 'alamat',
+      ];
+
   Future<void> _handleSimpan() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    _analytics.submitTapped();
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _analytics.rejected(_invalidFields());
+      return;
+    }
 
     final notifier = ref.read(nasabahProvider.notifier);
     final state = ref.read(nasabahProvider);
@@ -156,6 +197,7 @@ class _TambahNasabahBottomSheetState
     }
 
     setState(() => _isSaving = true);
+    _analytics.sending();
     final request = NasabahRequest(
       kode: kode,
       nama: _namaController.text.trim(),
@@ -167,6 +209,13 @@ class _TambahNasabahBottomSheetState
     );
 
     final error = await notifier.addNasabah(request);
+    // A save is counted even when the sheet was closed meanwhile: it happened.
+    // The check below only guards what is drawn.
+    if (error == null) {
+      _analytics.saved();
+    } else {
+      _analytics.sendFailed();
+    }
     if (!mounted) return;
     setState(() => _isSaving = false);
 

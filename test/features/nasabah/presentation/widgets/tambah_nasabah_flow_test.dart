@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
@@ -14,8 +15,10 @@ const _path = '/api/v1/nasabah';
 void main() {
   late StubApi api;
   late NasabahNotifier notifier;
+  late FakeAnalyticsClient analytics;
 
   setUp(() {
+    analytics = FakeAnalyticsClient();
     api = StubApi();
     notifier = buildNasabahNotifier(api);
     api.on('GET', _path, json: nasabahPage([]));
@@ -37,7 +40,7 @@ void main() {
           ),
         ),
       ),
-      wrap: (app) => withNasabahProvider(notifier, app),
+      wrap: (app) => withNasabahProvider(notifier, app, analytics: analytics),
       size: const Size(800, 2600),
     );
     await tester.tap(find.text('open'));
@@ -45,7 +48,9 @@ void main() {
   }
 
   Future<void> fill(WidgetTester tester,
-      {String kode = 'NAS-9', String email = 'siti@x.test'}) async {
+      {String kode = 'NAS-9',
+      String email = 'siti@x.test',
+      String phone = '81234567890'}) async {
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'Siti Aminah');
     await tester.enterText(fields.at(1), kode);
@@ -60,7 +65,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    await tester.enterText(fields.at(4), '81234567890');
+    await tester.enterText(fields.at(4), phone);
     await tester.enterText(fields.at(5), 'Jl. Melati Nomor 5');
   }
 
@@ -69,6 +74,110 @@ void main() {
     await tester.tap(find.text('Simpan Nasabah'));
     await pumpToast(tester);
   }
+
+  List<String> names() => analytics.events.map((e) => e.name).toList();
+
+  testWidgets('opening the form, refusing it and saving it tell analytics',
+      (tester) async {
+    api.on('POST', _path, status: 201, json: nasabahRow('9'));
+    await open(tester);
+    expect(names(), ['nasabah_tambah_dimulai']);
+    expect(analytics.events.single.properties['sumber'], 'halaman_nasabah');
+
+    await save(tester);
+    final refused = analytics.events[1];
+    expect(refused.name, 'validasi_gagal');
+    expect(refused.properties['tugas'], 'tambah_nasabah');
+    expect(refused.properties['bidang'], [
+      'nama',
+      'jenis_kelamin',
+      'email',
+      'tanggal_lahir',
+      'no_hp',
+      'alamat',
+    ]);
+    expect(refused.properties['jumlah_masalah'], 6);
+
+    await fill(tester);
+    await save(tester);
+    final saved = analytics.events.last;
+    expect(saved.name, 'nasabah_ditambah');
+    expect(saved.properties['percobaan_ke'], 2);
+    expect(saved.properties['alur_id'],
+        analytics.events.first.properties['alur_id']);
+    expect(names(), hasLength(3));
+    await settleToasts(tester);
+  });
+
+  testWidgets('a badly formed email is named, not hidden as "lainnya"',
+      (tester) async {
+    await open(tester);
+    await fill(tester, email: 'bukan-email');
+
+    await save(tester);
+
+    final refused =
+        analytics.events.singleWhere((e) => e.name == 'validasi_gagal');
+    expect(refused.properties['bidang'], ['email']);
+    expect(refused.properties['jumlah_masalah'], 1);
+    await settleToasts(tester);
+  });
+
+  testWidgets('a badly formed phone number is named', (tester) async {
+    await open(tester);
+    await fill(tester, phone: '12345');
+
+    await save(tester);
+
+    final refused =
+        analytics.events.singleWhere((e) => e.name == 'validasi_gagal');
+    expect(refused.properties['bidang'], ['no_hp']);
+    await settleToasts(tester);
+  });
+
+  testWidgets('an empty ID is valid and is not named as a refused field',
+      (tester) async {
+    await open(tester);
+    await fill(tester, kode: '');
+
+    await save(tester);
+
+    final refused = analytics.events.where((e) => e.name == 'validasi_gagal');
+    expect(refused, isEmpty);
+    await settleToasts(tester);
+  });
+
+  testWidgets('a save that lands after the sheet was closed is still counted',
+      (tester) async {
+    api.on('POST', _path, status: 201, json: nasabahRow('9'));
+    await open(tester);
+    await fill(tester);
+    api.latency = const Duration(seconds: 1);
+    await tester.ensureVisible(find.text('Simpan Nasabah'));
+    await tester.tap(find.text('Simpan Nasabah'));
+    await tester.pump();
+
+    // The pengurus leaves the sheet while the request is still running.
+    Navigator.of(tester.element(find.byType(TambahNasabahBottomSheet))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(TambahNasabahBottomSheet), findsNothing);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(names(), contains('nasabah_ditambah'));
+    expect(names(), isNot(contains('nasabah_tambah_dibatalkan')));
+  });
+
+  testWidgets('a failed save is not reported as added', (tester) async {
+    api.on('POST', _path, status: 500, json: {'error': 'boom'});
+    await open(tester);
+
+    await fill(tester);
+    await save(tester);
+
+    expect(names(), ['nasabah_tambah_dimulai']);
+    await settleToasts(tester);
+  });
 
   testWidgets('the phone field carries the shared +62 prefix', (tester) async {
     await open(tester);
