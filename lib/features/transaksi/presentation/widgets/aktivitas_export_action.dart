@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/report_file_action.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 
 /// Pesan sukses setelah laporan tersimpan di [folder].
@@ -11,8 +13,8 @@ String laporanTersimpanDi(String folder) =>
 /// Menyiapkan laporan XLSX untuk periode dan filter yang sedang dipilih, lalu
 /// menyimpannya atau membagikannya.
 Future<void> exportAktivitasReport(BuildContext context) async {
-  final notifier = ProviderScope.containerOf(context, listen: false)
-      .read(riwayatAktivitasProvider.notifier);
+  final container = ProviderScope.containerOf(context, listen: false);
+  final notifier = container.read(riwayatAktivitasProvider.notifier);
   final loading = AppNotification.showLoading(
     context,
     title: 'Informasi',
@@ -20,6 +22,8 @@ Future<void> exportAktivitasReport(BuildContext context) async {
   );
   final (:export, :error) = await notifier.exportTransaksi();
   await loading.dismiss();
+  riwayatExported(container.read(analyticsClientProvider),
+      success: error == null);
   if (!context.mounted) return;
   if (error != null) {
     AppNotification.showError(context, title: 'Gagal', message: error);

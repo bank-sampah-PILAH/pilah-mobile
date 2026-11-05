@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
@@ -299,6 +301,11 @@ class AktivitasListView extends StatelessWidget {
 
 /// Opens a payout's detail sheet with its Pengurus-only edit actions.
 void _openPencairanDetail(BuildContext context, ActivitasEntity item) {
+  final container = ProviderScope.containerOf(context, listen: false);
+  riwayatDetailOpened(container.read(analyticsClientProvider), 'pencairan');
+  if (container.exists(riwayatAktivitasProvider)) {
+    container.read(riwayatAktivitasProvider.notifier).rowOpened(item);
+  }
   showPencairanDetailSheet(
     context,
     item.pencairan!,
@@ -444,6 +451,12 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     }
     if (expandable) {
       setState(() => _expanded = !_expanded);
+      if (_expanded) {
+        riwayatDetailOpened(ref.read(analyticsClientProvider), 'setoran');
+        if (ref.exists(riwayatAktivitasProvider)) {
+          ref.read(riwayatAktivitasProvider.notifier).rowOpened(item);
+        }
+      }
     } else {
       _openPencairanDetail(context, item);
     }

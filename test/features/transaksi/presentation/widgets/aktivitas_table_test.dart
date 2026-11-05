@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
@@ -66,7 +67,8 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
       home: Scaffold(
         body: AktivitasTable(
           items: items,
@@ -77,7 +79,7 @@ void main() {
           pagination: pagination,
         ),
       ),
-    ));
+    )));
   }
 
   test('row keys follow record identity', () {

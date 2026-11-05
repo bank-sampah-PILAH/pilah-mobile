@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_akti
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_export_action.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/periode_picker_sheet.dart';
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/transaksi_support.dart';
 
 class _Feed extends Mock implements GetAktivitasUseCase {}
@@ -24,6 +25,7 @@ class _Export extends Mock implements ExportTransaksiUseCase {}
 void main() {
   late RiwayatAktivitasNotifier notifier;
   late _Export export;
+  late FakeAnalyticsClient analytics;
 
   setUpAll(() => registerFallbackValue(const TransaksiFilter()));
 
@@ -32,6 +34,7 @@ void main() {
     when(() => feed.execute(any()))
         .thenAnswer((_) async => const Right(AktivitasPage([], false)));
     export = _Export();
+    analytics = FakeAnalyticsClient();
     notifier = RiwayatAktivitasNotifier(feed, export);
   });
 
@@ -47,6 +50,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final child = withTransaksiProviders(
       riwayat: notifier,
+      analytics: analytics,
       child: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(16),
@@ -230,6 +234,112 @@ void main() {
 
     verify(() => export.execute(any())).called(1);
     expect(tester.takeException(), isNull);
+  });
+
+  group('what the filters report', () {
+    List<String> names() => analytics.events.map((e) => e.name).toList();
+
+    testWidgets('choosing a type says which type', (tester) async {
+      await pumpBar(tester,
+          width: 1200, tipeTersedia: AktivitasTipeFilter.values.toSet());
+
+      await tester.tap(find.text('Pencairan'));
+      await tester.pump();
+
+      expect(analytics.events.single.name, 'riwayat_filter_diubah');
+      expect(analytics.events.single.properties,
+          {'jenis_filter': 'tipe', 'nilai_kelas': 'pencairan'});
+    });
+
+    testWidgets('choosing a period says which period', (tester) async {
+      await pumpBar(tester, width: 1200);
+
+      await tester.tap(find.text('Bulan Ini'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Semua Waktu'));
+      await tester.pumpAndSettle();
+
+      expect(analytics.events.single.properties,
+          {'jenis_filter': 'periode', 'nilai_kelas': 'semua'});
+    });
+
+    testWidgets('choosing the period already showing says nothing',
+        (tester) async {
+      await pumpBar(tester, width: 1200);
+
+      await tester.tap(find.text('Bulan Ini'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bulan Ini').last);
+      await tester.pumpAndSettle();
+
+      expect(analytics.events, isEmpty);
+    });
+
+    testWidgets('Reset says the filters were reset', (tester) async {
+      await pumpBar(tester,
+          width: 1200, tipeTersedia: AktivitasTipeFilter.values.toSet());
+      await tester.tap(find.text('Pencairan'));
+      await tester.pump();
+
+      await tester.tap(find.text('Reset'));
+      await tester.pump();
+
+      expect(analytics.events.last.properties, {'jenis_filter': 'reset'});
+    });
+
+    testWidgets('a custom range is reported as a class, never its dates',
+        (tester) async {
+      await pumpBar(tester, width: 1200);
+
+      notifier.applyCustomRange(DateTime(2026, 9, 1), DateTime(2026, 9, 30));
+
+      expect(analytics.events.single.properties,
+          {'jenis_filter': 'periode', 'nilai_kelas': 'kustom'});
+    });
+
+    testWidgets('a search is reported without what was typed', (tester) async {
+      await pumpBar(tester, width: 1200);
+
+      notifier.search('Siti Aminah');
+
+      expect(analytics.events.single.name, 'pencarian_dimulai');
+      expect(analytics.events.toString(), isNot(contains('Siti')));
+      expect(analytics.events.toString(), isNot(contains('Aminah')));
+    });
+
+    testWidgets('a failed export is reported as not worked', (tester) async {
+      when(() => export.execute(any())).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+        return Left(NetworkException(message: 'Server sibuk'));
+      });
+      await pumpBar(tester, width: 1200);
+
+      await tester.tap(find.text('Ekspor XLSX'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+
+      expect(names(), ['riwayat_diekspor']);
+      expect(analytics.events.single.properties,
+          {'format': 'xlsx', 'berhasil': false});
+    });
+
+    testWidgets('a prepared export is reported as worked', (tester) async {
+      when(() => export.execute(any())).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+        return Right(TransaksiExport(
+            bytes: Uint8List.fromList([1, 2]), filename: 'a.xlsx'));
+      });
+      await pumpBar(tester, width: 360);
+
+      await tester.tap(find.byTooltip('Ekspor XLSX'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+
+      expect(analytics.events.single.properties,
+          {'format': 'xlsx', 'berhasil': true});
+    });
   });
 
   test('the saved-report message names the folder', () {
