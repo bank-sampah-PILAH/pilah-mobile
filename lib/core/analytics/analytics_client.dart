@@ -1,9 +1,20 @@
+import 'package:flutter/widgets.dart';
+
 /// What analytics can do on this platform. Nothing is sent until [start].
 abstract class AnalyticsClient {
   /// Whether this client can record on this platform. The consent dialog is
   /// only shown when it can, so nobody is told they are recorded when they
   /// are not.
   bool get isAvailable;
+
+  /// Whether the screen is recorded as well as the steps taken. A consent
+  /// given before recording existed does not cover it, and the dialog has to
+  /// say so.
+  bool get recordsScreen;
+
+  /// Puts around the app whatever recording the screen needs. The same [app]
+  /// comes back, so a client that does not record returns it unchanged.
+  Widget wrapApp(Widget app);
 
   Future<void> start();
 
@@ -40,6 +51,12 @@ class NoopAnalyticsClient implements AnalyticsClient {
 
   @override
   bool get isAvailable => false;
+
+  @override
+  bool get recordsScreen => false;
+
+  @override
+  Widget wrapApp(Widget app) => app;
 
   @override
   Future<void> start() async {}

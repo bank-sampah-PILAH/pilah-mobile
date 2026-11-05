@@ -50,6 +50,33 @@ void main() {
     expect(find.text('Tolak'), findsOneWidget);
   });
 
+  testWidgets('where the screen is recorded, says so and that all is hidden',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () =>
+                  showAnalyticsConsentDialog(context, recordsScreen: true),
+              child: const Text('buka'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Kami juga merekam layar'), findsOneWidget);
+    expect(
+      find.textContaining('Semua tulisan dan gambar di rekaman disamarkan'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Kami tidak merekam layar'), findsNothing);
+  });
+
   testWidgets('no longer says the screen is recorded or that data is covered',
       (tester) async {
     await open(tester);

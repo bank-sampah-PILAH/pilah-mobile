@@ -56,6 +56,23 @@ void main() {
   bool switchValue(WidgetTester tester) =>
       tester.widget<Switch>(find.byType(Switch)).value;
 
+  testWidgets('where the screen is recorded, says it is masked', (
+    tester,
+  ) async {
+    client = FakeAnalyticsClient(recordsScreen: true);
+    await AnalyticsConsentStore(storage).grant('u1', screen: true);
+
+    await openCard(tester);
+
+    expect(
+      find.textContaining(
+        'Layar direkam dengan semua tulisan dan gambar disamarkan.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Isi layar'), findsNothing);
+  });
+
   testWidgets('shows the current choice: on after agreeing', (tester) async {
     await AnalyticsConsentStore(storage).grant('u1');
 

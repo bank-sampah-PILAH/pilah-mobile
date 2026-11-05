@@ -7,14 +7,19 @@ import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 /// dismissed by tapping outside or going back, so there is no answer until the
 /// pengurus gives one, and silence is never taken for a refusal or a consent.
 ///
-/// The text says the screen is not recorded and that no names, balances, photos,
+/// The text says whether the screen is recorded. Where it is (the mobile app),
+/// it says every text and image is hidden in the recording. In both cases it
+/// says that no names, balances, photos,
 /// email addresses or phone numbers are noted. It also names who receives the
 /// data (PostHog, abroad) and what the browser library sends along: device and
 /// browser type, and a location estimated from the IP address. The page address
 /// is held back by the client's property denylist. That stays true only while
 /// events follow the rules in `docs/ANALYTICS.md` and the client keeps that
 /// denylist; change the text together with either.
-Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
+Future<bool?> showAnalyticsConsentDialog(
+  BuildContext context, {
+  bool recordsScreen = false,
+}) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -32,9 +37,8 @@ Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
             message:
                 'Kami mencatat langkah yang Anda lakukan di PILAH, misalnya '
                 'saat setoran disimpan, untuk memahami di mana pengguna '
-                'kesulitan dan meningkatkan pengalaman Anda. Kami tidak '
-                'merekam layar, dan tidak mencatat nama nasabah, saldo, foto, '
-                'email, atau nomor telepon.\n\n'
+                'kesulitan dan meningkatkan pengalaman Anda. '
+                '${recordsScreen ? _screenRecorded : _screenNotRecorded}\n\n'
                 'Data dikirim ke PostHog, penyedia layanan analitik di luar '
                 'negeri, bersama data teknis seperti jenis perangkat dan '
                 'peramban serta perkiraan lokasi dari alamat IP. Alamat '
@@ -52,3 +56,14 @@ Future<bool?> showAnalyticsConsentDialog(BuildContext context) {
     ),
   );
 }
+
+const _screenNotRecorded = 'Kami tidak merekam layar, dan tidak mencatat nama '
+    'nasabah, saldo, foto, email, atau nomor telepon.';
+
+// What "disamarkan" means is spelled out: a pengurus must be able to tell that
+// nobody watching the recording can read what is on the screen.
+const _screenRecorded = 'Kami juga merekam layar, supaya tim dapat melihat '
+    'langkah mana yang menyulitkan. Semua tulisan dan gambar di rekaman '
+    'disamarkan, jadi nama nasabah, saldo, alamat, foto, email, dan nomor '
+    'telepon tidak terlihat; yang terlihat hanya tata letak dan tempat layar '
+    'disentuh.';

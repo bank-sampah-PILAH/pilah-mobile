@@ -77,6 +77,11 @@ void main() {
     expect(_client().isAvailable, isTrue);
   });
 
+  test('records no screen: the canvas has nothing the browser could replay',
+      () {
+    expect(_client().recordsScreen, isFalse);
+  });
+
   test('stop before start loads nothing and touches nothing', () async {
     await _client().stop();
 

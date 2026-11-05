@@ -134,6 +134,36 @@ void main() {
     expect(client.calls, ['start']);
   });
 
+  group('where the screen is recorded', () {
+    setUp(() => client = FakeAnalyticsClient(recordsScreen: true));
+
+    test('an agreement given before screens were recorded is asked again',
+        () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+
+      final choice = await container.read(analyticsConsentProvider.future);
+
+      expect(choice, ConsentChoice.unset);
+      expect(client.calls, isEmpty);
+    });
+
+    test('agreeing now covers the recording, so the next launch is not asked',
+        () async {
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      expect(client.calls, ['start']);
+      // What was saved is what the next launch reads as an agreement.
+      expect(
+        await AnalyticsConsentStore(storage).read('u1', screen: true),
+        ConsentChoice.granted,
+      );
+    });
+  });
+
   test('a nasabah is never recorded, even if the device remembers an agreement',
       () async {
     await AnalyticsConsentStore(storage).grant('u1');
@@ -546,21 +576,21 @@ class _GatedStore extends AnalyticsConsentStore {
   void release() => _gate?.complete();
 
   @override
-  Future<ConsentChoice> read(String userId) async {
+  Future<ConsentChoice> read(String userId, {bool screen = false}) async {
     if (_readGated) {
       _readGated = false;
       await _gate!.future;
     }
-    return super.read(userId);
+    return super.read(userId, screen: screen);
   }
 
   @override
-  Future<void> grant(String userId) async {
+  Future<void> grant(String userId, {bool screen = false}) async {
     if (_grantGated) {
       _grantGated = false;
       await _gate!.future;
     }
-    return super.grant(userId);
+    return super.grant(userId, screen: screen);
   }
 }
 

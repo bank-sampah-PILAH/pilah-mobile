@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
@@ -106,14 +107,19 @@ void main() {
     expect(platform.calls, isEmpty);
   });
 
-  test('starting sets the SDK up with everything automatic switched off',
-      () async {
+  test(
+      'starting sets the SDK up with everything automatic off but the masked '
+      'recording', () async {
     await client.start();
 
     final config = platform.config!;
     expect(config.projectToken, 'phc_test');
     expect(config.host, 'https://eu.i.posthog.com');
-    expect(config.sessionReplay, isFalse);
+    // The screen is recorded, with every text and image hidden.
+    expect(config.sessionReplay, isTrue);
+    expect(config.sessionReplayConfig.maskAllTexts, isTrue);
+    expect(config.sessionReplayConfig.maskAllImages, isTrue);
+    expect(config.sessionReplayConfig.maskCustomPaint, isTrue);
     expect(config.captureApplicationLifecycleEvents, isFalse);
     expect(config.surveys, isFalse);
     expect(config.preloadFeatureFlags, isFalse);
@@ -149,6 +155,20 @@ void main() {
     await client.start();
 
     expect(platform.registered['platform'], 'ios');
+  });
+
+  test('the recorder is only put around the app once the SDK is set up',
+      () async {
+    const app = SizedBox();
+
+    expect(client.recordsScreen, isTrue);
+    expect(client.wrapApp(app), same(app));
+
+    await client.start();
+
+    final wrapped = client.wrapApp(app);
+    expect(wrapped, isA<PostHogWidget>());
+    expect((wrapped as PostHogWidget).child, same(app));
   });
 
   test('a second start does not set the SDK up again', () async {

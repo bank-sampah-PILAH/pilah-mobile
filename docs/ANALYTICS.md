@@ -1,8 +1,9 @@
 # Usage analytics
 
 PILAH sends a small number of events to PostHog so the team can see where
-pengurus slow down, give up, or run into errors. **No screen is recorded.**
-Events say *what* a pengurus did (which step, how long, how many, what went
+pengurus slow down, give up, or run into errors. **On the web no screen is
+recorded. In the Android and iOS apps it is, with every text and image hidden**
+(see "Screen recording" below). Events say *what* a pengurus did (which step, how long, how many, what went
 wrong), never *who* they are or what was on their screen.
 
 Nothing is sent until a pengurus has agreed in the consent dialog, and nothing
@@ -72,10 +73,30 @@ expect(analytics.events.single.properties, {'jumlah_item': 1});
 `ENABLE_POSTHOG`, `POSTHOG_API_KEY`, `POSTHOG_HOST` and `POSTHOG_ENVIRONMENT`
 in the web `.env` (see `.env.example` and `docs/DASHBOARD_DEPLOYMENT.md`).
 Staging and production share one PostHog project, so every event can be filtered
-by `environment`. Recording, automatic capture and heatmaps are switched off in
-the client; only load time is measured automatically.
+by `environment`. On the web, recording, automatic capture and heatmaps are switched off in the
+client; only load time is measured automatically.
 
-The native Android app does not send events yet (PIL-416).
+## Screen recording (Android and iOS only)
+
+The mobile apps also record the screen (PIL-473), so the team can open the
+session of a pengurus who got stuck and see what went wrong. The recording is
+masked: `maskAllTexts`, `maskAllImages` and `maskCustomPaint` are on, so only
+layout and where the finger touched are visible. No name, balance, address,
+photo, email or phone number can be read in it. Do not turn those off, and do not
+unmask a widget (`PostHogUnmaskWidget`) without checking it can never show
+personal data.
+
+- It starts and stops together with analytics: after the pengurus agrees, never
+  for a nasabah or a Super Admin, and not after they withdraw.
+- Agreements given before recording existed are not honoured for it: the
+  pengurus is asked again with the new text (`AnalyticsConsentStore.read(screen:
+  true)`). A refusal stays a refusal.
+- The web does not record. Flutter web draws on one canvas, so the browser
+  library has nothing to replay, and recording the canvas was rejected
+  (PIL-415, PIL-465).
+- The recorder (`PostHogWidget`) is put around the app by
+  `AnalyticsRecordingRoot` once analytics has started. The app is kept under a
+  global key, so adding the recorder does not rebuild it.
 
 ## Who an event belongs to
 

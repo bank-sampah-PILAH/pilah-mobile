@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
@@ -11,6 +12,11 @@ import 'package:posthog_flutter/posthog_flutter.dart';
 /// surveys, push tokens, crashes, feature flags) is switched off: only events
 /// sent through [capture] and [screen] leave the app, and only with names
 /// allowed by `AnalyticsProps`.
+///
+/// The one exception is the screen recording, which lets the team watch where
+/// a pengurus gets stuck. Every text and every image is masked in it, so what
+/// reaches PostHog is the layout and where the finger went, never a name, a
+/// balance, an address or a photo.
 class PosthogMobileClient implements AnalyticsClient {
   /// [posthog] defaults to the SDK's own instance; tests pass one that runs on
   /// a fake platform so they never reach a device or the network.
@@ -40,6 +46,17 @@ class PosthogMobileClient implements AnalyticsClient {
 
   @override
   bool get isAvailable => true;
+
+  @override
+  bool get recordsScreen => true;
+
+  /// The recorder looks at the app through [PostHogWidget], and only reads the
+  /// SDK's settings when it is first built, so it must not exist before
+  /// [start] has set the SDK up. Adding it around the app later would rebuild
+  /// the app, so the caller keeps the app under a global key.
+  @override
+  Widget wrapApp(Widget app) =>
+      _setup == null ? app : PostHogWidget(child: app);
 
   /// Starts the client. A failed start is not remembered: the next call tries
   /// again, and the error reaches the caller so it can be handled.
@@ -126,7 +143,11 @@ class PosthogMobileClient implements AnalyticsClient {
       ..optOut = true
       ..debug = false
       ..captureApplicationLifecycleEvents = false
-      ..sessionReplay = false
+      ..sessionReplay = true
+      ..sessionReplayConfig = (PostHogSessionReplayConfig()
+        ..maskAllTexts = true
+        ..maskAllImages = true
+        ..maskCustomPaint = true)
       ..surveys = false
       ..preloadFeatureFlags = false
       ..capturePushNotificationSubscriptions = false
