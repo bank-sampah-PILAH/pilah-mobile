@@ -20,6 +20,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_a
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_setoran_dialog.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/hold_to_select.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
@@ -115,15 +116,25 @@ class AktivitasListView extends StatelessWidget {
     );
     if (!isWeb) return cards;
     // Browser sempit: kartu satu kolom, paginasi di bawahnya.
-    return Column(
-      children: [
-        Expanded(child: cards),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildPagination(context, state),
-        ),
-      ],
-    );
+    return LayoutBuilder(
+        builder: (context, constraints) => Column(
+              children: [
+                Expanded(child: cards),
+                // While the nested header is still visible, large text can leave less
+                // height than the pagination needs. Keep it scrollable until the user
+                // scrolls the header away rather than overflowing that initial frame.
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                  child: SingleChildScrollView(
+                    primary: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildPagination(context, state),
+                    ),
+                  ),
+                ),
+              ],
+            ));
   }
 
   Widget _buildWideList(
@@ -141,19 +152,29 @@ class AktivitasListView extends StatelessWidget {
       state,
       Padding(
         padding: side.add(const EdgeInsets.only(bottom: AppSpacing.xl)),
-        child: AktivitasTable(
-          items: state.items,
-          onTap: (item) => _openPencairanDetail(context, item),
-          loadSetoranDetail: (id) => ProviderScope.containerOf(
-            context,
-            listen: false,
-          ).read(transaksiProvider.notifier).fetchTransaksiDetail(id),
-          onEdit: (item) => _editItem(context, item),
-          footer: footer,
-          toolbar: const AktivitasSummaryStrip(),
-          page: state.currentPage,
-          pagination: isWeb ? _buildPagination(context, state) : null,
-        ),
+        child: Consumer(
+            builder: (context, ref, _) => AktivitasTable(
+                  selectedIds:
+                      ref.watch(aktivitasSelectionProvider) ?? const {},
+                  onToggleSelection:
+                      ref.read(aktivitasSelectionProvider.notifier).toggle,
+                  onSelectAll:
+                      ref.read(aktivitasSelectionProvider.notifier).selectAll,
+                  items: state.items,
+                  onTap: (item) => _openPencairanDetail(context, item),
+                  loadSetoranDetail: (id) => ProviderScope.containerOf(
+                    context,
+                    listen: false,
+                  ).read(transaksiProvider.notifier).fetchTransaksiDetail(id),
+                  onEdit: (item) => _editItem(context, item),
+                  // Hapus only shows on a tercatat setoran, which always has its record.
+                  onHapus: (item) =>
+                      showBatalkanSetoranDialog(context, item.transaksi!.id),
+                  footer: footer,
+                  toolbar: const AktivitasSummaryStrip(),
+                  page: state.currentPage,
+                  pagination: isWeb ? _buildPagination(context, state) : null,
+                )),
       ),
     );
   }
@@ -306,10 +327,11 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     final item = widget.item;
     final id = item.transaksi?.id ?? '';
     final expandable = item.tipe == ActivitasTipe.setoran;
-    final selectable = expandable && id.isNotEmpty;
+    // A voided setoran is final: nothing to edit or cancel again.
+    final selectable = item.isSelectableSetoran;
     final selection = ref.watch(aktivitasSelectionProvider);
     final selecting = selection != null;
-    final selected = selectable && selection == id;
+    final selected = selectable && (selection?.contains(id) ?? false);
 
     return HoldToSelect(
       enabled: selectable && !selecting,
@@ -330,7 +352,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
                 selecting,
                 selected,
               ),
-              if (expandable) _buildDetails(id),
+              if (expandable && !selecting) _buildDetails(id),
             ],
           ),
           if (selected) _selectedTint(),
@@ -384,7 +406,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
                   badge: item.badge,
                 ),
               ),
-              if (expandable)
+              if (expandable && !selecting)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Icon(
@@ -415,6 +437,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
   ) {
     if (selecting) {
       if (selectable) {
+        setState(() => _expanded = false);
         ref.read(aktivitasSelectionProvider.notifier).toggle(id);
       }
       return;

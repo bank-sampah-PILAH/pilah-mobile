@@ -1,34 +1,56 @@
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/transaksi_chooser_sheet.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/draft_pencairan_routes.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
-import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+/// Transaksi yang terbuka untuk Pengurus.
+///
+/// Pencairan ditutup dulu (CPBI-31), jadi hanya setoran. Membukanya kembali
+/// berarti menambahkannya di sini, lalu membuka kembali route-nya di
+/// [draftPencairanRoutes], lalu merilis ulang aplikasi — hardcode, tanpa
+/// pengaturan jarak jauh, sebagaimana diminta CPBI-31.
+const transaksiPilihanTerbuka = {TransaksiPilihan.setoran};
 
 /// Pengurus dashboard action area: the two things done most, side by side.
-/// Pencairan remains visible but disabled in the Transaksi Baru chooser per
-/// PIL-379. Everything else is a destination in the navigation, not a button.
+/// Which transactions Transaksi Baru offers is [terbuka]; everything else is
+/// a destination in the navigation, not a button.
 class DashboardActionButtons extends StatelessWidget {
-  const DashboardActionButtons({super.key, this.isWeb});
+  const DashboardActionButtons({
+    super.key,
+    this.isWeb,
+    this.terbuka = transaksiPilihanTerbuka,
+  });
 
   /// Diteruskan ke [openSetoranBaru], yang memutuskan panel atau halaman
   /// penuh. Null berarti pakai `kIsWeb`.
   final bool? isWeb;
 
+  /// Transaksi yang bisa dicatat dari tombol ini. Bawaannya
+  /// [transaksiPilihanTerbuka]; pemanggil lain hanya ada di pengujian, yang
+  /// memakainya untuk menyatakan bahwa membuka kembali sebuah transaksi tidak
+  /// menuntut kode baru.
+  final Set<TransaksiPilihan> terbuka;
+
   @override
   Widget build(BuildContext context) {
+    // Nol transaksi terbuka bukan keadaan yang punya tampilan: tombolnya akan
+    // membuka pemilih yang seluruh barisnya mati, kontrol mati yang sama
+    // dengan yang dilarang CPBI-31. Menutup transaksi yang terakhir berarti
+    // menyingkirkan tombol ini, bukan mengosongkan daftarnya — dan keliru di
+    // sini keliru sejak digambar, bukan baru ketika ditekan.
+    assert(terbuka.isNotEmpty, 'Transaksi Baru tanpa transaksi yang terbuka');
     return Row(
       children: [
         Expanded(
           child: AppButton(
             label: 'Transaksi Baru',
             icon: Icons.add,
-            onPressed: () => _openTransaksiChooser(context, isWeb),
+            onPressed: () => _openTransaksiBaru(context, isWeb),
           ),
         ),
         const SizedBox(width: 12),
@@ -57,126 +79,37 @@ class DashboardActionButtons extends StatelessWidget {
     );
   }
 
-  Future<void> _openTransaksiChooser(BuildContext context, bool? isWeb) async {
-    final choice = await showAdaptiveSurface<_TransaksiChoice>(
-      context,
-      builder: (context) => const _TransaksiChooserSheet(),
-    );
+  Future<void> _openTransaksiBaru(BuildContext context, bool? isWeb) async {
+    // Satu transaksi yang terbuka bukan pilihan: memintanya dipilih hanya
+    // menghabiskan satu ketukan, dan pemilih berisi satu isi adalah kontrol
+    // mati yang sama dengan yang dilarang CPBI-31 (alasan yang sama dipakai
+    // PIL-435 untuk menyembunyikan pemilih tipe di Riwayat).
+    final choice = terbuka.length == 1
+        ? terbuka.single
+        : await showAdaptiveSurface<TransaksiPilihan>(
+            context,
+            builder: (context) => TransaksiChooserSheet(tersedia: terbuka),
+          );
     if (choice == null || !context.mounted) return;
+    await _openForm(context, choice, isWeb);
+  }
+
+  /// Formulir yang mencatat transaksi yang dipilih.
+  ///
+  /// Pencairan tetap punya cabangnya walaupun sedang ditutup: penguncian
+  /// dinyatakan di [terbuka] dan di route-nya, bukan dengan menghapus jalan
+  /// masuknya dari sini, supaya keduanya bisa dibuka kembali tanpa menulis
+  /// ulang apa pun — dan supaya tidak ada cabang yang tak bisa diuji.
+  Future<void> _openForm(
+    BuildContext context,
+    TransaksiPilihan choice,
+    bool? isWeb,
+  ) async {
     switch (choice) {
-      case _TransaksiChoice.setoran:
+      case TransaksiPilihan.setoran:
         await openSetoranBaru(context, isWeb: isWeb);
+      case TransaksiPilihan.pencairan:
+        await context.push(DraftListPage.route);
     }
-  }
-}
-
-enum _TransaksiChoice { setoran }
-
-/// Lets the pengurus choose which transaction to record before opening its
-/// own form — one beranda entry point for both, without merging the two
-/// forms themselves (their data shapes are too different: multi-item vs
-/// single-value) (PIL-282).
-class _TransaksiChooserSheet extends StatelessWidget {
-  const _TransaksiChooserSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const BottomSheetHeader(title: 'Transaksi Baru'),
-          const SizedBox(height: 8),
-          _ChoiceTile(
-            icon: Icons.add_circle_outline,
-            title: 'Catat Setoran',
-            subtitle: 'Rekam setoran sampah dari nasabah',
-            onTap: () => Navigator.of(context).pop(_TransaksiChoice.setoran),
-          ),
-          const SizedBox(height: 8),
-          const _ChoiceTile(
-            icon: Icons.payments_outlined,
-            title: 'Pencairan',
-            subtitle: 'Buat draft, potongan, dan pencairan banyak nasabah',
-            onTap: null,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChoiceTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  const _ChoiceTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: enabled ? AppColors.greenLight : AppColors.fill,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Icon(
-                icon,
-                color: enabled ? AppColors.greenDark : AppColors.grey100,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyle.title1.copyWith(
-                      color: enabled ? AppColors.black : AppColors.grey100,
-                      fontWeight: AppFontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style:
-                        AppTextStyle.small.copyWith(color: AppColors.grey100),
-                  ),
-                ],
-              ),
-            ),
-            if (enabled)
-              const Icon(Icons.chevron_right, color: AppColors.grey200),
-          ],
-        ),
-      ),
-    );
   }
 }

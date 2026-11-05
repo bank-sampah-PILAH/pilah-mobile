@@ -365,6 +365,7 @@ void main() {
                   if (selecting)
                     AktivitasSelectionBar(
                       onEdit: (id) => showEditSetoranSheet(context, id),
+                      onHapus: (_) {},
                     ),
                   const Expanded(child: AktivitasListView(isWeb: false)),
                 ]),
@@ -452,7 +453,7 @@ void main() {
     });
 
     testWidgets(
-        'only one setoran can be selected: tapping another moves the choice',
+        'tapping another row adds it: Edit is only for a single selection',
         (tester) async {
       final container = await pumpFeed(tester);
       await hold(tester, 'Budi');
@@ -460,11 +461,9 @@ void main() {
       await tester.tap(find.text('Sari'));
       await tester.pump();
 
-      expect(find.text('1 dipilih'), findsOneWidget);
-      expect(
-          find.byKey(const ValueKey('aktivitas-row-selected')), findsOneWidget);
-      expect(container.read(aktivitasSelectionProvider), 't2');
-      expect(find.byKey(AktivitasSelectionBar.editKey), findsOneWidget);
+      expect(find.text('2 dipilih'), findsOneWidget);
+      expect(container.read(aktivitasSelectionProvider), {'t1', 't2'});
+      expect(find.byKey(AktivitasSelectionBar.editKey), findsNothing);
     });
 
     testWidgets('tapping the selected row again leaves the selection mode',

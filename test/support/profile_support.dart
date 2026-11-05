@@ -75,6 +75,11 @@ void stubProfile(
             'preview_contoh': 'Halo Budi',
             'variabel_tersedia': ['{Nama}', '{Total}'],
           });
+  api.on('GET', '/api/v1/team/invite', json: {
+    'token': null,
+    'invite_url': null,
+    'expires_at': null,
+  });
   api.on('GET', '/api/v1/team',
       json: team ??
           {

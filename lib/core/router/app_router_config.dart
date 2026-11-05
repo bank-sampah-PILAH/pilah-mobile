@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/core/router/locked_routes.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
@@ -39,10 +40,7 @@ import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.da
 import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 import 'package:pilah_mobile/features/legal/presentation/pages/legal_document_page.dart';
 import 'package:pilah_mobile/features/legal/presentation/pages/legal_information_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/draft_pencairan_routes.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
@@ -196,56 +194,25 @@ class AppRouterConfig {
       // tombol kembali mem-pop halaman di belakang panel dan membuang isian
       // yang belum tersimpan tanpa bertanya.
       setoranSideSheetRoute(),
-      GoRoute(
-        path: DraftListPage.route,
-        name: DraftListPage.route,
-        builder: (context, state) => const DraftListPage(),
-      ),
-      GoRoute(
-        path: PilihNasabahPencairanPage.route,
-        name: PilihNasabahPencairanPage.route,
-        builder: (context, state) => const PilihNasabahPencairanPage(),
-      ),
-      // Pengumuman is locked for handover (PIL-436). The paths stay declared
-      // as pure redirects instead of being deleted: an unknown route renders
-      // go_router's "page not found" screen, and PIL-392 forbids a visible
-      // error as firmly as it forbids the page. AppLocations.dashboard then
-      // passes back through the global role redirect, so a nasabah following
-      // an old link is forwarded to their own home rather than a staff page.
-      //
-      // The paths come from [pengumumanRoutes] rather than being retyped here,
-      // so the locked set cannot drift from the real one: that list holds the
-      // routes as they were, guards included, compiled and tested but not
-      // registered. Re-enabling the feature is registering it in place of this
-      // loop.
-      for (final route in pengumumanRoutes)
-        GoRoute(
-          path: route.path,
-          redirect: (_, __) => AppLocations.dashboard,
-        ),
+      // Creating a pencairan is locked for handover (PIL-434), the same way
+      // and for the same reason as pengumuman below: the paths come from
+      // [draftPencairanRoutes], which keeps the routes as they were, the
+      // editor's guard included, compiled and tested but not registered.
+      // Re-enabling the flow is registering that list in place of this call -
+      // together with putting Pencairan back in transaksiPilihanTerbuka, the
+      // other half of the lock.
+      ...lockedRoutes(draftPencairanRoutes),
+      // Pengumuman is locked for handover (PIL-436); [lockedRoutes] carries
+      // why a lock is a redirect rather than a deletion. The paths come from
+      // [pengumumanRoutes] rather than being retyped here, so the locked set
+      // cannot drift from the real one: that list holds the routes as they
+      // were, guards included, compiled and tested but not registered.
+      // Re-enabling the feature is registering it in place of this call.
+      ...lockedRoutes(pengumumanRoutes),
       // Kelola Pengumuman is not in that list because it was a shell branch,
       // not a top-level route, so its lock is declared here on its own and
       // restoring it means bringing the branch and its rail destination back.
-      GoRoute(
-        path: PengumumanKelolaPage.route,
-        redirect: (_, __) => AppLocations.dashboard,
-      ),
-      GoRoute(
-        path: DraftEditorPage.route,
-        name: DraftEditorPage.route,
-        // The editor needs to know which draft. A saved draft is named by the
-        // link's ?id=, so a refreshed web tab reopens it; a new draft lives
-        // only in extra, and without either there is nothing to show.
-        redirect: (context, state) =>
-            DraftEditorArgs.fromRoute(state.extra, state.uri.queryParameters) ==
-                    null
-                ? DraftListPage.route
-                : null,
-        builder: (context, state) => DraftEditorPage(
-          args: DraftEditorArgs.fromRoute(
-              state.extra, state.uri.queryParameters)!,
-        ),
-      ),
+      lockedRoute(PengumumanKelolaPage.route),
       // Both pages take their pencairan as extra, which a refreshed web tab
       // or a pasted link doesn't carry; those go back to the laporan, where
       // the pencairan is picked from the activity list.

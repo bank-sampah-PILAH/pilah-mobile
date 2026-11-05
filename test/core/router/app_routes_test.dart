@@ -220,14 +220,82 @@ void main() {
       expect(find.byType(HargaPage), findsOneWidget);
     });
 
-    testWidgets('can open the draft pencairan pages', (tester) async {
+    /// The dashboard every locked path falls back to does its own fetching.
+    void stubDashboard() {
+      api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
+      api.on('GET', '/api/v1/transaksi', json: {'results': []});
+      api.on('GET', '/api/v1/pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
+    }
+
+    testWidgets(
+        'every draft pencairan URL lands on the dashboard, not an '
+        'error', (tester) async {
+      stubDashboard();
       final router = await boot(tester);
 
-      await visit(tester, router, '/draft-pencairan');
-      expect(find.byType(DraftListPage), findsOneWidget);
+      for (final path in const [
+        '/draft-pencairan',
+        '/draft-pencairan/pilih',
+        '/draft-pencairan/editor',
+      ]) {
+        await visit(tester, router, path);
 
-      await visit(tester, router, '/draft-pencairan/pilih');
-      expect(find.byType(PilihNasabahPencairanPage), findsOneWidget);
+        expect(find.byType(DraftListPage), findsNothing, reason: path);
+        expect(find.byType(PilihNasabahPencairanPage), findsNothing,
+            reason: path);
+        expect(find.byType(DraftEditorPage), findsNothing, reason: path);
+        // A deleted route would show go_router's "page not found" screen,
+        // which PIL-392 forbids as much as it forbids the page itself.
+        expect(find.byType(DashboardPage), findsOneWidget, reason: path);
+        expect(router.routerDelegate.currentConfiguration.uri.path,
+            isNot(startsWith('/draft-pencairan')),
+            reason: path);
+      }
+    });
+
+    testWidgets('a locked path redirects by name as well as by URL',
+        (tester) async {
+      // The lock keeps the real route's name, so navigation that asks for a
+      // route by name lands on the dashboard too. Without the name,
+      // `goNamed` throws `GoError: no route with name` - a crash where the
+      // lock promises a redirect. Nothing in lib/ navigates by name today;
+      // this holds the stub to the promise for whatever does later.
+      stubDashboard();
+      final router = await boot(tester);
+
+      router.goNamed(DraftListPage.route);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftListPage), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/dashboard');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a saved draft cannot be continued from its id either',
+        (tester) async {
+      // The lock sits in front of the guard: args that used to open the
+      // editor - a ?id= a refreshed tab carries, or a draft in extra - do
+      // not get past it, and nothing is fetched for them.
+      stubDashboard();
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      router.go(
+        '/draft-pencairan/editor?id=d-1',
+        extra: const DraftEditorArgs.lanjutkan('d-1'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftEditorPage), findsNothing);
+      expect(find.text('Cair Oktober'), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+    });
+
+    testWidgets('a new draft in extra cannot open the editor', (tester) async {
+      stubDashboard();
+      final router = await boot(tester);
 
       router.go(
         '/draft-pencairan/editor',
@@ -236,32 +304,26 @@ void main() {
         ]),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(DraftEditorPage), findsOneWidget);
-      expect(find.text('Ahmad'), findsOneWidget);
+
+      expect(find.byType(DraftEditorPage), findsNothing);
+      expect(find.text('Ahmad'), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
     });
 
-    testWidgets('can continue a saved draft from its id', (tester) async {
-      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
-      final router = await boot(tester);
-
-      router.go(
-        '/draft-pencairan/editor',
-        extra: const DraftEditorArgs.lanjutkan('d-1'),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DraftEditorPage), findsOneWidget);
-      expect(find.text('Cair Oktober'), findsOneWidget);
-    });
-
-    testWidgets('opening the draft editor without a draft goes to the list',
+    testWidgets('the editor without a draft does not bounce through the list',
         (tester) async {
+      // Its own guard sends it to the draft list, which is locked too. The
+      // lock replaces that guard rather than running before it, so there is
+      // one redirect to the dashboard, not a chain through a locked path.
+      stubDashboard();
       final router = await boot(tester);
 
       await visit(tester, router, '/draft-pencairan/editor');
 
-      expect(find.byType(DraftListPage), findsOneWidget);
+      expect(find.byType(DraftListPage), findsNothing);
       expect(find.byType(DraftEditorPage), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/dashboard');
     });
 
     testWidgets('opens the jadwal page, honouring a date in the link',
