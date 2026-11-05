@@ -171,6 +171,12 @@ class PosthogWebClient implements AnalyticsClient {
           r'$initial_referring_domain',
           r'$initial_host',
         ],
+        // The denylist does not reach `$set_once`, where posthog-js sends the
+        // `$initial_*` person properties it builds from storage. It only builds
+        // them while it saves the referrer or the campaign parameters, so
+        // neither is saved and the first visit's address is never stored.
+        'save_referrer': false,
+        'save_campaign_params': false,
         'capture_performance': true,
       };
 }
