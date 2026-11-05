@@ -145,6 +145,8 @@ void main() {
       search.resultsSettled(query: 'si', count: 50);
       search.picked(position: position);
       positions.add(last()['posisi_hasil_kelas'] as String?);
+      // The same words are only a new search after the list was left.
+      search.closed();
     }
 
     expect(positions, ['1', '2_3', '2_3', '4_10', '4_10', 'lebih_10']);

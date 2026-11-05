@@ -36,13 +36,20 @@ class SearchAnalytics {
   String? _lastFilter;
   int? _lastCount;
 
+  /// The words of the search that ended with a row picked. The list showing
+  /// them again (a reload after the pick, coming back to the page) is not a new
+  /// search: only other words, clearing them or leaving the list start one.
+  String? _pickedQuery;
+
   /// The text of the search field changed to [query].
   void queryChanged(String query) {
     final text = query.trim();
     if (text.length < minLength) {
+      _pickedQuery = null;
       _giveUp();
       return;
     }
+    if (_isPicked(text)) return;
     _begin();
   }
 
@@ -55,7 +62,7 @@ class SearchAnalytics {
     String? filter,
   }) {
     final text = query.trim();
-    if (text.length < minLength) return;
+    if (text.length < minLength || _isPicked(text)) return;
     _begin();
     if (text == _lastQuery && filter == _lastFilter) return;
     _lastQuery = text;
@@ -83,12 +90,25 @@ class SearchAnalytics {
       'percobaan_ke': _attempts,
       'durasi_detik': _clock().difference(_startedAt).inSeconds,
     });
+    _pickedQuery = _lastQuery;
     _end();
   }
 
   /// The list was left. A search that showed results and chose nothing was given
   /// up.
-  void closed() => _giveUp();
+  void closed() {
+    _pickedQuery = null;
+    _giveUp();
+  }
+
+  /// Whether [text] is the search that already ended with a row picked. Other
+  /// words end that: they are a new search.
+  bool _isPicked(String text) {
+    if (_pickedQuery == null) return false;
+    if (text == _pickedQuery) return true;
+    _pickedQuery = null;
+    return false;
+  }
 
   void _begin() {
     if (_flowId != null) return;
