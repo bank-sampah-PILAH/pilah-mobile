@@ -66,10 +66,12 @@ void main() {
 
     expect(
       find.textContaining(
-        'Layar direkam dengan semua tulisan dan gambar disamarkan.',
+        'Layar direkam. Data pribadi disamarkan, label tetap aplikasi tetap '
+        'terlihat.',
       ),
       findsOneWidget,
     );
+    expect(find.textContaining('semua tulisan'), findsNothing);
     expect(find.textContaining('Isi layar'), findsNothing);
   });
 
