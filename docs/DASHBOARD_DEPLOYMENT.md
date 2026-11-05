@@ -38,7 +38,8 @@ These are maintainer provisioning steps, not actions performed by this PR.
    API path, and malformed client IDs fail before build. Do not put server
    secrets in browser settings. The script never sources shell dotenv values.
 
-   Usage analytics (PostHog) is optional and off by default. To enable it, add these
+   Usage analytics (PostHog) is optional and off by default. It sends events
+   about what a pengurus did, never screen recordings. To enable it, add these
    lines to the same secret:
    ```dotenv
    ENABLE_POSTHOG=true

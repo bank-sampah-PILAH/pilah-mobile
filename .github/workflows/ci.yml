@@ -157,6 +157,7 @@ jobs:
           --coverage-path=coverage/browser.lcov.info
           test/browser/file_downloader_test.dart
           test/browser/posthog_web_client_test.dart
+          test/core/analytics/analytics_props_test.dart
 
       - name: Cover the web analytics client factory
         run: >-

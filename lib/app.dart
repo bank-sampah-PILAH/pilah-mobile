@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_screen_tracker_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
@@ -115,6 +116,9 @@ class App extends StatelessWidget {
     final router = AppRouterConfig.getRouter();
     final app = Consumer(
       builder: (context, ref, child) {
+        // Listening from the root means every screen is reported, wherever the
+        // user goes; the client ignores it all until they have agreed.
+        ref.watch(analyticsScreenTrackerProvider);
         // Session hygiene belongs above the router so every logout and
         // rejected session resets user-scoped state, regardless of route.
         ref.listen(authenticationProvider, (previous, current) {

@@ -2,10 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/foundation.dart';
+import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/core/analytics/consent_revocation_channel.dart';
+import 'package:pilah_mobile/core/analytics/analytics_screen_tracker.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_screen_tracker_provider.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
@@ -30,8 +34,10 @@ void main() {
   late FakeAnalyticsClient client;
   late TestAuthenticationNotifier auth;
   late _FakeChannel channel;
+  late _RecordingTracker tracker;
 
   setUp(() {
+    tracker = _RecordingTracker();
     storage = FakeAppStorage();
     client = FakeAnalyticsClient();
     channel = _FakeChannel();
@@ -42,6 +48,7 @@ void main() {
     final container = ProviderContainer(overrides: [
       authenticationProvider.overrideWith(() => auth),
       analyticsClientProvider.overrideWithValue(client),
+      analyticsScreenTrackerProvider.overrideWithValue(tracker),
       analyticsConsentStoreProvider
           .overrideWithValue(AnalyticsConsentStore(storage)),
       consentRevocationChannelProvider.overrideWithValue(channel),
@@ -345,6 +352,74 @@ void main() {
           await AnalyticsConsentStore(storage).read(''), ConsentChoice.unset);
     });
   });
+
+  group('when analytics starts', () {
+    test('it says the app was opened and where the user is', () async {
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      expect(client.log, ['start', 'capture:app_dibuka']);
+      expect(tracker.reported, 1);
+    });
+
+    test('a pengurus who agreed before does the same on opening the app',
+        () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+
+      await container.read(analyticsConsentProvider.future);
+
+      expect(client.log, ['start', 'capture:app_dibuka']);
+      expect(tracker.reported, 1);
+    });
+
+    test('nothing is announced when the pengurus declines or has not chosen',
+        () async {
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).deny();
+
+      expect(client.log, isEmpty);
+      expect(tracker.reported, 0);
+    });
+
+    test('nothing is announced when the pengurus withdraws', () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final container = containerForTest();
+      await container.read(analyticsConsentProvider.future);
+      client.log.clear();
+
+      await container.read(analyticsConsentProvider.notifier).revoke();
+
+      expect(client.log, ['stop']);
+    });
+  });
+}
+
+/// A tracker that only counts how often it was asked to repeat the screen.
+class _RecordingTracker implements AnalyticsScreenTracker {
+  int reported = 0;
+
+  @override
+  void reportCurrent() => reported++;
+
+  @override
+  void attach() {}
+
+  @override
+  void dispose() {}
+
+  @override
+  AnalyticsClient get client => throw UnimplementedError();
+
+  @override
+  Listenable get changes => throw UnimplementedError();
+
+  @override
+  String? Function() get currentPath => throw UnimplementedError();
 }
 
 /// A store whose next read or grant waits until [release], so a test can change

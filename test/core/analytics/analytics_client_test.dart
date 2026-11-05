@@ -15,6 +15,16 @@ void main() {
     await expectLater(client.stop(), completes);
   });
 
+  test('NoopAnalyticsClient ignores events and screens', () {
+    final client = NoopAnalyticsClient();
+
+    expect(() => client.capture('setoran_disimpan', {'jumlah_item': 2}),
+        returnsNormally);
+    expect(() => client.screen('dashboard'), returnsNormally);
+    expect(() => client.screen('nasabah', {'layar_sebelumnya': 'dashboard'}),
+        returnsNormally);
+  });
+
   test('createAnalyticsClient returns the no-op client when analytics is off',
       () {
     expect(createAnalyticsClient(null), isA<NoopAnalyticsClient>());

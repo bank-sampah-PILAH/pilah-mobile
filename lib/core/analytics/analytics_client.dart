@@ -9,6 +9,15 @@ abstract class AnalyticsClient {
 
   /// Stops recording, for example when the user withdraws their consent.
   Future<void> stop();
+
+  /// Sends one event, such as `setoran_disimpan`. Does nothing before [start]
+  /// or after [stop]. [properties] may only use the names in `AnalyticsProps`.
+  void capture(String event, [Map<String, Object?> properties = const {}]);
+
+  /// Reports that the user is now looking at [name], with optional
+  /// [properties] such as the screen they came from. Does nothing before
+  /// [start] or after [stop].
+  void screen(String name, [Map<String, Object?> properties = const {}]);
 }
 
 /// Used when analytics is off or not available on this platform.
@@ -23,4 +32,10 @@ class NoopAnalyticsClient implements AnalyticsClient {
 
   @override
   Future<void> stop() async {}
+
+  @override
+  void capture(String event, [Map<String, Object?> properties = const {}]) {}
+
+  @override
+  void screen(String name, [Map<String, Object?> properties = const {}]) {}
 }

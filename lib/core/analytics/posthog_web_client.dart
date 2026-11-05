@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
+import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 import 'package:web/web.dart' as web;
 
 /// Loads PostHog's browser library only when [start] is called, so nothing
@@ -34,6 +35,14 @@ class PosthogWebClient implements AnalyticsClient {
   Future<void>? _starting;
   bool _stopped = false;
 
+  /// Loaded and not stopped: the only time events may leave the app.
+  bool _live = false;
+
+  /// Counts every stop, so a start that is still waiting for the library knows
+  /// whether a stop came after it. A second start does not count: it asks for
+  /// the same thing, and must not leave the first one's caller dropped.
+  int _stops = 0;
+
   @override
   bool get isAvailable => true;
 
@@ -42,21 +51,27 @@ class PosthogWebClient implements AnalyticsClient {
   /// the next call tries again.
   @override
   Future<void> start() async {
+    final stopsBefore = _stops;
     final starting = _starting ??= _load();
     starting.then<void>((_) {}, onError: (Object _) {
       if (identical(_starting, starting)) _starting = null;
     });
     await starting;
-    if (!_stopped) return;
-    // Started again after a stop: the library is already loaded and set up,
-    // so it only has to be switched back on.
-    _stopped = false;
-    final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
-    posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+    if (_stopped) {
+      // Started again after a stop: the library is already loaded and set up,
+      // so it only has to be switched back on.
+      _stopped = false;
+      final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
+      posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+    }
+    // A stop that came while the library was loading is the later decision.
+    if (stopsBefore == _stops) _live = true;
   }
 
   @override
   Future<void> stop() async {
+    _stops++;
+    _live = false;
     final starting = _starting;
     // Never started, so there is nothing to stop and nothing to load.
     if (starting == null) return;
@@ -66,6 +81,28 @@ class PosthogWebClient implements AnalyticsClient {
     posthog.callMethod('opt_out_capturing'.toJS);
     _stopped = true;
   }
+
+  @override
+  void capture(String event, [Map<String, Object?> properties = const {}]) {
+    if (!_live) return;
+    _posthog.callMethod(
+      'capture'.toJS,
+      event.toJS,
+      AnalyticsProps.sanitize(properties).jsify(),
+    );
+  }
+
+  @override
+  void screen(String name, [Map<String, Object?> properties = const {}]) {
+    if (!_live) return;
+    _posthog.callMethod(
+      'capture'.toJS,
+      r'$screen'.toJS,
+      {r'$screen_name': name, ...AnalyticsProps.sanitize(properties)}.jsify(),
+    );
+  }
+
+  JSObject get _posthog => globalContext.getProperty<JSObject>('posthog'.toJS);
 
   Future<void> _load() async {
     final loaded = Completer<void>();
@@ -112,10 +149,34 @@ class PosthogWebClient implements AnalyticsClient {
   Map<String, Object> _options() => {
         'api_host': host,
         // Only usage events are sent: no screen recording, no automatic
-        // capture of clicks or page views, no heatmaps.
+        // capture of clicks or page views, no heatmaps. Load time is the one
+        // automatic measurement kept, to see how slow the app is to open.
         'disable_session_recording': true,
         'autocapture': false,
         'capture_pageview': false,
         'enable_heatmaps': false,
+        // posthog-js adds the address and referrer to every event by itself.
+        // A route can carry an id, which the sanitizer never sees, so none of
+        // them may leave the app.
+        'property_denylist': [
+          r'$current_url',
+          r'$pathname',
+          r'$referrer',
+          r'$referring_domain',
+          r'$host',
+          // The same, recorded once for the first visit.
+          r'$initial_current_url',
+          r'$initial_pathname',
+          r'$initial_referrer',
+          r'$initial_referring_domain',
+          r'$initial_host',
+        ],
+        // The denylist does not reach `$set_once`, where posthog-js sends the
+        // `$initial_*` person properties it builds from storage. It only builds
+        // them while it saves the referrer or the campaign parameters, so
+        // neither is saved and the first visit's address is never stored.
+        'save_referrer': false,
+        'save_campaign_params': false,
+        'capture_performance': true,
       };
 }

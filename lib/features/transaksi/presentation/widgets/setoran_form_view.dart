@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
@@ -443,6 +444,10 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
       );
       return;
     }
+
+    ref.read(analyticsClientProvider).capture('setoran_disimpan', {
+      'jumlah_item': request.items.length,
+    });
 
     // Refresh the shell tabs that stay alive and won't re-init on their own.
     // loadStats updates the dashboard metrics (Total Kas / Sampah / Transaksi);

@@ -29,6 +29,15 @@ List<String> _libraryCalls() {
   return calls == null ? [] : (calls as List<Object?>).cast<String>();
 }
 
+/// Each event the fake library was asked to capture, as `[name, properties]`.
+List<List<Object?>> _captures() {
+  final captures =
+      globalContext.getProperty<JSAny?>('__captures'.toJS).dartify();
+  return captures == null
+      ? []
+      : (captures as List<Object?>).map((e) => e as List<Object?>).toList();
+}
+
 PosthogWebClient _client() => PosthogWebClient(
       apiKey: 'phc_test_key',
       host: 'https://us.i.posthog.com',
@@ -42,6 +51,7 @@ void main() {
     globalContext
       ..delete('posthog'.toJS)
       ..delete('__calls'.toJS)
+      ..delete('__captures'.toJS)
       ..delete('__initCalls'.toJS)
       ..delete('__initArgs'.toJS)
       ..delete('__optInOptions'.toJS)
@@ -85,6 +95,78 @@ void main() {
     ]);
   });
 
+  test('events and screens sent before start go nowhere', () {
+    final client = _client();
+
+    client.capture('setoran_disimpan', {'jumlah_item': 2});
+    client.screen('dashboard');
+
+    expect(_scriptsWithSource(_fakeLibraryUrl), isEmpty);
+    expect(_captures(), isEmpty);
+  });
+
+  test('capture passes the event and its cleaned properties on', () async {
+    final client = _client();
+    await client.start();
+
+    client.capture('setoran_disimpan', {'jumlah_item': 2, 'durasi_detik': 30});
+
+    expect(_captures(), [
+      [
+        'setoran_disimpan',
+        {'jumlah_item': 2, 'durasi_detik': 30},
+      ],
+    ]);
+  });
+
+  test('screen sends a screen event named after the screen', () async {
+    final client = _client();
+    await client.start();
+
+    client.screen('nasabah');
+
+    expect(_captures(), [
+      [
+        r'$screen',
+        {r'$screen_name': 'nasabah'},
+      ],
+    ]);
+  });
+
+  test('a screen can say which screen it follows and for how long', () async {
+    final client = _client();
+    await client.start();
+
+    client.screen('nasabah', {
+      'layar_sebelumnya': 'dashboard',
+      'durasi_layar_sebelumnya_detik': 12,
+    });
+
+    expect(_captures(), [
+      [
+        r'$screen',
+        {
+          r'$screen_name': 'nasabah',
+          'layar_sebelumnya': 'dashboard',
+          'durasi_layar_sebelumnya_detik': 12,
+        },
+      ],
+    ]);
+  });
+
+  test('nothing is sent after stop, and sending resumes after start', () async {
+    final client = _client();
+    await client.start();
+    await client.stop();
+
+    client.capture('setoran_disimpan', {'jumlah_item': 1});
+    expect(_captures(), isEmpty);
+
+    await client.start();
+    client.capture('setoran_disimpan', {'jumlah_item': 1});
+    expect(_captures(), hasLength(1));
+  });
+
   test('adds no PostHog script until start is called', () {
     PosthogWebClient(
       apiKey: 'phc_test_key',
@@ -115,6 +197,27 @@ void main() {
       'autocapture': false,
       'capture_pageview': false,
       'enable_heatmaps': false,
+      // posthog-js adds the address and referrer to every event by itself;
+      // a route can carry an id, so none of them may leave the app.
+      'property_denylist': [
+        r'$current_url',
+        r'$pathname',
+        r'$referrer',
+        r'$referring_domain',
+        r'$host',
+        r'$initial_current_url',
+        r'$initial_pathname',
+        r'$initial_referrer',
+        r'$initial_referring_domain',
+        r'$initial_host',
+      ],
+      // posthog-js builds the `$initial_*` person properties from storage and
+      // sends them as `$set_once`, where the denylist above does not reach. Not
+      // saving the referrer and the campaign parameters keeps it from storing
+      // the first visit's address at all.
+      'save_referrer': false,
+      'save_campaign_params': false,
+      'capture_performance': true,
     });
   });
 
@@ -244,5 +347,35 @@ void main() {
         .dartify()! as List<Object?>;
     expect(options, hasLength(2));
     expect(options, everyElement({'captureEventName': false}));
+  });
+
+  test('a stop that comes while the library is still loading wins', () async {
+    final client = _client();
+
+    final starting = client.start();
+    final stopping = client.stop();
+    await starting;
+    await stopping;
+    client.capture('app_dibuka');
+    client.screen('dashboard');
+
+    expect(_libraryCalls(), isNot(contains('capture')),
+        reason: 'the pengurus withdrew before the library finished loading');
+  });
+
+  test('two starts at the same time still leave the client live', () async {
+    // Consent and the saved choice can both start the client while the library
+    // is loading. The later start must not leave the earlier caller's events
+    // dropped.
+    final client = _client();
+
+    final first = client.start();
+    final second = client.start();
+    await first;
+    client.capture('app_dibuka');
+    await second;
+
+    expect(_libraryCalls(), contains('capture'),
+        reason: 'the caller of the first start was told the client is running');
   });
 }
