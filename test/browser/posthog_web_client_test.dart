@@ -250,6 +250,24 @@ void main() {
     expect(registered['kelas_layar'], isIn(['ponsel', 'tablet', 'desktop']));
   });
 
+  test('signing out and in again tells the library where this runs once more',
+      () async {
+    final client = _client(environment: 'staging');
+    await client.start();
+    await client.stop();
+    client.reset();
+
+    await client.start();
+
+    // posthog-js forgets what it was told when it is reset, so a start that
+    // only opts back in would send every event without these.
+    final all = _registered();
+    expect(all, hasLength(2));
+    expect(all.last['environment'], 'staging');
+    expect(all.last['platform'], 'web');
+    expect(all.last['kelas_layar'], isIn(['ponsel', 'tablet', 'desktop']));
+  });
+
   test('without an environment only the platform and screen size are told',
       () async {
     final client = _client();
