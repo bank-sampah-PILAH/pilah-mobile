@@ -1,5 +1,6 @@
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/flow_id.dart';
+import 'package:pilah_mobile/core/analytics/form_abandonment.dart';
 
 /// Why the schedule form was refused, as a fixed name.
 enum JadwalProblem {
@@ -37,17 +38,34 @@ class JadwalFormAnalytics {
   String? _flowId;
   late DateTime _startedAt;
   int _attempts = 0;
+  late final _abandonment = FormAbandonment(
+    () => _send('jadwal_dibatalkan', {
+      'durasi_detik': _clock().difference(_startedAt).inSeconds,
+      'percobaan_ke': _attempts,
+    }),
+  );
 
   /// The form was opened, to make a schedule or to change one.
   void opened({required bool editing}) {
     _flowId = _newFlowId();
     _startedAt = _clock();
     _attempts = 0;
+    _abandonment.opened();
     _send('jadwal_form_dibuka', {'mode': editing ? 'ubah' : 'baru'});
   }
 
   /// The save button was pressed.
   void submitTapped() => _attempts++;
+
+  /// The form passed its checks and the request to save went out.
+  void sending() => _abandonment.sending();
+
+  /// The server refused the save.
+  void sendFailed() => _abandonment.sendFailed();
+
+  /// The form was closed. Leaving without a save is a cancelled form, reported
+  /// once; a save still on its way decides it when it ends.
+  void closed() => _abandonment.closed();
 
   /// The form was refused.
   void rejected(JadwalProblem problem) => _send('validasi_gagal', {
@@ -63,15 +81,17 @@ class JadwalFormAnalytics {
     required String audience,
     required DateTime startsAt,
     required DateTime endsAt,
-  }) =>
-      _send(editing ? 'jadwal_diubah' : 'jadwal_dibuat', {
-        'jenis': activity,
-        'cakupan': audience == 'semua_nasabah' ? 'semua' : 'terpilih',
-        'durasi_detik': _clock().difference(_startedAt).inSeconds,
-        'percobaan_ke': _attempts,
-        'jeda_hari_kelas': _daysAhead(startsAt),
-        'lama_kegiatan_kelas': _length(endsAt.difference(startsAt)),
-      });
+  }) {
+    _abandonment.saved();
+    _send(editing ? 'jadwal_diubah' : 'jadwal_dibuat', {
+      'jenis': activity,
+      'cakupan': audience == 'semua_nasabah' ? 'semua' : 'terpilih',
+      'durasi_detik': _clock().difference(_startedAt).inSeconds,
+      'percobaan_ke': _attempts,
+      'jeda_hari_kelas': _daysAhead(startsAt),
+      'lama_kegiatan_kelas': _length(endsAt.difference(startsAt)),
+    });
+  }
 
   String _daysAhead(DateTime startsAt) {
     final now = _clock();

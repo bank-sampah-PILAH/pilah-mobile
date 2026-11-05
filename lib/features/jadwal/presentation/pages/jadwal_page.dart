@@ -1133,6 +1133,7 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
 
   @override
   void dispose() {
+    _analytics.closed();
     _locationController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -1201,6 +1202,7 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
       return;
     }
     final initial = widget.initial;
+    _analytics.sending();
     final failure = await ref.read(jadwalProvider.notifier).saveJadwal(
           JadwalEntity(
             id: initial?.id ?? '',
@@ -1227,6 +1229,7 @@ class _JadwalFormState extends ConsumerState<_JadwalForm> {
         endsAt: _endsAt,
       );
     }
+    if (failure != null) _analytics.sendFailed();
     if (!mounted) return;
     if (failure == null) {
       final close = widget.onClose;
