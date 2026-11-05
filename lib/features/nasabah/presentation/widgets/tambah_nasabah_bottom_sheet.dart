@@ -151,7 +151,6 @@ class _TambahNasabahBottomSheetState
   /// never what was typed.
   List<String> _invalidFields() => [
         if (NasabahNameField.errorFor(_namaController.text) != null) 'nama',
-        if (_idNasabahController.text.trim().isEmpty) 'id_nasabah',
         if (NasabahGenderField.errorFor(_jenisKelamin) != null) 'jenis_kelamin',
         if (NasabahEmailField.errorFor(
                 _emailController.text, _serverEmailError) !=
@@ -210,12 +209,17 @@ class _TambahNasabahBottomSheetState
     );
 
     final error = await notifier.addNasabah(request);
-    if (error != null) _analytics.sendFailed();
+    // A save is counted even when the sheet was closed meanwhile: it happened.
+    // The check below only guards what is drawn.
+    if (error == null) {
+      _analytics.saved();
+    } else {
+      _analytics.sendFailed();
+    }
     if (!mounted) return;
     setState(() => _isSaving = false);
 
     if (error == null) {
-      _analytics.saved();
       context.pop();
       AppNotification.showSuccess(
         context,
