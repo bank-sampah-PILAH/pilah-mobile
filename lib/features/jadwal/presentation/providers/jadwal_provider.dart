@@ -259,8 +259,13 @@ class JadwalNotifier extends Notifier<JadwalState> {
     }
   }
 
+  /// Whether a status change can start now. One that cannot is skipped, and
+  /// [changeStatus] then answers like a success without having done anything,
+  /// so a caller that reports the change asks first.
+  bool get canChangeStatus => !_transitionInProgress && !_saveInProgress;
+
   Future<NetworkException?> changeStatus(String id, String action) async {
-    if (_transitionInProgress || _saveInProgress) return null;
+    if (!canChangeStatus) return null;
     final generation = _sessionGeneration;
     final current = state;
     _transitionInProgress = true;
