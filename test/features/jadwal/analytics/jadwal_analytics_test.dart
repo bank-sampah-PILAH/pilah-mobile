@@ -150,4 +150,57 @@ void main() {
     expect(client.events.single.name, 'jadwal_status_diubah');
     expect(last(), {'aksi': 'terbitkan', 'status_sebelumnya': 'draft'});
   });
+
+  group('leaving the form without saving', () {
+    test('says how long it was open and how many times save was tried', () {
+      form.opened(editing: false);
+      now = now.add(const Duration(seconds: 25));
+      form
+        ..submitTapped()
+        ..submitTapped();
+
+      form.closed();
+
+      expect(client.events.last.name, 'jadwal_dibatalkan');
+      expect(last(), {'alur_id': _flow, 'durasi_detik': 25, 'percobaan_ke': 2});
+    });
+
+    test('leaving without trying says so with zero attempts', () {
+      form.opened(editing: true);
+
+      form.closed();
+
+      expect(last()['percobaan_ke'], 0);
+    });
+
+    test('a saved schedule is not also a cancelled one', () {
+      form.opened(editing: false);
+      form.sending();
+      form.saved(
+        editing: false,
+        activity: 'penimbangan',
+        audience: 'semua_nasabah',
+        startsAt: now.add(const Duration(days: 1)),
+        endsAt: now.add(const Duration(days: 1, hours: 2)),
+      );
+
+      form.closed();
+
+      expect(client.events.map((e) => e.name),
+          ['jadwal_form_dibuka', 'jadwal_dibuat']);
+    });
+
+    test('a refused save followed by leaving is a cancellation', () {
+      form.opened(editing: false);
+      form
+        ..submitTapped()
+        ..sending()
+        ..sendFailed();
+
+      form.closed();
+
+      expect(client.events.last.name, 'jadwal_dibatalkan');
+      expect(last()['percobaan_ke'], 1);
+    });
+  });
 }

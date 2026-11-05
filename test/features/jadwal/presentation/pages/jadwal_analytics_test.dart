@@ -125,6 +125,67 @@ void main() {
     expect(names(), contains('jadwal_dibuat'));
   });
 
+  testWidgets('leaving the form without saving is reported as cancelled',
+      (tester) async {
+    await tester.pumpWidget(_app(_notifier(JadwalLoaded(const [])), analytics));
+    await tester.pumpAndSettle();
+    await openForm(tester);
+
+    Navigator.of(tester.element(find.byKey(const ValueKey('jadwal-form'))))
+        .pop();
+    await tester.pumpAndSettle();
+
+    expect(names(), ['jadwal_form_dibuka', 'jadwal_dibatalkan']);
+    expect(analytics.events.last.properties['percobaan_ke'], 0);
+  });
+
+  testWidgets('a schedule saved after the form was closed is not cancelled',
+      (tester) async {
+    final saving = Completer<NetworkException?>();
+    await tester.pumpWidget(_app(
+      _notifier(JadwalLoaded(const []), onSave: (_) => saving.future),
+      analytics,
+    ));
+    await tester.pumpAndSettle();
+    await openForm(tester);
+    await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
+    final button = find.byType(ElevatedButton).last;
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pump();
+    Navigator.of(tester.element(find.byKey(const ValueKey('jadwal-form'))))
+        .pop();
+    await tester.pumpAndSettle();
+    saving.complete(null);
+    await tester.pumpAndSettle();
+
+    expect(names(), ['jadwal_form_dibuka', 'jadwal_dibuat']);
+  });
+
+  testWidgets('a save refused after the form was closed is a cancellation',
+      (tester) async {
+    final saving = Completer<NetworkException?>();
+    await tester.pumpWidget(_app(
+      _notifier(JadwalLoaded(const []), onSave: (_) => saving.future),
+      analytics,
+    ));
+    await tester.pumpAndSettle();
+    await openForm(tester);
+    await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
+    final button = find.byType(ElevatedButton).last;
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pump();
+    Navigator.of(tester.element(find.byKey(const ValueKey('jadwal-form'))))
+        .pop();
+    await tester.pumpAndSettle();
+    saving.complete(GeneralException(message: 'gagal'));
+    await tester.pumpAndSettle();
+
+    expect(names(), ['jadwal_form_dibuka', 'jadwal_dibatalkan']);
+    expect(analytics.events.last.properties['percobaan_ke'], 1);
+  });
+
   testWidgets('a schedule the server refuses is not reported as created',
       (tester) async {
     await tester.pumpWidget(_app(
