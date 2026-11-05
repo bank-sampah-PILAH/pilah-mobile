@@ -16,12 +16,14 @@ void main() {
     expect(last(), {'jenis_filter': 'periode', 'nilai_kelas': 'hari_ini'});
   });
 
-  test('a search or a reset has no value to send', () {
-    riwayatFilterChanged(client, RiwayatFilterKind.pencarian);
-    expect(last(), {'jenis_filter': 'pencarian'});
-
+  test('a reset has no value to send', () {
     riwayatFilterChanged(client, RiwayatFilterKind.reset);
     expect(last(), {'jenis_filter': 'reset'});
+  });
+
+  test('a search is not one of the filters: it has its own session events', () {
+    expect(RiwayatFilterKind.values.map((kind) => kind.wire),
+        isNot(contains('pencarian')));
   });
 
   test('opening a detail says what kind of activity it was', () {
