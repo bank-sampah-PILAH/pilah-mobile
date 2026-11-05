@@ -55,6 +55,8 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
   // Satu kunci per kartu, supaya menghapus kartu di tengah tidak menukar
   // isi kolom berat kartu di bawahnya.
   List<UniqueKey> _keys = [];
+  // The rows as they were loaded, to tell which one each row came from.
+  List<UniqueKey> _originalKeys = [];
   bool _loading = true;
   bool _saving = false;
   String? _loadError;
@@ -78,6 +80,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
 
   @override
   void dispose() {
+    _analytics.closed();
     _catatan.dispose();
     _alasan.dispose();
     super.dispose();
@@ -111,6 +114,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
               })
           .toList();
       _keys = List.generate(_items.length, (_) => UniqueKey());
+      _originalKeys = List.of(_keys);
     });
   }
 
@@ -136,6 +140,27 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
     };
     return _items.any((i) =>
         before[i['jenis_sampah_id']] != (i['berat'] as num?)?.toDouble());
+  }
+
+  ItemChangeCounts get _itemChanges {
+    final detail = _detail;
+    if (detail == null) return const ItemChangeCounts();
+    return ItemChangeCounts.between(
+      before: [
+        for (final i in detail.items)
+          (jenisSampahId: i.jenisSampahId, berat: i.beratKg.toDouble()),
+      ],
+      after: [
+        for (var row = 0; row < _items.length; row++)
+          (
+            origin: _originalKeys.contains(_keys[row])
+                ? _originalKeys.indexOf(_keys[row])
+                : null,
+            jenisSampahId: _items[row]['jenis_sampah_id'] as String?,
+            berat: (_items[row]['berat'] as num?)?.toDouble(),
+          ),
+      ],
+    );
   }
 
   bool get _catatanChanged =>
@@ -164,6 +189,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
     final itemsChanged = _itemsChanged;
     final noteChanged = _catatanChanged;
     final itemCount = _items.length;
+    final changes = _itemChanges;
     final result = await ref.read(transaksiProvider.notifier).editTransaksi(
           TransaksiEditRequest(
             id: widget.id,
@@ -184,6 +210,8 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
       itemCount: itemCount,
       itemsChanged: itemsChanged,
       noteChanged: noteChanged,
+      changes: changes,
+      recordedAt: _detail?.tanggal,
     );
     ref.read(aktivitasSelectionProvider.notifier).clear();
     ref.read(riwayatAktivitasProvider.notifier).load(silent: true);

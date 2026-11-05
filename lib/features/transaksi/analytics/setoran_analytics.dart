@@ -151,11 +151,58 @@ class SetoranAnalytics {
   }
 }
 
+/// How many items of a corrected setoran were added, removed or changed, by
+/// kind. A row changed in both ways counts in both. Only counts: which jenis or
+/// how many kilograms never leave the app.
+class ItemChangeCounts {
+  const ItemChangeCounts({
+    this.added = 0,
+    this.removed = 0,
+    this.jenisChanged = 0,
+    this.beratChanged = 0,
+  });
+
+  /// Compares the items as they were recorded ([before]) with the rows now on
+  /// the sheet ([after]). A row says which recorded item it came from
+  /// ([origin], an index into [before]) or null when it is new, so a row whose
+  /// jenis was swapped is one change and not a removal plus an addition.
+  factory ItemChangeCounts.between({
+    required List<({String jenisSampahId, double berat})> before,
+    required List<({int? origin, String? jenisSampahId, double? berat})> after,
+  }) {
+    var added = 0;
+    var jenisChanged = 0;
+    var beratChanged = 0;
+    final kept = <int>{};
+    for (final row in after) {
+      final origin = row.origin;
+      if (origin == null) {
+        added++;
+        continue;
+      }
+      kept.add(origin);
+      if (row.jenisSampahId != before[origin].jenisSampahId) jenisChanged++;
+      if (row.berat != before[origin].berat) beratChanged++;
+    }
+    return ItemChangeCounts(
+      added: added,
+      removed: before.length - kept.length,
+      jenisChanged: jenisChanged,
+      beratChanged: beratChanged,
+    );
+  }
+
+  final int added;
+  final int removed;
+  final int jenisChanged;
+  final int beratChanged;
+}
+
 /// The events of correcting a setoran that is already recorded (PIL-427).
 ///
-/// They say that an edit was opened, what kind of thing was changed and whether
-/// the server refused it. The reason the pengurus wrote, the note and the
-/// weights stay in the app.
+/// They say that an edit was opened, what kind of thing was changed, how long
+/// after the setoran was made and whether the sheet was left without saving.
+/// The reason the pengurus wrote, the note and the weights stay in the app.
 class SetoranEditAnalytics {
   SetoranEditAnalytics(
     this._client, {
@@ -170,28 +217,60 @@ class SetoranEditAnalytics {
 
   String? _flowId;
   late DateTime _startedAt;
+  bool _saved = false;
+  bool _closed = false;
 
   /// The edit sheet was opened.
   void started() {
     _flowId = _newFlowId();
     _startedAt = _clock();
+    _saved = false;
+    _closed = false;
     _send('setoran_ubah_dimulai');
   }
 
-  /// The correction was saved, naming what kind of thing changed.
+  /// The correction was saved, naming what kind of thing changed. [recordedAt]
+  /// is when the setoran was made, to say how late the correction came.
   void saved({
     required int itemCount,
     required bool itemsChanged,
     required bool noteChanged,
-  }) =>
-      _send('setoran_diubah', {
-        'jumlah_item': itemCount,
-        'bidang_diubah': [
-          if (itemsChanged) 'item',
-          if (noteChanged) 'catatan',
-        ],
-        'durasi_detik': _sinceStart(),
-      });
+    ItemChangeCounts changes = const ItemChangeCounts(),
+    DateTime? recordedAt,
+  }) {
+    _saved = true;
+    _send('setoran_diubah', {
+      'jumlah_item': itemCount,
+      'bidang_diubah': [
+        if (itemsChanged) 'item',
+        if (noteChanged) 'catatan',
+      ],
+      'durasi_detik': _sinceStart(),
+      'jumlah_item_ditambah': changes.added,
+      'jumlah_item_dihapus': changes.removed,
+      'jumlah_item_diubah_jenis': changes.jenisChanged,
+      'jumlah_item_diubah_berat': changes.beratChanged,
+      'jeda_sejak_dibuat_hari_kelas':
+          recordedAt == null ? null : _lateness(recordedAt),
+    });
+  }
+
+  /// The sheet was closed. Closing it without having saved is a cancelled edit,
+  /// reported once.
+  void closed() {
+    if (_flowId == null || _saved || _closed) return;
+    _closed = true;
+    _send('setoran_ubah_dibatalkan', {'durasi_detik': _sinceStart()});
+  }
+
+  String _lateness(DateTime recordedAt) {
+    final now = _clock();
+    final days = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(recordedAt.year, recordedAt.month, recordedAt.day))
+        .inDays;
+    if (days <= 0) return 'hari_ini';
+    return days <= 7 ? '1_7_hari' : 'lebih_7_hari';
+  }
 
   int _sinceStart() => _clock().difference(_startedAt).inSeconds;
 
