@@ -90,14 +90,13 @@ void main() {
     expect(refused.properties['tugas'], 'tambah_nasabah');
     expect(refused.properties['bidang'], [
       'nama',
-      'id_nasabah',
       'jenis_kelamin',
       'email',
       'tanggal_lahir',
       'no_hp',
       'alamat',
     ]);
-    expect(refused.properties['jumlah_masalah'], 7);
+    expect(refused.properties['jumlah_masalah'], 6);
 
     await fill(tester);
     await save(tester);
@@ -134,6 +133,39 @@ void main() {
         analytics.events.singleWhere((e) => e.name == 'validasi_gagal');
     expect(refused.properties['bidang'], ['no_hp']);
     await settleToasts(tester);
+  });
+
+  testWidgets('an empty ID is valid and is not named as a refused field',
+      (tester) async {
+    await open(tester);
+    await fill(tester, kode: '');
+
+    await save(tester);
+
+    final refused = analytics.events.where((e) => e.name == 'validasi_gagal');
+    expect(refused, isEmpty);
+    await settleToasts(tester);
+  });
+
+  testWidgets('a save that lands after the sheet was closed is still counted',
+      (tester) async {
+    api.on('POST', _path, status: 201, json: nasabahRow('9'));
+    await open(tester);
+    await fill(tester);
+    api.latency = const Duration(seconds: 1);
+    await tester.ensureVisible(find.text('Simpan Nasabah'));
+    await tester.tap(find.text('Simpan Nasabah'));
+    await tester.pump();
+
+    // The pengurus leaves the sheet while the request is still running.
+    Navigator.of(tester.element(find.byType(TambahNasabahBottomSheet))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(TambahNasabahBottomSheet), findsNothing);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(names(), contains('nasabah_ditambah'));
+    expect(names(), isNot(contains('nasabah_tambah_dibatalkan')));
   });
 
   testWidgets('a failed save is not reported as added', (tester) async {
