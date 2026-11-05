@@ -254,6 +254,25 @@ void main() {
       }
     });
 
+    testWidgets('a locked path redirects by name as well as by URL',
+        (tester) async {
+      // The lock keeps the real route's name, so navigation that asks for a
+      // route by name lands on the dashboard too. Without the name,
+      // `goNamed` throws `GoError: no route with name` - a crash where the
+      // lock promises a redirect. Nothing in lib/ navigates by name today;
+      // this holds the stub to the promise for whatever does later.
+      stubDashboard();
+      final router = await boot(tester);
+
+      router.goNamed(DraftListPage.route);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftListPage), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/dashboard');
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('a saved draft cannot be continued from its id either',
         (tester) async {
       // The lock sits in front of the guard: args that used to open the
