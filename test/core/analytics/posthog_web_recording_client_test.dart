@@ -79,7 +79,8 @@ void main() {
     expect((wrapped as PostHogWidget).child, same(app));
   });
 
-  test('hands the plugin the library only after it is set up, masked', () async {
+  test('hands the plugin the library only after it is set up, masked',
+      () async {
     await client.start();
 
     // The plugin hooks into the library that is already running: if it ran

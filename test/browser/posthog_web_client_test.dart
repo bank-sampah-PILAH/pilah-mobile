@@ -77,8 +77,7 @@ void main() {
     expect(_client().isAvailable, isTrue);
   });
 
-  test('records no screen: the canvas has nothing the browser could replay',
-      () {
+  test('records no screen unless it is asked to', () {
     expect(_client().recordsScreen, isFalse);
   });
 
@@ -361,9 +360,9 @@ void main() {
         () async {
       await recording().start();
 
-      final args =
-          globalContext.getProperty<JSAny?>('__initArgs'.toJS).dartify()!
-              as List<Object?>;
+      final args = globalContext
+          .getProperty<JSAny?>('__initArgs'.toJS)
+          .dartify()! as List<Object?>;
       final options = args[1]! as Map<Object?, Object?>;
       expect(options['disable_session_recording'], isFalse);
       final recordingOptions = options['session_recording']! as Map;
@@ -387,8 +386,8 @@ void main() {
       final maskRegionsFn =
           canvasCapture.getProperty<JSFunction>('maskRegionsFn'.toJS);
       // posthog-js reads null as "do not send this frame".
-      expect(maskRegionsFn.callAsFunction(null, web.HTMLCanvasElement()),
-          isNull);
+      expect(
+          maskRegionsFn.callAsFunction(null, web.HTMLCanvasElement()), isNull);
     });
 
     test('leaves no network request in the recording', () async {
