@@ -19,12 +19,17 @@ class PosthogWebClient implements AnalyticsClient {
   PosthogWebClient({
     required this.apiKey,
     required this.host,
+    this.environment,
     String? libraryUrl,
     this.loadTimeout = const Duration(seconds: 15),
   }) : libraryUrl = libraryUrl ?? _libraryUrlFor(host);
 
   final String apiKey;
   final String host;
+
+  /// `staging` or `production`: both share one PostHog project, so every event
+  /// says which one it came from.
+  final String? environment;
   final String libraryUrl;
   final Duration loadTimeout;
 
@@ -42,6 +47,9 @@ class PosthogWebClient implements AnalyticsClient {
   /// whether a stop came after it. A second start does not count: it asks for
   /// the same thing, and must not leave the first one's caller dropped.
   int _stops = 0;
+
+  /// The library is loaded and set up, so its methods can be called.
+  bool _ready = false;
 
   @override
   bool get isAvailable => true;
@@ -63,6 +71,7 @@ class PosthogWebClient implements AnalyticsClient {
       _stopped = false;
       final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
       posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+      _registerContext(posthog);
     }
     // A stop that came while the library was loading is the later decision.
     if (stopsBefore == _stops) _live = true;
@@ -75,7 +84,13 @@ class PosthogWebClient implements AnalyticsClient {
     final starting = _starting;
     // Never started, so there is nothing to stop and nothing to load.
     if (starting == null) return;
-    await starting;
+    try {
+      await starting;
+    } catch (_) {
+      // The library never loaded, so nothing is running that could be stopped.
+      // Failing here would stop a pengurus's withdrawal from being saved.
+      return;
+    }
 
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     posthog.callMethod('opt_out_capturing'.toJS);
@@ -90,6 +105,29 @@ class PosthogWebClient implements AnalyticsClient {
       event.toJS,
       AnalyticsProps.sanitize(properties).jsify(),
     );
+  }
+
+  @override
+  void identify(String id) {
+    final clean = AnalyticsProps.cleanId(id);
+    if (!_live || clean == null) return;
+    _posthog.callMethod('identify'.toJS, clean.toJS);
+  }
+
+  @override
+  void register(Map<String, Object?> properties) {
+    if (!_live) return;
+    _posthog.callMethod(
+      'register'.toJS,
+      AnalyticsProps.sanitize(properties).jsify(),
+    );
+  }
+
+  @override
+  void reset() {
+    // Never loaded: nothing was identified, so there is nothing to forget.
+    if (!_ready) return;
+    _posthog.callMethod('reset'.toJS);
   }
 
   @override
@@ -136,10 +174,38 @@ class PosthogWebClient implements AnalyticsClient {
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     posthog.callMethod('init'.toJS, apiKey.toJS, _options().jsify());
+    _ready = true;
     // PostHog keeps an opt-out across page reloads, so one made on an earlier
     // visit would still be in force. start() is only called once the pengurus
     // has agreed, so switch capturing on.
     posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+    _registerContext(posthog);
+  }
+
+  /// Where this runs, told to the library and carried by every event after. The
+  /// library forgets it when it is reset on sign-out, so every start tells it
+  /// again; telling it twice does no harm.
+  void _registerContext(JSObject posthog) {
+    posthog.callMethod(
+      'register'.toJS,
+      AnalyticsProps.sanitize({
+        'platform': 'web',
+        'environment': environment,
+        'kelas_layar': _screenClass(),
+      }).jsify(),
+    );
+  }
+
+  /// A rough size of the screen, to tell a phone from a desktop in the results.
+  /// It is measured once, when the library starts: resizing the window later
+  /// keeps the first value, which is accurate enough for a bucket.
+  static String _screenClass() => screenClassFor(web.window.innerWidth);
+
+  /// The class of a window [width] pixels wide. Public so a test can reach the
+  /// boundaries without resizing a browser window.
+  static String screenClassFor(num width) {
+    final wider = (width >= 600 ? 1 : 0) + (width >= 1024 ? 1 : 0);
+    return const ['ponsel', 'tablet', 'desktop'][wider];
   }
 
   /// Opting in sends an event of PostHog's own by default, which would reach

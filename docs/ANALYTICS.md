@@ -77,6 +77,40 @@ the client; only load time is measured automatically.
 
 The native Android app does not send events yet (PIL-416).
 
+## Who an event belongs to
+
+After a pengurus agrees, analytics is told their **id from the backend**
+(`AuthEntity.id`), never a name, email address or phone number, and their role.
+Every event after that belongs to that id, which is what lets funnels and
+retention count people instead of clicks. Withdrawing, or signing out, forgets
+the user (`reset`), so whoever uses the device next is not tied to them.
+
+Every event also carries `environment` (`staging` or `production`, which share
+one PostHog project), `platform` (`web`) and `kelas_layar` (`ponsel`, `tablet`
+or `desktop`, from the screen width). Filter by `environment` in every insight.
+
+**This id is personal data.** We can link it to a real person through our own
+database, so it is pseudonymous, not anonymous. Treat it that way: it is sent
+only with the pengurus's consent, nothing else that names them is sent with it,
+and the privacy policy must say what is noted, why, who processes it (PostHog,
+servers in the US), how long it is kept, and how to refuse or withdraw. Whether
+this meets UU PDP, including sending data abroad, has not been checked by a
+lawyer.
+
+### Deleting one person's analytics data
+
+When a pengurus asks for their data to be deleted:
+
+1. Find their id: it is the user id the backend holds for their account, so the
+   person who handles the request looks it up there.
+2. In PostHog, open **Persons**, search for that id, open the person and choose
+   **Delete person** (delete their events too).
+3. Record the request and the date, and tell the pengurus it is done.
+
+PostHog keeps no name or email for them, so the id is the only way to find the
+person. Withdrawing consent in Profil stops new events at once but does not
+delete earlier ones; that needs the steps above.
+
 ## Reading the results
 
 The dashboard guide, and how to build funnels and retention from these events,

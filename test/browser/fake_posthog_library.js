@@ -2,6 +2,8 @@
 // the network. It only records how it was called, in order, in window.__calls.
 window.__calls = [];
 window.__captures = [];
+window.__identified = [];
+window.__registered = [];
 window.posthog = {
   init: function (key, options) {
     window.__calls.push('init');
@@ -17,4 +19,13 @@ window.posthog = {
     window.__calls.push('capture');
     window.__captures.push([event, props]);
   },
+  identify: function (id) {
+    window.__calls.push('identify');
+    window.__identified.push(id);
+  },
+  register: function (props) {
+    window.__calls.push('register');
+    window.__registered.push(props);
+  },
+  reset: function () { window.__calls.push('reset'); },
 };

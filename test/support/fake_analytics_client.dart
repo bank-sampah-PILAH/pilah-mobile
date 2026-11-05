@@ -26,6 +26,11 @@ class FakeAnalyticsClient implements AnalyticsClient {
   /// Every event captured, with its cleaned properties.
   final events = <({String name, Map<String, Object> properties})>[];
 
+  /// Who it was told the user is, and the properties registered for every
+  /// event, in the order they came.
+  final identified = <String>[];
+  final registered = <Map<String, Object>>[];
+
   /// Every screen name reported, and the properties each came with.
   final screens = <String>[];
   final screenProps = <Map<String, Object>>[];
@@ -58,4 +63,19 @@ class FakeAnalyticsClient implements AnalyticsClient {
     screens.add(name);
     screenProps.add(AnalyticsProps.sanitize(properties));
   }
+
+  @override
+  void identify(String id) {
+    log.add('identify:$id');
+    identified.add(AnalyticsProps.cleanId(id) ?? '');
+  }
+
+  @override
+  void register(Map<String, Object?> properties) {
+    log.add('register');
+    registered.add(AnalyticsProps.sanitize(properties));
+  }
+
+  @override
+  void reset() => log.add('reset');
 }

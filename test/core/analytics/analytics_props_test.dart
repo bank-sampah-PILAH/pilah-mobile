@@ -18,6 +18,13 @@ void main() {
     });
   });
 
+  test('keeps a flow id that is a uuid of digits, not a phone number', () {
+    expect(
+        AnalyticsProps.sanitize(
+            {'alur_id': '12345678-1234-4234-8234-123456789012'}),
+        {'alur_id': '12345678-1234-4234-8234-123456789012'});
+  });
+
   test('leaves out properties that are null', () {
     expect(AnalyticsProps.sanitize({'jumlah_item': null, 'langkah': 'item'}), {
       'langkah': 'item',
@@ -96,5 +103,30 @@ void main() {
       }),
       throwsA(isA<AssertionError>()),
     );
+  });
+
+  group('cleanId', () {
+    test('keeps an id that names nobody', () {
+      expect(AnalyticsProps.cleanId('7c9819de-c44d-4fb3-acdf-b61d7d87174c'),
+          '7c9819de-c44d-4fb3-acdf-b61d7d87174c');
+      expect(AnalyticsProps.cleanId('42'), '42');
+    });
+
+    test('keeps a uuid made only of digits, which is not a phone number', () {
+      // The demo and seed accounts have ids like this, and so can a real one.
+      expect(AnalyticsProps.cleanId('00000000-0000-4000-8000-000000000011'),
+          '00000000-0000-4000-8000-000000000011');
+    });
+
+    test('refuses an email address or a phone number as an id', () {
+      expect(() => AnalyticsProps.cleanId('siti@example.com'),
+          throwsA(isA<AssertionError>()));
+      expect(() => AnalyticsProps.cleanId('081234567890'),
+          throwsA(isA<AssertionError>()));
+    });
+
+    test('refuses an empty id', () {
+      expect(() => AnalyticsProps.cleanId(''), throwsA(isA<AssertionError>()));
+    });
   });
 }

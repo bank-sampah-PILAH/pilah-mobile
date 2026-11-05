@@ -38,10 +38,23 @@ List<List<Object?>> _captures() {
       : (captures as List<Object?>).map((e) => e as List<Object?>).toList();
 }
 
-PosthogWebClient _client() => PosthogWebClient(
+List<Object?> _identified() {
+  final ids = globalContext.getProperty<JSAny?>('__identified'.toJS).dartify();
+  return ids == null ? [] : (ids as List<Object?>);
+}
+
+List<Map<Object?, Object?>> _registered() {
+  final all = globalContext.getProperty<JSAny?>('__registered'.toJS).dartify();
+  return all == null
+      ? []
+      : (all as List<Object?>).map((e) => e as Map<Object?, Object?>).toList();
+}
+
+PosthogWebClient _client({String? environment}) => PosthogWebClient(
       apiKey: 'phc_test_key',
       host: 'https://us.i.posthog.com',
       libraryUrl: _fakeLibraryUrl,
+      environment: environment,
     );
 
 void main() {
@@ -52,6 +65,8 @@ void main() {
       ..delete('posthog'.toJS)
       ..delete('__calls'.toJS)
       ..delete('__captures'.toJS)
+      ..delete('__identified'.toJS)
+      ..delete('__registered'.toJS)
       ..delete('__initCalls'.toJS)
       ..delete('__initArgs'.toJS)
       ..delete('__optInOptions'.toJS)
@@ -75,7 +90,12 @@ void main() {
 
     await client.stop();
 
-    expect(_libraryCalls(), ['init', 'opt_in_capturing', 'opt_out_capturing']);
+    expect(_libraryCalls(), [
+      'init',
+      'opt_in_capturing',
+      'register',
+      'opt_out_capturing',
+    ]);
   });
 
   test('start after stop opts back in without loading the library again',
@@ -90,8 +110,10 @@ void main() {
     expect(_libraryCalls(), [
       'init',
       'opt_in_capturing',
+      'register',
       'opt_out_capturing',
       'opt_in_capturing',
+      'register',
     ]);
   });
 
@@ -165,6 +187,96 @@ void main() {
     await client.start();
     client.capture('setoran_disimpan', {'jumlah_item': 1});
     expect(_captures(), hasLength(1));
+  });
+
+  test('identity sent before start goes nowhere and loads nothing', () {
+    final client = _client();
+
+    client.identify('user-1');
+    client.register({'peran': 'pengelola'});
+    client.reset();
+
+    expect(_scriptsWithSource(_fakeLibraryUrl), isEmpty);
+    expect(_libraryCalls(), isEmpty);
+  });
+
+  test('identify tells the library who the user is', () async {
+    final client = _client();
+    await client.start();
+
+    client.identify('7c9819de-c44d-4fb3-acdf-b61d7d87174c');
+
+    expect(_identified(), ['7c9819de-c44d-4fb3-acdf-b61d7d87174c']);
+  });
+
+  test('register passes cleaned properties for every event', () async {
+    final client = _client();
+    await client.start();
+
+    client.register({'peran': 'pengelola'});
+
+    expect(_registered().last, {'peran': 'pengelola'});
+  });
+
+  test('reset forgets the user, even after analytics was stopped', () async {
+    final client = _client();
+    await client.start();
+    client.identify('user-1');
+    await client.stop();
+
+    client.reset();
+
+    expect(_libraryCalls(), contains('reset'));
+  });
+
+  test('identify does nothing after stop', () async {
+    final client = _client();
+    await client.start();
+    await client.stop();
+
+    client.identify('user-1');
+
+    expect(_identified(), isEmpty);
+  });
+
+  test('the library is told the environment, the platform and the screen size',
+      () async {
+    final client = _client(environment: 'staging');
+
+    await client.start();
+
+    final registered = _registered().single;
+    expect(registered['environment'], 'staging');
+    expect(registered['platform'], 'web');
+    expect(registered['kelas_layar'], isIn(['ponsel', 'tablet', 'desktop']));
+  });
+
+  test('signing out and in again tells the library where this runs once more',
+      () async {
+    final client = _client(environment: 'staging');
+    await client.start();
+    await client.stop();
+    client.reset();
+
+    await client.start();
+
+    // posthog-js forgets what it was told when it is reset, so a start that
+    // only opts back in would send every event without these.
+    final all = _registered();
+    expect(all, hasLength(2));
+    expect(all.last['environment'], 'staging');
+    expect(all.last['platform'], 'web');
+    expect(all.last['kelas_layar'], isIn(['ponsel', 'tablet', 'desktop']));
+  });
+
+  test('without an environment only the platform and screen size are told',
+      () async {
+    final client = _client();
+
+    await client.start();
+
+    expect(_registered().single.keys, isNot(contains('environment')));
+    expect(_registered().single['platform'], 'web');
   });
 
   test('adds no PostHog script until start is called', () {
@@ -330,7 +442,7 @@ void main() {
 
     await client.start();
 
-    expect(_libraryCalls(), ['init', 'opt_in_capturing']);
+    expect(_libraryCalls(), ['init', 'opt_in_capturing', 'register']);
   });
 
   test('opting in does not make PostHog send an event of its own', () async {
@@ -377,5 +489,48 @@ void main() {
 
     expect(_libraryCalls(), contains('capture'),
         reason: 'the caller of the first start was told the client is running');
+  });
+
+  group('when the library never loaded', () {
+    PosthogWebClient failingClient() => PosthogWebClient(
+          apiKey: 'phc_test_key',
+          host: 'https://us.i.posthog.com',
+          // Nothing listens on port 1, so the script request is refused.
+          libraryUrl: 'http://127.0.0.1:1/array.js',
+        );
+
+    test('forgetting the user does nothing instead of throwing', () async {
+      final client = failingClient();
+      await client.start().catchError((Object _) {});
+
+      expect(client.reset, returnsNormally);
+    });
+
+    test('stopping does nothing instead of throwing, so a withdrawal is kept',
+        () async {
+      final client = failingClient();
+      await client.start().catchError((Object _) {});
+
+      await expectLater(client.stop(), completes);
+    });
+
+    test('stopping while the library is still failing to load is kept too',
+        () async {
+      final client = failingClient();
+      final started = client.start().then<void>((_) {}, onError: (Object _) {});
+
+      await expectLater(client.stop(), completes);
+      await started;
+    });
+  });
+
+  test('the screen class follows the width of the window', () {
+    expect(PosthogWebClient.screenClassFor(599), 'ponsel');
+    expect(PosthogWebClient.screenClassFor(600), 'tablet');
+    expect(PosthogWebClient.screenClassFor(1023), 'tablet');
+    expect(PosthogWebClient.screenClassFor(1024), 'desktop');
+    expect(PosthogWebClient.screenClassFor(0), 'ponsel');
+    expect(PosthogWebClient.screenClassFor(1023.9), 'tablet');
+    expect(PosthogWebClient.screenClassFor(5000), 'desktop');
   });
 }

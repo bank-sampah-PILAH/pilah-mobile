@@ -25,6 +25,14 @@ void main() {
         returnsNormally);
   });
 
+  test('NoopAnalyticsClient ignores identity', () {
+    final client = NoopAnalyticsClient();
+
+    expect(() => client.identify('user-1'), returnsNormally);
+    expect(() => client.register({'peran': 'pengelola'}), returnsNormally);
+    expect(client.reset, returnsNormally);
+  });
+
   test('createAnalyticsClient returns the no-op client when analytics is off',
       () {
     expect(createAnalyticsClient(null), isA<NoopAnalyticsClient>());

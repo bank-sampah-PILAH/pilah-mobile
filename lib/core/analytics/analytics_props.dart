@@ -85,6 +85,9 @@ abstract final class AnalyticsProps {
   };
 
   static final _email = RegExp(r'[^\s@]+@[^\s@]+\.[^\s@]+');
+  static final _uuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
   static final _phoneShaped = RegExp(r'^[+\d\s\-().]+$');
 
   /// [properties] without the null values, or a failed assertion for a name
@@ -104,6 +107,16 @@ abstract final class AnalyticsProps {
     return clean;
   }
 
+  /// [id] as the name analytics knows a user by, or a failed assertion if it is
+  /// empty or looks like an email address or a phone number. In a release build
+  /// that returns null instead, so nobody is identified by it.
+  static String? cleanId(String id) {
+    final problem = id.isEmpty ? 'it is empty' : _problemWithText(id);
+    final clean = problem == null ? id : null;
+    assert(clean != null, 'Analytics id refused: $problem');
+    return clean;
+  }
+
   static String? _problemWith(String name, Object value) {
     if (!allowed.contains(name)) return 'the name is not on the allowed list';
     if (value is List) {
@@ -120,6 +133,8 @@ abstract final class AnalyticsProps {
   }
 
   static String? _problemWithText(String text) {
+    // A uuid made only of digits would otherwise pass for a phone number.
+    if (_uuid.hasMatch(text)) return null;
     if (_email.hasMatch(text)) return 'it looks like an email address';
     final digits = text.replaceAll(RegExp(r'\D'), '');
     if (digits.length >= 9 && _phoneShaped.hasMatch(text)) {
