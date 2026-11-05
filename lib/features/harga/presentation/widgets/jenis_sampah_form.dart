@@ -135,6 +135,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
       // generasinya naik supaya hasil tadi tidak lagi menyentuh form ini.
       _isSaving = false;
       _generasiBaris++;
+      // The form of the previous row was left, and this one is a new opening.
       _analytics.opened(editing: _isEditMode);
     }
   }
@@ -169,6 +170,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
 
   @override
   void dispose() {
+    _analytics.closed();
     _disposeControllers();
     super.dispose();
   }
@@ -408,11 +410,17 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
     if (!confirmed || !mounted) return;
 
     setState(() => _isSaving = true);
+    final flow = _analytics.sending();
     final error = wasActive
         ? await notifier.deactivateHarga(id)
         : await notifier.activateHarga(id);
     // The change happened whether or not the panel is still showing it.
-    if (error == null) hargaStatusChanged(client, activated: !wasActive);
+    if (error == null) {
+      hargaStatusChanged(client, activated: !wasActive);
+      _analytics.finished(flow);
+    } else {
+      _analytics.sendFailed(flow);
+    }
     if (!mounted) {
       if (error == null) _kabarkanTanpaForm(_pesanStatus(wasActive));
       return;
@@ -456,10 +464,17 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
   }
 
   /// A save is counted even when the panel has moved on: it did happen.
-  void _countSave(Object? error, bool editing, bool priceChanged, String kind) {
-    if (error != null) return;
+  void _countSave(HargaFormFlow? flow, Object? error, bool editing,
+      bool priceChanged, String kind) {
+    if (error != null) {
+      _analytics.sendFailed(flow);
+      return;
+    }
     _analytics.saved(
-        editing: editing, priceChanged: priceChanged, category: kind);
+        flow: flow,
+        editing: editing,
+        priceChanged: priceChanged,
+        category: kind);
   }
 
   Future<void> _handleSimpan() async {
@@ -494,6 +509,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
     final generasi = _generasiBaris;
 
     setState(() => _isSaving = true);
+    final flow = _analytics.sending();
     var error = isEditMode
         ? await notifier.updateHarga(harga)
         : await notifier.addHarga(harga);
@@ -507,7 +523,7 @@ class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
       ));
       hanyaHargaGagal = error != null;
     }
-    _countSave(error, isEditMode, hargaBerubah, harga.category);
+    _countSave(flow, error, isEditMode, hargaBerubah, harga.category);
     if (!mounted) {
       if (error == null) {
         _kabarkanTanpaForm(pesanSimpanJenis(

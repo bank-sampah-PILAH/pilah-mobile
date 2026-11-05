@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
-import 'package:pilah_mobile/features/harga/analytics/harga_analytics.dart';
+import 'package:pilah_mobile/core/analytics/search_analytics.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -83,34 +83,55 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
 
   HargaEntity? get _selected => _editing ?? _viewing;
 
-  /// Waits for typing to stop before a search is reported, because the list
-  /// filters on every key and each key is not a search.
+  /// The session of searching the list, from the first words to the row opened.
+  late final SearchAnalytics _search;
+
+  /// Waits for typing to stop before the results are reported, because the list
+  /// filters on every key and each key is not a try.
   Timer? _searchReport;
 
   static const _searchReportDelay = Duration(seconds: 1);
 
-  void _reportSearchLater(String query) {
+  void _searchChanged(String query) {
+    _search.queryChanged(query);
     _searchReport?.cancel();
-    if (query.trim().length < 2) return;
-    _searchReport = Timer(_searchReportDelay, () {
-      final state = ref.read(hargaProvider);
-      if (state is! HargaLoaded || state.searchQuery != query) return;
-      hargaSearched(
-        ref.read(analyticsClientProvider),
-        resultCount: state.jenisSampahList.length,
-      );
-    });
+    if (query.trim().length < SearchAnalytics.minLength) return;
+    _searchReport = Timer(_searchReportDelay, _reportResults);
+  }
+
+  /// Reports what the current words found, if they have not been reported yet.
+  void _reportResults() {
+    _searchReport?.cancel();
+    final state = ref.read(hargaProvider);
+    if (state is! HargaLoaded) return;
+    _search.resultsSettled(
+      query: state.searchQuery,
+      count: state.jenisSampahList.length,
+    );
+  }
+
+  /// A row of the list was opened. When the list is showing a search, that is
+  /// the row it led to; the try that was still waiting is reported first.
+  void _searchPicked(HargaEntity item) {
+    final state = ref.read(hargaProvider);
+    if (state is! HargaLoaded) return;
+    final index = state.jenisSampahList.indexWhere((e) => e.id == item.id);
+    if (index < 0) return;
+    _reportResults();
+    _search.picked(position: index + 1);
   }
 
   @override
   void dispose() {
     _searchReport?.cancel();
+    _search.closed();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    _search = SearchAnalytics(ref.read(analyticsClientProvider), area: 'harga');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(hargaProvider.notifier).loadHarga();
     });
@@ -166,6 +187,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
   /// bawahnya. Mengedit dan melihat riwayat harga adalah dua pilihan di dalam
   /// detail itu.
   void _openDetail(HargaEntity item) {
+    _searchPicked(item);
     if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
       setState(() {
         _viewing = item;
@@ -242,7 +264,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
       hintText: 'Cari jenis sampah...',
       onChanged: (value) {
         ref.read(hargaProvider.notifier).searchHarga(value);
-        _reportSearchLater(value);
+        _searchChanged(value);
       },
     );
     return Padding(

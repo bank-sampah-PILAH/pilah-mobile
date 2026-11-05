@@ -159,6 +159,26 @@ void main() {
           ['harga_form_dibuka', 'harga_disimpan']);
     });
 
+    test('changing the status of the jenis is not a cancelled form', () {
+      sequenced.opened(editing: true);
+      final flow = sequenced.sending();
+      sequenced.finished(flow);
+
+      sequenced.closed();
+
+      expect(client.events.map((e) => e.name), ['harga_form_dibuka']);
+    });
+
+    test('a status change refused and then leaving is a cancellation', () {
+      sequenced.opened(editing: true);
+      final flow = sequenced.sending();
+      sequenced.sendFailed(flow);
+
+      sequenced.closed();
+
+      expect(client.events.last.name, 'harga_dibatalkan');
+    });
+
     test('a save that lands after the panel moved belongs to its own flow', () {
       sequenced.opened(editing: true);
       final first = sequenced.sending();
