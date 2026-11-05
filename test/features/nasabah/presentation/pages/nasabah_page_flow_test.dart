@@ -120,6 +120,48 @@ void main() {
         hasLength(1));
   });
 
+  testWidgets('leaving the list ends the search, and coming back is a new one',
+      (tester) async {
+    listAs([nasabahRow('1')]);
+    final shown = ValueNotifier(true);
+    addTearDown(shown.dispose);
+    await pumpRouted(
+      tester,
+      // ignore: prefer_const_constructors
+      NasabahPage(),
+      // The shell keeps the list of a tab that is not shown, with its tickers
+      // off.
+      wrap: (app) => ValueListenableBuilder<bool>(
+        valueListenable: shown,
+        builder: (_, on, __) => TickerMode(
+          enabled: on,
+          child: withNasabahProvider(notifier, app, analytics: analytics),
+        ),
+      ),
+      size: const Size(590, 2000),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'budi');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+    final firstFlow = analytics.events.first.properties['alur_id'];
+
+    shown.value = false;
+    await tester.pump();
+    expect(analytics.events.last.name, 'pencarian_ditinggalkan');
+
+    shown.value = true;
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).first, 'budis');
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
+    await tester.pumpAndSettle();
+
+    final again =
+        analytics.events.lastWhere((e) => e.name == 'pencarian_hasil');
+    expect(again.properties['percobaan_ke'], 1);
+    expect(again.properties['alur_id'], isNot(firstFlow));
+  });
+
   testWidgets('a one-letter search is not reported', (tester) async {
     listAs([nasabahRow('1')]);
     await open(tester);
