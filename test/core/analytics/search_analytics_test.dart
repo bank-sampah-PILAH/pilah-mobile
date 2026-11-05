@@ -121,8 +121,7 @@ void main() {
     expect(last()['percobaan_ke'], 2);
   });
 
-  test('choosing a row ends the session and says where it was in the list',
-      () {
+  test('choosing a row ends the session and says where it was in the list', () {
     search.queryChanged('sit');
     search.resultsSettled(query: 'sit', count: 12);
     after(9);
