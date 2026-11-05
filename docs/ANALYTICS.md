@@ -2,8 +2,8 @@
 
 PILAH sends a small number of events to PostHog so the team can see where
 pengurus slow down, give up, or run into errors. **The screen is recorded on
-Android, iOS and the web, with every text and image hidden** (see "Screen
-recording" below). Events say *what* a pengurus did (which step, how long, how many, what went
+Android, iOS and the web, with personal data hidden and only the fixed labels of
+the app readable** (see "Screen recording" below). Events say *what* a pengurus did (which step, how long, how many, what went
 wrong), never *who* they are or what was on their screen.
 
 Nothing is sent until a pengurus has agreed in the consent dialog, and nothing
@@ -82,9 +82,10 @@ below.
 The mobile apps also record the screen (PIL-473), so the team can open the
 session of a pengurus who got stuck and see what went wrong. The recording is
 masked: `maskAllTexts` and `maskAllImages` are on, so every text, icon and image
-is a black block and only layout and where the finger touched are visible. No
-name, balance, address, photo, email or phone number can be read in it. Do not
-turn those off.
+is a black block, except what is revealed on purpose (below). No name, balance,
+address, photo, email or phone number can be read in it. Do not turn those off.
+The consent text says the same: personal data is masked and the fixed labels of
+the app stay visible. It must never say that only the layout is visible.
 
 Three things are shown on purpose, so a viewer can tell which screen and which
 step it is: field captions (`AppFieldLabel`), page and sheet titles
@@ -110,7 +111,12 @@ for anything new that draws figures itself.
   nor network requests are recorded: a debug build prints what the server
   answered in the console, and that holds names. Proven on 5 Nov 2026 by
   decoding the `$snapshot` frames of a real session: every text and icon was a
-  black box, and no name or email was found in the payload.
+  black box, and no name or email was found in the payload. The recording does
+  not carry the route of the page: no rrweb Meta event and no `#/…` route were
+  found in the frames. It does carry the site's origin and the addresses of its
+  static files, as part of the recorded page structure (`<base href>`, script
+  and icon links), so the consent text says the route is not sent but the site
+  address and its files are recorded.
 - posthog-js treats a headless browser as a bot and drops every event, so an
   automated check must run with a normal user agent.
 - The recorder (`PostHogWidget`) is put around the app by
