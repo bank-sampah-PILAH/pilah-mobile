@@ -39,12 +39,14 @@ TestJadwalNotifier _notifier(
   JadwalState state, {
   Future<NetworkException?> Function(String id, String action)? onChangeStatus,
   Future<NetworkException?> Function(JadwalEntity)? onSave,
+  bool busy = false,
 }) =>
     TestJadwalNotifier(
       repository: UnusedJadwalRepository(),
       initialState: state,
       onChangeStatus: onChangeStatus,
       onSaveJadwal: onSave,
+      busy: busy,
     );
 
 void main() {
@@ -217,6 +219,26 @@ void main() {
         analytics.events.singleWhere((e) => e.name == 'jadwal_status_diubah');
     expect(changed.properties,
         {'aksi': 'terbitkan', 'status_sebelumnya': 'draft'});
+  });
+
+  testWidgets('a status change skipped because one is running is not reported',
+      (tester) async {
+    var asked = false;
+    await tester.pumpWidget(_app(
+      _notifier(JadwalLoaded([_schedule()]), busy: true,
+          onChangeStatus: (_, __) async {
+        asked = true;
+        return null;
+      }),
+      analytics,
+    ));
+    await tester.pump();
+
+    await tester.tap(find.text('Terbitkan'));
+    await tester.pumpAndSettle();
+
+    expect(asked, isFalse);
+    expect(names(), isNot(contains('jadwal_status_diubah')));
   });
 
   testWidgets('a status change the server refuses is not reported',
