@@ -250,6 +250,9 @@ class PosthogWebClient implements AnalyticsClient {
         // capture of clicks or page views, no heatmaps. Load time is the one
         // automatic measurement kept, to see how slow the app is to open.
         'disable_session_recording': !recordScreen,
+        // The recording never carries the browser console: a debug build prints
+        // what the server answered there, and that holds names.
+        if (recordScreen) 'enable_recording_console_log': false,
         'autocapture': false,
         'capture_pageview': false,
         'enable_heatmaps': false,
