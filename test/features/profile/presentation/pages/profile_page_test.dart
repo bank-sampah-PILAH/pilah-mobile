@@ -581,6 +581,39 @@ void main() {
     expect(urls, contains('https://img.test/logo.png'));
   });
 
+  for (final size in [const Size(390, 844), const Size(1280, 900)]) {
+    testWidgets('invite actions share a row with distinct colors at $size',
+        (tester) async {
+      api.on('GET', '/api/v1/team/invite', json: {
+        'token': 'abc',
+        'invite_url': 'https://pilah.test/invite/abc',
+        'expires_at': DateTime.now()
+            .add(const Duration(days: 3))
+            .toUtc()
+            .toIso8601String(),
+      });
+      await openPage(tester, size: size, isWeb: size.width > 600);
+      await tester.tap(find.text('Manajemen Tim'));
+      await tester.pumpAndSettle();
+
+      final copy = find.widgetWithText(AppButton, 'Salin Link Undangan');
+      final replace = find.widgetWithText(AppButton, 'Buat Link Baru');
+      final copyRect = tester.getRect(copy);
+      final replaceRect = tester.getRect(replace);
+      expect(copyRect.top, replaceRect.top,
+          reason: 'both actions share the same row');
+      expect(copyRect.width, closeTo(replaceRect.width, 0.01));
+      expect(replaceRect.left - copyRect.right, greaterThanOrEqualTo(8));
+      expect(copyRect.height, greaterThanOrEqualTo(48));
+      expect(replaceRect.height, greaterThanOrEqualTo(48));
+      expect(tester.widget<AppButton>(copy).variant, AppButtonVariant.tonal);
+      expect(
+          tester.widget<AppButton>(replace).variant, AppButtonVariant.neutral);
+      expect(find.text('Salin Link Undangan Baru'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('the team tab copies only the currently stored invite',
       (tester) async {
     final expiry = DateTime.now().add(const Duration(days: 3)).toUtc();
@@ -718,7 +751,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.last.method, 'POST');
     expect(find.text('https://pilah.test/invite/new-token'), findsOneWidget);
-    expect(find.text('Salin Link Undangan Baru'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsOneWidget);
   });
 
   testWidgets('inactive bank cannot create an invite', (tester) async {
