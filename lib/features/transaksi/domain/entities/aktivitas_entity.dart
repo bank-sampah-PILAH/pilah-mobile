@@ -34,6 +34,16 @@ class ActivitasEntity {
   final TransaksiEntity? transaksi;
   final Pencairan? pencairan;
 
+  /// Selection eligibility only. PIL-428 still checks saldo and payout history
+  /// on submission; an active setoran is not guaranteed to be voidable.
+  bool get isSelectableSetoran {
+    final setoran = transaksi;
+    return tipe == ActivitasTipe.setoran &&
+        setoran != null &&
+        setoran.id.isNotEmpty &&
+        !setoran.isDibatalkan;
+  }
+
   const ActivitasEntity({
     required this.tipe,
     required this.tanggal,
@@ -61,6 +71,9 @@ class ActivitasEntity {
       title: t.name,
       subtitleLines: [t.subtitle],
       amount: t.amount,
+      // Dibatalkan: still listed, but grey so it does not read as money in.
+      amountColor: t.isDibatalkan ? AppColors.grey100 : null,
+      badge: t.isDibatalkan ? 'Dibatalkan' : null,
       trailingCaptions: t.tanggal != null
           ? _timestamp(t.tanggal!)
           : [if (t.time != null) t.time!],

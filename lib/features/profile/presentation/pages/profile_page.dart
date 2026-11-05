@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -8,6 +10,7 @@ import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +19,9 @@ import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_consent_card.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
@@ -29,6 +35,7 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/analytics/profile_analytics.dart';
 import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
@@ -83,6 +90,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   bool _bankSeeded = false;
   // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
+  Timer? _inviteCountdownTimer;
+  Timer? _inviteExpiryTimer;
+  String? _expiredInviteUrl;
 
   /// Di browser halaman ini berada di dalam shell dengan rail, bukan didorong
   /// di atasnya, jadi memakai gutter dan judul halaman tab web.
@@ -114,6 +124,18 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     if (mounted) setState(() {});
   }
 
+  /// The settings that differ from what was last saved, by their fixed names.
+  Set<ProfileSettingsField> get _changedFields => {
+        if (_namaBankController.text != _baseNama)
+          ProfileSettingsField.bankName,
+        if (_alamatBankController.text != _baseAlamat)
+          ProfileSettingsField.address,
+        if (_hpBankController.text != _baseHp) ProfileSettingsField.phone,
+        if (ref.read(profileProvider).selectedLogoBytes != null)
+          ProfileSettingsField.logo,
+        if (_waController.text != _baseWa) ProfileSettingsField.waTemplate,
+      };
+
   void _markSaved() {
     _baseWa = _waController.text;
     _baseNama = _namaBankController.text;
@@ -131,6 +153,13 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
 
     // Seed cached state before refreshing so revisits keep their form values.
     _seed(ref.read(profileProvider));
+    _scheduleInviteExpiry(ref.read(profileProvider).invite);
+    _inviteCountdownTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) {
+        if (mounted) setState(() {});
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(profileProvider.notifier).load(silent: true);
     });
@@ -152,6 +181,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     _namaBankController.dispose();
     _alamatBankController.dispose();
     _hpBankController.dispose();
+    _inviteCountdownTimer?.cancel();
+    _inviteExpiryTimer?.cancel();
     super.dispose();
   }
 
@@ -244,6 +275,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   Future<void> _onSaveSettings() async {
     if (!(_bankFormKey.currentState?.validate() ?? false)) return;
     final cubit = ref.read(profileProvider.notifier);
+    final changed = _changedFields;
+    final analytics = ref.read(analyticsClientProvider);
 
     // One flag for the whole save rather than the provider's `isSavingTemplate`,
     // which only covers the template write: the bank profile is saved first, and
@@ -271,7 +304,10 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     // user made purely for the bank fields.
     final waErr = await cubit.saveWaTemplate(_waController.text.trim());
     if (!mounted) return;
-    if (waErr == null) _markSaved();
+    if (waErr == null) {
+      profileSettingsSaved(analytics, changed);
+      _markSaved();
+    }
     setState(() => _isSavingSettings = false);
     _snack(
       waErr == null ? 'Pengaturan berhasil disimpan' : waErr.displayMessage,
@@ -292,24 +328,190 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     }
   }
 
-  Future<void> _onCopyInvite() async {
-    final (:url, :error) =
-        await ref.read(profileProvider.notifier).generateInvite();
+  Future<void> _onCopyInvite(TeamInvite invite) async {
+    final state = ref.read(profileProvider);
+    if (state.inviteError != null) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
+      _snack(state.inviteError!, error: true);
+      return;
+    }
+    if (!invite.isValid || _expiredInviteUrl == invite.url) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
+      _snack('Link undangan sudah kedaluwarsa. Buat link baru untuk dibagikan.',
+          error: true);
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: invite.url!));
+    if (!mounted) return;
+    inviteLinkCopied(ref.read(analyticsClientProvider), success: true);
+    _snack('Link undangan disalin ke clipboard!');
+  }
+
+  Future<void> _onCreateInvite(TeamInvite? currentInvite) async {
+    if (currentInvite != null) {
+      final confirmed = await showAppConfirmDialog(
+        context,
+        title: 'Ganti link undangan?',
+        message: 'Link baru akan langsung membatalkan link undangan lama yang '
+            'mungkin masih dibagikan. Lanjutkan?',
+        confirmLabel: 'Ganti Link',
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    final error = await ref.read(profileProvider.notifier).createInvite();
     if (!mounted) return;
     if (error != null) {
       _snack(error.displayMessage, error: true);
       return;
     }
-    await Clipboard.setData(ClipboardData(text: url ?? ''));
-    if (!mounted) return;
-    _snack('Link undangan disalin ke clipboard!');
+    final created = ref.read(profileProvider).invite;
+    if (created?.isValid == true) {
+      _snack('Link undangan baru berhasil dibuat');
+    }
+  }
+
+  void _scheduleInviteExpiry(TeamInvite? invite) {
+    _inviteExpiryTimer?.cancel();
+    _expiredInviteUrl = null;
+    final expiresAt = invite?.expiresAt;
+    final url = invite?.url;
+    if (expiresAt == null || url == null) return;
+    final delay = expiresAt.difference(DateTime.now());
+    _inviteExpiryTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+      if (mounted) setState(() => _expiredInviteUrl = url);
+    });
+  }
+
+  String _remainingInviteTime(DateTime expiresAt) {
+    final remaining = expiresAt.difference(DateTime.now());
+    if (remaining.isNegative || remaining.inSeconds == 0) return 'Kedaluwarsa';
+    if (remaining.inHours >= 24) {
+      return 'Tersisa ${(remaining.inHours + 23) ~/ 24} hari';
+    }
+    if (remaining.inHours > 0) {
+      return 'Tersisa ${(remaining.inMinutes + 59) ~/ 60} jam';
+    }
+    return 'Tersisa ${((remaining.inSeconds + 59) ~/ 60).clamp(1, 59)} menit';
+  }
+
+  Widget _buildInviteActions(ProfileState state) {
+    final bankStatus = state.bankSampah?.status.toLowerCase();
+    if (bankStatus != 'active') {
+      return Text(
+        bankStatus == 'pending'
+            ? 'Undangan tersedia setelah bank sampah disetujui.'
+            : 'Undangan hanya tersedia untuk bank sampah yang aktif.',
+        style: AppTextStyle.small.copyWith(color: Colors.white),
+      );
+    }
+
+    if (state.isLoadingInvite) {
+      return Text('Memuat link undangan…',
+          style: AppTextStyle.small.copyWith(color: Colors.white));
+    }
+    if (state.inviteError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(state.inviteError!,
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Coba Lagi',
+            variant: AppButtonVariant.outlined,
+            onPressed: () =>
+                ref.read(profileProvider.notifier).load(silent: true),
+          ),
+        ],
+      );
+    }
+
+    final invite = state.invite;
+    if (invite == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Belum ada link undangan.',
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Buat Link Undangan',
+            variant: AppButtonVariant.outlined,
+            isLoading: state.isCreatingInvite,
+            onPressed:
+                state.isCreatingInvite ? null : () => _onCreateInvite(null),
+          ),
+        ],
+      );
+    }
+
+    return _buildStoredInviteActions(state, invite);
+  }
+
+  Widget _buildStoredInviteActions(ProfileState state, TeamInvite invite) {
+    final valid = invite.isValid && _expiredInviteUrl != invite.url;
+    final expiresAt = invite.expiresAt;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          valid
+              ? 'Link undangan aktif'
+              : 'Link undangan sudah kedaluwarsa. Buat link baru untuk membagikan undangan.',
+          style: AppTextStyle.small.copyWith(color: Colors.white),
+        ),
+        if (valid && invite.url != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          SelectableText(invite.url!,
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          if (expiresAt != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '${_remainingInviteTime(expiresAt)} · Berlaku sampai ${DateFormat('dd/MM/yyyy HH:mm').format(expiresAt.toLocal())}',
+              style: AppTextStyle.small.copyWith(color: Colors.white),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+        ],
+        Row(
+          children: [
+            if (valid && invite.url != null) ...[
+              Expanded(
+                child: AppButton(
+                  label: 'Salin Link Undangan',
+                  variant: AppButtonVariant.tonal,
+                  icon: Icons.copy,
+                  onPressed: () => _onCopyInvite(invite),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            Expanded(
+              child: AppButton(
+                label: 'Buat Link Baru',
+                variant:
+                    valid ? AppButtonVariant.neutral : AppButtonVariant.tonal,
+                isLoading: state.isCreatingInvite,
+                onPressed: state.isCreatingInvite
+                    ? null
+                    : () => _onCreateInvite(valid ? invite : null),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   // ── Build ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(profileProvider, (_, next) => _seed(next));
+    ref.listen(profileProvider, (_, next) {
+      _seed(next);
+      _scheduleInviteExpiry(next.invite);
+    });
     ref.listen(authenticationProvider, (_, state) {
       _onLoggedOut(context, state);
     });
@@ -502,7 +704,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
 
   /// Kartu akun berisi identitas. Web sempit menaruh Keluar di bawah identitas;
   /// desktop menaruhnya di samping, dan aplikasi tetap menaruhnya di bawah.
-  Widget _buildAccountCard(String name, AuthEntity? auth) {
+  Widget _buildAccountCard(String name, AuthEntity? auth, String? logoUrl) {
     final email = auth?.email.trim() ?? '';
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -513,6 +715,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             CircleAvatar(
               radius: 28,
               backgroundColor: AppColors.greenLight,
+              foregroundImage: (logoUrl?.isNotEmpty ?? false)
+                  ? NetworkImage(logoUrl!)
+                  : null,
+              onForegroundImageError:
+                  (logoUrl?.isNotEmpty ?? false) ? (_, __) {} : null,
               child: Text(
                 _initials(name),
                 style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
@@ -605,7 +812,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name =
         (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
-    final accountCard = _buildAccountCard(name, auth);
+    final accountCard =
+        _buildAccountCard(name, auth, state.bankSampah?.fotoLogo);
     final bankProfile = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -690,6 +898,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       bankProfile,
                       const SizedBox(height: 32),
                       whatsappTemplate,
+                    ],
+                    // Only where it applies, so a hidden card leaves no gap.
+                    if (ref.watch(analyticsToggleVisibleProvider)) ...[
+                      const SizedBox(height: 32),
+                      const AnalyticsConsentCard(),
                     ],
                     if (!_webShell) ...[
                       const SizedBox(height: 32),
@@ -874,19 +1087,14 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
+                        'Undang pengurus lain untuk bergabung ke bank sampah Anda.',
                         style: AppTextStyle.small.copyWith(
                           color: Colors.white.withValues(alpha: 0.8),
                           height: 1.4,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      AppButton(
-                        label: 'Salin Link Undangan',
-                        variant: AppButtonVariant.outlined,
-                        icon: Icons.copy,
-                        onPressed: _onCopyInvite,
-                      ),
+                      _buildInviteActions(state),
                     ],
                   ),
                 ),

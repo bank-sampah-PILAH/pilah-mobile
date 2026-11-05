@@ -31,7 +31,7 @@ void main() {
           loginPath: '/login',
           role: 'nasabah',
         ),
-        '/login',
+        '/login?$webRoleBounceFlag=1',
       );
       expect(
         webRoleRedirect(
@@ -364,6 +364,31 @@ void main() {
 
     test('does nothing while a session exists', () {
       expect(signedOutRedirect(signedOut: false, path: '/dashboard'), isNull);
+    });
+  });
+
+  group('WebRoleBounceNotice', () {
+    test('is consumed once, then stays quiet for the next navigation', () {
+      WebRoleBounceNotice.reset();
+      expect(WebRoleBounceNotice.consume(), isFalse,
+          reason: 'nothing armed yet');
+
+      WebRoleBounceNotice.arm();
+      expect(WebRoleBounceNotice.consume(), isTrue,
+          reason: 'the armed bounce is reported exactly once');
+      expect(WebRoleBounceNotice.consume(), isFalse,
+          reason: 'a later manual login must not replay the toast');
+    });
+
+    test('stays silent off the web even when armed', () {
+      WebRoleBounceNotice.arm();
+      addTearDown(WebRoleBounceNotice.reset);
+      expect(WebRoleBounceNotice.consume(isWeb: false), isFalse);
+      // The flag is left armed: the native app still counts as a bounce
+      // consumer if it later consumes on a web surface.
+      expect(WebRoleBounceNotice.consume(), isTrue);
+      WebRoleBounceNotice.reset();
+      expect(WebRoleBounceNotice.consume(), isFalse);
     });
   });
 }

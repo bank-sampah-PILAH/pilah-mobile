@@ -1,10 +1,14 @@
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_search_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
@@ -47,6 +51,7 @@ class NasabahListItem extends ConsumerWidget {
       nasabah.id.isNotEmpty ? nasabah.id : nasabah.idNasabah;
 
   void _onTap(BuildContext context, WidgetRef ref) {
+    nasabahSearchPicked(ref, nasabah.id);
     if (isPending) {
       _showDecisionDialog(context, ref);
       return;
@@ -63,10 +68,12 @@ class NasabahListItem extends ConsumerWidget {
   /// any await so notifications survive the list reload rebuilding this item.
   Future<void> _showDecisionDialog(BuildContext context, WidgetRef ref) async {
     final notifier = ref.read(nasabahProvider.notifier);
+    final analytics = ref.read(analyticsClientProvider);
     final overlayContext = Navigator.of(context, rootNavigator: true).context;
 
     final reject = await _showActionSheet(context);
     if (reject == null || !context.mounted) return;
+    final opened = Stopwatch()..start();
     final catatan = await showNasabahApprovalDialog(
       context,
       isApproving: !reject,
@@ -78,6 +85,9 @@ class NasabahListItem extends ConsumerWidget {
       approve: !reject,
       catatan: catatan,
     );
+    if (error == null) {
+      nasabahDecided(analytics, approved: !reject, sinceOpened: opened.elapsed);
+    }
     if (overlayContext.mounted && error != null) {
       AppNotification.showError(
         overlayContext,
@@ -183,7 +193,14 @@ class NasabahListItem extends ConsumerWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'ID: ${nasabah.idNasabah}',
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey200),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   phone,
                   style: AppTextStyle.small.copyWith(color: AppColors.grey200),

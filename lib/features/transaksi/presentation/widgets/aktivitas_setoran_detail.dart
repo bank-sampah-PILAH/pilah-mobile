@@ -139,11 +139,18 @@ class _AktivitasSetoranDetailState extends State<AktivitasSetoranDetail> {
                 ],
               ),
             ),
-          if (detail.balanceFormatted.isNotEmpty)
+          // A voided setoran's saldo was computed without it (PIL-428).
+          if (detail.balanceFormatted.isNotEmpty && !detail.isDibatalkan)
             AppDetailRow(
               label: 'Saldo setelah transaksi',
               value: detail.balanceFormatted,
             ),
+          if (detail.isDibatalkan) ...[
+            const SizedBox(height: AppSpacing.md),
+            const AppFieldLabel('PEMBATALAN'),
+            const SizedBox(height: AppSpacing.sm),
+            _PembatalanCard(detail: detail),
+          ],
           if (detail.catatan.trim().isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             const AppFieldLabel('CATATAN'),
@@ -159,6 +166,41 @@ class _AktivitasSetoranDetailState extends State<AktivitasSetoranDetail> {
           ],
         ],
       );
+}
+
+/// Who voided the setoran, when and why (PIL-428).
+class _PembatalanCard extends StatelessWidget {
+  const _PembatalanCard({required this.detail});
+
+  final TransaksiDetailEntity detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final waktu = detail.dibatalkanPada;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            [
+              'Dibatalkan oleh ${detail.dibatalkanOlehNama}',
+              if (waktu != null) _RevisionCard._formatDate(waktu),
+            ].join(' • '),
+            style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Alasan: ${detail.alasanBatal}', style: AppTextStyle.small),
+        ],
+      ),
+    );
+  }
 }
 
 class _RevisionCard extends StatelessWidget {

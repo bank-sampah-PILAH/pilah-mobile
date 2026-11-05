@@ -3,6 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -18,6 +22,8 @@ import 'package:pilah_mobile/features/profile/presentation/providers/profile_pro
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 import '../../../../support/auth_support.dart';
+import '../../../../support/fake_analytics_client.dart';
+import '../../../../support/fake_app_storage.dart';
 import '../../../../support/image_picker_channel.dart';
 import '../../../../support/profile_support.dart';
 import '../../../../support/pump_app.dart';
@@ -52,6 +58,7 @@ void main() {
     bool? isWeb,
     bool pushed = true,
     List<String> extraRoutes = const [],
+    List<Override> extraOverrides = const [],
   }) async {
     await pumpRouted(
       tester,
@@ -63,6 +70,7 @@ void main() {
         overrides: [
           profileProvider.overrideWith(() => notifier),
           authenticationProvider.overrideWith(() => authNotifier ?? auth),
+          ...extraOverrides,
         ],
         child: app,
       ),
@@ -71,6 +79,74 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  group('recording consent', () {
+    late FakeAppStorage storage;
+    late FakeAnalyticsClient client;
+
+    setUp(() {
+      storage = FakeAppStorage();
+      client = FakeAnalyticsClient();
+    });
+
+    List<Override> analytics() => [
+          analyticsClientProvider.overrideWithValue(client),
+          analyticsConsentStoreProvider
+              .overrideWithValue(AnalyticsConsentStore(storage)),
+        ];
+
+    testWidgets('a pengurus can switch recording on and off from the profile',
+        (tester) async {
+      await openPage(tester,
+          size: const Size(1440, 900),
+          isWeb: true,
+          extraOverrides: analytics());
+
+      expect(find.text('Analitik penggunaan'), findsOneWidget);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+
+      // Where the switch lands depends on the fonts of the machine running the
+      // test, so scroll to it first.
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(client.calls, ['start']);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(client.calls, ['start', 'stop']);
+    });
+
+    testWidgets('sits below the bank profile and above Keluar on a phone',
+        (tester) async {
+      await openPage(tester,
+          size: const Size(390, 2400),
+          isWeb: false,
+          extraOverrides: analytics());
+
+      final card = tester.getTopLeft(find.text('Analitik penggunaan')).dy;
+      expect(card,
+          greaterThan(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dy));
+      expect(
+          card,
+          lessThan(tester
+              .getTopLeft(
+                  find.widgetWithText(AppButton, 'Keluar dari Aplikasi'))
+              .dy));
+    });
+
+    testWidgets('is not on the profile where nothing can record',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      expect(find.text('Analitik penggunaan'), findsNothing);
+      expect(find.byType(Switch), findsNothing);
+    });
+  });
 
   group('in the web shell', () {
     testWidgets('there is no back button: the rail is the way out',
@@ -581,10 +657,47 @@ void main() {
     expect(urls, contains('https://img.test/logo.png'));
   });
 
-  testWidgets('the team tab lists members and copies the invite link',
+  for (final size in [const Size(390, 844), const Size(1280, 900)]) {
+    testWidgets('invite actions share a row with distinct colors at $size',
+        (tester) async {
+      api.on('GET', '/api/v1/team/invite', json: {
+        'token': 'abc',
+        'invite_url': 'https://pilah.test/invite/abc',
+        'expires_at': DateTime.now()
+            .add(const Duration(days: 3))
+            .toUtc()
+            .toIso8601String(),
+      });
+      await openPage(tester, size: size, isWeb: size.width > 600);
+      await tester.tap(find.text('Manajemen Tim'));
+      await tester.pumpAndSettle();
+
+      final copy = find.widgetWithText(AppButton, 'Salin Link Undangan');
+      final replace = find.widgetWithText(AppButton, 'Buat Link Baru');
+      final copyRect = tester.getRect(copy);
+      final replaceRect = tester.getRect(replace);
+      expect(copyRect.top, replaceRect.top,
+          reason: 'both actions share the same row');
+      expect(copyRect.width, closeTo(replaceRect.width, 0.01));
+      expect(replaceRect.left - copyRect.right, greaterThanOrEqualTo(8));
+      expect(copyRect.height, greaterThanOrEqualTo(48));
+      expect(replaceRect.height, greaterThanOrEqualTo(48));
+      expect(tester.widget<AppButton>(copy).variant, AppButtonVariant.tonal);
+      expect(
+          tester.widget<AppButton>(replace).variant, AppButtonVariant.neutral);
+      expect(find.text('Salin Link Undangan Baru'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('the team tab copies only the currently stored invite',
       (tester) async {
-    api.on('POST', '/api/v1/team/invite',
-        json: {'invite_url': 'https://pilah.test/invite/abc'});
+    final expiry = DateTime.now().add(const Duration(days: 3)).toUtc();
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'abc',
+      'invite_url': 'https://pilah.test/invite/abc',
+      'expires_at': expiry.toIso8601String(),
+    });
     String? copied;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
@@ -606,27 +719,221 @@ void main() {
     expect(find.text('Pengurus'), findsWidgets);
     expect(find.text('Simpan Pengaturan'), findsNothing);
 
+    expect(find.text('Link undangan aktif'), findsOneWidget);
+    expect(find.textContaining('Tersisa 3 hari'), findsOneWidget);
+    await tester.pump(const Duration(minutes: 1));
     await tester.tap(find.text('Salin Link Undangan'));
     await pumpToast(tester);
 
     expect(copied, 'https://pilah.test/invite/abc');
+    expect(
+        api.requests
+            .where((request) => request.path == '/api/v1/team/invite')
+            .map((request) => request.method),
+        ['GET']);
     expect(find.text('Link undangan disalin ke clipboard!'), findsOneWidget);
+    await settleToasts(tester);
+
+    await tester.tap(find.text('Salin Link Undangan'));
+    await pumpToast(tester);
+    expect(copied, 'https://pilah.test/invite/abc');
+    expect(
+      api.requests
+          .where((request) => request.path == '/api/v1/team/invite')
+          .map((request) => request.method),
+      ['GET'],
+    );
+    await settleToasts(tester);
+
+    final staleCopy = tester
+        .widget<AppButton>(
+            find.widgetWithText(AppButton, 'Salin Link Undangan'))
+        .onPressed!;
+    notifier
+        .setStateForTest(notifier.state.copyWith(inviteError: 'Muat ulang'));
+    await tester.pump();
+    staleCopy();
+    await pumpToast(tester);
+    expect(find.text('Gagal'), findsOneWidget);
+    expect(find.text('Muat ulang'), findsWidgets);
     await settleToasts(tester);
   });
 
-  testWidgets('a failed invite shows the error and copies nothing',
+  testWidgets('invite expiry within a day shows rounded hours', (tester) async {
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'abc',
+      'invite_url': 'https://pilah.test/invite/abc',
+      'expires_at': DateTime.now()
+          .add(const Duration(hours: 2, minutes: 5))
+          .toUtc()
+          .toIso8601String(),
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Tersisa 3 jam'), findsOneWidget);
+  });
+
+  testWidgets('an invite expires while open and stale copy reports failure',
       (tester) async {
-    api.on('POST', '/api/v1/team/invite',
+    final expiresAt = DateTime.now().add(const Duration(seconds: 30)).toUtc();
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'short-lived-token',
+      'invite_url': 'https://pilah.test/invite/short-lived-token',
+      'expires_at': expiresAt.toIso8601String(),
+    });
+    String? copied;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String?;
+      }
+      return null;
+    });
+    addTearDown(() => TestDefaultBinaryMessengerBinding
+        .instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    final staleCopy = tester
+        .widget<AppButton>(
+            find.widgetWithText(AppButton, 'Salin Link Undangan'))
+        .onPressed!;
+    expect(find.text('Link undangan aktif'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 31));
+    expect(
+        find.textContaining('Link undangan sudah kedaluwarsa'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+    staleCopy();
+    await pumpToast(tester);
+
+    expect(copied, isNull);
+    expect(find.text('Gagal'), findsOneWidget);
+    expect(find.textContaining('sudah kedaluwarsa'), findsWidgets);
+    await settleToasts(tester);
+  });
+
+  testWidgets('invite loading state is shown while loading', (tester) async {
+    await openPage(tester);
+    notifier.setStateForTest(notifier.state.copyWith(isLoadingInvite: true));
+    await tester.pump();
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Memuat link undangan…'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+  });
+
+  testWidgets('a failed invite load shows the error and offers retry',
+      (tester) async {
+    api.on('GET', '/api/v1/team/invite',
         status: 403, json: {'error': 'Hanya pengelola utama'});
     await openPage(tester);
 
     await tester.tap(find.text('Manajemen Tim'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Salin Link Undangan'));
-    await pumpToast(tester);
-
     expect(find.text('Hanya pengelola utama'), findsOneWidget);
-    await settleToasts(tester);
+    expect(find.text('Coba Lagi'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': null,
+      'invite_url': null,
+      'expires_at': null,
+    });
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hanya pengelola utama'), findsNothing);
+    expect(find.text('Belum ada link undangan.'), findsOneWidget);
+  });
+
+  testWidgets('creating a new link warns before invalidating the old one',
+      (tester) async {
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'old-token',
+      'invite_url': 'https://pilah.test/invite/old-token',
+      'expires_at':
+          DateTime.now().add(const Duration(days: 2)).toUtc().toIso8601String(),
+    });
+    api.on('POST', '/api/v1/team/invite', json: {
+      'token': 'new-token',
+      'invite_url': 'https://pilah.test/invite/new-token',
+      'expires_at':
+          DateTime.now().add(const Duration(days: 3)).toUtc().toIso8601String(),
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Buat Link Baru'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('langsung membatalkan link undangan lama'),
+        findsOneWidget);
+    expect(api.requests.where((request) => request.method == 'POST'), isEmpty);
+
+    await tester.tap(find.text('Ganti Link'));
+    await tester.pumpAndSettle();
+    expect(api.last.method, 'POST');
+    expect(find.text('https://pilah.test/invite/new-token'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsOneWidget);
+  });
+
+  testWidgets('a failed invite creation shows the API error', (tester) async {
+    api.on('POST', '/api/v1/team/invite',
+        status: 403, json: {'error': 'Tidak diizinkan'});
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Buat Link Undangan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tidak diizinkan'), findsOneWidget);
+  });
+
+  testWidgets('expired invite replacement skips the stale-link warning',
+      (tester) async {
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'expired-token',
+      'invite_url': 'https://pilah.test/invite/expired-token',
+      'expires_at': DateTime.now()
+          .subtract(const Duration(hours: 1))
+          .toUtc()
+          .toIso8601String(),
+    });
+    api.on('POST', '/api/v1/team/invite', json: {
+      'token': 'new-token',
+      'invite_url': 'https://pilah.test/invite/new-token',
+      'expires_at':
+          DateTime.now().add(const Duration(days: 3)).toUtc().toIso8601String(),
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.textContaining('Link undangan sudah kedaluwarsa'), findsOneWidget);
+    await tester.tap(find.text('Buat Link Baru'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ganti link undangan?'), findsNothing);
+    expect(api.last.method, 'POST');
+    expect(find.text('https://pilah.test/invite/new-token'), findsOneWidget);
+  });
+
+  testWidgets('inactive bank cannot create an invite', (tester) async {
+    stubProfile(api, bank: {...bankJson(), 'status': 'pending'});
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Undangan tersedia setelah bank sampah disetujui.'),
+        findsOneWidget);
+    expect(find.text('Buat Link Undangan'), findsNothing);
+    expect(api.requests.where((request) => request.method == 'POST'), isEmpty);
   });
 
   testWidgets('only the primary pengelola can invite; empty roster note',
@@ -638,6 +945,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Salin Link Undangan'), findsNothing);
+    expect(find.text('Buat Link Undangan'), findsNothing);
     expect(
         find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });

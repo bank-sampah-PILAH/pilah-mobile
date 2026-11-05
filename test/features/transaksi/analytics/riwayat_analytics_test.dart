@@ -1,0 +1,42 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
+
+import '../../../support/fake_analytics_client.dart';
+
+void main() {
+  late FakeAnalyticsClient client;
+  setUp(() => client = FakeAnalyticsClient());
+
+  Map<String, Object> last() => client.events.last.properties;
+
+  test('a filter change names the kind of filter and its class of value', () {
+    riwayatFilterChanged(client, RiwayatFilterKind.periode, value: 'hari_ini');
+
+    expect(client.events.last.name, 'riwayat_filter_diubah');
+    expect(last(), {'jenis_filter': 'periode', 'nilai_kelas': 'hari_ini'});
+  });
+
+  test('a reset has no value to send', () {
+    riwayatFilterChanged(client, RiwayatFilterKind.reset);
+    expect(last(), {'jenis_filter': 'reset'});
+  });
+
+  test('a search is not one of the filters: it has its own session events', () {
+    expect(RiwayatFilterKind.values.map((kind) => kind.wire),
+        isNot(contains('pencarian')));
+  });
+
+  test('opening a detail says what kind of activity it was', () {
+    riwayatDetailOpened(client, 'setoran');
+
+    expect(client.events.last.name, 'riwayat_detail_dibuka');
+    expect(last(), {'jenis_aktivitas': 'setoran'});
+  });
+
+  test('an export says whether it worked', () {
+    riwayatExported(client, success: false);
+
+    expect(client.events.last.name, 'riwayat_diekspor');
+    expect(last(), {'format': 'xlsx', 'berhasil': false});
+  });
+}

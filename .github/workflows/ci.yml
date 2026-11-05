@@ -156,6 +156,17 @@ jobs:
           --dart2js-args=-O0
           --coverage-path=coverage/browser.lcov.info
           test/browser/file_downloader_test.dart
+          test/browser/posthog_web_client_test.dart
+          test/core/analytics/analytics_props_test.dart
+
+      # The factory builds the recording client, which draws on Flutter, so
+      # `dart run test` cannot compile it: run it through `flutter test`. Flutter
+      # collects no coverage on the web and exits 1 when asked to, so this step
+      # only proves the factory behaves; it adds no coverage file.
+      - name: Test the web analytics client factory
+        run: >-
+          flutter test --platform chrome
+          test/core/analytics/analytics_client_factory_web_test.dart
 
       - name: Run web-specific widget tests
         run: >-
@@ -388,7 +399,7 @@ jobs:
           -Dsonar.organization=bank-sampah-pilah
           -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
           -Dsonar.sources=lib
-          -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart,lib/main_beranda_preview.dart
+          -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart,lib/main_beranda_preview.dart,lib/core/analytics/analytics_client_factory_web.dart,lib/core/analytics/posthog_web_recording_client.dart
           -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
           -Dsonar.scanner.skipJreProvisioning=true
           ARGS
@@ -428,7 +439,7 @@ jobs:
 
   deploy_web_staging:
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    if: ${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/staging' }}
     uses: ./.github/workflows/deploy-web.yml
     with:
       flavor: staging
@@ -461,12 +472,17 @@ jobs:
       - name: Prepare .env
         env:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+          ENABLE_POSTHOG: ${{ secrets.ENABLE_POSTHOG }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          POSTHOG_ENVIRONMENT: ${{ secrets.POSTHOG_ENVIRONMENT }}
         run: |
           if [ -z "$APP_ENV_FILE" ]; then
             echo "::error::The staging environment secret APP_ENV_FILE is required."
             exit 1
           fi
           printf '%s' "$APP_ENV_FILE" > .env
+          python3 scripts/append_posthog_env.py staging .env
 
       - name: Prepare google-services.json
         env:

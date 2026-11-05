@@ -177,9 +177,18 @@ Future<T?> showAdaptiveConfirmation<T>({
           ),
           padding: padding,
           // Di bawah bilah sistem pada ponsel bernavigasi gestur.
-          child: SafeArea(
-            top: false,
-            child: builder(sheetContext, presentation),
+          //
+          // PopScope selain isDismissible dan enableDrag: keduanya hanya
+          // mencegah tekan di luar dan geser. Tombol kembali Android
+          // mem-pop route sheet tanpa melewatinya, jadi konfirmasi yang
+          // menuntut sebuah pilihan tertutup diam-diam, persis seperti jalur
+          // dialog yang sudah dijaga di bawah.
+          child: PopScope(
+            canPop: dismissible,
+            child: SafeArea(
+              top: false,
+              child: builder(sheetContext, presentation),
+            ),
           ),
         ),
       );

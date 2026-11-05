@@ -17,10 +17,14 @@ class TestJadwalNotifier extends JadwalNotifier {
     this.onLoadNextPage,
     this.onChangeStatus,
     this.onSaveJadwal,
+    this.busy = false,
   })  : _initialState = initialState,
         super(repository);
 
   final JadwalState _initialState;
+
+  /// Another status change or a save is already running.
+  final bool busy;
   final Future<void> Function({
     bool silent,
     DateTime? date,
@@ -63,6 +67,9 @@ class TestJadwalNotifier extends JadwalNotifier {
 
   @override
   Future<void> loadNextPage() async => onLoadNextPage?.call();
+
+  @override
+  bool get canChangeStatus => !busy && super.canChangeStatus;
 
   @override
   Future<NetworkException?> changeStatus(String id, String action) async =>

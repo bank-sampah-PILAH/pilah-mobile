@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
@@ -28,6 +29,7 @@ import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/dashboard_support.dart';
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
@@ -41,12 +43,16 @@ class _ActivityNotifier extends RecentActivityNotifier {
 
   final loadCalls = <bool>[];
 
+  /// Makes the next loads end in an error.
+  bool failing = false;
+
   @override
   RecentActivityState build() => RecentActivityLoaded(const []);
 
   @override
   Future<void> load({bool silent = false}) async {
     loadCalls.add(silent);
+    if (failing) state = RecentActivityError('gagal');
   }
 }
 
@@ -128,6 +134,7 @@ void main() {
     WidgetTester tester, {
     bool? isWeb,
     Size size = const Size(800, 1600),
+    FakeAnalyticsClient? analytics,
   }) async {
     final router = await pumpRouted(
       tester,
@@ -136,6 +143,8 @@ void main() {
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => activity),
           authenticationProvider.overrideWith(() => auth),
+          if (analytics != null)
+            analyticsClientProvider.overrideWithValue(analytics),
         ],
         child: DashboardPage(isWeb: isWeb),
       ),
@@ -209,6 +218,52 @@ void main() {
     expect(find.text('12'), findsOneWidget);
     expect(find.text('3,5 kg'), findsOneWidget);
     expect(find.text('9 Trx'), findsOneWidget);
+  });
+
+  group('the loading of the dashboard is reported', () {
+    testWidgets('once both parts have loaded, with none failed',
+        (tester) async {
+      arrange(stats: {'nasabah_aktif': 3});
+      final analytics = FakeAnalyticsClient();
+
+      await pumpDashboardPage(tester, analytics: analytics);
+      await tester.pumpAndSettle();
+
+      final loaded =
+          analytics.events.singleWhere((e) => e.name == 'dashboard_dimuat');
+      expect(loaded.properties['jumlah_bagian_gagal'], 0);
+      expect(loaded.properties['durasi_muat_detik'], isA<int>());
+    });
+
+    testWidgets('counting each part that failed', (tester) async {
+      arrange();
+      api.on('GET', '/api/v1/dashboard/stats', status: 500, json: {});
+      activity.failing = true;
+      final analytics = FakeAnalyticsClient();
+
+      await pumpDashboardPage(tester, analytics: analytics);
+      await tester.pumpAndSettle();
+
+      expect(
+          analytics.events
+              .singleWhere((e) => e.name == 'dashboard_dimuat')
+              .properties['jumlah_bagian_gagal'],
+          2);
+    });
+
+    testWidgets('pulling to refresh is not another first load', (tester) async {
+      arrange(stats: {'nasabah_aktif': 3});
+      final analytics = FakeAnalyticsClient();
+      await pumpDashboardPage(tester, analytics: analytics);
+      await tester.pumpAndSettle();
+
+      await tester.fling(
+          find.byType(SingleChildScrollView).first, const Offset(0, 500), 1000);
+      await tester.pumpAndSettle();
+
+      expect(analytics.events.where((e) => e.name == 'dashboard_dimuat'),
+          hasLength(1));
+    });
   });
 
   testWidgets('the page loads both feeds and refreshes them on pull',

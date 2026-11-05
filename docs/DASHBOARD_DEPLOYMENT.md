@@ -37,6 +37,14 @@ These are maintainer provisioning steps, not actions performed by this PR.
    Missing/duplicate keys, a non-HTTPS API, wrong staging API, an unexpected
    API path, and malformed client IDs fail before build. Do not put server
    secrets in browser settings. The script never sources shell dotenv values.
+
+   Usage analytics (PostHog) is optional and off by default. Configure the
+   `ENABLE_POSTHOG`, `POSTHOG_API_KEY`, `POSTHOG_HOST`, and
+   `POSTHOG_ENVIRONMENT` secrets in both GitHub environments. Use `true`, the
+   project key, `https://us.i.posthog.com`, and the matching `staging` or
+   `production` environment value. These secrets are added to mobile and web
+   builds without changing `APP_ENV_FILE`. The project key is public in shipped
+   client apps and assets. Analytics starts only after the user consents.
 3. Provision **separate** Fly app `pilah-web-staging` in the intended organization
    and allocate its provider hostname/networking as required by Fly. Put an
    app-scoped deploy token in staging secret `FLY_API_TOKEN` (not a backend
@@ -86,13 +94,13 @@ changes require separate authorization; this delivery does not perform them.
 
 ## Pipeline and serving behavior
 
-- `CI` now verifies `staging` pushes as well as PRs/existing `main` pushes.
-  `deploy_web_staging` runs automatically **only after successful CI verify on
-  a staging push**, using the exact triggering checkout; PRs never deploy.
-- Existing `v*` production release tags also call a separate web job, gated by
-  the `production` environment. Tags run their own analyze/tests before the
-  production web build. Web jobs do not depend on the APK job, Android signing
-  secrets or Firebase config. Existing APK delivery remains as before.
+- `CI` verifies `staging` and `main` pushes as well as PRs.
+  `deploy_web_staging` sends staging pushes to Fly after successful verification,
+  using the exact triggering checkout. PRs and main pushes do not deploy web.
+- Production web deployment remains on `v*` release tags via a separate job,
+  gated by the `production` environment. Tags run their own analyze/tests before
+  the production web build. Web jobs do not depend on the APK job, Android
+  signing secrets or Firebase config. Existing APK delivery remains as before.
 - Flutter is pinned to 3.41.3. Each job installs the locked dependencies,
   generates code, writes sanitized public settings, builds release web once,
   uploads a 14-day Actions artifact, then serves the same `build/web` through

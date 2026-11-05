@@ -11,6 +11,7 @@ import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 
 export 'dashboard_report_range_filter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 
 class DashboardKpiCard extends StatelessWidget {
   final String label;
@@ -378,15 +379,17 @@ class _WasteCategoryBreakdown extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              PieChart(
-                PieChartData(
-                  sections: sections,
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 58,
-                  startDegreeOffset: -90,
-                  pieTouchData: PieTouchData(enabled: false),
+              HideInReplay(
+                child: PieChart(
+                  PieChartData(
+                    sections: sections,
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 58,
+                    startDegreeOffset: -90,
+                    pieTouchData: PieTouchData(enabled: false),
+                  ),
+                  duration: Duration.zero,
                 ),
-                duration: Duration.zero,
               ),
               Column(
                 mainAxisSize: MainAxisSize.min,

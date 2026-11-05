@@ -212,4 +212,40 @@ void main() {
     expect(find.text('RIWAYAT PERUBAHAN'), findsNothing);
     expect(find.text('CATATAN'), findsNothing);
   });
+
+  testWidgets('a voided setoran says so, with who, when and why (PIL-428)',
+      (tester) async {
+    api.on('GET', _path, json: {
+      ..._row(),
+      'status': 'dibatalkan',
+      'alasan_batal': 'Salah nasabah',
+      'dibatalkan_oleh_nama': 'Ibu Sari',
+      'dibatalkan_pada': '2026-10-06T02:30:00Z',
+    });
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selesai'), findsNothing);
+    expect(find.text('Dibatalkan'), findsOneWidget);
+    expect(find.text('PEMBATALAN'), findsOneWidget);
+    final waktu = DateTime.utc(2026, 10, 6, 2, 30).toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    expect(
+        find.text('Dibatalkan oleh Ibu Sari • '
+            '${two(waktu.day)}/${two(waktu.month)}/${waktu.year} '
+            '${two(waktu.hour)}.${two(waktu.minute)}'),
+        findsOneWidget);
+    expect(find.text('Alasan: Salah nasabah'), findsOneWidget);
+    // Computed without the voided setoran, the saldo "after" it would mislead.
+    expect(find.text('Saldo Setelah Transaksi'), findsNothing);
+  });
+
+  testWidgets('a tercatat setoran shows no pembatalan', (tester) async {
+    api.on('GET', _path, json: {..._row(), 'status': 'tercatat'});
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selesai'), findsOneWidget);
+    expect(find.text('PEMBATALAN'), findsNothing);
+  });
 }

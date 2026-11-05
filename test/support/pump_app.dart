@@ -8,12 +8,14 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 
 /// Pumps [home] inside a `MaterialApp.router` so widgets that call
 /// `context.pop()` / `context.push()` work. Extra [routes] can be registered to
-/// observe navigation; each renders its path as text. With [pushed], [home] is
+/// observe navigation; each renders its path as text. [realRoutes] takes
+/// route declarations the app itself uses, for a route whose real page matters. With [pushed], [home] is
 /// pushed on top of a root page so it has somewhere to pop back to.
 Future<GoRouter> pumpRouted(
   WidgetTester tester,
   Widget home, {
   List<String> extraRoutes = const [],
+  List<RouteBase> realRoutes = const [],
   Widget Function(Widget child)? wrap,
   Widget Function(Widget child)? providerScopeBuilder,
   Size? size,
@@ -41,6 +43,7 @@ Future<GoRouter> pumpRouted(
           path: path,
           builder: (_, __) => Scaffold(body: Text('route:$path')),
         ),
+      ...realRoutes,
     ],
   );
   addTearDown(router.dispose);

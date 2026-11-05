@@ -14,22 +14,27 @@ import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
-import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-import '../../../support/stub_api.dart';
 import '../../../support/auth_support.dart';
+import '../../../support/fake_image_download.dart';
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
 /// A preview repository whose home carries the given balance and activities.
 class _HomeRepository extends PreviewNasabahRepository {
-  _HomeRepository(this.balanceUpdatedAt, this.activities);
+  _HomeRepository(this.balanceUpdatedAt, this.activities, {this.logoUrl});
 
   final DateTime? balanceUpdatedAt;
   final List<NasabahActivity> activities;
+  final String? logoUrl;
   final asked = <String?>[];
+
+  @override
+  Future<NasabahBank> bank(String membershipId) async =>
+      NasabahBank('Bank Sampah Melati', 'Jl. Melati', 'Depok', '08123456789',
+          logoUrl: logoUrl);
 
   @override
   Future<NasabahHome> home({String? membershipId}) async {
@@ -47,7 +52,6 @@ class _HomeRepository extends PreviewNasabahRepository {
 void main() {
   late TestAuthenticationNotifier auth;
   late _JadwalRepository jadwal;
-  late StubApi api;
 
   setUp(() {
     auth = authNotifierIn(Authenticated(
@@ -62,33 +66,11 @@ void main() {
       ),
     ));
     jadwal = _JadwalRepository();
-    api = StubApi();
-    api.on('GET', '/api/v1/nasabah/me/pengumuman/beranda', json: {
-      'items': [
-        {
-          'id': 'p2',
-          'judul': 'Pengumuman baru',
-          'isi': 'Isi pengumuman.',
-          'terbit_pada': '2026-10-16T03:00:00Z',
-          'dibaca': false,
-        },
-        {
-          'id': 'p1',
-          'judul': 'Pengumuman lama',
-          'isi': 'Isi oke.',
-          'terbit_pada': '2026-10-01T03:00:00Z',
-          'dibaca': true,
-        },
-      ],
-      'unread_count': 1,
-    });
     when(() => jadwal.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => const Right(
           JadwalPageResult(items: [], totalCount: 0, hasMore: false)),
     );
     di.registerSingleton<JadwalRepository>(jadwal);
-    di.registerSingleton<NasabahPengumumanRepository>(
-        NasabahPengumumanRepository(api.network));
   });
 
   tearDown(() async {
@@ -96,7 +78,6 @@ void main() {
       await di.unregister<NasabahRepository>();
     }
     await di.unregister<JadwalRepository>();
-    await di.unregister<NasabahPengumumanRepository>();
   });
 
   Future<void> pumpHome(
@@ -208,6 +189,31 @@ void main() {
     expect(repository.asked, [null, null]);
   });
 
+  testWidgets('a stored bank logo is drawn from its URL', (tester) async {
+    final debugImage = FakeImageDownload.install();
+    await pumpHome(
+        tester, _HomeRepository(null, const [], logoUrl: '/media/logo.png'));
+
+    // Let the avatar start its download without racing it.
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    debugImage.finish();
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump();
+
+    final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar).first);
+    expect(avatar.foregroundImage, isA<NetworkImage>());
+    expect((avatar.foregroundImage! as NetworkImage).url, isNotEmpty);
+    FakeImageDownload.uninstall();
+  });
+
+  testWidgets('without a logo the membership card keeps its BS initial',
+      (tester) async {
+    await pumpHome(tester, _HomeRepository(null, const []));
+    expect(find.text('BS'), findsOneWidget);
+  });
+
   testWidgets('a failing schedule request is reported in its own card',
       (tester) async {
     when(() => jadwal.getJadwal(page: 1, date: null)).thenAnswer(
@@ -218,118 +224,13 @@ void main() {
     expect(find.text('offline'), findsOneWidget);
   });
 
-  group('pengumuman section', () {
-    testWidgets(
-        'lists the beranda rows with a dot only on the unread one, scoped to '
-        'the membership', (tester) async {
-      await pumpHome(tester, _HomeRepository(null, const []));
+  testWidgets('the home draws no Pengumuman section', (tester) async {
+    await pumpHome(tester, _HomeRepository(null, const []));
 
-      expect(find.text('Pengumuman baru'), findsOneWidget);
-      expect(find.byKey(const ValueKey('beranda-pengumuman-baru')),
-          findsOneWidget);
-      expect(
-        api.last.query['keanggotaan_id'],
-        'membership-1',
-      );
-    });
-
-    testWidgets('Semua opens the pengumuman list', (tester) async {
-      await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
-        '/pengumuman': (_, __) => const Scaffold(body: Text('daftar')),
-      });
-
-      // Headings carry their own Semua (Jadwal, Pengumuman, Terbaru); the
-      // middle one is Pengumuman's.
-      final semuaButtons = find.widgetWithText(TextButton, 'Semua');
-      await tester.ensureVisible(semuaButtons.at(1));
-      await tester.pumpAndSettle();
-      await tester.tap(semuaButtons.at(1));
-      await tester.pumpAndSettle();
-
-      expect(find.text('daftar'), findsOneWidget);
-    });
-
-    testWidgets('tapping a row opens the detail and refreshes on return',
-        (tester) async {
-      final repository = _HomeRepository(null, const []);
-      await pumpHome(tester, repository, extraRoutes: {
-        '/pengumuman/detail': (_, __) =>
-            const Scaffold(body: Text('detail pengumuman')),
-      });
-
-      await tester.ensureVisible(find.text('Pengumuman lama'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Pengumuman lama'));
-      await tester.pumpAndSettle();
-      expect(find.text('detail pengumuman'), findsOneWidget);
-
-      final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
-      router.pop();
-      await tester.pumpAndSettle();
-
-      // Coming back re-fetches the section so a read dots gone.
-      expect(
-        api.requests
-            .where((call) => call.path.endsWith('/pengumuman/beranda'))
-            .length,
-        greaterThanOrEqualTo(2),
-      );
-    });
-
-    testWidgets('tapping an unread row fires the baca POST', (tester) async {
-      api.on('POST', '/api/v1/nasabah/me/pengumuman/p2/baca',
-          json: {'id': 'p2', 'dibaca': true});
-      await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
-        '/pengumuman/detail': (_, __) =>
-            const Scaffold(body: Text('detail pengumuman')),
-      });
-
-      await tester.ensureVisible(find.text('Pengumuman baru'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Pengumuman baru'));
-      await tester.pumpAndSettle();
-      expect(find.text('detail pengumuman'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 50));
-
-      final baca = api.requests.lastWhere(
-        (call) => call.path == '/api/v1/nasabah/me/pengumuman/p2/baca',
-      );
-      expect(baca.query['keanggotaan_id'], 'membership-1');
-      // An already-read row does not post again.
-      expect(
-        api.requests
-            .where(
-                (call) => call.path == '/api/v1/nasabah/me/pengumuman/p1/baca')
-            .isEmpty,
-        isTrue,
-      );
-    });
-
-    testWidgets('Semua opens the list scoped to the membership',
-        (tester) async {
-      await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
-        '/pengumuman': (_, state) => Scaffold(
-            body:
-                Text('daftar ${state.uri.queryParameters['keanggotaan_id']}')),
-      });
-
-      // Headings carry their own Semua (Jadwal, Pengumuman, Terbaru); the
-      // middle one is Pengumuman's.
-      final semuaButtons = find.widgetWithText(TextButton, 'Semua');
-      await tester.ensureVisible(semuaButtons.at(1));
-      await tester.pumpAndSettle();
-      await tester.tap(semuaButtons.at(1));
-      await tester.pumpAndSettle();
-      expect(find.text('daftar membership-1'), findsOneWidget);
-    });
-
-    testWidgets('an empty section shows the standalone card', (tester) async {
-      api.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
-          json: {'items': [], 'unread_count': 0});
-      await pumpHome(tester, _HomeRepository(null, const []));
-
-      expect(find.text('Belum ada pengumuman.'), findsOneWidget);
-    });
+    expect(find.text('Pengumuman'), findsNothing);
+    expect(find.text('Belum ada pengumuman.'), findsNothing);
+    expect(find.byKey(const ValueKey('beranda-pengumuman-baru')), findsNothing);
+    expect(find.byIcon(Icons.campaign_outlined), findsNothing);
   });
 
   testWidgets('every activity type keeps its title in the shared list',

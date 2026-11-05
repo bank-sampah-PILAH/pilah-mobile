@@ -10,11 +10,11 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_bulk_selection_controls.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 
 /// One filtered report and activity feed for Pengurus on mobile and web.
 class LaporanPage extends ConsumerStatefulWidget {
@@ -43,6 +43,20 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
     });
   }
 
+  /// Whether the report is the tab being shown. The shell keeps the report of a
+  /// tab that is not shown and turns its tickers off, which is how it is told.
+  bool _shown = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shown = TickerMode.valuesOf(context).enabled;
+    if (_shown && !shown) {
+      ref.read(riwayatAktivitasProvider.notifier).searchLeft();
+    }
+    _shown = shown;
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -52,6 +66,26 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
   bool _webPadding(BuildContext context) =>
       context.layoutBreakpoint != LayoutBreakpoint.compact;
 
+  void _syncBulkSelection(
+      RiwayatAktivitasState? previous, RiwayatAktivitasState current) {
+    final selection = ref.read(aktivitasSelectionProvider.notifier);
+    final scopeChanged = previous != null &&
+        (previous.search != current.search ||
+            previous.periode != current.periode ||
+            previous.dariTanggal != current.dariTanggal ||
+            previous.sampaiTanggal != current.sampaiTanggal ||
+            previous.tipeFilter != current.tipeFilter ||
+            (widget.isWeb && previous.currentPage != current.currentPage));
+    if (scopeChanged || current.status == AktivitasStatus.failure) {
+      selection.clear();
+    } else if (current.status == AktivitasStatus.loaded) {
+      selection.retain({
+        for (final item in current.items)
+          if (item.isSelectableSetoran) item.transaksi!.id,
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(riwayatAktivitasProvider, (previous, current) {
@@ -59,15 +93,32 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
           _searchController.text != current.search) {
         _searchController.text = current.search;
       }
+      _syncBulkSelection(previous, current);
     });
-    return Scaffold(
-      backgroundColor:
-          WebContentSurface.pageColor(context, phone: Colors.white),
-      body: SafeArea(
-        // Wide: a data page, so only the table card scrolls. Phone: the whole
-        // page scrolls, across the body, so its scrollbar is at the edge.
-        child: ContentFrame(
-          child: _webPadding(context) ? _dataPage() : _phonePage(),
+    final selecting = ref.watch(aktivitasSelectionProvider) != null;
+    return PopScope(
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          ref.read(aktivitasSelectionProvider.notifier).clear();
+        }
+      },
+      child: Scaffold(
+        backgroundColor:
+            WebContentSurface.pageColor(context, phone: Colors.white),
+        body: SafeArea(
+          // Wide: a data page, so only the table card scrolls. Phone: the whole
+          // page scrolls, across the body, so its scrollbar is at the edge.
+          child: ContentFrame(
+            child: Column(
+              children: [
+                if (selecting) const AktivitasBulkSelectionBar(),
+                Expanded(
+                  child: _webPadding(context) ? _dataPage() : _phonePage(),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -119,24 +170,7 @@ class _LaporanPageState extends ConsumerState<LaporanPage> {
   /// Telepon: header, penyaring, dan ringkasan bergulir bersama daftar. Saat
   /// ada setoran terpilih, header mode pilih menumpuk di atasnya dan tombol
   /// kembali melepas pilihan lebih dulu.
-  Widget _phonePage() {
-    final selecting = ref.watch(aktivitasSelectionProvider) != null;
-    return PopScope(
-      canPop: !selecting,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) ref.read(aktivitasSelectionProvider.notifier).clear();
-      },
-      child: Column(
-        children: [
-          if (selecting)
-            AktivitasSelectionBar(
-              onEdit: (id) => showEditSetoranSheet(context, id),
-            ),
-          Expanded(child: _phoneList()),
-        ],
-      ),
-    );
-  }
+  Widget _phonePage() => _phoneList();
 
   Widget _phoneList() => NestedScrollView(
         // Let filters and totals scroll away on short screens or with a keyboard.

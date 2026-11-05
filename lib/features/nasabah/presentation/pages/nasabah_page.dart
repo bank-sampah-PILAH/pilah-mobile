@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/core/analytics/search_analytics.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_search_provider.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -9,8 +11,9 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_order_controls.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
@@ -47,9 +50,32 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
         builder: (context) => const TambahNasabahBottomSheet(),
       );
 
+  late final SearchAnalytics _search;
+
+  /// The list's state changed: tell the search session what is being searched
+  /// and what it found. Loading the same search again (another order, a further
+  /// page) is not a new attempt, and the session ignores it.
+  void _reportSearch(NasabahState? _, NasabahState now) {
+    if (now is! NasabahLoaded) return;
+    _search.queryChanged(now.searchQuery);
+    if (now.isReloading || now.searchQuery.length < SearchAnalytics.minLength) {
+      return;
+    }
+    _search.resultsSettled(
+      query: now.searchQuery,
+      count: now.totalCount,
+      filter: switch (now.isActiveTab) {
+        true => 'aktif',
+        false => 'tidak_aktif',
+        null => 'menunggu',
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
+    _search = ref.read(nasabahSearchProvider);
     // Load with the authenticated session when the tab is first opened.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -60,10 +86,30 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
     });
   }
 
+  /// Whether the list is the tab being shown. The shell keeps the list of a tab
+  /// that is not shown and turns its tickers off, which is how it is told. Only
+  /// leaving ends the search, so the next words typed start a new one.
+  bool _shown = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shown = TickerMode.valuesOf(context).enabled;
+    if (_shown && !shown) _search.closed();
+    _shown = shown;
+  }
+
+  @override
+  void dispose() {
+    _search.closed();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(nasabahProvider);
     final notifier = ref.read(nasabahProvider.notifier);
+    ref.listen<NasabahState>(nasabahProvider, _reportSearch);
     if (context.layoutBreakpoint != LayoutBreakpoint.compact) {
       return Scaffold(
         backgroundColor:
@@ -132,12 +178,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
               const SizedBox(height: 16),
 
               // Search Bar
-              CustomSearchField(
-                hintText: 'Cari nama nasabah...',
-                onChanged: (value) {
-                  notifier.searchNasabah(value);
-                },
-              ),
+              const NasabahSearchField(),
               const SizedBox(height: 16),
 
               // Filter Chips
@@ -151,13 +192,12 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
                   activeTab: isActiveTab,
                   onTabChanged: notifier.setActiveTab,
                 );
-                return widget.isWeb
-                    ? SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: chips,
-                      )
-                    : chips;
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: chips,
+                );
               }),
+              const NasabahOrderControls(),
               const SizedBox(height: 16),
 
               // List View

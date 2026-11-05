@@ -63,9 +63,13 @@ class NasabahModel extends NasabahEntity {
   }
 
   /// Builds the request body for POST/PUT `/nasabah` from a [NasabahRequest].
+  ///
+  /// Kode kosong dibiarkan kosong: server menomori baris baru otomatis dari
+  /// ID terbesar bank sampah (UAT 2026-11), jadi klien tidak mengarang angka.
   static Map<String, dynamic> toPayload(NasabahRequest request) {
+    final kode = request.kode.trim();
     return {
-      'kode': request.kode.trim(),
+      if (kode.isNotEmpty) 'kode': kode,
       'nama': request.nama.trim(),
       'email': request.email.trim(),
       'jenis_kelamin': genderValue(request.jenisKelamin),

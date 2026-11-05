@@ -91,8 +91,11 @@ class HargaModel extends HargaEntity {
     // `id` and `is_active` are read-only on the backend; the record id travels
     // in the URL for updates, and status is toggled via the dedicated /status
     // endpoint. Only send the writable fields.
+    // Kode kosong dibiarkan kosong: server menomori jenis sampah baru
+    // otomatis dari kode terbesar bank sampah (UAT 2026-11).
+    final kode = kodeSampah.trim();
     return {
-      'kode': kodeSampah.trim(),
+      if (kode.isNotEmpty) 'kode': kode,
       'nama_sampah': name.trim(),
       'kategori': category.toLowerCase(),
       'deskripsi': subtitle.trim(),

@@ -15,7 +15,7 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Re-key history on account or membership changes to discard stale responses.
-class NasabahHistoryScreen extends ConsumerWidget {
+class NasabahHistoryScreen extends ConsumerStatefulWidget {
   const NasabahHistoryScreen({
     super.key,
     required this.membershipId,
@@ -25,10 +25,18 @@ class NasabahHistoryScreen extends ConsumerWidget {
   final bool initialPencairan;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NasabahHistoryScreen> createState() =>
+      _NasabahHistoryScreenState();
+}
+
+class _NasabahHistoryScreenState extends ConsumerState<NasabahHistoryScreen> {
+  Future<void> Function()? _reloadBalance;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(authenticationProvider);
     final auth = state is Authenticated ? state.authEntity : null;
-    final member = membershipId;
+    final member = widget.membershipId;
     return Scaffold(
       backgroundColor: NasabahStyle.background,
       appBar: const NasabahPageAppBar(title: 'Tabungan Saya'),
@@ -50,6 +58,7 @@ class NasabahHistoryScreen extends ConsumerWidget {
                         id,
                       )),
                       load: () => di<NasabahRepository>().balance(id),
+                      registerReload: (reload) => _reloadBalance = reload,
                       builder: (_, balance) => Container(
                         margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         padding: const EdgeInsets.all(16),
@@ -106,7 +115,7 @@ class NasabahHistoryScreen extends ConsumerWidget {
                     Expanded(
                       child: DefaultTabController(
                         length: 2,
-                        initialIndex: initialPencairan ? 1 : 0,
+                        initialIndex: widget.initialPencairan ? 1 : 0,
                         child: Column(
                           children: [
                             Container(
@@ -155,6 +164,9 @@ class NasabahHistoryScreen extends ConsumerWidget {
                                     )),
                                     child: RiwayatNasabahPage(
                                       membershipId: id,
+                                      onRefresh: () async {
+                                        await _reloadBalance?.call();
+                                      },
                                     ),
                                   ),
                                   const PencairanHistoryTab(),

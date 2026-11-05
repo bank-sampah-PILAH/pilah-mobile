@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 
 /// The small capital caption above a form field, such as "NAMA LENGKAP".
 ///
@@ -14,12 +15,14 @@ class AppFieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: AppTextStyle.extraSmall.copyWith(
-        color: AppColors.grey100,
-        fontWeight: AppFontWeight.bold,
-        letterSpacing: 0.5,
+    return RevealInReplay(
+      child: Text(
+        text,
+        style: AppTextStyle.extraSmall.copyWith(
+          color: AppColors.grey100,
+          fontWeight: AppFontWeight.bold,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }

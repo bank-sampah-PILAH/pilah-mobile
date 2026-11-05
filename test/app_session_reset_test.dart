@@ -189,14 +189,27 @@ void main() {
         role: 'nasabah',
       ),
     ));
+    // UAT 2026-11: the warning no longer floats over the page being torn
+    // down (the logout kills it within a frame). The shell arms a notice,
+    // logs out, and the login page raises the message on landing.
     for (var i = 0;
-        i < 10 && find.text('Akses web tidak tersedia').evaluate().isEmpty;
+        i < 10 &&
+            find
+                .text('Akun ini tidak memiliki peran Pengurus, sehingga tidak '
+                    'dapat mengakses aplikasi web. Silakan masuk dengan akun '
+                    'Pengurus.')
+                .evaluate()
+                .isEmpty;
         i++) {
       await tester.pump(const Duration(milliseconds: 250));
     }
 
     expect(auth.calls.where((call) => call == 'logout'), hasLength(1));
-    expect(find.text('Akses web tidak tersedia'), findsOneWidget);
+    expect(
+        find.text(
+            'Akun ini tidak memiliki peran Pengurus, sehingga tidak dapat '
+            'mengakses aplikasi web. Silakan masuk dengan akun Pengurus.'),
+        findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());

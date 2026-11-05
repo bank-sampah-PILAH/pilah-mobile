@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 
 /// Which of the app's button looks to use.
 enum AppButtonVariant {
@@ -37,6 +38,10 @@ enum AppButtonVariant {
   /// A bare green label with no padding, for a link inside a line of content,
   /// such as "Detail Bank Sampah". It is only as wide as its label.
   text,
+
+  /// The [outlined] look in white, for a button on a dark surface (e.g. the
+  /// green invite banner): the stock outlined green-on-green is invisible.
+  outlinedOnDark,
 }
 
 /// How tall an [AppButton] is.
@@ -160,6 +165,18 @@ class AppButton extends StatelessWidget {
           ),
           child: child,
         ),
+      AppButtonVariant.outlinedOnDark => OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            minimumSize: minimum,
+            padding: padding,
+            tapTargetSize: tapTarget,
+            textStyle: textStyle,
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Colors.white, width: 1.5),
+          ),
+          child: child,
+        ),
       AppButtonVariant.neutral => OutlinedButton(
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
@@ -252,7 +269,9 @@ class AppButton extends StatelessWidget {
     // half-width button on a 360 dp phone, shrinks to fit rather than being cut.
     final text = FittedBox(
       fit: BoxFit.scaleDown,
-      child: Text(label, maxLines: 1, softWrap: false),
+      child: RevealInReplay(
+        child: Text(label, maxLines: 1, softWrap: false),
+      ),
     );
     final iconSize = size == AppButtonSize.compact ? 16.0 : 20.0;
     final iconData = icon;

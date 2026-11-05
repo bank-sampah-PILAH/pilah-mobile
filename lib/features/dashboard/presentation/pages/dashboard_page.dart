@@ -11,7 +11,11 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/dashboard/analytics/dashboard_analytics.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/dashboard_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
@@ -45,11 +49,32 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     // Provider state must not change during initState's build frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(dashboardProvider.notifier).loadStats();
+      _loadFirst();
+    });
+  }
+
+  /// Loads what the dashboard shows first, and tells analytics how long that
+  /// took and how many of its two parts failed.
+  Future<void> _loadFirst() async {
+    // Read before waiting, so the report still goes out if the page is left
+    // while loading: leaving early is part of how slow the dashboard felt.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final analytics = container.read(analyticsClientProvider);
+    final watch = Stopwatch()..start();
+    await Future.wait([
+      container.read(dashboardProvider.notifier).loadStats(),
       // Aktivitas Terbaru has its own notifier — see
       // [RecentActivityNotifier] for why it is not Laporan's feed.
-      ref.read(recentActivityProvider.notifier).load();
-    });
+      container.read(recentActivityProvider.notifier).load(),
+    ]);
+    dashboardLoaded(
+      analytics,
+      loadTime: watch.elapsed,
+      failedSections: [
+        container.read(dashboardProvider).status == DashboardStatus.error,
+        container.read(recentActivityProvider) is RecentActivityError,
+      ].where((failed) => failed).length,
+    );
   }
 
   /// Refetches everything the dashboard renders. The header's bank sampah name
@@ -131,7 +156,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       const DashboardStatisticsSection(),
                     ],
                     const SizedBox(height: 24),
-                    const DashboardActionButtons(),
+                    DashboardActionButtons(isWeb: widget.isWeb),
                     const SizedBox(height: 32),
                     if (isPengurusWeb) ...[
                       DashboardReportsSection(

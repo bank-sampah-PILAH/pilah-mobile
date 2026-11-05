@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final String title;
@@ -54,12 +55,14 @@ class BottomSheetHeader extends StatelessWidget {
             // tidak cukup untuk judul 20 px tebal berdampingan dengan tombol
             // tutup 36 px, dan yang melimpah terpotong tanpa dapat dibaca.
             Expanded(
-              child: Text(
-                title,
-                style: AppTextStyle.headline1.copyWith(
-                  color: AppColors.black,
-                  fontWeight: AppFontWeight.bold,
-                  fontSize: AppFontSize.xxl,
+              child: RevealInReplay(
+                child: Text(
+                  title,
+                  style: AppTextStyle.headline1.copyWith(
+                    color: AppColors.black,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.xxl,
+                  ),
                 ),
               ),
             ),

@@ -46,6 +46,76 @@ void main() {
     expect(state.team.last.isPrimary, isFalse);
   });
 
+  test('invite validity requires a URL and a future expiry', () {
+    final future = DateTime.now().add(const Duration(hours: 1));
+    expect(
+      TeamInvite(url: 'https://pilah.test/invite/a', expiresAt: future).isValid,
+      isTrue,
+    );
+    expect(
+      TeamInvite(
+        url: 'https://pilah.test/invite/a',
+        expiresAt: DateTime.now().subtract(const Duration(seconds: 1)),
+      ).isValid,
+      isFalse,
+    );
+    expect(TeamInvite(url: '', expiresAt: future).isValid, isFalse);
+  });
+
+  test('loads the stored invite without creating or renewing it', () async {
+    stubProfile(api);
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'stored-token',
+      'invite_url': 'https://pilah.test/invite/stored-token',
+      'expires_at': '2030-01-04T12:00:00Z',
+    });
+
+    await notifier.load();
+
+    final invite = container.read(profileProvider).invite;
+    expect(invite!.url, 'https://pilah.test/invite/stored-token');
+    expect(invite.token, 'stored-token');
+    expect(invite.expiresAt, DateTime.utc(2030, 1, 4, 12));
+    expect(
+        api.requests
+            .where((request) => request.path == '/api/v1/team/invite')
+            .map((request) => request.method),
+        ['GET']);
+  });
+
+  test('does not load the invite for a non-primary team member', () async {
+    stubProfile(api, team: {
+      'members': [
+        {
+          'id': 'm1',
+          'nama': 'Siti',
+          'email': 'siti@x.test',
+          'is_primary_pengelola': true,
+          'is_current_user': false,
+        },
+        {
+          'id': 'm2',
+          'nama': 'Andi',
+          'email': 'andi@x.test',
+          'is_primary_pengelola': false,
+          'is_current_user': true,
+        },
+      ],
+    });
+
+    await notifier.load();
+
+    final state = container.read(profileProvider);
+    expect(state.team.last.isCurrentUser, isTrue);
+    expect(state.team.last.isPrimary, isFalse);
+    expect(state.invite, isNull);
+    expect(state.inviteError, isNull);
+    expect(
+      api.requests.where((request) => request.path == '/api/v1/team/invite'),
+      isEmpty,
+    );
+  });
+
   test('missing optional fields fall back to blanks', () async {
     stubProfile(api,
         bank: <String, dynamic>{},
@@ -191,30 +261,44 @@ void main() {
     expect(error!.fieldError(['no_hp_pic']), 'Nomor tidak valid');
   });
 
-  test('generates a team invite link', () async {
-    api.on('POST', '/api/v1/team/invite',
-        json: {'invite_url': 'https://pilah.test/invite/abc'});
+  test('explicitly creates a replacement invite and stores its expiry',
+      () async {
+    stubProfile(api);
+    await notifier.load();
+    api.on('POST', '/api/v1/team/invite', json: {
+      'token': 'replacement-token',
+      'invite_url': 'https://pilah.test/invite/replacement-token',
+      'expires_at': '2030-01-04T12:00:00Z',
+    });
 
-    final result = await notifier.generateInvite();
+    final error = await notifier.createInvite();
 
-    expect(result.url, 'https://pilah.test/invite/abc');
-    expect(result.error, isNull);
+    expect(error, isNull);
+    expect(container.read(profileProvider).invite?.url,
+        'https://pilah.test/invite/replacement-token');
+    expect(container.read(profileProvider).invite?.expiresAt,
+        DateTime.utc(2030, 1, 4, 12));
+    expect(api.last.method, 'POST');
+    expect(api.last.json, isEmpty);
   });
 
-  test('an invite for a non-primary pengelola is refused', () async {
+  test('a replacement rejected by the backend leaves the invite unchanged',
+      () async {
+    stubProfile(api);
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'current-token',
+      'invite_url': 'https://pilah.test/invite/current-token',
+      'expires_at': '2030-01-04T12:00:00Z',
+    });
+    await notifier.load();
     api.on('POST', '/api/v1/team/invite',
         status: 403, json: {'error': 'Hanya pengelola utama'});
 
-    final result = await notifier.generateInvite();
+    final error = await notifier.createInvite();
 
-    expect(result.url, isNull);
-    expect(result.error!.displayMessage, 'Hanya pengelola utama');
-  });
-
-  test('an invite response without a URL reads as blank', () async {
-    api.on('POST', '/api/v1/team/invite', json: <String, dynamic>{});
-
-    expect((await notifier.generateInvite()).url, '');
+    expect(error!.displayMessage, 'Hanya pengelola utama');
+    expect(container.read(profileProvider).invite?.url,
+        'https://pilah.test/invite/current-token');
   });
 
   test('reset forgets everything', () async {

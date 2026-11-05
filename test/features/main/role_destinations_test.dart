@@ -12,7 +12,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_destination
 /// the source directly is what lets the second renderer be trusted.
 void main() {
   group('RoleDestinations.forRole', () {
-    test('staff get the operational destinations and Pengumuman in order', () {
+    test('staff get the five operational destinations in order', () {
       final staff = RoleDestinations.forRole('pengelola');
       expect(staff.map((d) => d.label), [
         'Dashboard',
@@ -20,16 +20,24 @@ void main() {
         'Harga',
         'Aktivitas',
         'Jadwal',
-        'Pengumuman',
       ]);
-      expect(staff.map((d) => d.branchIndex), [0, 1, 2, 3, 4, 8]);
-      expect(staff.take(5).every((d) => !d.disabled), isTrue);
-      expect(staff.last.icon, Icons.campaign_outlined);
-      expect(staff.last.inBottomBar, isFalse);
-      expect(staff.last.disabled, isTrue);
+      expect(staff.map((d) => d.branchIndex), [0, 1, 2, 3, 4]);
     });
 
-    test('the bottom bar keeps the first five; Pengumuman is rail-only', () {
+    test('Pengumuman is not a staff destination at all', () {
+      final staff = RoleDestinations.forRole('pengelola');
+      expect(
+        staff.map((d) => d.label),
+        isNot(contains('Pengumuman')),
+        reason: 'PIL-436 removes the entry point instead of disabling it, so '
+            'no dead menu is left for Pengurus to see',
+      );
+      expect(staff.map((d) => d.branchIndex), isNot(contains(8)));
+      expect(
+          staff.map((d) => d.icon), isNot(contains(Icons.campaign_outlined)));
+    });
+
+    test('the bottom bar keeps all five staff destinations', () {
       final bar = RoleDestinations.forRole('pengelola', bottomBar: true);
       expect(bar.map((d) => d.label),
           ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal']);
@@ -68,7 +76,7 @@ void main() {
     test('limitedNasabah does not narrow a staff menu', () {
       expect(
         RoleDestinations.forRole('pengelola', limitedNasabah: true).length,
-        6,
+        5,
         reason: 'the flag only describes a nasabah membership state',
       );
     });

@@ -19,7 +19,33 @@ class TestProfileNotifier extends ProfileNotifier {
     super.isWeb,
   });
 
+  /// A notifier whose data source is never reached: every meaningful call is
+  /// overridden by the caller's subclass or unstubbed. Useful for shells that
+  /// only read state or seed a silent load.
+  TestProfileNotifier.noDataSource()
+      : super(
+          _ThrowingProfileDataSource(),
+          MockImagePicker(),
+          MockImageCropper(),
+        );
+
   void setStateForTest(ProfileState value) => state = value;
+}
+
+class _ThrowingProfileDataSource implements ProfileRemoteDataSource {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('profile data source is stubbed away');
+}
+
+/// The shell watches [ProfileNotifier] and asks it to load when it has never
+/// loaded; a mount that does not care about the profile answers that request
+/// without touching a data source.
+class SilentProfileNotifier extends TestProfileNotifier {
+  SilentProfileNotifier() : super.noDataSource();
+
+  @override
+  Future<void> load({bool silent = false}) async {}
 }
 
 /// A real [ProfileNotifier] with HTTP stubbed and media plugins mocked.
@@ -49,6 +75,11 @@ void stubProfile(
             'preview_contoh': 'Halo Budi',
             'variabel_tersedia': ['{Nama}', '{Total}'],
           });
+  api.on('GET', '/api/v1/team/invite', json: {
+    'token': null,
+    'invite_url': null,
+    'expires_at': null,
+  });
   api.on('GET', '/api/v1/team',
       json: team ??
           {

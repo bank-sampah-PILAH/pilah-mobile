@@ -1,3 +1,7 @@
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -22,18 +26,35 @@ class AktivitasTable extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.onEdit,
+    this.onHapus,
     this.loadSetoranDetail,
     this.footer = const [],
     this.toolbar,
     this.pagination,
     this.page,
+    this.selectedIds,
+    this.onToggleSelection,
+    this.onSelectAll,
   });
 
+  static const selectAllKey = ValueKey('aktivitas-select-all');
+
   final List<ActivitasEntity> items;
+
+  /// Non-null shows the checkbox column (always visible on wide screens); an
+  /// empty set means nothing is checked yet.
+  final Set<String>? selectedIds;
+  final ValueChanged<String>? onToggleSelection;
+
+  /// Replaces the selection with these ids; an empty list clears it.
+  final ValueChanged<Iterable<String>>? onSelectAll;
   final ValueChanged<ActivitasEntity> onTap;
 
   /// Dipanggil dari kolom Aksi pada baris setoran. Null menyembunyikan kolom.
   final ValueChanged<ActivitasEntity>? onEdit;
+
+  /// Tombol Hapus di kolom Aksi, di samping Edit (PIL-428).
+  final ValueChanged<ActivitasEntity>? onHapus;
 
   /// Fetches full details when a setoran row is expanded.
   final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
@@ -71,6 +92,7 @@ class AktivitasTable extends StatelessWidget {
     return DataTableCard(
       toolbar: toolbar,
       header: DataTableCard.head([
+        if (selectedIds != null) SizedBox(width: 48, child: _selectAllBox()),
         _cell(0, Text('WAKTU', style: _headStyle)),
         _cell(1, Text('NASABAH', style: _headStyle)),
         _cell(2, Text('TIPE', style: _headStyle)),
@@ -93,11 +115,40 @@ class AktivitasTable extends StatelessWidget {
                 item: items[i],
                 onTap: () => onTap(items[i]),
                 onEdit: onEdit == null ? null : () => onEdit!(items[i]),
+                onHapus: onHapus == null ? null : () => onHapus!(items[i]),
                 loadSetoranDetail: loadSetoranDetail,
+                selectedIds: selectedIds,
+                onToggleSelection: onToggleSelection,
               ),
       ),
       footer: pagination,
       pageKey: page,
+    );
+  }
+
+  /// Selects every selectable setoran on this page, or clears when all are.
+  Widget _selectAllBox() {
+    final ids = [
+      for (final item in items)
+        if (item.isSelectableSetoran) item.transaksi!.id,
+    ];
+    final chosen = ids.where(selectedIds!.contains).length;
+    final all = ids.isNotEmpty && chosen == ids.length;
+    // Checked when all are, mixed (null) when only some are, else unchecked.
+    bool? value = false;
+    if (all) {
+      value = true;
+    } else if (chosen > 0) {
+      value = null;
+    }
+    return Checkbox(
+      key: selectAllKey,
+      tristate: true,
+      value: value,
+      semanticLabel: 'Pilih semua setoran di halaman ini',
+      onChanged: ids.isEmpty || onSelectAll == null
+          ? null
+          : (_) => onSelectAll!(all ? const [] : ids),
     );
   }
 
@@ -125,13 +176,19 @@ class _Row extends StatefulWidget {
     required this.item,
     required this.onTap,
     this.onEdit,
+    this.onHapus,
     this.loadSetoranDetail,
+    this.selectedIds,
+    this.onToggleSelection,
   });
 
   final ActivitasEntity item;
   final VoidCallback onTap;
   final VoidCallback? onEdit;
+  final VoidCallback? onHapus;
   final Future<TransaksiDetailEntity?> Function(String id)? loadSetoranDetail;
+  final Set<String>? selectedIds;
+  final ValueChanged<String>? onToggleSelection;
 
   @override
   State<_Row> createState() => _RowState();
@@ -142,6 +199,13 @@ class _RowState extends State<_Row> {
   bool _expanded = false;
 
   ActivitasEntity get item => widget.item;
+
+  bool get _dibatalkan => item.transaksi?.isDibatalkan ?? false;
+
+  /// Only a setoran still tercatat can be edited or cancelled.
+  bool get _bisaDiubah => item.tipe == ActivitasTipe.setoran && !_dibatalkan;
+  bool get _selectable => item.isSelectableSetoran;
+  bool get _anySelected => widget.selectedIds?.isNotEmpty ?? false;
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +220,7 @@ class _RowState extends State<_Row> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildDataRow(context, expandable),
-            if (expandable) _buildExpandedDetail(context),
+            if (expandable && !_anySelected) _buildExpandedDetail(context),
           ],
         ),
       ),
@@ -197,8 +261,19 @@ class _RowState extends State<_Row> {
   }
 
   void _handleTap(bool expandable) {
+    if (_anySelected) {
+      if (_selectable) widget.onToggleSelection?.call(item.transaksi!.id);
+      return;
+    }
     if (expandable) {
       setState(() => _expanded = !_expanded);
+      if (_expanded) {
+        final container = ProviderScope.containerOf(context, listen: false);
+        riwayatDetailOpened(container.read(analyticsClientProvider), 'setoran');
+        if (container.exists(riwayatAktivitasProvider)) {
+          container.read(riwayatAktivitasProvider.notifier).rowOpened(item);
+        }
+      }
     } else {
       widget.onTap();
     }
@@ -208,6 +283,18 @@ class _RowState extends State<_Row> {
     final waktu = item.trailingCaptions;
     return Row(
       children: [
+        if (widget.selectedIds != null)
+          SizedBox(
+            width: 48,
+            child: _selectable
+                ? Checkbox(
+                    value: widget.selectedIds!.contains(item.transaksi!.id),
+                    semanticLabel: 'Pilih setoran ${item.title}',
+                    onChanged: (_) =>
+                        widget.onToggleSelection?.call(item.transaksi!.id),
+                  )
+                : null,
+          ),
         AktivitasTable._cell(
           0,
           Wrap(
@@ -223,7 +310,7 @@ class _RowState extends State<_Row> {
         _typeCell(expandable),
         _detailCell(muted, expandable),
         _amountCell(base),
-        if (widget.onEdit != null) _editCell(expandable),
+        if (widget.onEdit != null) _editCell(),
       ],
     );
   }
@@ -256,16 +343,25 @@ class _RowState extends State<_Row> {
 
   Widget _typeCell(bool expandable) => AktivitasTable._cell(
         2,
-        Align(
-          alignment: Alignment.centerLeft,
-          child: CustomStatusBadge(
-            statusText: expandable ? 'Setoran' : 'Pencairan',
-            backgroundColor:
-                expandable ? AppColors.greenLight : AppColors.warningLight,
-            textColor: expandable ? AppColors.greenDark : AppColors.warning,
-          ),
-        ),
+        Align(alignment: Alignment.centerLeft, child: _typeBadge(expandable)),
       );
+
+  /// A voided setoran reads Dibatalkan in place of its type (PIL-428).
+  Widget _typeBadge(bool expandable) {
+    if (_dibatalkan) {
+      return const CustomStatusBadge(
+        statusText: 'Dibatalkan',
+        backgroundColor: AppColors.fill,
+        textColor: AppColors.grey100,
+      );
+    }
+    return CustomStatusBadge(
+      statusText: expandable ? 'Setoran' : 'Pencairan',
+      backgroundColor:
+          expandable ? AppColors.greenLight : AppColors.warningLight,
+      textColor: expandable ? AppColors.greenDark : AppColors.warning,
+    );
+  }
 
   Widget _detailCell(TextStyle muted, bool expandable) => AktivitasTable._cell(
         3,
@@ -301,18 +397,34 @@ class _RowState extends State<_Row> {
         ),
       );
 
-  Widget _editCell(bool expandable) => AktivitasTable._aksiCell(
+  Widget _editCell() => AktivitasTable._aksiCell(
         Align(
           alignment: Alignment.centerLeft,
-          child: expandable
-              ? AppButton(
-                  key: const ValueKey('aktivitas-edit'),
-                  label: 'Edit',
-                  icon: Icons.edit_outlined,
-                  variant: AppButtonVariant.outlined,
-                  size: AppButtonSize.compact,
-                  expand: false,
-                  onPressed: widget.onEdit,
+          child: _bisaDiubah && !_anySelected
+              ? Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    AppButton(
+                      key: const ValueKey('aktivitas-edit'),
+                      label: 'Edit',
+                      icon: Icons.edit_outlined,
+                      variant: AppButtonVariant.outlined,
+                      size: AppButtonSize.compact,
+                      expand: false,
+                      onPressed: widget.onEdit,
+                    ),
+                    if (widget.onHapus != null)
+                      AppButton(
+                        key: const ValueKey('aktivitas-hapus'),
+                        label: 'Hapus',
+                        icon: Icons.delete_outline,
+                        variant: AppButtonVariant.destructiveOutlined,
+                        size: AppButtonSize.compact,
+                        expand: false,
+                        onPressed: widget.onHapus,
+                      ),
+                  ],
                 )
               : const SizedBox.shrink(),
         ),
