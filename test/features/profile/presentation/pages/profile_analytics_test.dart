@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
@@ -172,9 +173,17 @@ void main() {
         .instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null));
 
+    void storedInvite() {
+      final expiry = DateTime.now().add(const Duration(days: 3)).toUtc();
+      api.on('GET', '/api/v1/team/invite', json: {
+        'token': 'abc',
+        'invite_url': 'https://pilah.test/invite/abc',
+        'expires_at': expiry.toIso8601String(),
+      });
+    }
+
     testWidgets('copying it is reported', (tester) async {
-      api.on('POST', '/api/v1/team/invite',
-          json: {'invite_url': 'https://pilah.test/invite/abc'});
+      storedInvite();
       await openPage(tester);
       await tester.tap(find.text('Manajemen Tim'));
       await tester.pumpAndSettle();
@@ -187,14 +196,22 @@ void main() {
       await settleToasts(tester);
     });
 
-    testWidgets('a refused invite is reported as not copied', (tester) async {
-      api.on('POST', '/api/v1/team/invite',
-          status: 403, json: {'error': 'Hanya pengelola utama'});
+    testWidgets('a copy that cannot be done is reported as not copied',
+        (tester) async {
+      storedInvite();
       await openPage(tester);
       await tester.tap(find.text('Manajemen Tim'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Salin Link Undangan'));
+      // The invite failed to load after the button was drawn.
+      final staleCopy = tester
+          .widget<AppButton>(
+              find.widgetWithText(AppButton, 'Salin Link Undangan'))
+          .onPressed!;
+      notifier
+          .setStateForTest(notifier.state.copyWith(inviteError: 'Muat ulang'));
+      await tester.pump();
+      staleCopy();
       await pumpToast(tester);
 
       expect(names(), ['undangan_tautan_disalin']);
