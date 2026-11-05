@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
@@ -43,6 +45,63 @@ void main() {
     addTearDown(container.dispose);
     return container;
   }
+
+  group('a change of who is signed in while a choice is being saved or read',
+      () {
+    ProviderContainer containerWith(AnalyticsConsentStore store) {
+      final container = ProviderContainer(overrides: [
+        authenticationProvider.overrideWith(() => auth),
+        analyticsClientProvider.overrideWithValue(client),
+        analyticsConsentStoreProvider.overrideWithValue(store),
+      ]);
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('does not start recording from a run that is out of date', () async {
+      await AnalyticsConsentStore(storage).grant('u1');
+      final store = _GatedStore(storage)..gateNextRead();
+      final container = containerWith(store);
+      final first = container.read(analyticsConsentProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      // The pengurus signs out of being one while the first read is pending.
+      auth.setStateForTest(_signedInAs('nasabah'));
+      await container.read(analyticsConsentProvider.future);
+      store.release();
+      await first;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(client.calls, isNot(contains('start')));
+    });
+
+    test('agreeing does not start recording once the user may not be recorded',
+        () async {
+      final store = _GatedStore(storage);
+      final container = containerWith(store);
+      await container.read(analyticsConsentProvider.future);
+      store.gateNextGrant();
+
+      final agreeing =
+          container.read(analyticsConsentProvider.notifier).grant();
+      await Future<void>.delayed(Duration.zero);
+      auth.setStateForTest(_signedInAs('nasabah'));
+      await Future<void>.delayed(Duration.zero);
+      store.release();
+      await agreeing;
+
+      expect(client.calls, isNot(contains('start')));
+    });
+
+    test('agreeing still starts when nothing changed meanwhile', () async {
+      final container = containerWith(_GatedStore(storage));
+      await container.read(analyticsConsentProvider.future);
+
+      await container.read(analyticsConsentProvider.notifier).grant();
+
+      expect(client.calls, contains('start'));
+    });
+  });
 
   test('nothing starts until the pengurus has chosen', () async {
     final container = containerForTest();
@@ -242,4 +301,44 @@ void main() {
           await AnalyticsConsentStore(storage).read(''), ConsentChoice.unset);
     });
   });
+}
+
+/// A store whose next read or grant waits until [release], so a test can change
+/// who is signed in while one is still pending.
+class _GatedStore extends AnalyticsConsentStore {
+  _GatedStore(super.storage);
+
+  Completer<void>? _gate;
+  bool _readGated = false;
+  bool _grantGated = false;
+
+  void gateNextRead() {
+    _gate = Completer<void>();
+    _readGated = true;
+  }
+
+  void gateNextGrant() {
+    _gate = Completer<void>();
+    _grantGated = true;
+  }
+
+  void release() => _gate?.complete();
+
+  @override
+  Future<ConsentChoice> read(String userId) async {
+    if (_readGated) {
+      _readGated = false;
+      await _gate!.future;
+    }
+    return super.read(userId);
+  }
+
+  @override
+  Future<void> grant(String userId) async {
+    if (_grantGated) {
+      _grantGated = false;
+      await _gate!.future;
+    }
+    return super.grant(userId);
+  }
 }
