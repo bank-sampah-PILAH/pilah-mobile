@@ -211,6 +211,12 @@ void main() {
         r'$initial_referring_domain',
         r'$initial_host',
       ],
+      // posthog-js builds the `$initial_*` person properties from storage and
+      // sends them as `$set_once`, where the denylist above does not reach. Not
+      // saving the referrer and the campaign parameters keeps it from storing
+      // the first visit's address at all.
+      'save_referrer': false,
+      'save_campaign_params': false,
       'capture_performance': true,
     });
   });
