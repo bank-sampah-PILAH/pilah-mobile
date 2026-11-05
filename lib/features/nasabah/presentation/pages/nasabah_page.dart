@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
-import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
+import 'package:pilah_mobile/core/analytics/search_analytics.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_search_provider.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -50,31 +50,32 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
         builder: (context) => const TambahNasabahBottomSheet(),
       );
 
-  /// The search that was last reported, whatever loading came since: loading
-  /// it again (another order, a further page) is not a new search.
-  ({String query, bool? tab})? _lastSearch;
+  late final SearchAnalytics _search;
 
-  /// A search finished: tell analytics whether it found anything.
+  /// The list's state changed: tell the search session what is being searched
+  /// and what it found. Loading the same search again (another order, a further
+  /// page) is not a new attempt, and the session ignores it.
   void _reportSearch(NasabahState? _, NasabahState now) {
-    if (now is! NasabahLoaded || now.isReloading) return;
-    if (now.searchQuery.length < 2) {
-      // Searching for the same words again after clearing them is a new search.
-      _lastSearch = null;
+    if (now is! NasabahLoaded) return;
+    _search.queryChanged(now.searchQuery);
+    if (now.isReloading || now.searchQuery.length < SearchAnalytics.minLength) {
       return;
     }
-    final search = (query: now.searchQuery, tab: now.isActiveTab);
-    if (search == _lastSearch) return;
-    _lastSearch = search;
-    nasabahSearched(
-      ref.read(analyticsClientProvider),
-      activeTab: now.isActiveTab,
-      resultCount: now.totalCount,
+    _search.resultsSettled(
+      query: now.searchQuery,
+      count: now.totalCount,
+      filter: switch (now.isActiveTab) {
+        true => 'aktif',
+        false => 'tidak_aktif',
+        null => 'menunggu',
+      },
     );
   }
 
   @override
   void initState() {
     super.initState();
+    _search = ref.read(nasabahSearchProvider);
     // Load with the authenticated session when the tab is first opened.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -83,6 +84,12 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
             );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _search.closed();
+    super.dispose();
   }
 
   @override

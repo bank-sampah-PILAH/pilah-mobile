@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_search_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -50,6 +51,7 @@ class NasabahListItem extends ConsumerWidget {
       nasabah.id.isNotEmpty ? nasabah.id : nasabah.idNasabah;
 
   void _onTap(BuildContext context, WidgetRef ref) {
+    nasabahSearchPicked(ref, nasabah.id);
     if (isPending) {
       _showDecisionDialog(context, ref);
       return;

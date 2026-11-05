@@ -59,6 +59,7 @@ class _TambahNasabahBottomSheetState
 
   @override
   void dispose() {
+    _analytics.closed();
     _namaController.dispose();
     _idNasabahController.dispose();
     _emailController.dispose();
@@ -197,6 +198,7 @@ class _TambahNasabahBottomSheetState
     }
 
     setState(() => _isSaving = true);
+    _analytics.sending();
     final request = NasabahRequest(
       kode: kode,
       nama: _namaController.text.trim(),
@@ -208,6 +210,7 @@ class _TambahNasabahBottomSheetState
     );
 
     final error = await notifier.addNasabah(request);
+    if (error != null) _analytics.sendFailed();
     if (!mounted) return;
     setState(() => _isSaving = false);
 
