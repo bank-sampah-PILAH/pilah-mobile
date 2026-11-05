@@ -113,6 +113,7 @@ void main() {
       'register',
       'opt_out_capturing',
       'opt_in_capturing',
+      'register',
     ]);
   });
 

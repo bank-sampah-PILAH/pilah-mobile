@@ -71,6 +71,7 @@ class PosthogWebClient implements AnalyticsClient {
       _stopped = false;
       final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
       posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+      _registerContext(posthog);
     }
     // A stop that came while the library was loading is the later decision.
     if (stopsBefore == _stops) _live = true;
@@ -178,7 +179,13 @@ class PosthogWebClient implements AnalyticsClient {
     // visit would still be in force. start() is only called once the pengurus
     // has agreed, so switch capturing on.
     posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
-    // Where this runs, told once and carried by every event after.
+    _registerContext(posthog);
+  }
+
+  /// Where this runs, told to the library and carried by every event after. The
+  /// library forgets it when it is reset on sign-out, so every start tells it
+  /// again; telling it twice does no harm.
+  void _registerContext(JSObject posthog) {
     posthog.callMethod(
       'register'.toJS,
       AnalyticsProps.sanitize({
