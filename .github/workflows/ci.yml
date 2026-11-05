@@ -160,11 +160,12 @@ jobs:
           test/core/analytics/analytics_props_test.dart
 
       # The factory builds the recording client, which draws on Flutter, so
-      # `dart run test` cannot compile it: run it through `flutter test`.
-      - name: Cover the web analytics client factory
+      # `dart run test` cannot compile it: run it through `flutter test`. Flutter
+      # collects no coverage on the web and exits 1 when asked to, so this step
+      # only proves the factory behaves; it adds no coverage file.
+      - name: Test the web analytics client factory
         run: >-
-          flutter test --platform chrome --coverage
-          --coverage-path=coverage/browser-analytics-factory.info
+          flutter test --platform chrome
           test/core/analytics/analytics_client_factory_web_test.dart
 
       - name: Run web-specific widget tests
