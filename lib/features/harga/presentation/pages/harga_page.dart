@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/harga/analytics/harga_analytics.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -78,6 +82,31 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
   bool get _isPanelOpen => _creating || _editing != null || _viewing != null;
 
   HargaEntity? get _selected => _editing ?? _viewing;
+
+  /// Waits for typing to stop before a search is reported, because the list
+  /// filters on every key and each key is not a search.
+  Timer? _searchReport;
+
+  static const _searchReportDelay = Duration(seconds: 1);
+
+  void _reportSearchLater(String query) {
+    _searchReport?.cancel();
+    if (query.trim().length < 2) return;
+    _searchReport = Timer(_searchReportDelay, () {
+      final state = ref.read(hargaProvider);
+      if (state is! HargaLoaded || state.searchQuery != query) return;
+      hargaSearched(
+        ref.read(analyticsClientProvider),
+        resultCount: state.jenisSampahList.length,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchReport?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -213,6 +242,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
       hintText: 'Cari jenis sampah...',
       onChanged: (value) {
         ref.read(hargaProvider.notifier).searchHarga(value);
+        _reportSearchLater(value);
       },
     );
     return Padding(
