@@ -38,6 +38,12 @@ class DashboardActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Nol transaksi terbuka bukan keadaan yang punya tampilan: tombolnya akan
+    // membuka pemilih yang seluruh barisnya mati, kontrol mati yang sama
+    // dengan yang dilarang CPBI-31. Menutup transaksi yang terakhir berarti
+    // menyingkirkan tombol ini, bukan mengosongkan daftarnya — dan keliru di
+    // sini keliru sejak digambar, bukan baru ketika ditekan.
+    assert(terbuka.isNotEmpty, 'Transaksi Baru tanpa transaksi yang terbuka');
     return Row(
       children: [
         Expanded(

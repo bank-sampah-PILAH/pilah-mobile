@@ -144,6 +144,20 @@ void main() {
     expect(find.text('Daftar Pencairan'), findsOneWidget);
   });
 
+  testWidgets('no open transaction refuses to draw the button at all',
+      (tester) async {
+    // Closing the last transaction has to take the button with it: it would
+    // open a chooser whose every row is inert, the dead control CPBI-31
+    // forbids. Unreachable with the shipped constant, so the assert is the
+    // statement of that, and this test is what keeps it honest.
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: DashboardActionButtons(terbuka: {})),
+    ));
+
+    expect(tester.takeException(), isA<AssertionError>());
+    expect(find.byType(TransaksiChooserSheet), findsNothing);
+  });
+
   testWidgets('the chooser draws a closed choice inert', (tester) async {
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(
