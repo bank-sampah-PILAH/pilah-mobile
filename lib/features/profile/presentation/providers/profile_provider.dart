@@ -68,19 +68,27 @@ class ProfileNotifier extends Notifier<ProfileState> {
           func: _dataSource.getTeam(),
           mapper: (value) => value as List<TeamMember>,
         );
-        final inviteEither = await apiCall<TeamInvite?>(
-          func: _dataSource.getTeamInvite(),
-          mapper: (value) => value as TeamInvite?,
-        );
+        final team =
+            teamEither.fold((_) => const <TeamMember>[], (value) => value);
+        TeamInvite? invite;
+        String? inviteError;
+        if (team.any((member) => member.isCurrentUser && member.isPrimary)) {
+          final inviteEither = await apiCall<TeamInvite?>(
+            func: _dataSource.getTeamInvite(),
+            mapper: (value) => value as TeamInvite?,
+          );
+          invite = inviteEither.fold((_) => null, (value) => value);
+          inviteError =
+              inviteEither.fold((error) => error.displayMessage, (_) => null);
+        }
         if (!ref.mounted) return;
         state = ProfileState(
           status: ProfileStatus.loaded,
           bankSampah: bank,
           waTemplate: waEither.fold((_) => null, (value) => value),
-          team: teamEither.fold((_) => const <TeamMember>[], (value) => value),
-          invite: inviteEither.fold((_) => null, (value) => value),
-          inviteError:
-              inviteEither.fold((error) => error.displayMessage, (_) => null),
+          team: team,
+          invite: invite,
+          inviteError: inviteError,
         );
       },
     );

@@ -422,6 +422,10 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
       );
     }
 
+    return _buildStoredInviteActions(state, invite);
+  }
+
+  Widget _buildStoredInviteActions(ProfileState state, TeamInvite invite) {
     final valid = invite.isValid && _expiredInviteUrl != invite.url;
     final expiresAt = invite.expiresAt;
     return Column(
@@ -467,7 +471,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                 isLoading: state.isCreatingInvite,
                 onPressed: state.isCreatingInvite
                     ? null
-                    : () => _onCreateInvite(invite),
+                    : () => _onCreateInvite(valid ? invite : null),
               ),
             ),
           ],

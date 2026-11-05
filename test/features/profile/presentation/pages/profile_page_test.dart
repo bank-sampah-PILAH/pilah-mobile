@@ -645,6 +645,7 @@ void main() {
 
     expect(find.text('Link undangan aktif'), findsOneWidget);
     expect(find.textContaining('Tersisa 3 hari'), findsOneWidget);
+    await tester.pump(const Duration(minutes: 1));
     await tester.tap(find.text('Salin Link Undangan'));
     await pumpToast(tester);
 
@@ -667,6 +668,35 @@ void main() {
       ['GET'],
     );
     await settleToasts(tester);
+
+    final staleCopy = tester
+        .widget<AppButton>(
+            find.widgetWithText(AppButton, 'Salin Link Undangan'))
+        .onPressed!;
+    notifier
+        .setStateForTest(notifier.state.copyWith(inviteError: 'Muat ulang'));
+    await tester.pump();
+    staleCopy();
+    await pumpToast(tester);
+    expect(find.text('Gagal'), findsOneWidget);
+    expect(find.text('Muat ulang'), findsWidgets);
+    await settleToasts(tester);
+  });
+
+  testWidgets('invite expiry within a day shows rounded hours', (tester) async {
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'abc',
+      'invite_url': 'https://pilah.test/invite/abc',
+      'expires_at': DateTime.now()
+          .add(const Duration(hours: 2, minutes: 5))
+          .toUtc()
+          .toIso8601String(),
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Tersisa 3 jam'), findsOneWidget);
   });
 
   testWidgets('an invite expires while open and stale copy reports failure',
@@ -710,6 +740,17 @@ void main() {
     await settleToasts(tester);
   });
 
+  testWidgets('invite loading state is shown while loading', (tester) async {
+    await openPage(tester);
+    notifier.setStateForTest(notifier.state.copyWith(isLoadingInvite: true));
+    await tester.pump();
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Memuat link undangan…'), findsOneWidget);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+  });
+
   testWidgets('a failed invite load shows the error and offers retry',
       (tester) async {
     api.on('GET', '/api/v1/team/invite',
@@ -721,6 +762,16 @@ void main() {
     expect(find.text('Hanya pengelola utama'), findsOneWidget);
     expect(find.text('Coba Lagi'), findsOneWidget);
     expect(find.text('Salin Link Undangan'), findsNothing);
+
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': null,
+      'invite_url': null,
+      'expires_at': null,
+    });
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hanya pengelola utama'), findsNothing);
+    expect(find.text('Belum ada link undangan.'), findsOneWidget);
   });
 
   testWidgets('creating a new link warns before invalidating the old one',
@@ -752,6 +803,49 @@ void main() {
     expect(api.last.method, 'POST');
     expect(find.text('https://pilah.test/invite/new-token'), findsOneWidget);
     expect(find.text('Salin Link Undangan'), findsOneWidget);
+  });
+
+  testWidgets('a failed invite creation shows the API error', (tester) async {
+    api.on('POST', '/api/v1/team/invite',
+        status: 403, json: {'error': 'Tidak diizinkan'});
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Buat Link Undangan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tidak diizinkan'), findsOneWidget);
+  });
+
+  testWidgets('expired invite replacement skips the stale-link warning',
+      (tester) async {
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'expired-token',
+      'invite_url': 'https://pilah.test/invite/expired-token',
+      'expires_at': DateTime.now()
+          .subtract(const Duration(hours: 1))
+          .toUtc()
+          .toIso8601String(),
+    });
+    api.on('POST', '/api/v1/team/invite', json: {
+      'token': 'new-token',
+      'invite_url': 'https://pilah.test/invite/new-token',
+      'expires_at':
+          DateTime.now().add(const Duration(days: 3)).toUtc().toIso8601String(),
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.textContaining('Link undangan sudah kedaluwarsa'), findsOneWidget);
+    await tester.tap(find.text('Buat Link Baru'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ganti link undangan?'), findsNothing);
+    expect(api.last.method, 'POST');
+    expect(find.text('https://pilah.test/invite/new-token'), findsOneWidget);
   });
 
   testWidgets('inactive bank cannot create an invite', (tester) async {

@@ -46,6 +46,22 @@ void main() {
     expect(state.team.last.isPrimary, isFalse);
   });
 
+  test('invite validity requires a URL and a future expiry', () {
+    final future = DateTime.now().add(const Duration(hours: 1));
+    expect(
+      TeamInvite(url: 'https://pilah.test/invite/a', expiresAt: future).isValid,
+      isTrue,
+    );
+    expect(
+      TeamInvite(
+        url: 'https://pilah.test/invite/a',
+        expiresAt: DateTime.now().subtract(const Duration(seconds: 1)),
+      ).isValid,
+      isFalse,
+    );
+    expect(TeamInvite(url: '', expiresAt: future).isValid, isFalse);
+  });
+
   test('loads the stored invite without creating or renewing it', () async {
     stubProfile(api);
     api.on('GET', '/api/v1/team/invite', json: {
@@ -65,6 +81,39 @@ void main() {
             .where((request) => request.path == '/api/v1/team/invite')
             .map((request) => request.method),
         ['GET']);
+  });
+
+  test('does not load the invite for a non-primary team member', () async {
+    stubProfile(api, team: {
+      'members': [
+        {
+          'id': 'm1',
+          'nama': 'Siti',
+          'email': 'siti@x.test',
+          'is_primary_pengelola': true,
+          'is_current_user': false,
+        },
+        {
+          'id': 'm2',
+          'nama': 'Andi',
+          'email': 'andi@x.test',
+          'is_primary_pengelola': false,
+          'is_current_user': true,
+        },
+      ],
+    });
+
+    await notifier.load();
+
+    final state = container.read(profileProvider);
+    expect(state.team.last.isCurrentUser, isTrue);
+    expect(state.team.last.isPrimary, isFalse);
+    expect(state.invite, isNull);
+    expect(state.inviteError, isNull);
+    expect(
+      api.requests.where((request) => request.path == '/api/v1/team/invite'),
+      isEmpty,
+    );
   });
 
   test('missing optional fields fall back to blanks', () async {
