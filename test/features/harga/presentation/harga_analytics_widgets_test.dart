@@ -279,6 +279,7 @@ void main() {
         'jumlah_hasil_kelas': '1_5',
         'panjang_kueri_kelas': '3_5',
         'percobaan_ke': 1,
+        'filter': 'aktif',
       });
       expect(analytics.events.map((e) => e.properties).toString(),
           isNot(contains('kar\'')));
@@ -327,6 +328,61 @@ void main() {
       expect(names().last, 'pencarian_dipilih');
       expect(analytics.events.last.properties['posisi_hasil_kelas'], '1');
       expect(analytics.events.last.properties['area'], 'harga');
+    });
+
+    testWidgets('opening more rows after the search ended starts nothing',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpRouted(
+        tester,
+        scoped(withHargaProvider(notifier, const HargaPage(isWeb: true))),
+        size: const Size(1600, 1000),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'ka');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.tap(find.text('Kardus').first);
+      await tester.pump(const Duration(milliseconds: 600));
+      final before = names();
+
+      await tester.tap(find.text('Kardus').first);
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(find.text('Kardus').first);
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(before,
+          ['pencarian_dimulai', 'pencarian_hasil', 'pencarian_dipilih']);
+      expect(names(), before);
+    });
+
+    testWidgets('says which tab the results are from and reports a tab change',
+        (tester) async {
+      await openPage(tester);
+      await tester.enterText(find.byType(TextField).first, 'kar');
+      await tester.pump(const Duration(seconds: 2));
+      expect(analytics.events.last.properties['filter'], 'aktif');
+
+      await tester.tap(find.text('Tidak Aktif'));
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(names(), [
+        'pencarian_dimulai',
+        'pencarian_hasil',
+        'pencarian_hasil',
+      ]);
+      expect(analytics.events.last.properties['filter'], 'tidak_aktif');
+      expect(analytics.events.last.properties['jumlah_hasil_kelas'], '0');
+      expect(analytics.events.last.properties['percobaan_ke'], 2);
+    });
+
+    testWidgets('a tab change without words reports nothing', (tester) async {
+      await openPage(tester);
+
+      await tester.tap(find.text('Tidak Aktif'));
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(analytics.events, isEmpty);
     });
 
     testWidgets('opening a row before the typing settled still reports the try',
