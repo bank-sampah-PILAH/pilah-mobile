@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -16,6 +20,8 @@ import 'package:pilah_mobile/features/profile/presentation/providers/profile_pro
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import '../../support/auth_support.dart';
 import '../../support/fake_image_download.dart';
+import '../../support/fake_analytics_client.dart';
+import '../../support/fake_app_storage.dart';
 import '../../support/nasabah_approval_support.dart';
 import '../../support/profile_support.dart';
 
@@ -45,6 +51,7 @@ void main() {
     required bool isWeb,
     String initialLocation = '/home',
     ProfileNotifier? profile,
+    List<Override> extraOverrides = const [],
   }) async {
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
@@ -101,12 +108,59 @@ void main() {
         // The shell watches the profile for its logo; mounts that do not care
         // about it answer the silent load without a data source.
         profileProvider.overrideWith(() => profile ?? SilentProfileNotifier()),
+        ...extraOverrides,
       ],
       child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
     return router;
   }
+
+  group('asking for consent to be recorded', () {
+    late FakeAppStorage storage;
+    late FakeAnalyticsClient client;
+
+    setUp(() {
+      storage = FakeAppStorage();
+      client = FakeAnalyticsClient();
+    });
+
+    List<Override> analytics() => [
+          analyticsClientProvider.overrideWithValue(client),
+          analyticsConsentStoreProvider
+              .overrideWithValue(AnalyticsConsentStore(storage)),
+        ];
+
+    testWidgets('a pengurus is asked once, and agreeing starts recording',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(390, 844),
+          isWeb: false,
+          extraOverrides: analytics());
+
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsOneWidget);
+      await tester.tap(find.text('Setuju'));
+      await tester.pumpAndSettle();
+
+      expect(client.calls, ['start']);
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsNothing);
+    });
+
+    testWidgets('a nasabah is never asked', (tester) async {
+      await mountShell(tester,
+          role: 'nasabah',
+          window: const Size(390, 844),
+          isWeb: false,
+          extraOverrides: analytics());
+
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsNothing);
+      expect(client.calls, isNot(contains('start')));
+    });
+  });
 
   group('the app always keeps its navigation at the bottom', () {
     testWidgets('a phone gets the bottom bar', (tester) async {

@@ -32,17 +32,39 @@ class PosthogWebClient implements AnalyticsClient {
       '${host.replaceFirst('.i.', '-assets.i.')}/static/array.js';
 
   Future<void>? _starting;
+  bool _stopped = false;
+
+  @override
+  bool get isAvailable => true;
 
   /// Starts the client. Throws a [StateError] when the library cannot be
   /// loaded, so a caller has to handle that. A failed start is not remembered:
   /// the next call tries again.
   @override
-  Future<void> start() {
+  Future<void> start() async {
     final starting = _starting ??= _load();
     starting.then<void>((_) {}, onError: (Object _) {
       if (identical(_starting, starting)) _starting = null;
     });
-    return starting;
+    await starting;
+    if (!_stopped) return;
+    // Started again after a stop: the library is already loaded and set up,
+    // so it only has to be switched back on.
+    _stopped = false;
+    final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
+    posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
+  }
+
+  @override
+  Future<void> stop() async {
+    final starting = _starting;
+    // Never started, so there is nothing to stop and nothing to load.
+    if (starting == null) return;
+    await starting;
+
+    final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
+    posthog.callMethod('opt_out_capturing'.toJS);
+    _stopped = true;
   }
 
   Future<void> _load() async {
@@ -77,7 +99,15 @@ class PosthogWebClient implements AnalyticsClient {
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     posthog.callMethod('init'.toJS, apiKey.toJS, _options().jsify());
+    // PostHog keeps an opt-out across page reloads, so one made on an earlier
+    // visit would still be in force. start() is only called once the pengurus
+    // has agreed, so switch capturing on.
+    posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
   }
+
+  /// Opting in sends an event of PostHog's own by default, which would reach
+  /// PostHog without passing the sanitizer.
+  static const _optInOptions = {'captureEventName': false};
 
   Map<String, Object> _options() => {
         'api_host': host,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_consent_prompt.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -53,9 +54,11 @@ class MainPage extends ConsumerWidget {
         navigationShell.goBranch(0, initialLocation: true);
       }
     });
-    return _RoleShell(
-      navigationShell: navigationShell,
-      isWebOverride: isWebOverride,
+    return AnalyticsConsentPrompt(
+      child: _RoleShell(
+        navigationShell: navigationShell,
+        isWebOverride: isWebOverride,
+      ),
     );
   }
 }

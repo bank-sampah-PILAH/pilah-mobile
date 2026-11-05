@@ -8,6 +8,13 @@ void main() {
     await expectLater(NoopAnalyticsClient().start(), completes);
   });
 
+  test('NoopAnalyticsClient is not available and stop does nothing', () async {
+    final client = NoopAnalyticsClient();
+
+    expect(client.isAvailable, isFalse);
+    await expectLater(client.stop(), completes);
+  });
+
   test('createAnalyticsClient returns the no-op client when analytics is off',
       () {
     expect(createAnalyticsClient(null), isA<NoopAnalyticsClient>());

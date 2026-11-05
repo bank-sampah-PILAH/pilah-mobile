@@ -27,6 +27,12 @@ POSTHOG_ENVIRONMENT=staging
       expect(config.host, 'https://us.i.posthog.com');
     });
 
+    test('is off, instead of failing, when the env file was never loaded', () {
+      dotenv.clean();
+
+      expect(analyticsConfigFromSecrets(), isNull);
+    });
+
     test('stays off when it is enabled but the key is missing', () {
       dotenv.loadFromString(envString: '''
 ENABLE_POSTHOG=true

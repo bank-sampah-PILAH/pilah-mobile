@@ -23,15 +23,66 @@ List<web.HTMLScriptElement> _scriptsWithSource(String source) {
   ];
 }
 
+/// What the fake library was asked to do, in order. Empty if it never loaded.
+List<String> _libraryCalls() {
+  final calls = globalContext.getProperty<JSAny?>('__calls'.toJS).dartify();
+  return calls == null ? [] : (calls as List<Object?>).cast<String>();
+}
+
+PosthogWebClient _client() => PosthogWebClient(
+      apiKey: 'phc_test_key',
+      host: 'https://us.i.posthog.com',
+      libraryUrl: _fakeLibraryUrl,
+    );
+
 void main() {
   tearDown(() {
     _scriptsWithSource(_fakeLibraryUrl).forEach((script) => script.remove());
     _scriptsWithSource(_emptyLibraryUrl).forEach((script) => script.remove());
     globalContext
       ..delete('posthog'.toJS)
+      ..delete('__calls'.toJS)
       ..delete('__initCalls'.toJS)
       ..delete('__initArgs'.toJS)
+      ..delete('__optInOptions'.toJS)
       ..delete('__emptyLibraryLoaded'.toJS);
+  });
+
+  test('is available, so the consent dialog may be shown', () {
+    expect(_client().isAvailable, isTrue);
+  });
+
+  test('stop before start loads nothing and touches nothing', () async {
+    await _client().stop();
+
+    expect(_scriptsWithSource(_fakeLibraryUrl), isEmpty);
+    expect(_libraryCalls(), isEmpty);
+  });
+
+  test('stop after start opts out of capturing', () async {
+    final client = _client();
+    await client.start();
+
+    await client.stop();
+
+    expect(_libraryCalls(), ['init', 'opt_in_capturing', 'opt_out_capturing']);
+  });
+
+  test('start after stop opts back in without loading the library again',
+      () async {
+    final client = _client();
+    await client.start();
+    await client.stop();
+
+    await client.start();
+
+    expect(_scriptsWithSource(_fakeLibraryUrl), hasLength(1));
+    expect(_libraryCalls(), [
+      'init',
+      'opt_in_capturing',
+      'opt_out_capturing',
+      'opt_in_capturing',
+    ]);
   });
 
   test('adds no PostHog script until start is called', () {
@@ -167,5 +218,31 @@ void main() {
       throwsA(isA<StateError>()
           .having((e) => e.message, 'message', contains('did not define'))),
     );
+  });
+
+  test('start opts in even when an earlier visit opted out', () async {
+    // PostHog keeps an opt-out across page reloads. A fresh client has not
+    // stopped anything itself, but the pengurus agreed again, so it opts in.
+    final client = _client();
+
+    await client.start();
+
+    expect(_libraryCalls(), ['init', 'opt_in_capturing']);
+  });
+
+  test('opting in does not make PostHog send an event of its own', () async {
+    // By default opt_in_capturing sends a `$opt_in` event, which would reach
+    // PostHog without passing the sanitizer.
+    final client = _client();
+
+    await client.start();
+    await client.stop();
+    await client.start();
+
+    final options = globalContext
+        .getProperty<JSAny?>('__optInOptions'.toJS)
+        .dartify()! as List<Object?>;
+    expect(options, hasLength(2));
+    expect(options, everyElement({'captureEventName': false}));
   });
 }
