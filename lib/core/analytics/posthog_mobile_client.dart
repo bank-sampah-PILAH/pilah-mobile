@@ -58,6 +58,7 @@ class PosthogMobileClient implements AnalyticsClient {
     // The SDK keeps an opt-out across app launches, so one made earlier would
     // still be in force. start() is only called once the pengurus has agreed.
     await _posthog.optIn();
+    await _registerContext();
     if (stopsBefore == _stops) _live = true;
   }
 
@@ -131,8 +132,12 @@ class PosthogMobileClient implements AnalyticsClient {
       ..capturePushNotificationSubscriptions = false
       ..capturePushNotificationOpened = false;
     await _posthog.setup(config);
-    // Where this runs and which deployment it is, told once and carried by
-    // every event after.
+  }
+
+  /// Where this runs and which deployment it is, carried by every event after.
+  /// The SDK forgets it when the user is forgotten (`reset`), so it is told on
+  /// every start and not only the first.
+  Future<void> _registerContext() async {
     for (final MapEntry(:key, :value) in AnalyticsProps.sanitize({
       'platform':
           defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
