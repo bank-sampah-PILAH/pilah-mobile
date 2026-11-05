@@ -124,7 +124,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Rute halaman tidak dikirim'), findsOneWidget);
-    expect(find.textContaining('alamat situs dan berkas bawaannya'),
+    expect(find.textContaining('Di web, alamat situs dan berkas bawaannya'),
         findsOneWidget);
     expect(find.textContaining('Alamat halaman tidak dikirim'), findsNothing);
   });

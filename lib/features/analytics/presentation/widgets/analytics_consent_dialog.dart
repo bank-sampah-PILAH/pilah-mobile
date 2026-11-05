@@ -68,7 +68,7 @@ const _addressNotSent = 'Alamat halaman tidak dikirim.';
 
 // The recording holds a picture of the page structure, which names the site and
 // its files, so the text does not promise more than is true.
-const _addressRecorded = 'Rute halaman tidak dikirim, tetapi alamat situs dan '
+const _addressRecorded = 'Rute halaman tidak dikirim. Di web, alamat situs dan '
     'berkas bawaannya ikut tercatat sebagai bagian dari tampilan halaman.';
 
 // What is masked and what is not is spelled out: a pengurus must be able to tell
