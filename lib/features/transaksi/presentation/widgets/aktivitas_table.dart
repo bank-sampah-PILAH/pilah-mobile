@@ -195,7 +195,6 @@ class _Row extends StatefulWidget {
 }
 
 class _RowState extends State<_Row> {
-  bool _hover = false;
   bool _expanded = false;
 
   ActivitasEntity get item => widget.item;
@@ -212,17 +211,12 @@ class _RowState extends State<_Row> {
     final expandable = item.tipe == ActivitasTipe.setoran;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: Container(
-        color: _hover ? AppColors.greenLight.withValues(alpha: 0.45) : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildDataRow(context, expandable),
-            if (expandable && !_anySelected) _buildExpandedDetail(context),
-          ],
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildDataRow(context, expandable),
+          if (expandable && !_anySelected) _buildExpandedDetail(context),
+        ],
       ),
     );
   }
@@ -236,6 +230,7 @@ class _RowState extends State<_Row> {
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: InkWell(
+          hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
           onTap: () => _handleTap(expandable),
           child: Padding(
             padding: const EdgeInsets.symmetric(
