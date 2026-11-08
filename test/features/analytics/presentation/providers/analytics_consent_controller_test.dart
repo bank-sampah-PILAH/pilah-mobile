@@ -224,6 +224,38 @@ void main() {
       expect(await needsPrompt(containerForTest()), isFalse);
     });
 
+    test('a returning pengurus is not asked while their answer is read again',
+        () async {
+      // The app starts signed out, then the saved session signs the pengurus
+      // back in. Until their saved answer is read, the one from before they
+      // were signed in must not count.
+      await AnalyticsConsentStore(storage).grant('u1', screen: true);
+      auth = TestAuthenticationNotifier(initialState: Unauthenticated());
+      final store = _GatedStore(storage);
+      final container = ProviderContainer(overrides: [
+        authenticationProvider.overrideWith(() => auth),
+        analyticsClientProvider.overrideWithValue(client),
+        analyticsScreenTrackerProvider.overrideWithValue(tracker),
+        analyticsConsentStoreProvider.overrideWithValue(store),
+        consentRevocationChannelProvider.overrideWithValue(channel),
+      ]);
+      addTearDown(container.dispose);
+      final asked = <bool>[];
+      container.listen(analyticsNeedsPromptProvider, (_, v) => asked.add(v),
+          fireImmediately: true);
+      await container.read(analyticsConsentProvider.future);
+
+      store.gateNextRead();
+      auth.setStateForTest(_signedInAs('pengelola'));
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(analyticsNeedsPromptProvider), isFalse);
+      store.release();
+      await container.read(analyticsConsentProvider.future);
+
+      expect(asked, everyElement(isFalse));
+      expect(container.read(analyticsNeedsPromptProvider), isFalse);
+    });
+
     test('nobody is asked twice, whatever they answered', () async {
       for (final answer in [
         (AnalyticsConsentStore store) => store.grant('u1'),
