@@ -16,30 +16,34 @@ class _PickerHargaNotifier extends TestHargaNotifier {
   void finishLoading() => state = const HargaLoaded(jenisSampahList: []);
 
   final int extraOptions;
+  bool emptyCatalog = false;
+
+  void replaceState(HargaState next) => state = next;
 
   @override
-  List<HargaEntity> get activeJenisSampah => state is HargaLoading
-      ? []
-      : [
-          for (var i = 0; i < extraOptions; i++)
-            HargaModel.fromJson({
-              'id': 'item-$i',
-              'nama_sampah': 'Kertas $i',
-              'kategori': 'kertas',
-            }),
-          HargaModel.fromJson({
-            'id': 'pet',
-            'nama_sampah': 'Botol PET',
-            'kategori': 'plastik',
-            'harga_per_kg': 2000,
-          }),
-          HargaModel.fromJson({
-            'id': 'kardus',
-            'nama_sampah': 'Kardus',
-            'kategori': 'kertas',
-            'harga_per_kg': 1000,
-          }),
-        ];
+  List<HargaEntity> get activeJenisSampah =>
+      state is HargaLoading || state is HargaError || emptyCatalog
+          ? []
+          : [
+              for (var i = 0; i < extraOptions; i++)
+                HargaModel.fromJson({
+                  'id': 'item-$i',
+                  'nama_sampah': 'Kertas $i',
+                  'kategori': 'kertas',
+                }),
+              HargaModel.fromJson({
+                'id': 'pet',
+                'nama_sampah': 'Botol PET',
+                'kategori': 'plastik',
+                'harga_per_kg': 2000,
+              }),
+              HargaModel.fromJson({
+                'id': 'kardus',
+                'nama_sampah': 'Kardus',
+                'kategori': 'kertas',
+                'harga_per_kg': 1000,
+              }),
+            ];
 }
 
 Future<List<Map<String, dynamic>>> _openPicker(
@@ -154,5 +158,24 @@ void main() {
     await tester.tap(find.text('Botol PET'));
     await tester.pumpAndSettle();
     expect(changes.single['jenis_sampah_id'], 'pet');
+  });
+
+  testWidgets('picker distinguishes an unavailable catalog from an empty one',
+      (tester) async {
+    final notifier = _PickerHargaNotifier(0, loading: true);
+    final changes = await _openPicker(tester, notifier: notifier);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    notifier.replaceState(const HargaError('Gagal memuat jenis sampah'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gagal memuat jenis sampah'), findsOneWidget);
+    expect(find.text('Belum ada jenis sampah aktif'), findsNothing);
+
+    notifier.emptyCatalog = true;
+    notifier.finishLoading();
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada jenis sampah aktif'), findsOneWidget);
+    expect(find.text('Gagal memuat jenis sampah'), findsNothing);
+    expect(changes, isEmpty);
   });
 }
