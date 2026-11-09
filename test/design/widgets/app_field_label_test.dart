@@ -81,4 +81,22 @@ void main() {
     expect(style?.fontSize, 10);
     expect(style?.fontWeight, FontWeight.bold);
   });
+
+  testWidgets('is read by a screen reader as wajib diisi when required',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel('ALASAN PERUBAHAN, wajib diisi'),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
 }
