@@ -10,6 +10,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/notifications/push_session.dart';
 
+String _currentPlatform() {
+  if (kIsWeb) return 'web';
+  if (defaultTargetPlatform == TargetPlatform.iOS) return 'ios';
+  return 'android';
+}
+
 PushSession createPushSession(NetworkService network) {
   FirebaseMessaging messaging() => FirebaseMessaging.instance;
   const path = '/api/v1/device-tokens/';
@@ -29,11 +35,7 @@ PushSession createPushSession(NetworkService network) {
     register: (token) async {
       await network.post(path, data: {
         'token': token,
-        'platform': kIsWeb
-            ? 'web'
-            : defaultTargetPlatform == TargetPlatform.iOS
-                ? 'ios'
-                : 'android',
+        'platform': _currentPlatform(),
       });
     },
     remove: (token) async => network.delete(path, data: {'token': token}),

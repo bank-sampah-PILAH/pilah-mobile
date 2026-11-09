@@ -23,28 +23,32 @@ class PushSession {
 
   Future<void> start() {
     _enabled = true;
-    final operation = _pending.catchError((_) {}).then((_) async {
-      await _subscription?.cancel();
-      final token = await getToken();
-      if (token != null && token.isNotEmpty) {
-        await _register(token);
-        if (_enabled) _token = token;
-      }
-      if (!_enabled) return;
-      _subscription = tokenRefresh.listen((token) {
-        if (!_enabled) return;
-        _pending = _pending.catchError((_) {}).then((_) async {
-          if (!_enabled) return;
-          await _register(token);
-          if (!_enabled) return;
-          final previous = _token;
-          _token = token;
-          if (previous != null && previous != token) await remove(previous);
-        }).catchError((_) {});
-      });
-    });
+    final operation = _pending.catchError((_) {}).then((_) => _start());
     _pending = operation;
     return operation;
+  }
+
+  Future<void> _start() async {
+    await _subscription?.cancel();
+    final token = await getToken();
+    if (token != null && token.isNotEmpty) {
+      await _register(token);
+      if (_enabled) _token = token;
+    }
+    if (!_enabled) return;
+    _subscription = tokenRefresh.listen(_handleTokenRefresh);
+  }
+
+  void _handleTokenRefresh(String token) {
+    if (!_enabled) return;
+    _pending = _pending.catchError((_) {}).then((_) async {
+      if (!_enabled) return;
+      await _register(token);
+      if (!_enabled) return;
+      final previous = _token;
+      _token = token;
+      if (previous != null && previous != token) await remove(previous);
+    }).catchError((_) {});
   }
 
   Future<void> _register(String token) async {
