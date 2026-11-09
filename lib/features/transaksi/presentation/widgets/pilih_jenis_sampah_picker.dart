@@ -19,11 +19,20 @@ class PilihJenisSampahPicker extends StatefulWidget {
 
 class _PilihJenisSampahPickerState extends State<PilihJenisSampahPicker> {
   String _query = '';
+  String _category = '';
 
   @override
   Widget build(BuildContext context) {
+    final categories = widget.options
+        .map((item) => item.category)
+        .where((category) => category.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
     final options = widget.options
-        .where((item) => item.name.toLowerCase().contains(_query))
+        .where((item) =>
+            (_category.isEmpty || item.category == _category) &&
+            item.name.toLowerCase().contains(_query))
         .toList();
 
     return SafeArea(
@@ -43,6 +52,25 @@ class _PilihJenisSampahPickerState extends State<PilihJenisSampahPicker> {
                 setState(() => _query = value.trim().toLowerCase()),
           ),
           const SizedBox(height: AppSpacing.sm),
+          if (categories.isNotEmpty)
+            DropdownButton<String>(
+              value: _category,
+              isExpanded: true,
+              items: [
+                const DropdownMenuItem(
+                  value: '',
+                  child: Text('Semua kategori'),
+                ),
+                for (final category in categories)
+                  DropdownMenuItem(
+                    value: category,
+                    child: Text(category == 'dll'
+                        ? 'Lainnya'
+                        : category[0].toUpperCase() + category.substring(1)),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _category = value ?? ''),
+            ),
           Expanded(
             child: options.isEmpty
                 ? Center(
@@ -51,7 +79,7 @@ class _PilihJenisSampahPickerState extends State<PilihJenisSampahPicker> {
                         : 'Jenis sampah tidak ditemukan'),
                   )
                 : ListView.builder(
-                    key: ValueKey(_query),
+                    key: ValueKey((_query, _category)),
                     itemCount: options.length,
                     itemBuilder: (context, index) {
                       final item = options[index];
