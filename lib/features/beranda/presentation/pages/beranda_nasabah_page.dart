@@ -1,4 +1,3 @@
-import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
@@ -130,10 +129,6 @@ class _HomeSessionState extends State<_HomeSession>
         appBar: NasabahPageAppBar(
           title: 'Beranda',
           actions: [
-            IconButton(
-                tooltip: 'Notifikasi',
-                onPressed: () => NotificationsPage.open(context),
-                icon: const Icon(Icons.notifications_outlined)),
             IconButton(
               tooltip: 'Profil',
               onPressed: () => context.go(AppLocations.profile),

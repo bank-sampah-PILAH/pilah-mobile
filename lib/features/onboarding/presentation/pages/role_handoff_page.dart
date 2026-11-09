@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -21,8 +20,6 @@ class RoleHandoffPage extends ConsumerWidget {
   final String message;
   final bool registrationInProgress;
   final bool showPayoutHistory;
-  final bool showNotificationHistory;
-  final VoidCallback? onOpenNotifications;
 
   const RoleHandoffPage({
     super.key,
@@ -30,8 +27,6 @@ class RoleHandoffPage extends ConsumerWidget {
     required this.message,
     required this.registrationInProgress,
     this.showPayoutHistory = false,
-    this.showNotificationHistory = false,
-    this.onOpenNotifications,
   });
 
   static const registerNasabahRoute = '/register-nasabah';
@@ -116,16 +111,6 @@ class RoleHandoffPage extends ConsumerWidget {
                         path: AppLocations.history,
                         queryParameters: {'filter': 'pencairan'},
                       ).toString()),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (showNotificationHistory) ...[
-                    AppButton(
-                      label: 'Riwayat Notifikasi',
-                      variant: AppButtonVariant.outlined,
-                      icon: Icons.notifications_none,
-                      onPressed: onOpenNotifications ??
-                          () => NotificationsPage.open(context),
                     ),
                     const SizedBox(height: 12),
                   ],
