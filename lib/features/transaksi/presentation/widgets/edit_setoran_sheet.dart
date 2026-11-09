@@ -42,6 +42,7 @@ class EditSetoranSheet extends ConsumerStatefulWidget {
   static const alasanKey = ValueKey('edit-setoran-alasan');
   static const catatanKey = ValueKey('edit-setoran-catatan');
   static const saveKey = ValueKey('edit-setoran-simpan');
+  static const changeHintKey = ValueKey('edit-setoran-perlu-perubahan');
 
   @override
   ConsumerState<EditSetoranSheet> createState() => _EditSetoranSheetState();
@@ -226,6 +227,21 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
         ));
   }
 
+  /// Pesan di kartu item ke-[index] ketika isinya belum bisa disimpan.
+  ///
+  /// Urutannya mengikuti [_itemsValid]: jenis lebih dulu, karena tanpa jenis
+  /// beratnya belum berarti apa pun. Item baru dari "Tambah Item" lahir tanpa
+  /// jenis, jadi tanpa pesan ini Simpan Perubahan mati tanpa sebab yang
+  /// terlihat.
+  String? _itemErrorText(int index) {
+    final item = _items[index];
+    if (((item['jenis_sampah_id'] as String?) ?? '').isEmpty) {
+      return 'Pilih jenis sampah';
+    }
+    if (((item['berat'] as num?) ?? 0) <= 0) return 'Berat harus lebih dari 0';
+    return null;
+  }
+
   void _addItem() => setState(() {
         _items.add(
             {'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': 1.0});
@@ -263,7 +279,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
   List<Widget> _form() => [
         _ringkasan(_detail!),
         const SizedBox(height: 16),
-        const AppFieldLabel('RINCIAN SETORAN'),
+        const AppFieldLabel('RINCIAN SETORAN', isRequired: true),
         const SizedBox(height: 12),
         for (var i = 0; i < _items.length; i++)
           ItemSetoranCard(
@@ -271,10 +287,8 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
             index: i,
             itemData: _items[i],
             hargaFor: (jenis) => _detail?.hargaPadaTanggal[jenis.id] ?? 0,
-            hasError: ((_items[i]['berat'] as num?) ?? 0) <= 0,
-            errorText: ((_items[i]['berat'] as num?) ?? 0) <= 0
-                ? 'Berat harus lebih dari 0'
-                : null,
+            hasError: _itemErrorText(i) != null,
+            errorText: _itemErrorText(i),
             onDelete: () => setState(() {
               _items.removeAt(i);
               _keys.removeAt(i);
@@ -335,6 +349,16 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
           maxLength: 255,
           decoration: appInputDecoration(hintText: 'Mis. salah timbang'),
         ),
+        // Alasan terisi belum cukup: _canSave juga menuntut ada yang berubah.
+        // Tanpa baris ini tombolnya mati tanpa sebab yang terlihat.
+        if (!_itemsChanged && !_catatanChanged) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Ubah minimal satu data atau catatan untuk menyimpan.',
+            key: EditSetoranSheet.changeHintKey,
+            style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+          ),
+        ],
         if (_saveError != null) ...[
           const SizedBox(height: 4),
           Text(_saveError!,
