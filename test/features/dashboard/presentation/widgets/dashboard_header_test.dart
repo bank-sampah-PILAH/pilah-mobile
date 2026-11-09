@@ -86,7 +86,12 @@ void main() {
   testWidgets('the notification action is accessible and opens history',
       (tester) async {
     final api = StubApi();
-    api.on('GET', '/api/v1/notifications/', json: []);
+    api.on('GET', '/api/v1/notifications/', json: {
+      'count': 0,
+      'next': null,
+      'previous': null,
+      'results': [],
+    });
     di.registerSingleton<NetworkService>(api.network);
     addTearDown(() => di.unregister<NetworkService>());
     final handle = tester.ensureSemantics();

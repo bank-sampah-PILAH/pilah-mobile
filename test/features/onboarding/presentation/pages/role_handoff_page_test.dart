@@ -55,7 +55,12 @@ void main() {
   testWidgets('opens notification history from the Induk landing page',
       (tester) async {
     final api = StubApi();
-    api.on('GET', '/api/v1/notifications/', json: []);
+    api.on('GET', '/api/v1/notifications/', json: {
+      'count': 0,
+      'next': null,
+      'previous': null,
+      'results': [],
+    });
     di.registerSingleton<NetworkService>(api.network);
     addTearDown(() => di.unregister<NetworkService>());
     final auth = authNotifierIn(Authenticated(
