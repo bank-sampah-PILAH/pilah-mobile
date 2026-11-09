@@ -80,6 +80,25 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('the notification action has an accessible label',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(withAuthenticationProvider(
+      authNotifierIn(
+        Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
+      ),
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
+          body: Padding(padding: EdgeInsets.all(16), child: DashboardHeader()),
+        ),
+      ),
+    ));
+
+    expect(find.bySemanticsLabel('Notifikasi'), findsOneWidget);
+    handle.dispose();
+  });
+
   group('the Kelola Pengumuman door is gone', () {
     Future<GoRouter> pump(WidgetTester tester,
         {bool showProfile = true}) async {

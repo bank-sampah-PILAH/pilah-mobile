@@ -49,6 +49,39 @@ void main() {
     expect(find.text('Permintaan penghapusan akun'), findsNothing);
   });
 
+  testWidgets('opens notification history from the Induk landing page',
+      (tester) async {
+    final auth = authNotifierIn(Authenticated(
+      authEntity: const AuthEntity(
+        name: 'Ayu Lestari',
+        email: 'ayu@example.com',
+        photoUrl: '',
+        token: 'jwt',
+        role: 'pengelola_induk',
+      ),
+    ));
+    var openedNotifications = false;
+
+    await pumpRouted(
+      tester,
+      withAuthenticationProvider(
+        auth,
+        RoleHandoffPage(
+          title: 'Akun Pengelola Induk Siap',
+          message: 'Beranda Bank Sampah Induk sedang disiapkan.',
+          registrationInProgress: false,
+          showNotificationHistory: true,
+          onOpenNotifications: () => openedNotifications = true,
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Riwayat Notifikasi'), findsOneWidget);
+    await tester.tap(find.text('Riwayat Notifikasi'));
+
+    expect(openedNotifications, isTrue);
+  });
+
   testWidgets('lets a role handoff user sign out and return to login',
       (tester) async {
     final auth = authNotifierIn(Authenticated(
