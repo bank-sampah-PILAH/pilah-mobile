@@ -2,43 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 
 import '../../../../support/harga_support.dart';
 import '../../../../support/stub_api.dart';
 
 class _PickerHargaNotifier extends TestHargaNotifier {
-  _PickerHargaNotifier(this.extraOptions)
-      : super(buildHargaNotifier(StubApi()));
+  _PickerHargaNotifier(this.extraOptions, {bool loading = false})
+      : super(buildHargaNotifier(StubApi()),
+            initialState: loading ? HargaLoading() : HargaInitial());
+
+  void finishLoading() => state = const HargaLoaded(jenisSampahList: []);
 
   final int extraOptions;
 
   @override
-  List<HargaEntity> get activeJenisSampah => [
-        for (var i = 0; i < extraOptions; i++)
+  List<HargaEntity> get activeJenisSampah => state is HargaLoading
+      ? []
+      : [
+          for (var i = 0; i < extraOptions; i++)
+            HargaModel.fromJson({
+              'id': 'item-$i',
+              'nama_sampah': 'Kertas $i',
+              'kategori': 'kertas',
+            }),
           HargaModel.fromJson({
-            'id': 'item-$i',
-            'nama_sampah': 'Kertas $i',
-            'kategori': 'kertas',
+            'id': 'pet',
+            'nama_sampah': 'Botol PET',
+            'kategori': 'plastik',
+            'harga_per_kg': 2000,
           }),
-        HargaModel.fromJson({
-          'id': 'pet',
-          'nama_sampah': 'Botol PET',
-          'kategori': 'plastik',
-          'harga_per_kg': 2000,
-        }),
-        HargaModel.fromJson({
-          'id': 'kardus',
-          'nama_sampah': 'Kardus',
-          'kategori': 'kertas',
-          'harga_per_kg': 1000,
-        }),
-      ];
+          HargaModel.fromJson({
+            'id': 'kardus',
+            'nama_sampah': 'Kardus',
+            'kategori': 'kertas',
+            'harga_per_kg': 1000,
+          }),
+        ];
 }
 
 Future<List<Map<String, dynamic>>> openPicker(
   WidgetTester tester, {
   int extraOptions = 0,
+  _PickerHargaNotifier? notifier,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(400, 800);
@@ -47,7 +54,7 @@ Future<List<Map<String, dynamic>>> openPicker(
   final changes = <Map<String, dynamic>>[];
   await tester.pumpWidget(
     withHargaProvider(
-      _PickerHargaNotifier(extraOptions),
+      notifier ?? _PickerHargaNotifier(extraOptions),
       MaterialApp(
         home: Scaffold(
           body: ItemSetoranCard(
@@ -61,7 +68,8 @@ Future<List<Map<String, dynamic>>> openPicker(
     ),
   );
   await tester.tapAt(tester.getCenter(find.text('Pilih Jenis')));
-  await tester.pumpAndSettle();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
   return changes;
 }
 
@@ -98,6 +106,7 @@ void main() {
     await tester.enterText(search, '  bOtOl  ');
     await tester.pumpAndSettle();
     expect(find.text('Kertas 0'), findsNothing);
+    expect(find.text('Botol PET'), findsOneWidget);
     await tester.tap(find.text('Botol PET'));
     await tester.pumpAndSettle();
     expect(changes.single['jenis_sampah_id'], 'pet');
@@ -131,5 +140,19 @@ void main() {
     await tester.tap(find.byTooltip('Tutup'));
     await tester.pumpAndSettle();
     expect(changes, isEmpty);
+  });
+
+  testWidgets('an open picker shows options when the catalog finishes loading',
+      (tester) async {
+    final notifier = _PickerHargaNotifier(0, loading: true);
+    final changes = await openPicker(tester, notifier: notifier);
+    expect(find.text('Botol PET'), findsNothing);
+
+    notifier.finishLoading();
+    await tester.pumpAndSettle();
+    expect(find.text('Botol PET'), findsOneWidget);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(changes.single['jenis_sampah_id'], 'pet');
   });
 }
