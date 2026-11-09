@@ -64,4 +64,21 @@ void main() {
     expect(find.text('CATATAN'), findsOneWidget);
     expect(find.text('*'), findsNothing);
   });
+
+  testWidgets('draws the required marker in the danger red at caption size',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
+        ),
+      ),
+    );
+
+    final style =
+        tester.renderObject<RenderParagraph>(find.text('*')).text.style;
+    expect(style?.color, AppColors.danger);
+    expect(style?.fontSize, 10);
+    expect(style?.fontWeight, FontWeight.bold);
+  });
 }
