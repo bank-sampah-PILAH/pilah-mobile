@@ -700,7 +700,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Section 1: PILIH NASABAH
-                              const AppFieldLabel('PILIH NASABAH'),
+                              const AppFieldLabel('PILIH NASABAH', isRequired: true),
                               const SizedBox(height: 16),
                               _tutorialStep(
                                 key: _customerTutorialKey,
@@ -728,7 +728,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const AppFieldLabel('DAFTAR SETORAN'),
+                                  const AppFieldLabel('DAFTAR SETORAN', isRequired: true),
                                   Text(
                                     '${setoranItems.length} item',
                                     style: AppTextStyle.small.copyWith(
