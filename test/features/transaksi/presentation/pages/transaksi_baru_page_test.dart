@@ -345,8 +345,7 @@ void main() {
     final handle = tester.ensureSemantics();
     await open(tester);
 
-    expect(
-        find.bySemanticsLabel('PILIH NASABAH, wajib diisi'), findsOneWidget);
+    expect(find.bySemanticsLabel('PILIH NASABAH, wajib diisi'), findsOneWidget);
     expect(
         find.bySemanticsLabel('DAFTAR SETORAN, wajib diisi'), findsOneWidget);
     handle.dispose();

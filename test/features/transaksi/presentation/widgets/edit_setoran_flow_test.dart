@@ -194,8 +194,8 @@ void main() {
     final handle = tester.ensureSemantics();
     await open(tester);
 
-    expect(find.bySemanticsLabel('ALASAN PERUBAHAN, wajib diisi'),
-        findsOneWidget);
+    expect(
+        find.bySemanticsLabel('ALASAN PERUBAHAN, wajib diisi'), findsOneWidget);
     expect(find.text('CATATAN'), findsOneWidget);
     expect(find.bySemanticsLabel('CATATAN, wajib diisi'), findsNothing);
     handle.dispose();

@@ -55,8 +55,7 @@ void main() {
     expect(find.text('*'), findsOneWidget);
   });
 
-  testWidgets('leaves a field unmarked unless it is required',
-      (tester) async {
+  testWidgets('leaves a field unmarked unless it is required', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: AppFieldLabel('CATATAN'))),
     );
