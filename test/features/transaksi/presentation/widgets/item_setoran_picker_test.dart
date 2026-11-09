@@ -8,10 +8,19 @@ import '../../../../support/harga_support.dart';
 import '../../../../support/stub_api.dart';
 
 class _PickerHargaNotifier extends TestHargaNotifier {
-  _PickerHargaNotifier() : super(buildHargaNotifier(StubApi()));
+  _PickerHargaNotifier(this.extraOptions)
+      : super(buildHargaNotifier(StubApi()));
+
+  final int extraOptions;
 
   @override
   List<HargaEntity> get activeJenisSampah => [
+        for (var i = 0; i < extraOptions; i++)
+          HargaModel.fromJson({
+            'id': 'item-$i',
+            'nama_sampah': 'Kertas $i',
+            'kategori': 'kertas',
+          }),
         HargaModel.fromJson({
           'id': 'pet',
           'nama_sampah': 'Botol PET',
@@ -27,7 +36,10 @@ class _PickerHargaNotifier extends TestHargaNotifier {
       ];
 }
 
-Future<List<Map<String, dynamic>>> openPicker(WidgetTester tester) async {
+Future<List<Map<String, dynamic>>> openPicker(
+  WidgetTester tester, {
+  int extraOptions = 0,
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(400, 800);
   addTearDown(tester.view.resetPhysicalSize);
@@ -35,7 +47,7 @@ Future<List<Map<String, dynamic>>> openPicker(WidgetTester tester) async {
   final changes = <Map<String, dynamic>>[];
   await tester.pumpWidget(
     withHargaProvider(
-      _PickerHargaNotifier(),
+      _PickerHargaNotifier(extraOptions),
       MaterialApp(
         home: Scaffold(
           body: ItemSetoranCard(
@@ -70,5 +82,24 @@ void main() {
       'harga': 2000,
       'berat': 2.5,
     });
+  });
+
+  testWidgets('name search finds an offscreen waste type without scrolling',
+      (tester) async {
+    final changes = await openPicker(tester, extraOptions: 40);
+    final search = find.widgetWithText(TextField, 'Cari nama jenis sampah');
+    expect(find.text('Botol PET'), findsNothing);
+    expect(search, findsOneWidget);
+
+    await tester.enterText(search, 'unknown');
+    await tester.pumpAndSettle();
+    expect(find.text('Jenis sampah tidak ditemukan'), findsOneWidget);
+
+    await tester.enterText(search, '  bOtOl  ');
+    await tester.pumpAndSettle();
+    expect(find.text('Kertas 0'), findsNothing);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(changes.single['jenis_sampah_id'], 'pet');
   });
 }
