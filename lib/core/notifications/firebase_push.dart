@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/core/notifications/web_push_open.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -16,13 +18,22 @@ String _currentPlatform({bool isWeb = kIsWeb}) {
   return 'android';
 }
 
+void requestNotificationPermissionAfterFirstFrame({bool isWeb = kIsWeb}) {
+  if (isWeb || Firebase.apps.isEmpty) return;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(FirebaseMessaging.instance
+        .requestPermission()
+        .then<void>((_) {}, onError: (_) {}));
+  });
+}
+
 PushSession createPushSession(NetworkService network, {bool isWeb = kIsWeb}) {
   FirebaseMessaging messaging() => FirebaseMessaging.instance;
   const path = '/api/v1/device-tokens/';
   return PushSession(
     getToken: () async {
       if (Firebase.apps.isEmpty) return null;
-      await messaging().requestPermission();
+      if (isWeb) await messaging().requestPermission();
       return messaging().getToken(
           vapidKey: isWeb ? dotenv.env['FIREBASE_WEB_VAPID_KEY'] : null);
     },

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pilah_mobile/core/utils/platform_initialization.dart';
 import 'package:pilah_mobile/core/utils/firebase_initialization.dart';
+import 'package:pilah_mobile/core/notifications/firebase_push.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -38,4 +39,5 @@ Future<void> main() async {
     initializeGoogle: GoogleSignIn.instance.initialize,
   );
   runApp(const App());
+  requestNotificationPermissionAfterFirstFrame();
 }

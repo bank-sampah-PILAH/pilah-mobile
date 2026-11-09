@@ -182,6 +182,7 @@ void main() {
   });
 
   test('skips push setup when Firebase has no app', () async {
+    requestNotificationPermissionAfterFirstFrame(isWeb: false);
     final api = StubApi();
     final session = createPushSession(api.network);
 
@@ -194,6 +195,27 @@ void main() {
     expect(_firebaseMessaging.tokenDeleted, isFalse);
   });
 
+  testWidgets('asks for native notification permission after the first frame',
+      (tester) async {
+    _firebaseCore.hasApp = true;
+
+    requestNotificationPermissionAfterFirstFrame(isWeb: false);
+    expect(_firebaseMessaging.permissionRequests, 0);
+
+    await tester.pumpWidget(const SizedBox());
+    expect(_firebaseMessaging.permissionRequests, 1);
+  });
+
+  testWidgets('does not ask for notification permission on web startup',
+      (tester) async {
+    _firebaseCore.hasApp = true;
+
+    requestNotificationPermissionAfterFirstFrame(isWeb: true);
+    await tester.pumpWidget(const SizedBox());
+
+    expect(_firebaseMessaging.permissionRequests, 0);
+  });
+
   test('registers and removes the Firebase device token', () async {
     _firebaseCore.hasApp = true;
     final api = StubApi();
@@ -204,7 +226,7 @@ void main() {
     await session.start();
     await session.stop();
 
-    expect(_firebaseMessaging.permissionRequests, 1);
+    expect(_firebaseMessaging.permissionRequests, 0);
     expect(_firebaseMessaging.vapidKeys, [null]);
     expect(api.requests.map((request) => request.method), ['POST', 'DELETE']);
     expect(api.requests.map((request) => request.json['token']),
@@ -223,6 +245,7 @@ void main() {
     final session = createPushSession(api.network, isWeb: true);
 
     await session.start();
+    expect(_firebaseMessaging.permissionRequests, 1);
     expect(_firebaseMessaging.vapidKeys, ['web-vapid-key']);
     expect(api.requests.first.json['platform'], 'web');
     await session.stop();
