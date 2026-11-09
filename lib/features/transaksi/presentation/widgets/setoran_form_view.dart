@@ -33,6 +33,7 @@ import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_problem_reporter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -344,18 +345,8 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
       : _draft.itemIndexesWith(SetoranProblem.nonPositiveBerat);
 
   /// Pesan untuk kartu ke-[index], mengikuti waktu yang sama.
-  String? _itemErrorText(int index) {
-    if (index >= _draft.items.length) return null;
-    final item = _draft.items[index];
-    if (!_hasSubmitted) {
-      // Hanya berat, supaya pesannya tentang kolom yang memang baru disunting.
-      return item.hasPositiveBerat ? null : 'Berat harus lebih dari 0';
-    }
-    // Jenis diperiksa lebih dulu: tanpa jenis, beratnya belum berarti apa pun.
-    if (!item.hasJenis) return 'Pilih jenis sampah';
-    if (!item.hasPositiveBerat) return 'Berat harus lebih dari 0';
-    return null;
-  }
+  ItemSetoranProblemReporter get _problems =>
+      _DraftItemProblems(draft: _draft, hasSubmitted: _hasSubmitted);
 
   /// Ringkasan untuk notifikasi ketika simpan ditolak.
   ///
@@ -894,7 +885,7 @@ class SetoranFormViewState extends ConsumerState<SetoranFormView> {
       index: index,
       itemData: setoranItems[index],
       hasError: _flaggedItemIndexes.contains(index),
-      errorText: _itemErrorText(index),
+      errorText: _problems.messageFor(index),
       onChanged: (updatedItem) {
         final newId = updatedItem['jenis_sampah_id'] as String?;
         if (jenisSampahSudahAda(setoranItems, index, newId)) {
@@ -955,4 +946,28 @@ class _SummaryPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Laporan masalah kartu untuk Transaksi Baru.
+///
+/// Jenis yang belum dipilih baru dikeluhkan setelah simpan ditekan, karena
+/// kartu baru memang lahir tanpa jenis dan menandainya lebih awal berarti
+/// mengomeli pengelola yang belum melakukan apa pun.
+class _DraftItemProblems extends ItemSetoranProblemReporter {
+  const _DraftItemProblems({required this.draft, required this.hasSubmitted});
+
+  final SetoranDraft draft;
+  final bool hasSubmitted;
+
+  @override
+  int get itemCount => draft.items.length;
+
+  @override
+  bool hasJenis(int index) => draft.items[index].hasJenis;
+
+  @override
+  bool hasPositiveBerat(int index) => draft.items[index].hasPositiveBerat;
+
+  @override
+  bool reportsMissingJenis(int index) => hasSubmitted;
 }
