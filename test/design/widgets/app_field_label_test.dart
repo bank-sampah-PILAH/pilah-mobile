@@ -41,4 +41,27 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets('marks a required field with an asterisk', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
+        ),
+      ),
+    );
+
+    expect(find.text('ALASAN PERUBAHAN'), findsOneWidget);
+    expect(find.text('*'), findsOneWidget);
+  });
+
+  testWidgets('leaves a field unmarked unless it is required',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: AppFieldLabel('CATATAN'))),
+    );
+
+    expect(find.text('CATATAN'), findsOneWidget);
+    expect(find.text('*'), findsNothing);
+  });
 }
