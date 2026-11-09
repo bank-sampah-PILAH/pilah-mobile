@@ -31,18 +31,22 @@ class AppFieldLabel extends StatelessWidget {
     );
     if (!isRequired) return RevealInReplay(child: caption);
     return RevealInReplay(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          caption,
-          Text(
-            '*',
-            style: AppTextStyle.extraSmall.copyWith(
-              color: AppColors.danger,
-              fontWeight: AppFontWeight.bold,
+      child: Semantics(
+        label: '$text, wajib diisi',
+        excludeSemantics: true,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            caption,
+            Text(
+              '*',
+              style: AppTextStyle.extraSmall.copyWith(
+                color: AppColors.danger,
+                fontWeight: AppFontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
