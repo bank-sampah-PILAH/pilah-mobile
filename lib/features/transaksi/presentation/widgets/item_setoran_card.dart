@@ -8,8 +8,6 @@ import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
@@ -77,45 +75,36 @@ class ItemSetoranCard extends StatelessWidget {
                     border: Border.all(
                         color: hasError ? errorColor : AppColors.border),
                   ),
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      return InkWell(
-                        onTap: () async {
-                          final notifier = ref.read(hargaProvider.notifier);
-                          final selected =
-                              await showAdaptivePicker<HargaEntity>(
-                            context: context,
-                            builder: (_, __) => PilihJenisSampahPicker(
-                              options: notifier.activeJenisSampah,
-                              selectedId:
-                                  itemData['jenis_sampah_id'] as String?,
-                            ),
-                          );
-                          if (!context.mounted || selected == null) return;
-                          onChanged({
-                            ...itemData,
-                            'jenis': selected.name,
-                            'jenis_sampah_id': selected.id,
-                            'harga': hargaFor?.call(selected) ?? selected.price,
-                          });
-                        },
-                        child: Row(
-                          children: [
-                            const Icon(Icons.recycling,
-                                color: AppColors.greenDark),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                selectedType ?? 'Pilih Jenis',
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyle.small,
-                              ),
-                            ),
-                            const Icon(Icons.keyboard_arrow_down),
-                          ],
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showAdaptivePicker<HargaEntity>(
+                        context: context,
+                        builder: (_, __) => PilihJenisSampahPicker(
+                          selectedId: itemData['jenis_sampah_id'] as String?,
                         ),
                       );
+                      if (!context.mounted || selected == null) return;
+                      onChanged({
+                        ...itemData,
+                        'jenis': selected.name,
+                        'jenis_sampah_id': selected.id,
+                        'harga': hargaFor?.call(selected) ?? selected.price,
+                      });
                     },
+                    child: Row(
+                      children: [
+                        const Icon(Icons.recycling, color: AppColors.greenDark),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            selectedType ?? 'Pilih Jenis',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyle.small,
+                          ),
+                        ),
+                        const Icon(Icons.keyboard_arrow_down),
+                      ],
+                    ),
                   ),
                 ),
               ),

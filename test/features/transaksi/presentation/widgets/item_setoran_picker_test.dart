@@ -42,7 +42,7 @@ class _PickerHargaNotifier extends TestHargaNotifier {
         ];
 }
 
-Future<List<Map<String, dynamic>>> openPicker(
+Future<List<Map<String, dynamic>>> _openPicker(
   WidgetTester tester, {
   int extraOptions = 0,
   _PickerHargaNotifier? notifier,
@@ -76,7 +76,7 @@ Future<List<Map<String, dynamic>>> openPicker(
 void main() {
   testWidgets('selecting a waste type in the sheet updates the deposit row',
       (tester) async {
-    final changes = await openPicker(tester);
+    final changes = await _openPicker(tester);
 
     expect(find.text('Botol PET'), findsOneWidget);
     expect(find.byType(BottomSheet), findsOneWidget);
@@ -94,7 +94,7 @@ void main() {
 
   testWidgets('name search finds an offscreen waste type without scrolling',
       (tester) async {
-    final changes = await openPicker(tester, extraOptions: 40);
+    final changes = await _openPicker(tester, extraOptions: 40);
     final search = find.widgetWithText(TextField, 'Cari nama jenis sampah');
     expect(find.text('Botol PET'), findsNothing);
     expect(search, findsOneWidget);
@@ -114,7 +114,7 @@ void main() {
 
   testWidgets('category narrows name results and can be cleared',
       (tester) async {
-    final changes = await openPicker(tester);
+    final changes = await _openPicker(tester);
     final search = find.widgetWithText(TextField, 'Cari nama jenis sampah');
     final category = find.byType(DropdownButton<String>);
     expect(category, findsOneWidget);
@@ -145,7 +145,7 @@ void main() {
   testWidgets('an open picker shows options when the catalog finishes loading',
       (tester) async {
     final notifier = _PickerHargaNotifier(0, loading: true);
-    final changes = await openPicker(tester, notifier: notifier);
+    final changes = await _openPicker(tester, notifier: notifier);
     expect(find.text('Botol PET'), findsNothing);
 
     notifier.finishLoading();
