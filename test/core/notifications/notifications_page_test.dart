@@ -6,12 +6,72 @@ import 'package:pilah_mobile/services/di.dart';
 
 import '../../support/stub_api.dart';
 
+Map<String, dynamic> notificationPage(
+  List<dynamic> results, {
+  String? next,
+  String? previous,
+}) =>
+    {
+      'count': results.length,
+      'next': next,
+      'previous': previous,
+      'results': results,
+    };
+
 void main() {
+  testWidgets('loads older notifications on demand and avoids duplicates',
+      (tester) async {
+    final requestedPages = <int>[];
+    await tester.pumpWidget(MaterialApp(
+        home: NotificationsPage(
+      loadPage: (page) async {
+        requestedPages.add(page);
+        return page == 1
+            ? notificationPage([
+                {
+                  'id': 7,
+                  'title': 'Jadwal baru',
+                  'body': 'Ada jadwal baru.',
+                  'read_at': null
+                }
+              ], next: '?page=2')
+            : notificationPage([
+                {
+                  'id': 7,
+                  'title': 'Jadwal baru',
+                  'body': 'Ada jadwal baru.',
+                  'read_at': null
+                },
+                {
+                  'id': 8,
+                  'title': 'Jadwal lama',
+                  'body': 'Ada jadwal lama.',
+                  'read_at': null
+                }
+              ], previous: '?page=1');
+      },
+      markRead: (_) async {},
+    )));
+    await tester.pumpAndSettle();
+
+    expect(requestedPages, [1]);
+    expect(find.text('Jadwal baru'), findsOneWidget);
+    expect(find.text('Jadwal lama'), findsNothing);
+
+    await tester.tap(find.text('Muat Lagi'));
+    await tester.pumpAndSettle();
+
+    expect(requestedPages, [1, 2]);
+    expect(find.text('Jadwal baru'), findsOneWidget);
+    expect(find.text('Jadwal lama'), findsOneWidget);
+    expect(find.text('Muat Lagi'), findsNothing);
+  });
+
   testWidgets('shows a notification and marks it read', (tester) async {
     final read = <int>[];
     await tester.pumpWidget(MaterialApp(
         home: NotificationsPage(
-      load: () async => [
+      loadPage: (_) async => notificationPage([
         {
           'id': 7,
           'title': 'Jadwal baru',
@@ -24,7 +84,7 @@ void main() {
           'body': 'Ada jadwal lama.',
           'read_at': null
         }
-      ],
+      ]),
       markRead: (id) async => read.add(id),
     )));
     await tester.pumpAndSettle();
@@ -38,11 +98,11 @@ void main() {
     var attempts = 0;
     await tester.pumpWidget(MaterialApp(
         home: NotificationsPage(
-      load: () {
+      loadPage: (_) {
         attempts++;
         return attempts == 1
             ? Future.error(StateError('offline'))
-            : Future.value([]);
+            : Future.value(notificationPage([]));
       },
       markRead: (_) async {},
     )));
@@ -60,14 +120,14 @@ void main() {
       (tester) async {
     await tester.pumpWidget(MaterialApp(
         home: NotificationsPage(
-      load: () async => [
+      loadPage: (_) async => notificationPage([
         {
           'id': 7,
           'title': 'Jadwal baru',
           'body': 'Ada jadwal baru.',
           'read_at': null
         }
-      ],
+      ]),
       markRead: (_) async => throw StateError('offline'),
     )));
     await tester.pumpAndSettle();
@@ -80,14 +140,15 @@ void main() {
 
   testWidgets('opens the notification history endpoint', (tester) async {
     final api = StubApi();
-    api.on('GET', '/api/v1/notifications/', json: [
-      {
-        'id': 7,
-        'title': 'Jadwal baru',
-        'body': 'Ada jadwal baru.',
-        'read_at': null
-      }
-    ]);
+    api.on('GET', '/api/v1/notifications/',
+        json: notificationPage([
+          {
+            'id': 7,
+            'title': 'Jadwal baru',
+            'body': 'Ada jadwal baru.',
+            'read_at': null
+          }
+        ]));
     api.on('POST', '/api/v1/notifications/7/read/', json: {});
     di.registerSingleton<NetworkService>(api.network);
     addTearDown(() => di.unregister<NetworkService>());
