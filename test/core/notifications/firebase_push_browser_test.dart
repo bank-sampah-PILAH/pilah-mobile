@@ -110,6 +110,7 @@ final _firebaseCore = _FirebaseCore();
 final _firebaseMessaging = _FirebaseMessaging();
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late core.FirebasePlatform? previousFirebaseCore;
   late messaging.FirebaseMessagingPlatform previousFirebaseMessaging;
 

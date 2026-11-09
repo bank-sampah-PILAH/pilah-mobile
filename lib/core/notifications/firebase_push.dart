@@ -10,13 +10,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/notifications/push_session.dart';
 
-String _currentPlatform() {
-  if (kIsWeb) return 'web';
+String _currentPlatform({bool isWeb = kIsWeb}) {
+  if (isWeb) return 'web';
   if (defaultTargetPlatform == TargetPlatform.iOS) return 'ios';
   return 'android';
 }
 
-PushSession createPushSession(NetworkService network) {
+PushSession createPushSession(NetworkService network, {bool isWeb = kIsWeb}) {
   FirebaseMessaging messaging() => FirebaseMessaging.instance;
   const path = '/api/v1/device-tokens/';
   return PushSession(
@@ -24,7 +24,7 @@ PushSession createPushSession(NetworkService network) {
       if (Firebase.apps.isEmpty) return null;
       await messaging().requestPermission();
       return messaging().getToken(
-          vapidKey: kIsWeb ? dotenv.env['FIREBASE_WEB_VAPID_KEY'] : null);
+          vapidKey: isWeb ? dotenv.env['FIREBASE_WEB_VAPID_KEY'] : null);
     },
     invalidate: () async {
       if (Firebase.apps.isNotEmpty) await messaging().deleteToken();
@@ -35,14 +35,14 @@ PushSession createPushSession(NetworkService network) {
     register: (token) async {
       await network.post(path, data: {
         'token': token,
-        'platform': _currentPlatform(),
+        'platform': _currentPlatform(isWeb: isWeb),
       });
     },
     remove: (token) async => network.delete(path, data: {'token': token}),
   );
 }
 
-PushPresentation<RemoteMessage>? createPushPresentation() {
+PushPresentation<RemoteMessage>? createPushPresentation({bool isWeb = kIsWeb}) {
   if (Firebase.apps.isEmpty) return null;
   void openHistory() {
     AppNotification.afterNavigation(
@@ -51,10 +51,9 @@ PushPresentation<RemoteMessage>? createPushPresentation() {
 
   return PushPresentation<RemoteMessage>(
     foreground: FirebaseMessaging.onMessage,
-    opened: kIsWeb
-        ? webPushOpens
-        : FirebaseMessaging.onMessageOpenedApp.map((_) {}),
-    initialOpen: () async => kIsWeb
+    opened:
+        isWeb ? webPushOpens : FirebaseMessaging.onMessageOpenedApp.map((_) {}),
+    initialOpen: () async => isWeb
         ? takeWebPushOpen()
         : await FirebaseMessaging.instance.getInitialMessage() != null,
     open: openHistory,

@@ -9,6 +9,7 @@ import 'package:firebase_messaging_platform_interface/firebase_messaging_platfor
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/notifications/firebase_push.dart';
@@ -211,6 +212,24 @@ void main() {
     expect(api.requests.map((request) => request.json['platform']),
         ['android', null]);
     expect(_firebaseMessaging.tokenDeleted, isTrue);
+  });
+
+  test('uses web push configuration when requested', () async {
+    _firebaseCore.hasApp = true;
+    dotenv.loadFromString(envString: 'FIREBASE_WEB_VAPID_KEY=web-vapid-key');
+    final api = StubApi();
+    api.on('POST', '/api/v1/device-tokens/', json: {});
+    api.on('DELETE', '/api/v1/device-tokens/', json: {});
+    final session = createPushSession(api.network, isWeb: true);
+
+    await session.start();
+    expect(_firebaseMessaging.vapidKeys, ['web-vapid-key']);
+    expect(api.requests.first.json['platform'], 'web');
+    await session.stop();
+
+    final presentation = createPushPresentation(isWeb: true)!;
+    expect(await presentation.initialOpen(), isFalse);
+    await expectLater(presentation.opened, emitsDone);
   });
 
   testWidgets('opens history on taps and shows foreground notifications',
