@@ -337,6 +337,7 @@ class AppRouterConfig {
           message:
               'Beranda Bank Sampah Induk sedang disiapkan. Data organisasi Anda sudah tersimpan.',
           registrationInProgress: false,
+          showNotificationHistory: true,
         ),
       ),
       StatefulShellRoute.indexedStack(

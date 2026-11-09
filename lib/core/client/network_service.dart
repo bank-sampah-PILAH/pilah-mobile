@@ -245,7 +245,11 @@ ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}'''
       'headers': resp.requestOptions.headers,
       'queryParams': resp.requestOptions.queryParameters,
       'body': _requestBodyForLog(resp.requestOptions),
-      'response': isBytes ? 'bytes' : resp.data,
+      'response': resp.requestOptions.path.contains('/device-tokens/')
+          ? '[REDACTED]'
+          : isBytes
+              ? 'bytes'
+              : resp.data,
     });
   }
   return handler.next(resp);
@@ -257,7 +261,9 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
       'headers': err.requestOptions.headers,
       'queryParams': err.requestOptions.queryParameters,
       'body': _requestBodyForLog(err.requestOptions),
-      'response': err.response?.data,
+      'response': err.requestOptions.path.contains('/device-tokens/')
+          ? '[REDACTED]'
+          : err.response?.data,
       'type': err.type,
       // `type` alone can't tell a dropped connection from a parse failure —
       // both arrive as DioExceptionType.unknown. The wrapped error is the only
@@ -280,6 +286,9 @@ Object? _requestBodyForLog(RequestOptions options) {
   final data = options.data;
   try {
     final body = data is String ? jsonDecode(data) : data;
+    if (body is Map && options.path.contains('/device-tokens/')) {
+      return {...body, 'token': '[REDACTED]'};
+    }
     if (body is Map && body.containsKey('password')) {
       return {...body, 'password': '[REDACTED]'};
     }

@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,6 +67,10 @@ class DashboardHeader extends ConsumerWidget {
             ],
           ),
         ),
+        IconButton(
+            tooltip: 'Notifikasi',
+            onPressed: () => NotificationsPage.open(context),
+            icon: const Icon(Icons.notifications_outlined)),
         if (showProfile) ...[
           const SizedBox(width: 12),
           AppTapTarget(

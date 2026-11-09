@@ -30,9 +30,21 @@ Future<void> main() async {
 
   await initializePlatformServices(
     isWeb: kIsWeb,
+    initializeFirebaseOnWeb:
+        kIsWeb && (dotenv.env['FIREBASE_WEB_APP_ID']?.isNotEmpty ?? false),
     oauthClientId: dotenv.env['GOOGLE_SERVER_CLIENT_ID'],
     initializeFirebase: () async {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: kIsWeb
+            ? FirebaseOptions(
+                apiKey: dotenv.env['FIREBASE_WEB_API_KEY'] ?? '',
+                appId: dotenv.env['FIREBASE_WEB_APP_ID'] ?? '',
+                messagingSenderId:
+                    dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+                projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+              )
+            : null,
+      );
     },
     initializeGoogle: GoogleSignIn.instance.initialize,
   );

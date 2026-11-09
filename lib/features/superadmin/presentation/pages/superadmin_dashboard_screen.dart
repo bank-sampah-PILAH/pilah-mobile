@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -166,7 +167,8 @@ class _SuperAdminDashboardScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Expanded(
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -184,7 +186,12 @@ class _SuperAdminDashboardScreenState
                         fontWeight: AppFontWeight.bold),
                   ),
                 ],
-              ),
+              )),
+              IconButton(
+                  tooltip: 'Notifikasi',
+                  color: Colors.white,
+                  onPressed: () => NotificationsPage.open(context),
+                  icon: const Icon(Icons.notifications_outlined)),
               PopupMenuButton<_DashboardMenuAction>(
                 tooltip: 'Menu akun',
                 iconColor: Colors.white,
