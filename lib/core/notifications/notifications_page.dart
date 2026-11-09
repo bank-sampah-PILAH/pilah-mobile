@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
@@ -11,10 +12,12 @@ class NotificationsPage extends StatefulWidget {
     super.key,
     required this.loadPage,
     required this.markRead,
+    required this.clear,
   });
 
   final Future<Map<String, dynamic>> Function(int page) loadPage;
   final Future<void> Function(int) markRead;
+  final Future<int> Function() clear;
 
   static const _pageSize = 20;
 
@@ -31,6 +34,9 @@ class NotificationsPage extends StatefulWidget {
               markRead: (id) async {
                 await network.post('/api/v1/notifications/$id/read/');
               },
+              clear: () async =>
+                  (await network.post('/api/v1/notifications/clear/'))
+                      .data['hidden_count'] as int,
             )));
   }
 
@@ -46,6 +52,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   int _nextPage = 2;
   bool _loadingMore = false;
   bool _pageError = false;
+  bool _clearing = false;
 
   @override
   void initState() {
@@ -57,7 +64,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget build(BuildContext context) => Scaffold(
         body: SafeArea(
             child: Column(children: [
-          const AppBackHeader(title: 'Notifikasi'),
+          AppBackHeader(
+            title: 'Notifikasi',
+            actions: [
+              TextButton(
+                onPressed: _initialLoading || _loadingMore || _clearing
+                    ? null
+                    : _clearNotifications,
+                child: Text(_clearing ? 'Membersihkan...' : 'Bersihkan'),
+              ),
+            ],
+          ),
           Expanded(child: _buildContent()),
         ])),
       );
@@ -118,7 +135,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         leading: Icon(item['read_at'] == null
             ? Icons.mark_email_unread_outlined
             : Icons.mark_email_read_outlined),
-        onTap: item['read_at'] != null
+        onTap: item['read_at'] != null || _clearing
             ? null
             : () => _markRead(context, item['id'] as int),
       );
@@ -153,7 +170,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _loadMore() async {
-    if (_loadingMore || !_hasNext) return;
+    if (_loadingMore || !_hasNext || _clearing) return;
     final page = _nextPage;
     setState(() {
       _loadingMore = true;
@@ -175,6 +192,44 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _loadingMore = false;
         _pageError = true;
       });
+    }
+  }
+
+  Future<void> _clearNotifications() async {
+    if (_initialLoading || _loadingMore || _clearing) return;
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Bersihkan notifikasi?',
+      message:
+          'Semua notifikasi akan disembunyikan dari kotak masuk tanpa mengubah status dibaca.',
+      confirmLabel: 'Bersihkan',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _clearing = true);
+    try {
+      final hiddenCount = await widget.clear();
+      if (!mounted) return;
+      setState(() {
+        _items.clear();
+        _initialError = false;
+        _hasNext = false;
+        _pageError = false;
+        _clearing = false;
+      });
+      AppNotification.showSuccess(
+        context,
+        title: 'Notifikasi dibersihkan',
+        message: '$hiddenCount notifikasi disembunyikan dari kotak masuk.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _clearing = false);
+      AppNotification.showError(
+        context,
+        title: 'Gagal',
+        message: 'Notifikasi belum dapat dibersihkan.',
+      );
     }
   }
 
