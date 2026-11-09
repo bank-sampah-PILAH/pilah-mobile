@@ -3,10 +3,12 @@ import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
 
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:clock/clock.dart';
@@ -129,6 +131,11 @@ class _HomeSessionState extends State<_HomeSession>
         appBar: NasabahPageAppBar(
           title: 'Beranda',
           actions: [
+            AppTapTarget(
+              label: 'Notifikasi',
+              onTap: () => NotificationsPage.open(context),
+              child: const Icon(Icons.notifications_outlined),
+            ),
             IconButton(
               tooltip: 'Profil',
               onPressed: () => context.go(AppLocations.profile),
