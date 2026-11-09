@@ -327,7 +327,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
           decoration: appInputDecoration(hintText: 'Catatan (opsional)'),
         ),
         const SizedBox(height: 16),
-        const AppFieldLabel('ALASAN PERUBAHAN'),
+        const AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
         const SizedBox(height: 8),
         TextField(
           key: EditSetoranSheet.alasanKey,
