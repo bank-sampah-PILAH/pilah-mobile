@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'pilih_jenis_sampah_picker.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
@@ -62,7 +64,7 @@ class ItemSetoranCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Dropdown & Delete Button
+          // Row 1: Waste type picker and delete button
           Row(
             children: [
               Expanded(
@@ -77,72 +79,40 @@ class ItemSetoranCard extends StatelessWidget {
                   ),
                   child: Consumer(
                     builder: (context, ref, child) {
-                      ref.watch(hargaProvider);
-                      // Source the options from the full active list rather than
-                      // the price-list page's tab/search-filtered state, so the
-                      // dropdown always offers every active jenis sampah. The
-                      // provider watch rebuilds this when loadHarga() completes.
-                      final List<HargaEntity> activeList =
-                          ref.read(hargaProvider.notifier).activeJenisSampah;
-                      // Guard against a stale selection no longer in the list
-                      // (e.g. a jenis that was deactivated): DropdownButton
-                      // asserts if its value has no matching item.
-                      final selectedValue =
-                          activeList.any((t) => t.name == selectedType)
-                              ? selectedType
-                              : null;
-
-                      return DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          isExpanded: true,
-                          value: selectedValue,
-                          hint: Row(
-                            children: [
-                              const Icon(Icons.recycling,
-                                  color: AppColors.greenDark, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Pilih Jenis',
-                                style: AppTextStyle.small
-                                    .copyWith(color: AppColors.grey100),
+                      return InkWell(
+                        onTap: () async {
+                          final notifier = ref.read(hargaProvider.notifier);
+                          final selected =
+                              await showAdaptivePicker<HargaEntity>(
+                            context: context,
+                            builder: (_, __) => PilihJenisSampahPicker(
+                              options: notifier.activeJenisSampah,
+                              selectedId:
+                                  itemData['jenis_sampah_id'] as String?,
+                            ),
+                          );
+                          if (!context.mounted || selected == null) return;
+                          onChanged({
+                            ...itemData,
+                            'jenis': selected.name,
+                            'jenis_sampah_id': selected.id,
+                            'harga': hargaFor?.call(selected) ?? selected.price,
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            const Icon(Icons.recycling,
+                                color: AppColors.greenDark),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                selectedType ?? 'Pilih Jenis',
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyle.small,
                               ),
-                            ],
-                          ),
-                          icon: const Icon(Icons.keyboard_arrow_down,
-                              color: AppColors.grey200),
-                          items: activeList.map((type) {
-                            return DropdownMenuItem<String>(
-                              value: type.name,
-                              child: Row(
-                                children: [
-                                  Icon(type.icon,
-                                      color: type.iconColor, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    type.name,
-                                    style: AppTextStyle.small.copyWith(
-                                      color: AppColors.black,
-                                      fontWeight: AppFontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              final selected =
-                                  activeList.firstWhere((t) => t.name == value);
-                              onChanged({
-                                ...itemData,
-                                'jenis': value,
-                                'jenis_sampah_id': selected.id,
-                                'harga':
-                                    hargaFor?.call(selected) ?? selected.price,
-                              });
-                            }
-                          },
+                            ),
+                            const Icon(Icons.keyboard_arrow_down),
+                          ],
                         ),
                       );
                     },

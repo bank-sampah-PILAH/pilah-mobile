@@ -28,8 +28,10 @@ class _PickerHargaNotifier extends TestHargaNotifier {
 }
 
 Future<List<Map<String, dynamic>>> openPicker(WidgetTester tester) async {
-  await tester.binding.setSurfaceSize(const Size(400, 800));
-  addTearDown(() => tester.binding.setSurfaceSize(null));
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(400, 800);
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   final changes = <Map<String, dynamic>>[];
   await tester.pumpWidget(
     withHargaProvider(
