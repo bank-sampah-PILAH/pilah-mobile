@@ -33,7 +33,16 @@ class AppFieldLabel extends StatelessWidget {
     return RevealInReplay(
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [caption, const Text('*')],
+        children: [
+          caption,
+          Text(
+            '*',
+            style: AppTextStyle.extraSmall.copyWith(
+              color: AppColors.danger,
+              fontWeight: AppFontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
