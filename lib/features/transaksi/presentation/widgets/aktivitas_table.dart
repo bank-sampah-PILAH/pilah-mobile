@@ -196,6 +196,7 @@ class _Row extends StatefulWidget {
 
 class _RowState extends State<_Row> {
   bool _expanded = false;
+  bool _hovered = false;
 
   ActivitasEntity get item => widget.item;
 
@@ -211,12 +212,17 @@ class _RowState extends State<_Row> {
     final expandable = item.tipe == ActivitasTipe.setoran;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildDataRow(context, expandable),
-          if (expandable && !_anySelected) _buildExpandedDetail(context),
-        ],
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: ColoredBox(
+        color: _hovered ? Theme.of(context).hoverColor : Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDataRow(context, expandable),
+            if (expandable && !_anySelected) _buildExpandedDetail(context),
+          ],
+        ),
       ),
     );
   }
@@ -227,21 +233,17 @@ class _RowState extends State<_Row> {
       button: true,
       expanded: expandable && _expanded,
       hint: _hint(expandable),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: InkWell(
-          hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
-          onTap: () => _handleTap(expandable),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xl,
-              vertical: AppSpacing.md,
-            ),
-            child: _buildCells(
-              base,
-              base.copyWith(color: AppColors.grey100),
-              expandable,
-            ),
+      child: InkWell(
+        onTap: () => _handleTap(expandable),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.md,
+          ),
+          child: _buildCells(
+            base,
+            base.copyWith(color: AppColors.grey100),
+            expandable,
           ),
         ),
       ),
@@ -433,7 +435,7 @@ class _RowState extends State<_Row> {
         alignment: Alignment.topCenter,
         child: _expanded
             ? AktivitasSetoranDetail(
-                key: ValueKey('setoran-details-${item.transaksi?.id ?? ''}'),
+                key: ObjectKey(item.transaksi),
                 transactionId: item.transaksi?.id ?? '',
                 loadDetail: widget.loadSetoranDetail ?? (_) async => null,
               )
