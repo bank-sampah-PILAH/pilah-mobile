@@ -88,15 +88,17 @@ void main() {
     final refused = analytics.events[1];
     expect(refused.name, 'validasi_gagal');
     expect(refused.properties['tugas'], 'tambah_nasabah');
+    // tanggal_lahir dropped out of this list with PIL-478: an empty birth
+    // date is no longer a reason the form refuses to submit, so it can no
+    // longer be a field the refusal names.
     expect(refused.properties['bidang'], [
       'nama',
       'jenis_kelamin',
       'email',
-      'tanggal_lahir',
       'no_hp',
       'alamat',
     ]);
-    expect(refused.properties['jumlah_masalah'], 6);
+    expect(refused.properties['jumlah_masalah'], 5);
 
     await fill(tester);
     await save(tester);
@@ -199,6 +201,55 @@ void main() {
     expect(find.text('Nasabah baru berhasil ditambahkan.'), findsOneWidget);
     expect(find.byType(TambahNasabahBottomSheet), findsNothing);
     await settleToasts(tester);
+  });
+
+  group('tanggal lahir is optional (PIL-478)', () {
+    /// [fill] without the date picker step, which is the whole point.
+    Future<void> fillWithoutDate(WidgetTester tester) async {
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), 'Siti Aminah');
+      await tester.enterText(fields.at(1), 'NAS-9');
+      await tester.ensureVisible(find.text('— Pilih —'));
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Perempuan').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(fields.at(2), 'siti@x.test');
+      await tester.enterText(fields.at(4), '81234567890');
+      await tester.enterText(fields.at(5), 'Jl. Melati Nomor 5');
+    }
+
+    testWidgets('a nasabah is created with tanggal_lahir sent as null',
+        (tester) async {
+      api.on('POST', _path, status: 201, json: nasabahRow('9'));
+      await open(tester);
+
+      await fillWithoutDate(tester);
+      await save(tester);
+
+      final post = api.requests.firstWhere((r) => r.method == 'POST');
+      expect(post.json.containsKey('tanggal_lahir'), isTrue);
+      expect(post.json['tanggal_lahir'], isNull);
+      expect(find.text('Nasabah baru berhasil ditambahkan.'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
+    testWidgets('a missing date is never named as a refused field',
+        (tester) async {
+      await open(tester);
+
+      // Nothing filled at all: the fields that are required still report
+      // themselves, and tanggal_lahir is not among them any more.
+      await save(tester);
+
+      expect(names(), isNot(contains('nasabah_tambah_ditolak_tanggal_lahir')));
+      final rejected = analytics.events
+          .where((e) => e.name == 'nasabah_tambah_ditolak')
+          .expand((e) => e.properties.values.map((v) => v.toString()))
+          .join(' ');
+      expect(rejected, isNot(contains('tanggal_lahir')));
+      await settleToasts(tester);
+    });
   });
 
   testWidgets('an empty form flags the required fields', (tester) async {

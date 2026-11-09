@@ -74,6 +74,46 @@ void main() {
     expect(request.toJson().containsKey('alamat'), isFalse);
   });
 
+  group('tanggal lahir is optional (PIL-478)', () {
+    test('a profile without a birth date sends the key as null', () {
+      // Unlike `alamat`, the key stays: a nasabah who had given a date and
+      // then took it out is asking for it to be removed, and an omitted key
+      // would read as "leave it alone".
+      const request = CompleteProfileRequest(
+        nama: 'A',
+        jenisKelamin: 'laki-laki',
+        noHp: '8',
+      );
+
+      final json = request.toJson();
+
+      expect(json.containsKey('tanggal_lahir'), isTrue);
+      expect(json['tanggal_lahir'], isNull);
+    });
+
+    test('a blank birth date is the same as none at all', () {
+      const request = CompleteProfileRequest(
+        nama: 'A',
+        jenisKelamin: 'laki-laki',
+        tanggalLahir: '   ',
+        noHp: '8',
+      );
+
+      expect(request.toJson()['tanggal_lahir'], isNull);
+    });
+
+    test('a birth date that was given is still sent', () {
+      const request = CompleteProfileRequest(
+        nama: 'A',
+        jenisKelamin: 'laki-laki',
+        tanggalLahir: '2000-01-01',
+        noHp: '8',
+      );
+
+      expect(request.toJson()['tanggal_lahir'], '2000-01-01');
+    });
+  });
+
   test('complete profile hands back a validation failure', () async {
     api.on('PUT', _profile, status: 422, json: {
       'errors': {

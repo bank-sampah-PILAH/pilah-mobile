@@ -115,12 +115,13 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         : 'Perempuan';
 
     // Stored as the ISO string the API wants; the picker and the field need a
-    // DateTime and dd/MM/yyyy back.
-    final parsed = DateTime.tryParse(draft.tanggalLahir);
-    if (parsed != null) {
-      _selectedDob = parsed;
-      _dobController.text = _displayDate(parsed);
-    }
+    // DateTime and dd/MM/yyyy back. Null since PIL-478, and a draft is the
+    // most recent input there is, so a draft without a date means the date
+    // was taken out: clear the field rather than leave a stale one showing.
+    final draftDob = draft.tanggalLahir;
+    final parsed = draftDob == null ? null : DateTime.tryParse(draftDob);
+    _selectedDob = parsed;
+    _dobController.text = parsed == null ? '' : _displayDate(parsed);
   }
 
   /// Prefills the form from the account's own saved profile when there is no
@@ -248,7 +249,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       nama: _nameController.text.trim(),
       jenisKelamin:
           _gender == _genderMaleLabel ? _genderMaleApiValue : 'perempuan',
-      tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
+      tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : null,
       noHp: _phoneController.text.trim(),
       alamat: _isNasabah ? _alamatController.text.trim() : '',
     );
@@ -544,10 +545,31 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       readOnly: true,
                       onTap: _selectDate,
                       decoration: appInputDecoration(
-                          hintText: 'dd/mm/yyyy',
-                          suffixIcon: const Icon(Icons.calendar_today_outlined,
-                              color: AppColors.black)),
+                          hintText: _isNasabah
+                              ? 'dd/mm/yyyy (opsional)'
+                              : 'dd/mm/yyyy',
+                          // Read-only box, so the picker is the only way in
+                          // and this is the only way back out (PIL-478).
+                          suffixIcon: (_isNasabah &&
+                                  _dobController.text.trim().isNotEmpty)
+                              ? IconButton(
+                                  tooltip: 'Hapus tanggal lahir',
+                                  onPressed: () => setState(() {
+                                    _dobController.clear();
+                                    _selectedDob = null;
+                                  }),
+                                  icon: const Icon(Icons.close,
+                                      color: AppColors.black),
+                                )
+                              : const Icon(Icons.calendar_today_outlined,
+                                  color: AppColors.black)),
+                      // Optional for a nasabah only (PIL-478). A pengelola
+                      // still has to give one: `is_profile_complete` gates
+                      // their bank registration on it server-side, so making
+                      // it optional here would just fail later and less
+                      // clearly. Same split as `alamat` on this screen.
                       validator: (value) {
+                        if (_isNasabah) return null;
                         if (value == null || value.isEmpty) {
                           return 'Tanggal lahir wajib diisi';
                         }

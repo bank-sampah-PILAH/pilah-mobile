@@ -114,6 +114,7 @@ class _TambahNasabahBottomSheetState
         NasabahBirthDateField(
           controller: _tanggalLahirController,
           onTap: _selectDate,
+          onClear: _tanggalLahirController.clear,
         ),
         NasabahPhoneField(
           controller: _whatsappController,
@@ -156,9 +157,6 @@ class _TambahNasabahBottomSheetState
                 _emailController.text, _serverEmailError) !=
             null)
           'email',
-        if (NasabahBirthDateField.errorFor(_tanggalLahirController.text) !=
-            null)
-          'tanggal_lahir',
         if (NasabahPhoneField.errorFor(
                 _whatsappController.text, _serverPhoneError) !=
             null)

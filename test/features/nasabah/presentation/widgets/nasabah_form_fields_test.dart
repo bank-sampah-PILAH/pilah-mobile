@@ -351,7 +351,7 @@ void main() {
       expect(controller.text, '01/01/1990');
     });
 
-    testWidgets('is read-only, opens the picker on tap and is required',
+    testWidgets('is read-only, opens the picker on tap and is optional',
         (tester) async {
       var taps = 0;
       final key = await _pump(
@@ -362,11 +362,83 @@ void main() {
         ),
       );
 
-      expect(find.text('dd/mm/yyyy'), findsOneWidget);
+      expect(find.text('dd/mm/yyyy (opsional)'), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today), findsOneWidget);
       await tester.tap(find.byType(TextFormField));
       expect(taps, 1);
-      expect(key.currentState!.validate(), isFalse);
+      // PIL-478: an empty birth date no longer stops the form.
+      expect(key.currentState!.validate(), isTrue);
+    });
+
+    testWidgets('carries no required marker, unlike the fields that are',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        NasabahBirthDateField(
+          controller: TextEditingController(),
+          onTap: () {},
+        ),
+      );
+
+      expect(find.text('TANGGAL LAHIR'), findsOneWidget);
+      expect(find.bySemanticsLabel('TANGGAL LAHIR, wajib diisi'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('offers no clear button while there is nothing to clear',
+        (tester) async {
+      await _pump(
+        tester,
+        NasabahBirthDateField(
+          controller: TextEditingController(),
+          onTap: () {},
+          onClear: () {},
+        ),
+      );
+
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.calendar_today), findsOneWidget);
+    });
+
+    testWidgets('clears a date already on record without opening the picker',
+        (tester) async {
+      // The box is read-only, so the picker is the only way a date gets in.
+      // Without this button a date could never be taken back out, which is
+      // what PIL-478 is about: the nasabah may not want it on file.
+      final controller = TextEditingController(text: '01/01/1990');
+      var taps = 0;
+      await _pump(
+        tester,
+        NasabahBirthDateField(
+          controller: controller,
+          onTap: () => taps++,
+          onClear: controller.clear,
+        ),
+      );
+
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pump();
+
+      expect(controller.text, isEmpty);
+      expect(taps, 0, reason: 'the clear button is not a tap on the field');
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.calendar_today), findsOneWidget);
+    });
+
+    testWidgets('a sheet that passes no onClear keeps the plain calendar',
+        (tester) async {
+      await _pump(
+        tester,
+        NasabahBirthDateField(
+          controller: TextEditingController(text: '01/01/1990'),
+          onTap: () {},
+        ),
+      );
+
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.calendar_today), findsOneWidget);
     });
   });
 

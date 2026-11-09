@@ -132,6 +132,60 @@ void main() {
     await settleToasts(tester);
   });
 
+  group('tanggal lahir is optional for a nasabah (PIL-478)', () {
+    /// Everything [fill] does except pick a date, since that is the point.
+    Future<void> fillWithoutDate(WidgetTester tester) async {
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), 'Siti Rahayu');
+      await tester.ensureVisible(find.text('Pilih jenis kelamin'));
+      await tester.tap(find.text('Pilih jenis kelamin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Perempuan').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(fields.at(2), '81234567890');
+      await tester.enterText(fields.at(3), 'Jl. Melati No. 1');
+    }
+
+    testWidgets('an empty nasabah form does not ask for a birth date',
+        (tester) async {
+      await open(tester, _account(role: 'nasabah'));
+
+      await submit(tester);
+
+      expect(find.text('Tanggal lahir wajib diisi'), findsNothing);
+      // The other required fields still speak up, so this is the one field
+      // relaxing and not validation falling over.
+      expect(find.text('Nama minimal 3 karakter'), findsOneWidget);
+      expect(find.text('Nomor HP wajib diisi'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
+    testWidgets('a nasabah banks a draft with no birth date at all',
+        (tester) async {
+      await open(tester, _account(role: 'nasabah'));
+      await fillWithoutDate(tester);
+
+      await submit(tester);
+
+      expect(find.text('route:/register-nasabah'), findsOneWidget);
+      final draft = onboarding.read(onboardingProvider.notifier).profileDraft!;
+      expect(draft.tanggalLahir, isNull);
+      expect(draft.alamat, 'Jl. Melati No. 1');
+      await settleToasts(tester);
+    });
+
+    testWidgets('a pengelola is still asked for one', (tester) async {
+      // Their `is_profile_complete` gates a bank registration on it
+      // server-side, so relaxing it here would only fail later.
+      await open(tester, _account());
+
+      await submit(tester);
+
+      expect(find.text('Tanggal lahir wajib diisi'), findsOneWidget);
+      await settleToasts(tester);
+    });
+  });
+
   testWidgets('a malformed phone number is rejected', (tester) async {
     await open(tester, _account(bankStatus: 'active'));
     await fill(tester);
