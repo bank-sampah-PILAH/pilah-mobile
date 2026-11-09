@@ -40,5 +40,5 @@ The authenticated online Zizmor scan went from **77 findings** on the `staging` 
 The PNGs are report screenshots rendered from raw JSON outputs of authenticated Zizmor scans. Each image includes the scanned commit, scan mode, finding total, and a shortened SHA-256 digest of its source JSON. Reproduce the scan from the repository root with:
 
 ```sh
-GH_TOKEN="$(gh auth token)" uvx --from 'zizmor==1.31.1' zizmor --format json --no-ignores --quiet --no-progress .github
+GH_TOKEN="$(gh auth token)" pipx run --spec 'zizmor==1.31.1' zizmor --format json --no-ignores --quiet --no-progress .github
 ```

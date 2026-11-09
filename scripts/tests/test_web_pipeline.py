@@ -54,6 +54,10 @@ class WebPipelineTest(unittest.TestCase):
         self.assertEqual(
             deploy["on"]["workflow_call"]["secrets"]["FLY_API_TOKEN"]["required"], "false"
         )
+        for secret in ("ENABLE_POSTHOG", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT"):
+            self.assertEqual(
+                deploy["on"]["workflow_call"]["secrets"][secret]["required"], "false"
+            )
         self.assertEqual(deploy["jobs"]["deploy"]["environment"], "${{ inputs.flavor }}")
         text = (ROOT / ".github/workflows/deploy-web.yml").read_text()
         for secret in ("ANDROID_KEY", "GOOGLE_SERVICES_JSON"):

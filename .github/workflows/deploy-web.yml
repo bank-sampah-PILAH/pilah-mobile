@@ -11,6 +11,14 @@ on:
         required: true
       FLY_API_TOKEN:
         required: false
+      ENABLE_POSTHOG:
+        required: false
+      POSTHOG_API_KEY:
+        required: false
+      POSTHOG_HOST:
+        required: false
+      POSTHOG_ENVIRONMENT:
+        required: false
 
 permissions: {}
 

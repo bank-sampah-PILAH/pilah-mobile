@@ -197,12 +197,22 @@ class CiPipelineTest(unittest.TestCase):
             deploy["permissions"], {"contents": "read", "id-token": "write"}
         )
         self.assertEqual(set(deploy["secrets"]), {"APP_ENV_FILE", "FLY_API_TOKEN"})
+        self.assertEqual(
+            deploy["if"],
+            "${{ !cancelled() && needs.verify.result == 'success' && "
+            "github.event_name == 'push' && github.ref == 'refs/heads/staging' }}",
+        )
+        self.assertEqual(deploy["uses"], "$/.github/workflows/deploy-web.yml")
 
     def test_actionlint_ignores_only_its_unknown_self_repository_reference_errors(self):
         ci = workflow("ci.yml")
         lint = next(
             step["run"] for step in ci["jobs"]["quality"]["steps"]
             if step.get("name") == "actionlint"
+        )
+        self.assertIn(
+            "b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667",
+            lint,
         )
         self.assertIn('specifying action "\\$/.+" in invalid format because ref is missing', lint)
         self.assertIn('reusable workflow call "\\$/.+" at "uses" is not following the format', lint)

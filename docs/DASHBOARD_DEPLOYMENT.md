@@ -134,7 +134,7 @@ flutter build web --release -t lib/main_development.dart
 flutter build web --release -t lib/main_production.dart
 python3 -m pip install PyYAML==6.0.3
 python3 -m unittest discover -s scripts/tests -v
-docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color
+docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
 ```
 
 Hosting tests build a temporary fixture using the actual Nginx Dockerfile and
