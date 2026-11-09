@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -19,6 +20,7 @@ import 'package:pilah_mobile/services/di.dart';
 
 import '../../../support/auth_support.dart';
 import '../../../support/fake_image_download.dart';
+import '../../../support/stub_api.dart';
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
@@ -248,5 +250,27 @@ void main() {
     expect(find.text('Setoran'), findsOneWidget);
     expect(find.text('Pencairan'), findsOneWidget);
     expect(find.text('koreksi'), findsOneWidget);
+  });
+
+  testWidgets('opens notification history from the Nasabah home',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final api = StubApi();
+    api.on('GET', '/api/v1/notifications/', json: []);
+    di.registerSingleton<NetworkService>(api.network);
+    addTearDown(() => di.unregister<NetworkService>());
+
+    await pumpHome(tester, _HomeRepository(null, const []));
+
+    expect(find.bySemanticsLabel('Notifikasi'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Notifikasi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada notifikasi.'), findsOneWidget);
+    expect(
+      api.requests.any((request) => request.path == '/api/v1/notifications/'),
+      isTrue,
+    );
+    handle.dispose();
   });
 }
