@@ -152,7 +152,10 @@ void main() {
       await openHapus(tester);
 
       expect(find.text('Hapus Setoran?'), findsOneWidget);
-      expect(find.textContaining('label "Dibatalkan"'), findsOneWidget);
+      // PIL-481: the backend no longer lists a voided setoran, so the dialog
+      // must not promise it stays in the riwayat.
+      expect(find.textContaining('disembunyikan dari riwayat'), findsOneWidget);
+      expect(find.textContaining('label "Dibatalkan"'), findsNothing);
       expect(find.textContaining('tidak lagi dihitung'), findsOneWidget);
       expect(api.requests, isEmpty);
     });

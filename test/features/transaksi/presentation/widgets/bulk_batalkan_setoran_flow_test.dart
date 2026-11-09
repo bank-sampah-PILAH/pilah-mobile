@@ -64,8 +64,10 @@ class _Feed extends RiwayatAktivitasNotifier {
     await onLoad?.call();
     state = state.copyWith(
       status: failRefresh ? AktivitasStatus.failure : AktivitasStatus.loaded,
+      // PIL-481: the backend leaves a voided setoran out of the riwayat.
       items: [
-        for (final id in ['s1', 's2']) _setoran(id, voided: voided.contains(id))
+        for (final id in ['s1', 's2'])
+          if (!voided.contains(id)) _setoran(id)
       ],
     );
   }
@@ -150,6 +152,9 @@ void main() {
     await pumpPage(tester);
     await openDialog(tester);
     expect(find.text('Hapus 2 setoran?'), findsOneWidget);
+    // PIL-481: voided setoran are hidden from the riwayat, not kept with a label.
+    expect(find.textContaining('disembunyikan dari riwayat'), findsOneWidget);
+    expect(find.textContaining('label "Dibatalkan"'), findsNothing);
     expect(api.requests, isEmpty);
     await tester.enterText(
         find.byKey(const ValueKey('bulk-void-alasan')), '   ');
@@ -193,7 +198,9 @@ void main() {
       expect(feed.loads, 2);
       await tester.tap(find.text('Selesai'));
       await tester.pumpAndSettle();
-      expect(find.text('Dibatalkan'), findsNWidgets(2));
+      expect(find.text('Dibatalkan'), findsNothing);
+      expect(find.text('Budi Santoso'), findsNothing);
+      expect(find.text('Sari Wijaya'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }
