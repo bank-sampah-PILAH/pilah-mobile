@@ -117,6 +117,51 @@ void main() {
     expect(find.text('Muat Lagi'), findsNothing);
   });
 
+  testWidgets('retries a failed older page without skipping it',
+      (tester) async {
+    final requestedPages = <int>[];
+    await tester.pumpWidget(MaterialApp(
+        home: NotificationsPage(
+      loadPage: (page) async {
+        requestedPages.add(page);
+        if (page == 1) {
+          return notificationPage([
+            {
+              'id': 7,
+              'title': 'Jadwal baru',
+              'body': 'Ada jadwal baru.',
+              'read_at': null
+            }
+          ], next: '?page=2');
+        }
+        if (requestedPages.where((value) => value == 2).length == 1) {
+          throw StateError('offline');
+        }
+        return notificationPage([
+          {
+            'id': 8,
+            'title': 'Jadwal lama',
+            'body': 'Ada jadwal lama.',
+            'read_at': null
+          }
+        ]);
+      },
+      markRead: (_) async {},
+      clear: () async => 0,
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Muat Lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Notifikasi berikutnya gagal dimuat.'), findsOneWidget);
+
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+    expect(requestedPages, [1, 2, 2]);
+    expect(find.text('Jadwal lama'), findsOneWidget);
+    expect(find.text('Muat Lagi'), findsNothing);
+  });
+
   testWidgets('shows a notification and marks it read', (tester) async {
     final read = <int>[];
     await tester.pumpWidget(MaterialApp(
