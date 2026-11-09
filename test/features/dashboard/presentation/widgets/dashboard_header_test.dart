@@ -3,12 +3,15 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
+import '../../../../support/stub_api.dart';
 
 void main() {
   // Text styles built with google_fonts use these family names. Without the
@@ -80,8 +83,12 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('the notification action has an accessible label',
+  testWidgets('the notification action is accessible and opens history',
       (tester) async {
+    final api = StubApi();
+    api.on('GET', '/api/v1/notifications/', json: []);
+    di.registerSingleton<NetworkService>(api.network);
+    addTearDown(() => di.unregister<NetworkService>());
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(withAuthenticationProvider(
       authNotifierIn(
@@ -96,6 +103,12 @@ void main() {
     ));
 
     expect(find.bySemanticsLabel('Notifikasi'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Notifikasi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada notifikasi.'), findsOneWidget);
+    expect(
+        api.requests.any((request) => request.path == '/api/v1/notifications/'),
+        isTrue);
     handle.dispose();
   });
 

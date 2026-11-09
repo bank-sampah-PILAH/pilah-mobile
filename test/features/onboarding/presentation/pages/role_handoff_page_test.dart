@@ -7,14 +7,17 @@ import 'package:google_sign_in_platform_interface/google_sign_in_platform_interf
     as google_sign_in;
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/pump_app.dart';
 import '../../../../support/auth_support.dart';
+import '../../../../support/stub_api.dart';
 
 class _MockGoogleSignInPlatform extends Mock
     with MockPlatformInterfaceMixin
@@ -51,6 +54,10 @@ void main() {
 
   testWidgets('opens notification history from the Induk landing page',
       (tester) async {
+    final api = StubApi();
+    api.on('GET', '/api/v1/notifications/', json: []);
+    di.registerSingleton<NetworkService>(api.network);
+    addTearDown(() => di.unregister<NetworkService>());
     final auth = authNotifierIn(Authenticated(
       authEntity: const AuthEntity(
         name: 'Ayu Lestari',
@@ -60,8 +67,6 @@ void main() {
         role: 'pengelola_induk',
       ),
     ));
-    var openedNotifications = false;
-
     await pumpRouted(
       tester,
       withAuthenticationProvider(
@@ -71,15 +76,18 @@ void main() {
           message: 'Beranda Bank Sampah Induk sedang disiapkan.',
           registrationInProgress: false,
           showNotificationHistory: true,
-          onOpenNotifications: () => openedNotifications = true,
         ),
       ),
     );
 
     expect(find.bySemanticsLabel('Riwayat Notifikasi'), findsOneWidget);
     await tester.tap(find.text('Riwayat Notifikasi'));
+    await tester.pumpAndSettle();
 
-    expect(openedNotifications, isTrue);
+    expect(find.text('Belum ada notifikasi.'), findsOneWidget);
+    expect(
+        api.requests.any((request) => request.path == '/api/v1/notifications/'),
+        isTrue);
   });
 
   testWidgets('lets a role handoff user sign out and return to login',
