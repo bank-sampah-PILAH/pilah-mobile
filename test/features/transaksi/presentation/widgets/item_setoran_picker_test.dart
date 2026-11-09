@@ -102,4 +102,34 @@ void main() {
     await tester.pumpAndSettle();
     expect(changes.single['jenis_sampah_id'], 'pet');
   });
+
+  testWidgets('category narrows name results and can be cleared',
+      (tester) async {
+    final changes = await openPicker(tester);
+    final search = find.widgetWithText(TextField, 'Cari nama jenis sampah');
+    final category = find.byType(DropdownButton<String>);
+    expect(category, findsOneWidget);
+
+    await tester.tap(category);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kertas').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Kardus'), findsOneWidget);
+    expect(find.text('Botol PET'), findsNothing);
+
+    await tester.enterText(search, 'botol');
+    await tester.pumpAndSettle();
+    expect(find.text('Jenis sampah tidak ditemukan'), findsOneWidget);
+
+    await tester.tap(category);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Semua kategori').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Botol PET'), findsOneWidget);
+    expect(find.text('Kardus'), findsNothing);
+
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+    expect(changes, isEmpty);
+  });
 }
