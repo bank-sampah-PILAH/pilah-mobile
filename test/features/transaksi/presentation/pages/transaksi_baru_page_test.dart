@@ -340,6 +340,18 @@ void main() {
     expect(find.text('0 item'), findsOneWidget);
   });
 
+  testWidgets('marks the customer and the item list as required fields',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(
+        find.bySemanticsLabel('PILIH NASABAH, wajib diisi'), findsOneWidget);
+    expect(
+        find.bySemanticsLabel('DAFTAR SETORAN, wajib diisi'), findsOneWidget);
+    handle.dispose();
+  });
+
   testWidgets('submitting an empty form flags the customer and the items',
       (tester) async {
     await open(tester);
