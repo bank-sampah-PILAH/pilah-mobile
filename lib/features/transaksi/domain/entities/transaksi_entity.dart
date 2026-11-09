@@ -41,8 +41,8 @@ class TransaksiEntity {
   /// Aktivitas, PIL-282) aren't stuck re-parsing a display string.
   final DateTime? tanggal;
 
-  /// Setoran yang dibatalkan (PIL-428) tetap tampil di riwayat, tetapi tidak
-  /// lagi dihitung ke saldo maupun laporan.
+  /// Setoran yang dibatalkan (PIL-428) tidak lagi dihitung ke saldo maupun
+  /// laporan. Sejak PIL-481 daftar riwayat tidak memuatnya; hanya detailnya.
   final bool isDibatalkan;
 
   TransaksiEntity({

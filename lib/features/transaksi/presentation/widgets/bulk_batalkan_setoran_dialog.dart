@@ -181,7 +181,7 @@ class _BulkBatalkanSetoranDialogState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-              'Setoran tetap tampil di riwayat dengan label "Dibatalkan" dan tidak lagi dihitung ke saldo maupun laporan. '
+              'Setoran disembunyikan dari riwayat dan tidak lagi dihitung ke saldo maupun laporan. '
               'Setoran diproses satu per satu; sebagian dapat ditolak jika saldonya sudah dicairkan.',
               style: AppTextStyle.small),
           const SizedBox(height: AppSpacing.md),
