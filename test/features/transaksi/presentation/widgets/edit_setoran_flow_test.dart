@@ -189,6 +189,18 @@ void main() {
     expect(find.textContaining('Diubah'), findsNothing);
   });
 
+  testWidgets('marks the alasan as required and leaves the catatan optional',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(find.bySemanticsLabel('ALASAN PERUBAHAN, wajib diisi'),
+        findsOneWidget);
+    expect(find.text('CATATAN'), findsOneWidget);
+    expect(find.bySemanticsLabel('CATATAN, wajib diisi'), findsNothing);
+    handle.dispose();
+  });
+
   testWidgets('starts from what was recorded and cannot save until changed',
       (tester) async {
     await open(tester);
