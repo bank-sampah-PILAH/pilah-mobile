@@ -256,7 +256,12 @@ void main() {
       (tester) async {
     final handle = tester.ensureSemantics();
     final api = StubApi();
-    api.on('GET', '/api/v1/notifications/', json: []);
+    api.on('GET', '/api/v1/notifications/', json: {
+      'count': 0,
+      'next': null,
+      'previous': null,
+      'results': [],
+    });
     di.registerSingleton<NetworkService>(api.network);
     addTearDown(() => di.unregister<NetworkService>());
 
