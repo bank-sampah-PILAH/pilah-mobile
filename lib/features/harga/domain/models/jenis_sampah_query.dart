@@ -53,6 +53,41 @@ class JenisSampahQuery {
         ascending: ascending ?? this.ascending,
       );
 
+  /// Kategori yang tercentang, dari [tersedia] (urutannya dipertahankan).
+  List<String> kategoriTerpilih(List<String> tersedia) =>
+      kategori == null ? tersedia : tersedia.where(kategori!.contains).toList();
+
+  bool get tidakAdaKategori => kategori != null && kategori!.isEmpty;
+
+  /// Mencentang atau mencabut [k]. Mencabut yang terakhir menyisakan tidak ada
+  /// kategori.
+  JenisSampahQuery toggleKategori(String k, List<String> tersedia) {
+    final sekarang = kategoriTerpilih(tersedia).toSet();
+    sekarang.contains(k) ? sekarang.remove(k) : sekarang.add(k);
+    return copyWith(kategori: _normal(sekarang, tersedia));
+  }
+
+  /// Baris "Semua kategori": bila semua sudah tercentang mencabut semuanya,
+  /// bila tidak memilih semuanya.
+  JenisSampahQuery toggleSemuaKategori(List<String> tersedia) =>
+      kategoriTerpilih(tersedia).length == tersedia.length
+          ? copyWith(kategori: <String>{})
+          : pilihSemuaKategori();
+
+  JenisSampahQuery pilihSemuaKategori() => copyWith(kategori: null);
+
+  /// Membuang kategori yang sudah tidak ada di [tersedia] (tab diganti, data
+  /// dimuat ulang). Bila semua yang dipilih hilang, atau yang tersisa sudah
+  /// semua, hasilnya semua kategori. Pilihan yang sengaja kosong tetap kosong.
+  JenisSampahQuery sesuaikanKategori(List<String> tersedia) {
+    if (kategori == null || kategori!.isEmpty) return this;
+    final sisa = kategori!.intersection(tersedia.toSet());
+    return copyWith(kategori: sisa.isEmpty ? null : _normal(sisa, tersedia));
+  }
+
+  static Set<String>? _normal(Set<String> pilih, List<String> tersedia) =>
+      setEquals(pilih, tersedia.toSet()) ? null : pilih;
+
   /// Daftar baru; [items] tidak diubah.
   List<HargaEntity> apply(List<HargaEntity> items) {
     final kata = search.trim().toLowerCase();
@@ -140,3 +175,16 @@ List<String> kategoriTersedia(List<HargaEntity> items) {
 String labelKategori(String kategori) => kategori == _kategoriLain
     ? 'Lainnya'
     : kategori[0].toUpperCase() + kategori.substring(1);
+
+/// Tulisan pada chip filter kategori: "Semua kategori", nama kategorinya bila
+/// hanya satu, atau "N kategori".
+String labelFilterKategori(JenisSampahQuery query, List<String> tersedia) {
+  if (query.tidakAdaKategori) return 'Tidak ada kategori';
+  final terpilih = query.kategoriTerpilih(tersedia);
+  if (terpilih.length == tersedia.length) {
+    return 'Semua kategori';
+  }
+  return terpilih.length == 1
+      ? labelKategori(terpilih.single)
+      : '${terpilih.length} kategori';
+}
