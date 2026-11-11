@@ -26,6 +26,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/batalkan_se
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/hold_to_select.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Renders the merged setoran + pencairan feed (PIL-282), grouped by day.
 /// Setoran rows expand inline; pencairan rows open their detail sheet with
@@ -359,7 +360,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
                 selecting,
                 selected,
               ),
-              if (expandable && !selecting) _buildDetails(id),
+              if (expandable && !selecting) _buildDetails(id, item),
             ],
           ),
           if (selected) _selectedTint(),
@@ -462,21 +463,64 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
     }
   }
 
-  Widget _buildDetails(String id) => AnimatedSize(
+  Widget _buildDetails(String id, ActivitasEntity item) => AnimatedSize(
         duration: MediaQuery.disableAnimationsOf(context)
             ? Duration.zero
             : const Duration(milliseconds: 180),
         curve: Curves.easeInOut,
         alignment: Alignment.topCenter,
         child: _expanded
-            ? AktivitasSetoranDetail(
-                key: ObjectKey(widget.item.transaksi),
-                transactionId: id,
-                loadDetail: (id) => ref
-                    .read(transaksiProvider.notifier)
-                    .fetchTransaksiDetail(id),
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Same condition as hold-to-select and the web Aksi column:
+                  // a tercatat setoran that is not voided.
+                  if (item.isSelectableSetoran) _buildActions(context, id),
+                  AktivitasSetoranDetail(
+                    key: ObjectKey(widget.item.transaksi),
+                    transactionId: id,
+                    loadDetail: (id) => ref
+                        .read(transaksiProvider.notifier)
+                        .fetchTransaksiDetail(id),
+                  ),
+                ],
               )
             : const SizedBox.shrink(),
+      );
+
+  /// Edit and Hapus reuse the flows of the web table and the selection bar.
+  Widget _buildActions(BuildContext context, String id) => Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.sm),
+        child: Semantics(
+          container: true,
+          label: 'Aksi setoran',
+          child: Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  key: const ValueKey('aktivitas-edit'),
+                  label: 'Edit',
+                  icon: Icons.edit_outlined,
+                  variant: AppButtonVariant.outlined,
+                  size: AppButtonSize.compact,
+                  onPressed: () => showEditSetoranSheet(context, id),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: AppButton(
+                  key: const ValueKey('aktivitas-hapus'),
+                  label: 'Hapus',
+                  icon: Icons.delete_outline,
+                  variant: AppButtonVariant.destructiveOutlined,
+                  size: AppButtonSize.compact,
+                  onPressed: () => showBatalkanSetoranDialog(context, id),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
 
   Widget _selectedTint() => Positioned(
