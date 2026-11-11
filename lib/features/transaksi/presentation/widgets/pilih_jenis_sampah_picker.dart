@@ -19,6 +19,18 @@ class PilihJenisSampahPicker extends ConsumerStatefulWidget {
 
 class _PilihJenisSampahPickerState
     extends ConsumerState<PilihJenisSampahPicker> {
+  final _listController = ScrollController();
+
+  @override
+  void dispose() {
+    _listController.dispose();
+    super.dispose();
+  }
+
+  void _resetScroll() {
+    if (_listController.hasClients) _listController.jumpTo(0);
+  }
+
   String _query = '';
   String _category = '';
 
@@ -52,8 +64,10 @@ class _PilihJenisSampahPickerState
           ),
           CustomSearchField(
             hintText: 'Cari nama jenis sampah',
-            onChanged: (value) =>
-                setState(() => _query = value.trim().toLowerCase()),
+            onChanged: (value) {
+              setState(() => _query = value.trim().toLowerCase());
+              _resetScroll();
+            },
           ),
           const SizedBox(height: AppSpacing.sm),
           if (categories.isNotEmpty)
@@ -73,7 +87,10 @@ class _PilihJenisSampahPickerState
                         : category[0].toUpperCase() + category.substring(1)),
                   ),
               ],
-              onChanged: (value) => setState(() => _category = value ?? ''),
+              onChanged: (value) {
+                setState(() => _category = value ?? '');
+                _resetScroll();
+              },
             ),
           Expanded(
             child: catalog.isEmpty && catalogState is HargaLoading
@@ -87,7 +104,7 @@ class _PilihJenisSampahPickerState
                             : 'Jenis sampah tidak ditemukan'),
                       )
                     : ListView.builder(
-                        key: ValueKey((_query, category)),
+                        controller: _listController,
                         itemCount: options.length,
                         itemBuilder: (context, index) {
                           final item = options[index];
