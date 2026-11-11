@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
@@ -164,17 +165,16 @@ void main() {
     expect(changes.single['jenis_sampah_id'], 'pet');
   });
 
-  testWidgets('category narrows name results and can be cleared',
+  testWidgets('category chips narrow name results and can be cleared',
       (tester) async {
     final changes = await _openPicker(tester);
     final search = find.widgetWithText(TextField, 'Cari nama jenis sampah');
-    final category = find.byType(DropdownButton<String>);
-    expect(category, findsOneWidget);
+    Finder chip(String label) => find.widgetWithText(AppChip, label);
+    expect(tester.widget<AppChip>(chip('Semua kategori')).selected, isTrue);
 
-    await tester.tap(category);
+    await tester.tap(chip('Kertas'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Kertas').last);
-    await tester.pumpAndSettle();
+    expect(tester.widget<AppChip>(chip('Kertas')).selected, isTrue);
     expect(find.text('Kardus'), findsOneWidget);
     expect(find.text('Botol PET'), findsNothing);
 
@@ -182,9 +182,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Jenis sampah tidak ditemukan'), findsOneWidget);
 
-    await tester.tap(category);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Semua kategori').last);
+    await tester.tap(chip('Semua kategori'));
     await tester.pumpAndSettle();
     expect(find.text('Botol PET'), findsOneWidget);
     expect(find.text('Kardus'), findsNothing);
