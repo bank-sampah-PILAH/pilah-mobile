@@ -5,6 +5,8 @@ import re
 import sys
 from urllib.parse import urlsplit
 
+FIREBASE_KEYS = ("FIREBASE_WEB_API_KEY", "FIREBASE_WEB_APP_ID", "FIREBASE_MESSAGING_SENDER_ID", "FIREBASE_PROJECT_ID", "FIREBASE_WEB_VAPID_KEY")
+
 ANALYTICS_KEYS = ("ENABLE_POSTHOG", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
 
 
@@ -31,7 +33,7 @@ def prepare(flavor, target):
         raise ValueError("expected staging or production")
     key = "BASE_URL_DEV" if flavor == "staging" else "BASE_URL_PROD"
     required = {key, "GOOGLE_SERVER_CLIENT_ID"}
-    allowed = required | set(ANALYTICS_KEYS)
+    allowed = required | set(ANALYTICS_KEYS) | set(FIREBASE_KEYS)
     values = {}
     for line in os.environ.get("APP_ENV_FILE", "").splitlines():
         name, separator, value = line.partition("=")
@@ -64,10 +66,14 @@ def prepare(flavor, target):
     client = values["GOOGLE_SERVER_CLIENT_ID"]
     if not re.fullmatch(r"[0-9]+-[a-zA-Z0-9-]+\.apps\.googleusercontent\.com", client):
         raise ValueError("GOOGLE_SERVER_CLIENT_ID must be a Web OAuth client ID")
+    firebase = [values.get(name, "") for name in FIREBASE_KEYS]
+    if any(firebase) and (not all(firebase) or any(not re.fullmatch(r"[A-Za-z0-9_:.-]+", value) for value in firebase)):
+        raise ValueError("Firebase web settings must all be valid public values")
+    firebase_lines = "".join(f"{name}={values[name]}\n" for name in FIREBASE_KEYS) if all(firebase) else ""
     # .env is an asset, not a secret store: discard every other supplied value.
     pathlib.Path(target).write_text(
         f"{key}={api_origin}\nGOOGLE_SERVER_CLIENT_ID={client}\nENABLE_DEMO_LOGIN=false\n"
-        + analytics_lines(flavor, values))
+        + analytics_lines(flavor, values) + firebase_lines)
 
 
 if __name__ == "__main__":

@@ -32,4 +32,16 @@ void main() {
         throwsA(same(error)));
     expect(googleCalls, 0);
   });
+  test('initializes Firebase on web when configured', () async {
+    final calls = <String>[];
+    await initializePlatformServices(
+      isWeb: true,
+      initializeFirebaseOnWeb: true,
+      oauthClientId: null,
+      initializeFirebase: () async => calls.add('firebase'),
+      initializeGoogle: ({clientId, serverClientId}) async =>
+          calls.add('google'),
+    );
+    expect(calls, ['firebase', 'google']);
+  });
 }

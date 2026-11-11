@@ -53,6 +53,21 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("github.event_name == 'pull_request'", browser["if"])
         self.assertIn("browser_test_files", str(browser["steps"]))
 
+        changed_browser_run = next(
+            step["run"]
+            for step in browser["steps"]
+            if step.get("name") == "Run changed browser test files outside the fixed browser suite"
+        )
+        self.assertIn(
+            'flutter test --platform chrome "$test_file"', changed_browser_run
+        )
+        self.assertNotIn("flutter test --platform chrome --coverage", changed_browser_run)
+        self.assertIn("dart run test --platform chrome", changed_browser_run)
+        self.assertIn(
+            '--coverage-path="coverage/browser-selected-${index}.info"',
+            changed_browser_run,
+        )
+
     def test_staging_runs_all_shards_and_owns_coverage_gates(self):
         ci = workflow("ci.yml")
         tests = ci["jobs"]["test_shards"]
