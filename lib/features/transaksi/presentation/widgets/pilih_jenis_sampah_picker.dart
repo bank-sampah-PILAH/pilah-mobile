@@ -84,6 +84,24 @@ class _PilihJenisSampahPickerState
           ? state.message
           : 'Belum ada jenis sampah aktif.');
     }
+    if (query.tidakAdaKategori) {
+      // Bukan "tidak ditemukan": tidak ada yang dicari, karena tidak ada
+      // kategori yang dipilih. Jalan keluarnya satu ketukan.
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _pesan('Tidak ada kategori yang dipilih.'),
+            TextButton(
+              key: const Key('pilih-semua-kategori'),
+              onPressed: () =>
+                  setState(() => _query = query.pilihSemuaKategori()),
+              child: const Text('Pilih semua kategori'),
+            ),
+          ],
+        ),
+      );
+    }
     if (hasil.isEmpty) {
       return Center(
         child: Column(
