@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
@@ -49,10 +50,11 @@ class _PickerHargaNotifier extends TestHargaNotifier {
 Future<List<Map<String, dynamic>>> _openPicker(
   WidgetTester tester, {
   int extraOptions = 0,
+  double width = 400,
   _PickerHargaNotifier? notifier,
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(400, 800);
+  tester.view.physicalSize = Size(width, 800);
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final changes = <Map<String, dynamic>>[];
@@ -94,6 +96,30 @@ void main() {
       'harga': 2000,
       'berat': 2.5,
     });
+  });
+
+  testWidgets('the picker uses dismissal controls for its presentation',
+      (tester) async {
+    final phoneChanges = await _openPicker(tester);
+    final handle = find.byKey(BottomSheetHeader.dragHandleKey);
+    final close = find.descendant(
+      of: find.byType(BottomSheetHeader),
+      matching: find.byIcon(Icons.close),
+    );
+    expect(handle, findsOneWidget);
+    expect(close, findsNothing);
+    await tester.drag(handle, const Offset(0, 700));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(phoneChanges, isEmpty);
+
+    final wideChanges = await _openPicker(tester, width: 1000);
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(handle, findsNothing);
+    await tester.tap(close);
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+    expect(wideChanges, isEmpty);
   });
 
   testWidgets('search resets scroll without remounting the results',
