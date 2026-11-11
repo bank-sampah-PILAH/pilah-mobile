@@ -147,6 +147,131 @@ void main() {
     });
   });
 
+  group('memilih kategori', () {
+    const tersedia = ['kertas', 'plastik', 'logam'];
+
+    test('semua terpilih dan tidak menyaring secara bawaan', () {
+      expect(const JenisSampahQuery().kategori, isNull);
+      expect(const JenisSampahQuery().kategoriTerpilih(tersedia), tersedia);
+    });
+
+    test('mencabut satu centang dari semua menyisakan yang lain', () {
+      final q = const JenisSampahQuery().toggleKategori('plastik', tersedia);
+      expect(q.kategori, {'kertas', 'logam'});
+    });
+
+    test('mencentang lagi sampai lengkap kembali menjadi semua', () {
+      final q = const JenisSampahQuery()
+          .toggleKategori('plastik', tersedia)
+          .toggleKategori('plastik', tersedia);
+      expect(q.kategori, isNull);
+      expect(q.isDefault, isTrue);
+    });
+
+    test('centang terakhir boleh dicabut, hasilnya tidak ada kategori', () {
+      const q = JenisSampahQuery(kategori: {'logam'});
+      final kosong = q.toggleKategori('logam', tersedia);
+      expect(kosong.kategori, isEmpty);
+      expect(kosong.kategori, isNotNull, reason: 'kosong bukan "semua"');
+      expect(kosong.tidakAdaKategori, isTrue);
+      expect(kosong.isFiltering, isTrue);
+      expect(kosong.isDefault, isFalse);
+    });
+
+    test('tidak ada kategori berarti tidak ada jenis yang tampil', () {
+      final item = jenis('1', 'Botol', 1, 'plastik');
+      expect(const JenisSampahQuery(kategori: {}).apply([item]), isEmpty);
+    });
+
+    test('dari kosong, mencentang satu memunculkan kategori itu saja', () {
+      const q = JenisSampahQuery(kategori: {});
+      expect(q.toggleKategori('logam', tersedia).kategori, {'logam'});
+    });
+
+    test(
+        'Semua kategori: bila semua tercentang mengosongkan, bila tidak memilih semua',
+        () {
+      final kosong = const JenisSampahQuery().toggleSemuaKategori(tersedia);
+      expect(kosong.kategori, isEmpty);
+      expect(kosong.toggleSemuaKategori(tersedia).kategori, isNull);
+      const sebagian = JenisSampahQuery(kategori: {'logam'});
+      expect(sebagian.toggleSemuaKategori(tersedia).kategori, isNull);
+    });
+
+    test('hanya satu lalu menambah yang lain', () {
+      const q = JenisSampahQuery(kategori: {'logam'});
+      expect(
+          q.toggleKategori('kertas', tersedia).kategori, {'logam', 'kertas'});
+    });
+
+    test('pilihSemuaKategori mengosongkan batasan', () {
+      const q = JenisSampahQuery(kategori: {'logam'}, search: 'a');
+      expect(q.pilihSemuaKategori().kategori, isNull);
+      expect(q.pilihSemuaKategori().search, 'a');
+    });
+
+    test(
+        'kategori yang sudah tidak ada dibuang, kosong atau lengkap jadi semua',
+        () {
+      const q = JenisSampahQuery(kategori: {'logam', 'kaca'});
+      expect(q.sesuaikanKategori(tersedia).kategori, {'logam'});
+      expect(q.sesuaikanKategori(['kaca', 'logam']).kategori, isNull,
+          reason: 'lengkap');
+      expect(q.sesuaikanKategori(['kertas']).kategori, isNull,
+          reason: 'kategori yang dipilih hilang semua dari data');
+      expect(
+          const JenisSampahQuery(kategori: {})
+              .sesuaikanKategori(tersedia)
+              .kategori,
+          isEmpty,
+          reason: 'sengaja tidak memilih apa pun tetap tidak memilih');
+      expect(const JenisSampahQuery().sesuaikanKategori(tersedia).kategori,
+          isNull);
+    });
+
+    test('kesetaraan memandang isi himpunan, bukan urutannya', () {
+      expect(const JenisSampahQuery(kategori: {'a', 'b'}),
+          const JenisSampahQuery(kategori: {'b', 'a'}));
+      expect(const JenisSampahQuery(kategori: {'a', 'b'}).hashCode,
+          const JenisSampahQuery(kategori: {'b', 'a'}).hashCode);
+    });
+  });
+
+  group('label filter kategori', () {
+    const tersedia = ['kertas', 'plastik', 'dll'];
+
+    test('semua, satu, dan beberapa', () {
+      expect(labelFilterKategori(const JenisSampahQuery(), tersedia),
+          'Semua kategori');
+      expect(
+          labelFilterKategori(
+              const JenisSampahQuery(kategori: {'plastik'}), tersedia),
+          'Plastik');
+      expect(
+          labelFilterKategori(
+              const JenisSampahQuery(kategori: {'dll'}), tersedia),
+          'Lainnya');
+      expect(
+          labelFilterKategori(
+              const JenisSampahQuery(kategori: {'plastik', 'dll'}), tersedia),
+          '2 kategori');
+    });
+
+    test('tidak ada yang terpilih', () {
+      expect(
+          labelFilterKategori(const JenisSampahQuery(kategori: {}), tersedia),
+          'Tidak ada kategori');
+    });
+
+    test('semua yang ada terpilih tetap berbunyi semua', () {
+      expect(
+          labelFilterKategori(
+              const JenisSampahQuery(kategori: {'kertas', 'plastik', 'dll'}),
+              tersedia),
+          'Semua kategori');
+    });
+  });
+
   group('kategori tersedia', () {
     test('urut tetap, hanya yang ada di data, kosong dibuang', () {
       final cats = kategoriTersedia(
