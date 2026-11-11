@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -18,14 +19,24 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_fi
 ///
 /// Wadahnya (bottom sheet atau dialog) datang dari [showAdaptivePicker].
 /// Aturan cari, filter, dan urut ada di [JenisSampahQuery], bukan di sini.
+///
+/// Saat membuat setoran, baris menampilkan harga hari ini. Saat mengedit
+/// setoran lampau, [hargaFor] memberi harga pada tanggal setoran, yaitu harga
+/// yang akan disimpan, sehingga baris tidak menjanjikan angka lain.
 class PilihJenisSampahPicker extends ConsumerStatefulWidget {
   const PilihJenisSampahPicker({
     super.key,
     this.selectedId,
     this.presentation = PickerPresentation.bottomSheet,
+    this.hargaFor,
   });
 
   final String? selectedId;
+
+  /// Harga per kg yang akan disimpan bila [HargaEntity] ini dipilih. Null
+  /// berarti harga hari ini. Nilai 0 berarti jenis itu belum punya harga pada
+  /// tanggal setoran.
+  final int Function(HargaEntity jenis)? hargaFor;
   final PickerPresentation presentation;
 
   @override
@@ -134,6 +145,14 @@ class _PilihJenisSampahPickerState
         ),
       );
 
+  String _teksHarga(HargaEntity item) {
+    final harga = widget.hargaFor?.call(item);
+    if (harga == null) return '${item.priceFormatted}/kg';
+    // 0 bukan harga: jenis ini belum ada pada tanggal setoran.
+    if (harga <= 0) return 'Belum ada harga';
+    return '${CurrencyFormatter.formatRupiah(harga)}/kg';
+  }
+
   Widget _baris(BuildContext context, HargaEntity item) {
     final dipilih = item.id == widget.selectedId;
     return InkWell(
@@ -166,7 +185,7 @@ class _PilihJenisSampahPickerState
               ),
             ),
             Text(
-              '${item.priceFormatted}/kg',
+              _teksHarga(item),
               style: AppTextStyle.small.copyWith(color: AppColors.greenDark),
             ),
             if (dipilih) ...[

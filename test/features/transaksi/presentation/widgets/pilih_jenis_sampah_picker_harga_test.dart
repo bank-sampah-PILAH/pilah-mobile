@@ -118,7 +118,12 @@ void main() {
 
         expect(_hargaBaris('pet', 'Rp 800/kg'), findsOneWidget);
         expect(_hargaBaris('kaca', 'Belum ada harga'), findsOneWidget);
-        expect(find.textContaining('Rp 0'), findsNothing);
+        expect(
+          find.descendant(
+              of: find.byKey(const Key('jenis-sampah-kaca')),
+              matching: find.textContaining('Rp')),
+          findsNothing,
+        );
         expect(find.text('Rp 500/kg'), findsNothing);
       });
     });
