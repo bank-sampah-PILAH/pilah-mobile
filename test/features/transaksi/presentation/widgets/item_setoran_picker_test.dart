@@ -96,6 +96,28 @@ void main() {
     });
   });
 
+  testWidgets('search resets scroll without remounting the results',
+      (tester) async {
+    await _openPicker(tester, extraOptions: 40);
+    final list = find.byType(ListView);
+    final scrollable =
+        find.descendant(of: list, matching: find.byType(Scrollable));
+    final state = tester.state<ScrollableState>(scrollable);
+    await tester.drag(list, const Offset(0, -320));
+    await tester.pumpAndSettle();
+    expect(state.position.pixels, greaterThan(0));
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Cari nama jenis sampah'),
+      'kertas',
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.state<ScrollableState>(scrollable), same(state));
+    expect(state.position.pixels, 0);
+    expect(find.text('Kertas 0'), findsOneWidget);
+  });
+
   testWidgets('name search finds an offscreen waste type without scrolling',
       (tester) async {
     final changes = await _openPicker(tester, extraOptions: 40);
