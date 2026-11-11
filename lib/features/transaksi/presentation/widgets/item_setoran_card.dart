@@ -17,6 +17,7 @@ import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
+  final bool? isWebOverride;
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
@@ -34,6 +35,7 @@ class ItemSetoranCard extends StatelessWidget {
   const ItemSetoranCard({
     super.key,
     required this.index,
+    this.isWebOverride,
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
