@@ -3,6 +3,7 @@ import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
@@ -37,6 +38,15 @@ class _PilihJenisSampahPickerState
 
   String _query = '';
   String _category = '';
+
+  void _selectCategory(String category) {
+    setState(() => _category = category);
+    _resetScroll();
+  }
+
+  String _categoryLabel(String category) => category == 'dll'
+      ? 'Lainnya'
+      : category[0].toUpperCase() + category.substring(1);
 
   @override
   Widget build(BuildContext context) {
@@ -74,26 +84,24 @@ class _PilihJenisSampahPickerState
           ),
           const SizedBox(height: AppSpacing.sm),
           if (categories.isNotEmpty)
-            DropdownButton<String>(
-              value: category,
-              isExpanded: true,
-              items: [
-                const DropdownMenuItem(
-                  value: '',
-                  child: Text('Semua kategori'),
-                ),
-                for (final category in categories)
-                  DropdownMenuItem(
-                    value: category,
-                    child: Text(category == 'dll'
-                        ? 'Lainnya'
-                        : category[0].toUpperCase() + category.substring(1)),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                spacing: AppSpacing.sm,
+                children: [
+                  AppChip(
+                    label: 'Semua kategori',
+                    selected: category.isEmpty,
+                    onTap: () => _selectCategory(''),
                   ),
-              ],
-              onChanged: (value) {
-                setState(() => _category = value ?? '');
-                _resetScroll();
-              },
+                  for (final option in categories)
+                    AppChip(
+                      label: _categoryLabel(option),
+                      selected: option == category,
+                      onTap: () => _selectCategory(option),
+                    ),
+                ],
+              ),
             ),
           Expanded(
             child: catalog.isEmpty && catalogState is HargaLoading
