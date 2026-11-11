@@ -39,7 +39,9 @@ void main() {
       final card = ItemSetoranCard(
         index: 0,
         isWebOverride: true,
-        itemData: const {'berat': 2.5},
+        itemData: editing
+            ? const {'berat': 2.5, 'jenis_sampah_id': 'pet'}
+            : const {'berat': 2.5},
         hargaFor: editing ? (_) => 800 : null,
         onChanged: changes.add,
         onDelete: () {},
@@ -80,6 +82,10 @@ void main() {
         await tester.pumpAndSettle();
       }
       final field = find.byKey(const Key('pilih-jenis-sampah'));
+      if (editing) {
+        expect(find.descendant(of: field, matching: find.text('Botol PET')),
+            findsOneWidget);
+      }
       await tester.tap(field);
       await tester.pumpAndSettle();
 
@@ -89,7 +95,12 @@ void main() {
           isA<SideSheetPage<HargaEntity>>());
       expect(tester.getRect(picker).center.dx, greaterThan(500));
 
-      await tester.tap(find.byKey(const Key('jenis-sampah-pet')));
+      final option = find.byKey(const Key('jenis-sampah-pet'));
+      if (editing) {
+        expect(find.descendant(of: option, matching: find.byIcon(Icons.check)),
+            findsOneWidget);
+      }
+      await tester.tap(option);
       await tester.pumpAndSettle();
       expect(picker, findsNothing);
       expect(field.hitTestable(), findsOneWidget);
