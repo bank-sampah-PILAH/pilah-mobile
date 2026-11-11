@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 
@@ -83,53 +84,72 @@ class _PilihJenisSampahPickerState
             },
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (categories.isNotEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                spacing: AppSpacing.sm,
-                children: [
-                  AppChip(
-                    label: 'Semua kategori',
-                    selected: category.isEmpty,
-                    onTap: () => _selectCategory(''),
-                  ),
-                  for (final option in categories)
-                    AppChip(
-                      label: _categoryLabel(option),
-                      selected: option == category,
-                      onTap: () => _selectCategory(option),
-                    ),
-                ],
-              ),
-            ),
+          if (categories.isNotEmpty) _buildCategoryChips(categories, category),
           Expanded(
-            child: catalog.isEmpty && catalogState is HargaLoading
-                ? const Center(child: CircularProgressIndicator())
-                : options.isEmpty
-                    ? Center(
-                        child: Text(catalog.isEmpty
-                            ? (catalogState is HargaError
-                                ? catalogState.message
-                                : 'Belum ada jenis sampah aktif')
-                            : 'Jenis sampah tidak ditemukan'),
-                      )
-                    : ListView.builder(
-                        controller: _listController,
-                        itemCount: options.length,
-                        itemBuilder: (context, index) {
-                          final item = options[index];
-                          return ListTile(
-                            leading: Icon(item.icon, color: item.iconColor),
-                            title: Text(item.name),
-                            selected: item.id == widget.selectedId,
-                            onTap: () => Navigator.pop(context, item),
-                          );
-                        },
-                      ),
+            child: _buildResults(
+              catalogState: catalogState,
+              catalogIsEmpty: catalog.isEmpty,
+              options: options,
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCategoryChips(List<String> categories, String selectedCategory) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        spacing: AppSpacing.sm,
+        children: [
+          AppChip(
+            label: 'Semua kategori',
+            selected: selectedCategory.isEmpty,
+            onTap: () => _selectCategory(''),
+          ),
+          for (final category in categories)
+            AppChip(
+              label: _categoryLabel(category),
+              selected: category == selectedCategory,
+              onTap: () => _selectCategory(category),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResults({
+    required HargaState catalogState,
+    required bool catalogIsEmpty,
+    required List<HargaEntity> options,
+  }) {
+    if (catalogIsEmpty && catalogState is HargaLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (catalogIsEmpty && catalogState is HargaError) {
+      return Center(child: Text(catalogState.message));
+    }
+    if (options.isEmpty) {
+      return Center(
+        child: Text(catalogIsEmpty
+            ? 'Belum ada jenis sampah aktif'
+            : 'Jenis sampah tidak ditemukan'),
+      );
+    }
+
+    return ListView.builder(
+      controller: _listController,
+      itemCount: options.length,
+      itemBuilder: (context, index) {
+        final item = options[index];
+        return ListTile(
+          leading: Icon(item.icon, color: item.iconColor),
+          title: Text(item.name),
+          selected: item.id == widget.selectedId,
+          onTap: () => Navigator.pop(context, item),
+        );
+      },
     );
   }
 }
