@@ -70,24 +70,33 @@ class _PilihJenisSampahPickerState
 
   Widget _isi(HargaState state, List<HargaEntity> katalog,
       List<HargaEntity> hasil, JenisSampahQuery query) {
-    if (katalog.isEmpty) {
-      if (state is HargaLoading || state is HargaInitial) {
-        return const Center(
-          child: SizedBox(
-            height: 24,
-            width: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        );
-      }
-      return _pesan(state is HargaError
-          ? state.message
-          : 'Belum ada jenis sampah aktif.');
+    if (katalog.isEmpty) return _katalogKosong(state);
+    if (query.tidakAdaKategori) return _tanpaKategori(query);
+    if (hasil.isEmpty) return _tidakDitemukan(query);
+    return ListView.builder(
+      itemCount: hasil.length,
+      itemBuilder: (context, i) => _baris(context, hasil[i]),
+    );
+  }
+
+  /// Belum ada daftar untuk dipilih: masih memuat, gagal, atau memang kosong.
+  Widget _katalogKosong(HargaState state) {
+    if (state is HargaLoading || state is HargaInitial) {
+      return const Center(
+        child: SizedBox(
+          height: 24,
+          width: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
     }
-    if (query.tidakAdaKategori) {
-      // Bukan "tidak ditemukan": tidak ada yang dicari, karena tidak ada
-      // kategori yang dipilih. Jalan keluarnya satu ketukan.
-      return Center(
+    return _pesan(
+        state is HargaError ? state.message : 'Belum ada jenis sampah aktif.');
+  }
+
+  /// Bukan "tidak ditemukan": tidak ada yang dicari, karena tidak ada kategori
+  /// yang dipilih. Jalan keluarnya satu ketukan.
+  Widget _tanpaKategori(JenisSampahQuery query) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -101,9 +110,8 @@ class _PilihJenisSampahPickerState
           ],
         ),
       );
-    }
-    if (hasil.isEmpty) {
-      return Center(
+
+  Widget _tidakDitemukan(JenisSampahQuery query) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -117,12 +125,6 @@ class _PilihJenisSampahPickerState
           ],
         ),
       );
-    }
-    return ListView.builder(
-      itemCount: hasil.length,
-      itemBuilder: (context, i) => _baris(context, hasil[i]),
-    );
-  }
 
   Widget _pesan(String teks) => Center(
         child: Text(
