@@ -10,6 +10,7 @@ import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remot
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_form_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
@@ -312,6 +313,48 @@ void main() {
         reason: 'the transaction is recorded; there is nothing left to lose');
     await settleToasts(tester);
   });
+
+  /// Pemilih jenis sampah dibuka sebagai popup di atas panel. Esc dan klik di
+  /// luar popup hanya menutup popup itu, bukan panel, dan isian tetap ada.
+  for (final close in ['Esc', 'klik di luar']) {
+    testWidgets('$close closes only the jenis popup, not the setoran panel',
+        (tester) async {
+      stubSetoranApi();
+      await openHost(tester, const Size(1440, 900));
+      await fillSetoran(tester);
+      final form = tester.state<SetoranFormViewState>(
+        find.byType(SetoranFormView),
+      );
+
+      await tester.tap(find.byKey(const Key('pilih-jenis-sampah')));
+      await tester.pumpAndSettle();
+      final popup = find.byType(PilihJenisSampahPicker);
+      expect(popup, findsOneWidget);
+      expect(find.ancestor(of: popup, matching: find.byType(Dialog)),
+          findsOneWidget,
+          reason: 'a centered popup, not a second side sheet');
+
+      if (close == 'Esc') {
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      } else {
+        await tester.tapAt(const Offset(10, 10));
+      }
+      await tester.pumpAndSettle();
+
+      expect(popup, findsNothing);
+      expect(find.text('PILIH NASABAH'), findsOneWidget,
+          reason: 'the panel is still open');
+      expect(find.text('Budi Santoso'), findsWidgets,
+          reason: 'the chosen nasabah is kept');
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('pilih-jenis-sampah')),
+              matching: find.text('Botol PET')),
+          findsOneWidget,
+          reason: 'the chosen jenis is kept');
+      expect(form.hasUnsavedInput, isTrue);
+    });
+  }
 
   /// Selesai leaves the form without WhatsApp. In the panel it must close the
   /// panel and leave the page it was opened from, not pop that page: the form

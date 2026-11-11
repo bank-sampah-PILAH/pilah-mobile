@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/layout/side_sheet_presentation.dart';
@@ -6,7 +7,6 @@ import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/jenis_sampah_side_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 
 import '../../../../support/harga_support.dart';
@@ -23,13 +23,14 @@ class _Catalog extends TestHargaNotifier {
   List<HargaEntity> get activeJenisSampah => items;
 }
 
+/// Picker jenis sampah di jendela web yang lebar: sebuah popup di tengah
+/// layar, bukan side sheet kedua di atas panel setoran yang juga side sheet.
 void main() {
   for (final editing in [false, true]) {
     testWidgets(
         editing
-            ? 'the side sheet returns to the open edit dialog with historical price'
-            : 'wide web opens the shared picker at the right edge',
-        (tester) async {
+            ? 'wide web opens a centered popup over the open edit dialog'
+            : 'wide web opens the picker as a centered popup', (tester) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(1000, 800);
       addTearDown(tester.view.resetPhysicalSize);
@@ -38,7 +39,6 @@ void main() {
       final changes = <Map<String, dynamic>>[];
       final card = ItemSetoranCard(
         index: 0,
-        isWebOverride: true,
         itemData: editing
             ? const {'berat': 2.5, 'jenis_sampah_id': 'pet'}
             : const {'berat': 2.5},
@@ -48,7 +48,6 @@ void main() {
       );
       final router = GoRouter(
         routes: [
-          jenisSampahSideSheetRoute(),
           GoRoute(
             path: '/',
             builder: (context, state) => Scaffold(
@@ -82,18 +81,17 @@ void main() {
         await tester.pumpAndSettle();
       }
       final field = find.byKey(const Key('pilih-jenis-sampah'));
-      if (editing) {
-        expect(find.descendant(of: field, matching: find.text('Botol PET')),
-            findsOneWidget);
-      }
       await tester.tap(field);
       await tester.pumpAndSettle();
 
       final picker = find.byType(PilihJenisSampahPicker);
       expect(picker, findsOneWidget);
       expect(ModalRoute.of(tester.element(picker))?.settings,
-          isA<SideSheetPage<HargaEntity>>());
-      expect(tester.getRect(picker).center.dx, greaterThan(500));
+          isNot(isA<SideSheetPage<HargaEntity>>()));
+      expect(find.ancestor(of: picker, matching: find.byType(Dialog)),
+          findsOneWidget);
+      expect(tester.getRect(picker).center.dx, closeTo(500, 1),
+          reason: 'a popup is centered, not docked to the right edge');
 
       final option = find.byKey(const Key('jenis-sampah-pet'));
       if (editing) {
@@ -112,4 +110,45 @@ void main() {
       });
     });
   }
+
+  testWidgets('Esc closes only the popup and leaves the edit dialog open',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1000, 800);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final catalog = _Catalog([
+      HargaModel.fromJson({
+        'id': 'pet',
+        'nama_sampah': 'Botol PET',
+        'kategori': 'plastik',
+        'harga_per_kg': 2000,
+      }),
+    ]);
+    await tester.pumpWidget(
+      withHargaProvider(
+        catalog,
+        MaterialApp(
+          home: Scaffold(
+            body: ItemSetoranCard(
+              index: 0,
+              itemData: const {'berat': 2.5},
+              onChanged: (_) {},
+              onDelete: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('pilih-jenis-sampah')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PilihJenisSampahPicker), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PilihJenisSampahPicker), findsNothing);
+    expect(find.byKey(const Key('pilih-jenis-sampah')), findsOneWidget);
+  });
 }

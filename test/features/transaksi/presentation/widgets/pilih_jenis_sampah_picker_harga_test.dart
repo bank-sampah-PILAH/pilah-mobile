@@ -5,7 +5,6 @@ import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/jenis_sampah_side_sheet.dart';
 
 import '../../../../support/harga_support.dart';
 import '../../../../support/stub_api.dart';
@@ -33,7 +32,7 @@ HargaEntity _jenis(String id, String nama, int harga) => HargaModel.fromJson({
 const _wadah = <String, ({double width, bool isWeb})>{
   'bottom sheet': (width: 400, isWeb: false),
   'dialog': (width: 800, isWeb: false),
-  'side sheet web': (width: 1000, isWeb: true),
+  'popup di web lebar': (width: 1000, isWeb: true),
 };
 
 Future<void> _bukaPicker(
@@ -49,13 +48,11 @@ Future<void> _bukaPicker(
 
   final router = GoRouter(
     routes: [
-      jenisSampahSideSheetRoute(),
       GoRoute(
         path: '/',
         builder: (context, state) => Scaffold(
           body: ItemSetoranCard(
             index: 0,
-            isWebOverride: isWeb,
             itemData: const {'berat': 1.0},
             hargaFor: hargaFor,
             onChanged: (_) {},
