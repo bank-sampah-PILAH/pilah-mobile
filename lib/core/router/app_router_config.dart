@@ -45,6 +45,7 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/jenis_sampah_side_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
@@ -194,6 +195,7 @@ class AppRouterConfig {
       // tombol kembali mem-pop halaman di belakang panel dan membuang isian
       // yang belum tersimpan tanpa bertanya.
       setoranSideSheetRoute(),
+      jenisSampahSideSheetRoute(),
       // Creating a pencairan is locked for handover (PIL-434), the same way
       // and for the same reason as pengumuman below: the paths come from
       // [draftPencairanRoutes], which keeps the routes as they were, the

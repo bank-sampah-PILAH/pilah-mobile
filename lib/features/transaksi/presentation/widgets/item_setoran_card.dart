@@ -10,13 +10,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/layout/picker_presentation.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/jenis_sampah_side_sheet.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
+  final bool? isWebOverride;
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
@@ -34,6 +34,7 @@ class ItemSetoranCard extends StatelessWidget {
   const ItemSetoranCard({
     super.key,
     required this.index,
+    this.isWebOverride,
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
@@ -49,6 +50,7 @@ class ItemSetoranCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedType = itemData['jenis'] as String?;
+    final selectedId = itemData['jenis_sampah_id'] as String?;
     final harga = itemData['harga'] as int? ?? 0;
     final berat = itemData['berat'] as num? ?? 1.0;
     final subtotal = setoranSubtotal(harga, berat);
@@ -86,25 +88,20 @@ class ItemSetoranCard extends StatelessWidget {
                       // provider watch rebuilds this when loadHarga() completes.
                       final List<HargaEntity> activeList =
                           ref.read(hargaProvider.notifier).activeJenisSampah;
-                      // A stale selection no longer in the list (e.g. a jenis
-                      // that was deactivated) shows as unselected.
                       final selected = activeList
-                          .where((t) => t.name == selectedType)
+                          .where((type) => type.id == selectedId)
                           .firstOrNull;
 
                       return InkWell(
                         key: const Key('pilih-jenis-sampah'),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         onTap: () async {
-                          final picked = await showAdaptivePicker<HargaEntity>(
-                            context: context,
-                            builder: (context, presentation) =>
-                                PilihJenisSampahPicker(
-                              selectedId: selected?.id,
-                              presentation: presentation,
-                            ),
+                          final picked = await openJenisSampahPicker(
+                            context,
+                            selectedId: selectedId,
+                            isWeb: isWebOverride,
                           );
-                          if (picked == null) return;
+                          if (!context.mounted || picked == null) return;
                           onChanged({
                             ...itemData,
                             'jenis': picked.name,
@@ -120,7 +117,7 @@ class ItemSetoranCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Pilih Jenis',
+                                  selectedType ?? 'Pilih Jenis',
                                   style: AppTextStyle.small
                                       .copyWith(color: AppColors.grey100),
                                 ),
@@ -131,7 +128,7 @@ class ItemSetoranCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  selected.name,
+                                  selectedType ?? selected.name,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle.small.copyWith(
                                     color: AppColors.black,

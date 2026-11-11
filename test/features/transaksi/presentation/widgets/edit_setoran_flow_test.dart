@@ -201,6 +201,20 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('shows the recorded type after it becomes inactive',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [_jenis('j2', 'Kardus', '1000')],
+    });
+
+    await open(tester);
+
+    final field = find.byKey(const Key('pilih-jenis-sampah'));
+    expect(find.descendant(of: field, matching: find.text('Botol PET')),
+        findsOneWidget);
+    expect(saveEnabled(tester), isFalse);
+  });
+
   testWidgets('starts from what was recorded and cannot save until changed',
       (tester) async {
     await open(tester);
