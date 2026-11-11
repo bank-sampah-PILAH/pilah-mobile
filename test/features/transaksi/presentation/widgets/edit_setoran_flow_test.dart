@@ -189,6 +189,18 @@ void main() {
     expect(find.textContaining('Diubah'), findsNothing);
   });
 
+  testWidgets('marks the alasan as required and leaves the catatan optional',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(
+        find.bySemanticsLabel('ALASAN PERUBAHAN, wajib diisi'), findsOneWidget);
+    expect(find.text('CATATAN'), findsOneWidget);
+    expect(find.bySemanticsLabel('CATATAN, wajib diisi'), findsNothing);
+    handle.dispose();
+  });
+
   testWidgets('starts from what was recorded and cannot save until changed',
       (tester) async {
     await open(tester);
@@ -202,6 +214,55 @@ void main() {
         find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
     await tester.pump();
     expect(saveEnabled(tester), isFalse, reason: 'alasan alone is not an edit');
+  });
+
+  testWidgets('marks the item list as required, like the nasabah form does',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(
+        find.bySemanticsLabel('RINCIAN SETORAN, wajib diisi'), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('says a change is still needed, and stops once one is made',
+      (tester) async {
+    await open(tester);
+
+    expect(find.byKey(EditSetoranSheet.changeHintKey), findsOneWidget);
+    expect(saveEnabled(tester), isFalse);
+
+    // Alasan is the field that carries the asterisk, so filling it is the
+    // moment a pengurus expects Simpan to wake up. It must not go quiet.
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
+    await tester.pump();
+    expect(find.byKey(EditSetoranSheet.changeHintKey), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextFormField, '2'), '3');
+    await tester.pump();
+    expect(find.byKey(EditSetoranSheet.changeHintKey), findsNothing);
+    expect(saveEnabled(tester), isTrue);
+  });
+
+  testWidgets('a fresh item asks for its jenis instead of just dying',
+      (tester) async {
+    await open(tester);
+
+    await tester.ensureVisible(find.text('Tambah Item'));
+    await tester.tap(find.text('Tambah Item'));
+    await tester.pumpAndSettle();
+
+    // The new row starts with berat 1.0 and no jenis, so the old message
+    // about berat said nothing and Simpan Perubahan stayed dead in silence.
+    expect(find.text('Pilih jenis sampah'), findsOneWidget);
+    expect(find.text('Berat harus lebih dari 0'), findsNothing);
+
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Tambah kardus');
+    await tester.pump();
+    expect(saveEnabled(tester), isFalse);
   });
 
   testWidgets('a changed weight is sent with the alasan and refreshes the feed',
