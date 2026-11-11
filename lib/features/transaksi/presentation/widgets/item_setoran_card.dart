@@ -50,6 +50,7 @@ class ItemSetoranCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedType = itemData['jenis'] as String?;
+    final selectedId = itemData['jenis_sampah_id'] as String?;
     final harga = itemData['harga'] as int? ?? 0;
     final berat = itemData['berat'] as num? ?? 1.0;
     final subtotal = setoranSubtotal(harga, berat);
@@ -87,10 +88,8 @@ class ItemSetoranCard extends StatelessWidget {
                       // provider watch rebuilds this when loadHarga() completes.
                       final List<HargaEntity> activeList =
                           ref.read(hargaProvider.notifier).activeJenisSampah;
-                      // A stale selection no longer in the list (e.g. a jenis
-                      // that was deactivated) shows as unselected.
                       final selected = activeList
-                          .where((t) => t.name == selectedType)
+                          .where((type) => type.id == selectedId)
                           .firstOrNull;
 
                       return InkWell(
@@ -99,7 +98,7 @@ class ItemSetoranCard extends StatelessWidget {
                         onTap: () async {
                           final picked = await openJenisSampahPicker(
                             context,
-                            selectedId: selected?.id,
+                            selectedId: selectedId,
                             isWeb: isWebOverride,
                           );
                           if (!context.mounted || picked == null) return;
@@ -118,7 +117,7 @@ class ItemSetoranCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Pilih Jenis',
+                                  selectedType ?? 'Pilih Jenis',
                                   style: AppTextStyle.small
                                       .copyWith(color: AppColors.grey100),
                                 ),
@@ -129,7 +128,7 @@ class ItemSetoranCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  selected.name,
+                                  selectedType ?? selected.name,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyle.small.copyWith(
                                     color: AppColors.black,
