@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -606,6 +607,39 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Botol PET'), findsOneWidget);
       expect(find.text('Kardus'), findsOneWidget);
+    });
+
+    testWidgets('a jenis already chosen on the row is ticked when it reopens',
+        (tester) async {
+      await open(tester);
+      await addItem(tester, 'Botol PET');
+
+      await tester.tap(find.byKey(const Key('pilih-jenis-sampah')).first);
+      await tester.pumpAndSettle();
+
+      Finder tick(String id) => find.descendant(
+          of: find.byKey(Key('jenis-sampah-$id')),
+          matching: find.byIcon(Icons.check));
+      expect(tick('j1'), findsOneWidget);
+      expect(tick('j2'), findsNothing);
+    });
+
+    testWidgets('an empty catalog says there is nothing to pick yet',
+        (tester) async {
+      api.on('GET', '/api/v1/jenis-sampah', json: {'results': []});
+
+      await openPicker(tester);
+
+      expect(find.text('Belum ada jenis sampah aktif.'), findsOneWidget);
+    });
+
+    testWidgets('a catalog that failed to load says why', (tester) async {
+      api.fail('GET', '/api/v1/jenis-sampah', DioExceptionType.receiveTimeout);
+
+      await openPicker(tester);
+
+      expect(find.text('Receive Timeout'), findsOneWidget);
+      expect(find.text('Belum ada jenis sampah aktif.'), findsNothing);
     });
 
     testWidgets('sorting by price flips with a second tap', (tester) async {
