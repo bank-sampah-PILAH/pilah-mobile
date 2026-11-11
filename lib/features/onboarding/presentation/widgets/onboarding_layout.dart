@@ -205,19 +205,28 @@ class OnboardingFormCard extends StatelessWidget {
   }
 }
 
-/// A required field of an onboarding form: its capital label with a red star,
-/// an optional line of help, then the [child] field and some space below.
+/// A field of an onboarding form: its capital label, an optional line of help,
+/// then the [child] field and some space below.
+///
+/// The label carries a red star while [isRequired], which the form's own
+/// "Semua kolom bertanda * wajib diisi." line refers to. Pass false for a
+/// field that may be left empty, so that sentence stays true.
 class OnboardingFormField extends StatelessWidget {
   const OnboardingFormField({
     super.key,
     required this.label,
     required this.child,
     this.description,
+    this.isRequired = true,
   });
 
   final String label;
   final String? description;
   final Widget child;
+
+  /// Whether the label carries the red star. Defaults to true: on these forms
+  /// a required field is the rule and an optional one the exception.
+  final bool isRequired;
 
   @override
   Widget build(BuildContext context) {
@@ -233,10 +242,11 @@ class OnboardingFormField extends StatelessWidget {
             text: label,
             style: labelStyle,
             children: [
-              TextSpan(
-                text: ' *',
-                style: labelStyle.copyWith(color: AppColors.danger),
-              ),
+              if (isRequired)
+                TextSpan(
+                  text: ' *',
+                  style: labelStyle.copyWith(color: AppColors.danger),
+                ),
             ],
           ),
         ),
@@ -246,7 +256,10 @@ class OnboardingFormField extends StatelessWidget {
               style: AppTextStyle.small.copyWith(color: AppColors.grey100)),
         ],
         const SizedBox(height: 8),
-        Semantics(label: label, child: child),
+        Semantics(
+          label: isRequired ? '$label, wajib diisi' : '$label, opsional',
+          child: child,
+        ),
         const SizedBox(height: 20),
       ],
     );

@@ -115,12 +115,13 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         : 'Perempuan';
 
     // Stored as the ISO string the API wants; the picker and the field need a
-    // DateTime and dd/MM/yyyy back.
-    final parsed = DateTime.tryParse(draft.tanggalLahir);
-    if (parsed != null) {
-      _selectedDob = parsed;
-      _dobController.text = _displayDate(parsed);
-    }
+    // DateTime and dd/MM/yyyy back. Null since PIL-478, and a draft is the
+    // most recent input there is, so a draft without a date means the date
+    // was taken out: clear the field rather than leave a stale one showing.
+    final draftDob = draft.tanggalLahir;
+    final parsed = draftDob == null ? null : DateTime.tryParse(draftDob);
+    _selectedDob = parsed;
+    _dobController.text = parsed == null ? '' : _displayDate(parsed);
   }
 
   /// Prefills the form from the account's own saved profile when there is no
@@ -248,7 +249,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       nama: _nameController.text.trim(),
       jenisKelamin:
           _gender == _genderMaleLabel ? _genderMaleApiValue : 'perempuan',
-      tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
+      tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : null,
       noHp: _phoneController.text.trim(),
       alamat: _isNasabah ? _alamatController.text.trim() : '',
     );
@@ -418,6 +419,15 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     AppNotification.showError(context, title: title, message: message);
   }
 
+  /// Empties the birth date. The box is read-only, so without this the field
+  /// could only ever gain a date, never lose one (PIL-478).
+  void _clearDate() {
+    setState(() {
+      _dobController.clear();
+      _selectedDob = null;
+    });
+  }
+
   /// Intercepts a back-navigation attempt. [canPop] on the [PopScope] is false,
   /// so the pop is already blocked when this fires; we only need to offer the
   /// exit confirmation.
@@ -537,23 +547,11 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       },
                     ),
                   ),
-                  second: OnboardingFormField(
-                    label: 'TANGGAL LAHIR',
-                    child: TextFormField(
-                      controller: _dobController,
-                      readOnly: true,
-                      onTap: _selectDate,
-                      decoration: appInputDecoration(
-                          hintText: 'dd/mm/yyyy',
-                          suffixIcon: const Icon(Icons.calendar_today_outlined,
-                              color: AppColors.black)),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Tanggal lahir wajib diisi';
-                        }
-                        return null;
-                      },
-                    ),
+                  second: OnboardingBirthDateField(
+                    controller: _dobController,
+                    onTap: _selectDate,
+                    isOptional: _isNasabah,
+                    onClear: _clearDate,
                   ),
                 ),
                 OnboardingPhoneField(

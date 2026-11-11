@@ -173,6 +173,7 @@ class _EditNasabahBottomSheetState
         NasabahBirthDateField(
           controller: _tanggalLahirController,
           onTap: _selectDate,
+          onClear: _tanggalLahirController.clear,
         ),
         NasabahPhoneField(controller: _whatsappController),
         NasabahAddressField(

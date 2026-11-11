@@ -126,4 +126,162 @@ void main() {
       expect(field.minLines, 3);
     });
   });
+
+  group('OnboardingBirthDateField', () {
+    testWidgets('a nasabah may leave it empty and the label says so',
+        (tester) async {
+      final key = await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: TextEditingController(),
+          onTap: () {},
+          isOptional: true,
+        ),
+      );
+
+      expect(find.text('dd/mm/yyyy (opsional)'), findsOneWidget);
+      expect(find.textContaining('*', findRichText: true), findsNothing);
+      expect(key.currentState!.validate(), isTrue);
+    });
+
+    testWidgets('a pengelola still has to give one', (tester) async {
+      final key = await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: TextEditingController(),
+          onTap: () {},
+          isOptional: false,
+        ),
+      );
+
+      expect(find.text('dd/mm/yyyy'), findsOneWidget);
+      expect(find.textContaining('*', findRichText: true), findsOneWidget);
+      expect(key.currentState!.validate(), isFalse);
+      await tester.pump();
+      expect(find.text('Tanggal lahir wajib diisi'), findsOneWidget);
+    });
+
+    testWidgets('a pengelola who gave one passes validation', (tester) async {
+      final key = await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: TextEditingController(text: '01/01/1990'),
+          onTap: () {},
+          isOptional: false,
+        ),
+      );
+
+      expect(key.currentState!.validate(), isTrue);
+    });
+
+    testWidgets('the box is read-only, so tapping it opens the picker',
+        (tester) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: TextEditingController(),
+          onTap: () => taps++,
+          isOptional: true,
+        ),
+      );
+
+      expect(tester.widget<TextFormField>(find.byType(TextFormField)).enabled,
+          isTrue);
+      await tester.tap(find.byType(TextFormField));
+      expect(taps, 1);
+    });
+
+    testWidgets('clears a date that was already picked', (tester) async {
+      final controller = TextEditingController(text: '01/01/1990');
+      var cleared = 0;
+      await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: controller,
+          onTap: () {},
+          isOptional: true,
+          onClear: () {
+            cleared++;
+            controller.clear();
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Hapus tanggal lahir'), findsOneWidget);
+      await tester.tap(find.byTooltip('Hapus tanggal lahir'));
+      await tester.pump();
+
+      expect(cleared, 1);
+      expect(controller.text, isEmpty);
+      // The icon goes back to the calendar once there is nothing to clear.
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+    });
+
+    testWidgets('offers no clear button while there is nothing to clear',
+        (tester) async {
+      await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: TextEditingController(),
+          onTap: () {},
+          isOptional: true,
+          onClear: () {},
+        ),
+      );
+
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+    });
+
+    testWidgets('offers no clear button when the field is not optional',
+        (tester) async {
+      await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: TextEditingController(text: '01/01/1990'),
+          onTap: () {},
+          isOptional: false,
+          onClear: () {},
+        ),
+      );
+
+      expect(find.byIcon(Icons.close), findsNothing);
+    });
+
+    testWidgets('offers no clear button when no handler is given',
+        (tester) async {
+      await _pump(
+        tester,
+        OnboardingBirthDateField(
+          controller: TextEditingController(text: '01/01/1990'),
+          onTap: () {},
+          isOptional: true,
+        ),
+      );
+
+      expect(find.byIcon(Icons.close), findsNothing);
+    });
+
+    test('errorFor states the rule without pumping a widget', () {
+      expect(
+        OnboardingBirthDateField.errorFor(null, isOptional: true),
+        isNull,
+      );
+      expect(OnboardingBirthDateField.errorFor('', isOptional: true), isNull);
+      expect(
+        OnboardingBirthDateField.errorFor(null, isOptional: false),
+        'Tanggal lahir wajib diisi',
+      );
+      expect(
+        OnboardingBirthDateField.errorFor('', isOptional: false),
+        'Tanggal lahir wajib diisi',
+      );
+      expect(
+        OnboardingBirthDateField.errorFor('01/01/1990', isOptional: false),
+        isNull,
+      );
+    });
+  });
 }
