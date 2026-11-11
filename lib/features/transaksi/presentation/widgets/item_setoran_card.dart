@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
@@ -80,69 +82,67 @@ class ItemSetoranCard extends StatelessWidget {
                       ref.watch(hargaProvider);
                       // Source the options from the full active list rather than
                       // the price-list page's tab/search-filtered state, so the
-                      // dropdown always offers every active jenis sampah. The
+                      // picker always offers every active jenis sampah. The
                       // provider watch rebuilds this when loadHarga() completes.
                       final List<HargaEntity> activeList =
                           ref.read(hargaProvider.notifier).activeJenisSampah;
-                      // Guard against a stale selection no longer in the list
-                      // (e.g. a jenis that was deactivated): DropdownButton
-                      // asserts if its value has no matching item.
-                      final selectedValue =
-                          activeList.any((t) => t.name == selectedType)
-                              ? selectedType
-                              : null;
+                      // A stale selection no longer in the list (e.g. a jenis
+                      // that was deactivated) shows as unselected.
+                      final selected = activeList
+                          .where((t) => t.name == selectedType)
+                          .firstOrNull;
 
-                      return DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          isExpanded: true,
-                          value: selectedValue,
-                          hint: Row(
-                            children: [
+                      return InkWell(
+                        key: const Key('pilih-jenis-sampah'),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        onTap: () async {
+                          final picked = await showAdaptivePicker<HargaEntity>(
+                            context: context,
+                            builder: (context, presentation) =>
+                                PilihJenisSampahPicker(
+                              selectedId: selected?.id,
+                              presentation: presentation,
+                            ),
+                          );
+                          if (picked == null) return;
+                          onChanged({
+                            ...itemData,
+                            'jenis': picked.name,
+                            'jenis_sampah_id': picked.id,
+                            'harga': hargaFor?.call(picked) ?? picked.price,
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            if (selected == null) ...[
                               const Icon(Icons.recycling,
                                   color: AppColors.greenDark, size: 20),
                               const SizedBox(width: 8),
-                              Text(
-                                'Pilih Jenis',
-                                style: AppTextStyle.small
-                                    .copyWith(color: AppColors.grey100),
+                              Expanded(
+                                child: Text(
+                                  'Pilih Jenis',
+                                  style: AppTextStyle.small
+                                      .copyWith(color: AppColors.grey100),
+                                ),
+                              ),
+                            ] else ...[
+                              Icon(selected.icon,
+                                  color: selected.iconColor, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  selected.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle.small.copyWith(
+                                    color: AppColors.black,
+                                    fontWeight: AppFontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                          icon: const Icon(Icons.keyboard_arrow_down,
-                              color: AppColors.grey200),
-                          items: activeList.map((type) {
-                            return DropdownMenuItem<String>(
-                              value: type.name,
-                              child: Row(
-                                children: [
-                                  Icon(type.icon,
-                                      color: type.iconColor, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    type.name,
-                                    style: AppTextStyle.small.copyWith(
-                                      color: AppColors.black,
-                                      fontWeight: AppFontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              final selected =
-                                  activeList.firstWhere((t) => t.name == value);
-                              onChanged({
-                                ...itemData,
-                                'jenis': value,
-                                'jenis_sampah_id': selected.id,
-                                'harga':
-                                    hargaFor?.call(selected) ?? selected.price,
-                              });
-                            }
-                          },
+                            const Icon(Icons.keyboard_arrow_down,
+                                color: AppColors.grey200),
+                          ],
                         ),
                       );
                     },
