@@ -29,6 +29,11 @@ class BatalkanSetoranDialog extends ConsumerStatefulWidget {
 
   static const alasanKey = ValueKey('batalkan-setoran-alasan');
 
+  /// The success toast. It states what the backend now does: the setoran is
+  /// hidden from the riwayat (PIL-481), not kept there with a label.
+  static const berhasilMessage =
+      'Setoran dihapus dan disembunyikan dari riwayat.';
+
   @override
   ConsumerState<BatalkanSetoranDialog> createState() =>
       _BatalkanSetoranDialogState();
@@ -79,7 +84,7 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
     AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
           ctx,
           title: 'Berhasil',
-          message: 'Setoran dihapus dan disembunyikan dari riwayat.',
+          message: BatalkanSetoranDialog.berhasilMessage,
         ));
   }
 

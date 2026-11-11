@@ -144,7 +144,8 @@ class TransaksiEditRequest {
 }
 
 /// Write model for POST /transaksi/{id}/batalkan (PIL-428). "Hapus" is a void:
-/// the setoran stays in the riwayat, marked dibatalkan; [alasan] is required.
+/// the setoran is hidden from the riwayat (PIL-481) but kept, with who, when and
+/// why, for the detail; [alasan] is required.
 class TransaksiBatalRequest {
   final String id;
   final String alasan;
