@@ -99,6 +99,7 @@ class ItemSetoranCard extends StatelessWidget {
                           final picked = await openJenisSampahPicker(
                             context,
                             selectedId: selectedId,
+                            hargaFor: hargaFor,
                             isWeb: isWebOverride,
                           );
                           if (!context.mounted || picked == null) return;

@@ -10,9 +10,10 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis
 const _pickerPath = '/transaksi-baru/pilih-jenis';
 
 class _PickerEntry {
-  const _PickerEntry(this.selectedId);
+  const _PickerEntry(this.selectedId, this.hargaFor);
 
   final String? selectedId;
+  final int Function(HargaEntity jenis)? hargaFor;
 }
 
 GoRoute jenisSampahSideSheetRoute() => GoRoute(
@@ -27,6 +28,7 @@ GoRoute jenisSampahSideSheetRoute() => GoRoute(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: PilihJenisSampahPicker(
               selectedId: entry.selectedId,
+              hargaFor: entry.hargaFor,
               presentation: PickerPresentation.dialog,
             ),
           ),
@@ -37,6 +39,7 @@ GoRoute jenisSampahSideSheetRoute() => GoRoute(
 Future<HargaEntity?> openJenisSampahPicker(
   BuildContext context, {
   required String? selectedId,
+  int Function(HargaEntity jenis)? hargaFor,
   bool? isWeb,
 }) {
   final presentation = SideSheetPresentation.resolve(
@@ -46,13 +49,14 @@ Future<HargaEntity?> openJenisSampahPicker(
   if (presentation == SideSheetPresentation.sideSheet) {
     return context.push<HargaEntity>(
       _pickerPath,
-      extra: _PickerEntry(selectedId),
+      extra: _PickerEntry(selectedId, hargaFor),
     );
   }
   return showAdaptivePicker<HargaEntity>(
     context: context,
     builder: (context, presentation) => PilihJenisSampahPicker(
       selectedId: selectedId,
+      hargaFor: hargaFor,
       presentation: presentation,
     ),
   );
