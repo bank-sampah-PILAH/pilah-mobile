@@ -711,8 +711,8 @@ void main() {
     const editKey = ValueKey('aktivitas-edit');
     const hapusKey = ValueKey('aktivitas-hapus');
 
-    void phone(WidgetTester tester) {
-      tester.view.physicalSize = const Size(390, 844);
+    void phone(WidgetTester tester, {Size size = const Size(390, 844)}) {
+      tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -731,8 +731,12 @@ void main() {
     // Scope above the app so sheets and dialogs on the root navigator keep
     // their providers, as in the real app.
     Future<void> pumpRows(
-        WidgetTester tester, List<ActivitasEntity> items) async {
-      phone(tester);
+      WidgetTester tester,
+      List<ActivitasEntity> items, {
+      bool isWeb = false,
+      Size size = const Size(390, 844),
+    }) async {
+      phone(tester, size: size);
       feedNotifier = _TestRiwayatNotifier(
           RiwayatAktivitasState(status: AktivitasStatus.loaded, items: items));
       await tester.pumpWidget(withTransaksiProviders(
@@ -742,7 +746,7 @@ void main() {
         analytics: analytics,
         child: MaterialApp(
           home: Scaffold(
-            body: AktivitasListView(now: () => _now, isWeb: false),
+            body: AktivitasListView(now: () => _now, isWeb: isWeb),
           ),
         ),
       ));
@@ -873,5 +877,48 @@ void main() {
       expect(find.byKey(editKey), findsNothing);
       expect(find.byKey(hapusKey), findsNothing);
     });
+
+    // The card buttons stand in for the table's Aksi column: they show exactly
+    // when the table is not used, decided by layout width and not by platform.
+    final cardActions = find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == 'Aksi setoran');
+
+    testWidgets('show on a compact web layout, above Rincian', (tester) async {
+      await pumpRows(tester, [_setoran('Ani', _now, id: 't1')], isWeb: true);
+
+      expect(find.byType(AktivitasTable), findsNothing);
+      await tester.tap(find.text('Ani'));
+      await tester.pumpAndSettle();
+
+      expect(cardActions, findsOneWidget);
+      expect(find.byKey(editKey), findsOneWidget);
+      expect(find.byKey(hapusKey), findsOneWidget);
+      expect(
+          tester.getRect(find.byKey(editKey)).bottom,
+          lessThanOrEqualTo(
+              tester.getRect(find.byType(AktivitasSetoranDetail)).top));
+    });
+
+    for (final isWeb in [true, false]) {
+      testWidgets(
+          'are replaced by the table Aksi column on a wide layout '
+          '(isWeb: $isWeb)', (tester) async {
+        await pumpRows(tester, [_setoran('Ani', _now, id: 't1')],
+            isWeb: isWeb, size: const Size(1200, 900));
+
+        expect(find.byType(AktivitasTable), findsOneWidget);
+        expect(find.byKey(editKey), findsOneWidget);
+        expect(find.byKey(hapusKey), findsOneWidget);
+
+        await tester.tap(find.text('Ani'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AktivitasSetoranDetail), findsOneWidget);
+        expect(cardActions, findsNothing);
+        // Only the table's own pair, never a second one from the card.
+        expect(find.byKey(editKey), findsOneWidget);
+        expect(find.byKey(hapusKey), findsOneWidget);
+      });
+    }
   });
 }
