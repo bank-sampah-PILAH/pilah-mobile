@@ -111,11 +111,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _buildLoadMore() {
     if (_loadingMore) {
       return Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Center(
           child: Semantics(
             label: 'Memuat notifikasi berikutnya',
-            child: CircularProgressIndicator(),
+            child: const CircularProgressIndicator(),
           ),
         ),
       );
