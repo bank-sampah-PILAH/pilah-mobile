@@ -18,6 +18,7 @@ class BottomSheetHeader extends StatelessWidget {
   /// [DialogSurface] karena dialog tidak dapat ditarik dan pegangan di sana
   /// janji palsu. Picker yang memutuskannya sendiri memberi nilai eksplisit.
   final bool? showDragHandle;
+  final bool showCloseButton;
 
   static const dragHandleKey = ValueKey('bottom-sheet-drag-handle');
 
@@ -33,6 +34,7 @@ class BottomSheetHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.showDragHandle,
+    this.showCloseButton = true,
     this.onClose,
   });
 
@@ -66,20 +68,22 @@ class BottomSheetHeader extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            InkWell(
-              onTap: onClose ?? () => context.pop(),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.fill,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+            if (showCloseButton) ...[
+              const SizedBox(width: 12),
+              InkWell(
+                onTap: onClose ?? () => context.pop(),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.fill,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: const Icon(Icons.close,
+                      color: AppColors.grey100, size: 20),
                 ),
-                child:
-                    const Icon(Icons.close, color: AppColors.grey100, size: 20),
               ),
-            ),
+            ],
           ],
         ),
       ],

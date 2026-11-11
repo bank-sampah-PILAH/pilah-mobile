@@ -79,7 +79,8 @@ class ItemSetoranCard extends StatelessWidget {
                     onTap: () async {
                       final selected = await showAdaptivePicker<HargaEntity>(
                         context: context,
-                        builder: (_, __) => PilihJenisSampahPicker(
+                        builder: (_, presentation) => PilihJenisSampahPicker(
+                          presentation: presentation,
                           selectedId: itemData['jenis_sampah_id'] as String?,
                         ),
                       );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +11,10 @@ class PilihJenisSampahPicker extends ConsumerStatefulWidget {
   const PilihJenisSampahPicker({
     super.key,
     required this.selectedId,
+    this.presentation = PickerPresentation.bottomSheet,
   });
   final String? selectedId;
+  final PickerPresentation presentation;
 
   @override
   ConsumerState<PilihJenisSampahPicker> createState() =>
@@ -54,14 +58,13 @@ class _PilihJenisSampahPickerState
     return SafeArea(
       child: Column(
         children: [
-          ListTile(
-            title: const Text('Pilih Jenis Sampah'),
-            trailing: IconButton(
-              tooltip: 'Tutup',
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context),
-            ),
+          BottomSheetHeader(
+            title: 'Pilih Jenis Sampah',
+            showDragHandle: widget.presentation.showsDragHandle,
+            showCloseButton: widget.presentation == PickerPresentation.dialog,
+            onClose: () => Navigator.pop(context),
           ),
+          const SizedBox(height: AppSpacing.sm),
           CustomSearchField(
             hintText: 'Cari nama jenis sampah',
             onChanged: (value) {

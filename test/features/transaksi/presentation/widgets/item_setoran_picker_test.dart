@@ -189,7 +189,7 @@ void main() {
     expect(find.text('Botol PET'), findsOneWidget);
     expect(find.text('Kardus'), findsNothing);
 
-    await tester.tap(find.byTooltip('Tutup'));
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(changes, isEmpty);
   });
