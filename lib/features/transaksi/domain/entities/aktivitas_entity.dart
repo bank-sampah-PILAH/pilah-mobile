@@ -71,7 +71,8 @@ class ActivitasEntity {
       title: t.name,
       subtitleLines: [t.subtitle],
       amount: t.amount,
-      // Dibatalkan: still listed, but grey so it does not read as money in.
+      // Dibatalkan only reaches here through a detail opened by id (the feed
+      // omits voided rows); grey so it does not read as money in.
       amountColor: t.isDibatalkan ? AppColors.grey100 : null,
       badge: t.isDibatalkan ? 'Dibatalkan' : null,
       trailingCaptions: t.tanggal != null

@@ -20,7 +20,7 @@ Future<bool?> showBatalkanSetoranDialog(BuildContext context, String id) =>
     );
 
 /// Konfirmasi "Hapus" setoran (PIL-428). Hapus adalah pembatalan: setoran
-/// tetap ada di riwayat dengan label Dibatalkan, tetapi tidak lagi dihitung.
+/// disembunyikan dari riwayat dan tidak lagi dihitung.
 /// Alasan wajib diisi, seperti saat mengedit setoran.
 class BatalkanSetoranDialog extends ConsumerStatefulWidget {
   const BatalkanSetoranDialog({super.key, required this.id});
@@ -28,6 +28,11 @@ class BatalkanSetoranDialog extends ConsumerStatefulWidget {
   final String id;
 
   static const alasanKey = ValueKey('batalkan-setoran-alasan');
+
+  /// The success toast. It states what the backend now does: the setoran is
+  /// hidden from the riwayat (PIL-481), not kept there with a label.
+  static const berhasilMessage =
+      'Setoran dihapus dan disembunyikan dari riwayat.';
 
   @override
   ConsumerState<BatalkanSetoranDialog> createState() =>
@@ -79,8 +84,7 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
     AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
           ctx,
           title: 'Berhasil',
-          message: 'Setoran dibatalkan. Tetap tampil di riwayat dengan '
-              'label Dibatalkan.',
+          message: BatalkanSetoranDialog.berhasilMessage,
         ));
   }
 
@@ -105,9 +109,8 @@ class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Setoran tetap tampil di riwayat dengan label "Dibatalkan", '
-              'tetapi tidak lagi dihitung ke saldo nasabah maupun laporan. '
-              'Saldo nasabah dihitung ulang.',
+              'Setoran disembunyikan dari riwayat dan tidak lagi dihitung '
+              'ke saldo nasabah maupun laporan. Saldo nasabah dihitung ulang.',
               style: AppTextStyle.small,
             ),
             const SizedBox(height: AppSpacing.md),
