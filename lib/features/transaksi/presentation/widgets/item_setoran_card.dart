@@ -10,10 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/layout/picker_presentation.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/jenis_sampah_side_sheet.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
@@ -98,15 +97,12 @@ class ItemSetoranCard extends StatelessWidget {
                         key: const Key('pilih-jenis-sampah'),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         onTap: () async {
-                          final picked = await showAdaptivePicker<HargaEntity>(
-                            context: context,
-                            builder: (context, presentation) =>
-                                PilihJenisSampahPicker(
-                              selectedId: selected?.id,
-                              presentation: presentation,
-                            ),
+                          final picked = await openJenisSampahPicker(
+                            context,
+                            selectedId: selected?.id,
+                            isWeb: isWebOverride,
                           );
-                          if (picked == null) return;
+                          if (!context.mounted || picked == null) return;
                           onChanged({
                             ...itemData,
                             'jenis': picked.name,

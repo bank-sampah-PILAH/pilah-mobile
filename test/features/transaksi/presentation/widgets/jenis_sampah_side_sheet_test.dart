@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/jenis_sampah_side_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 
 import '../../../../support/harga_support.dart';
@@ -33,6 +34,7 @@ void main() {
     final changes = <Map<String, dynamic>>[];
     final router = GoRouter(
       routes: [
+        jenisSampahSideSheetRoute(),
         GoRoute(
           path: '/',
           builder: (context, state) => Scaffold(
