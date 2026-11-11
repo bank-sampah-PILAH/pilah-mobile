@@ -12,11 +12,11 @@ import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/jenis_sampah_side_sheet.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
-  final bool? isWebOverride;
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
@@ -34,7 +34,6 @@ class ItemSetoranCard extends StatelessWidget {
   const ItemSetoranCard({
     super.key,
     required this.index,
-    this.isWebOverride,
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
@@ -96,11 +95,18 @@ class ItemSetoranCard extends StatelessWidget {
                         key: const Key('pilih-jenis-sampah'),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         onTap: () async {
-                          final picked = await openJenisSampahPicker(
-                            context,
-                            selectedId: selectedId,
-                            hargaFor: hargaFor,
-                            isWeb: isWebOverride,
+                          // Popup (dialog) di jendela lebar, bottom sheet di
+                          // ponsel. Bukan side sheet: di web formulir setoran
+                          // sendiri sudah side sheet, dan sheet di atas sheet
+                          // membingungkan.
+                          final picked = await showAdaptivePicker<HargaEntity>(
+                            context: context,
+                            builder: (context, presentation) =>
+                                PilihJenisSampahPicker(
+                              selectedId: selectedId,
+                              hargaFor: hargaFor,
+                              presentation: presentation,
+                            ),
                           );
                           if (!context.mounted || picked == null) return;
                           onChanged({
