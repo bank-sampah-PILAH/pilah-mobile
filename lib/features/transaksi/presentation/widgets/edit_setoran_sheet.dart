@@ -22,6 +22,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_problem_reporter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Membuka form koreksi setoran [id]. Mengembalikan true bila tersimpan.
@@ -42,6 +43,7 @@ class EditSetoranSheet extends ConsumerStatefulWidget {
   static const alasanKey = ValueKey('edit-setoran-alasan');
   static const catatanKey = ValueKey('edit-setoran-catatan');
   static const saveKey = ValueKey('edit-setoran-simpan');
+  static const changeHintKey = ValueKey('edit-setoran-perlu-perubahan');
 
   @override
   ConsumerState<EditSetoranSheet> createState() => _EditSetoranSheetState();
@@ -226,6 +228,12 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
         ));
   }
 
+  /// Pesan di kartu item ketika isinya belum bisa disimpan.
+  ///
+  /// Aturannya sama dengan Transaksi Baru, dan sekarang betul-betul satu
+  /// aturan: urutan dan bunyinya ada di [ItemSetoranProblemReporter].
+  ItemSetoranProblemReporter get _problems => _EditItemProblems(_items);
+
   void _addItem() => setState(() {
         _items.add(
             {'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': 1.0});
@@ -263,7 +271,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
   List<Widget> _form() => [
         _ringkasan(_detail!),
         const SizedBox(height: 16),
-        const AppFieldLabel('RINCIAN SETORAN'),
+        const AppFieldLabel('RINCIAN SETORAN', isRequired: true),
         const SizedBox(height: 12),
         for (var i = 0; i < _items.length; i++)
           ItemSetoranCard(
@@ -271,10 +279,8 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
             index: i,
             itemData: _items[i],
             hargaFor: (jenis) => _detail?.hargaPadaTanggal[jenis.id] ?? 0,
-            hasError: ((_items[i]['berat'] as num?) ?? 0) <= 0,
-            errorText: ((_items[i]['berat'] as num?) ?? 0) <= 0
-                ? 'Berat harus lebih dari 0'
-                : null,
+            hasError: _problems.messageFor(i) != null,
+            errorText: _problems.messageFor(i),
             onDelete: () => setState(() {
               _items.removeAt(i);
               _keys.removeAt(i);
@@ -327,7 +333,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
           decoration: appInputDecoration(hintText: 'Catatan (opsional)'),
         ),
         const SizedBox(height: 16),
-        const AppFieldLabel('ALASAN PERUBAHAN'),
+        const AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
         const SizedBox(height: 8),
         TextField(
           key: EditSetoranSheet.alasanKey,
@@ -335,6 +341,16 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
           maxLength: 255,
           decoration: appInputDecoration(hintText: 'Mis. salah timbang'),
         ),
+        // Alasan terisi belum cukup: _canSave juga menuntut ada yang berubah.
+        // Tanpa baris ini tombolnya mati tanpa sebab yang terlihat.
+        if (!_itemsChanged && !_catatanChanged) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Ubah minimal satu data atau catatan untuk menyimpan.',
+            key: EditSetoranSheet.changeHintKey,
+            style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+          ),
+        ],
         if (_saveError != null) ...[
           const SizedBox(height: 4),
           Text(_saveError!,
@@ -505,4 +521,29 @@ class _Chip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Laporan masalah kartu untuk Edit Setoran.
+///
+/// Jenis yang kosong dikeluhkan segera, tidak seperti pada Transaksi Baru.
+/// Form ini tidak punya "sebelum simpan ditekan" yang setara: tombolnya hanya
+/// mati, jadi diam berarti tidak ada yang menjelaskan kematiannya.
+class _EditItemProblems extends ItemSetoranProblemReporter {
+  const _EditItemProblems(this.items);
+
+  final List<Map<String, dynamic>> items;
+
+  @override
+  int get itemCount => items.length;
+
+  @override
+  bool hasJenis(int index) =>
+      ((items[index]['jenis_sampah_id'] as String?) ?? '').isNotEmpty;
+
+  @override
+  bool hasPositiveBerat(int index) =>
+      ((items[index]['berat'] as num?) ?? 0) > 0;
+
+  @override
+  bool reportsMissingJenis(int index) => true;
 }

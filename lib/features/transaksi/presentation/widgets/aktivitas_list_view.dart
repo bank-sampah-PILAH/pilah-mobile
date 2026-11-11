@@ -470,7 +470,7 @@ class _AktivitasRowState extends ConsumerState<_AktivitasRow> {
         alignment: Alignment.topCenter,
         child: _expanded
             ? AktivitasSetoranDetail(
-                key: ValueKey('setoran-details-$id'),
+                key: ObjectKey(widget.item.transaksi),
                 transactionId: id,
                 loadDetail: (id) => ref
                     .read(transaksiProvider.notifier)

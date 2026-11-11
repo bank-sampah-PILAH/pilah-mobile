@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:pilah_mobile/design/layout/picker_presentation.dart';
-import 'pilih_jenis_sampah_picker.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
@@ -62,7 +64,7 @@ class ItemSetoranCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Waste type picker and delete button
+          // Row 1: Dropdown & Delete Button
           Row(
             children: [
               Expanded(
@@ -75,37 +77,75 @@ class ItemSetoranCard extends StatelessWidget {
                     border: Border.all(
                         color: hasError ? errorColor : AppColors.border),
                   ),
-                  child: InkWell(
-                    onTap: () async {
-                      final selected = await showAdaptivePicker<HargaEntity>(
-                        context: context,
-                        builder: (_, presentation) => PilihJenisSampahPicker(
-                          presentation: presentation,
-                          selectedId: itemData['jenis_sampah_id'] as String?,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      ref.watch(hargaProvider);
+                      // Source the options from the full active list rather than
+                      // the price-list page's tab/search-filtered state, so the
+                      // picker always offers every active jenis sampah. The
+                      // provider watch rebuilds this when loadHarga() completes.
+                      final List<HargaEntity> activeList =
+                          ref.read(hargaProvider.notifier).activeJenisSampah;
+                      // A stale selection no longer in the list (e.g. a jenis
+                      // that was deactivated) shows as unselected.
+                      final selected = activeList
+                          .where((t) => t.name == selectedType)
+                          .firstOrNull;
+
+                      return InkWell(
+                        key: const Key('pilih-jenis-sampah'),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        onTap: () async {
+                          final picked = await showAdaptivePicker<HargaEntity>(
+                            context: context,
+                            builder: (context, presentation) =>
+                                PilihJenisSampahPicker(
+                              selectedId: selected?.id,
+                              presentation: presentation,
+                            ),
+                          );
+                          if (picked == null) return;
+                          onChanged({
+                            ...itemData,
+                            'jenis': picked.name,
+                            'jenis_sampah_id': picked.id,
+                            'harga': hargaFor?.call(picked) ?? picked.price,
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            if (selected == null) ...[
+                              const Icon(Icons.recycling,
+                                  color: AppColors.greenDark, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Pilih Jenis',
+                                  style: AppTextStyle.small
+                                      .copyWith(color: AppColors.grey100),
+                                ),
+                              ),
+                            ] else ...[
+                              Icon(selected.icon,
+                                  color: selected.iconColor, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  selected.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle.small.copyWith(
+                                    color: AppColors.black,
+                                    fontWeight: AppFontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const Icon(Icons.keyboard_arrow_down,
+                                color: AppColors.grey200),
+                          ],
                         ),
                       );
-                      if (!context.mounted || selected == null) return;
-                      onChanged({
-                        ...itemData,
-                        'jenis': selected.name,
-                        'jenis_sampah_id': selected.id,
-                        'harga': hargaFor?.call(selected) ?? selected.price,
-                      });
                     },
-                    child: Row(
-                      children: [
-                        const Icon(Icons.recycling, color: AppColors.greenDark),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            selectedType ?? 'Pilih Jenis',
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyle.small,
-                          ),
-                        ),
-                        const Icon(Icons.keyboard_arrow_down),
-                      ],
-                    ),
                   ),
                 ),
               ),
