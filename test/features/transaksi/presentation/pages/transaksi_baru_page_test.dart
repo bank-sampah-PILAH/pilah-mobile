@@ -584,6 +584,30 @@ void main() {
       expect(find.text('Botol PET'), findsNothing);
     });
 
+    testWidgets('with no category ticked it says so and offers all of them',
+        (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('kategori-semua')).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tidak ada kategori'), findsOneWidget);
+      expect(find.text('Tidak ada kategori yang dipilih.'), findsOneWidget);
+      expect(find.text('Botol PET'), findsNothing);
+      expect(find.text('Jenis sampah tidak ditemukan.'), findsNothing,
+          reason: 'not a failed search');
+
+      // The menu is still open; a tap outside only closes it.
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('pilih-semua-kategori')));
+      await tester.pumpAndSettle();
+      expect(find.text('Botol PET'), findsOneWidget);
+      expect(find.text('Kardus'), findsOneWidget);
+    });
+
     testWidgets('sorting by price flips with a second tap', (tester) async {
       await openPicker(tester);
       expect(order(tester), ['Botol PET', 'Kardus'], reason: 'A-Z by default');
