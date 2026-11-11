@@ -370,20 +370,34 @@ void main() {
       expect(key.currentState!.validate(), isTrue);
     });
 
-    testWidgets('carries no required marker, unlike the fields that are',
+    testWidgets('is the one field here that accepts being left empty',
         (tester) async {
-      final handle = tester.ensureSemantics();
-      await _pump(
+      // Stated as a contrast on purpose. An earlier version of this test
+      // asserted that no 'TANGGAL LAHIR, wajib diisi' semantics label exists,
+      // which passes whatever the field does: `NasabahFormField` renders its
+      // caption through `AppFieldLabel`, which has no required marker at all,
+      // so no field in this sheet could ever produce that label. This asserts
+      // the rule that actually differs between the fields.
+      final key = await _pump(
         tester,
-        NasabahBirthDateField(
-          controller: TextEditingController(),
-          onTap: () {},
+        Column(
+          children: [
+            NasabahBirthDateField(
+              controller: TextEditingController(),
+              onTap: () {},
+            ),
+            NasabahNameField(controller: TextEditingController()),
+          ],
         ),
       );
 
       expect(find.text('TANGGAL LAHIR'), findsOneWidget);
-      expect(find.bySemanticsLabel('TANGGAL LAHIR, wajib diisi'), findsNothing);
-      handle.dispose();
+      expect(key.currentState!.validate(), isFalse);
+      await tester.pump();
+
+      // The empty name is what refused; the empty birth date said nothing.
+      expect(find.text('Bagian ini wajib diisi.'), findsOneWidget);
+      expect(find.text('Tanggal lahir wajib diisi'), findsNothing);
     });
 
     testWidgets('offers no clear button while there is nothing to clear',

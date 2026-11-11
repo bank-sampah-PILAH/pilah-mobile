@@ -419,6 +419,15 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     AppNotification.showError(context, title: title, message: message);
   }
 
+  /// Empties the birth date. The box is read-only, so without this the field
+  /// could only ever gain a date, never lose one (PIL-478).
+  void _clearDate() {
+    setState(() {
+      _dobController.clear();
+      _selectedDob = null;
+    });
+  }
+
   /// Intercepts a back-navigation attempt. [canPop] on the [PopScope] is false,
   /// so the pop is already blocked when this fires; we only need to offer the
   /// exit confirmation.
@@ -538,44 +547,11 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       },
                     ),
                   ),
-                  second: OnboardingFormField(
-                    label: 'TANGGAL LAHIR',
-                    child: TextFormField(
-                      controller: _dobController,
-                      readOnly: true,
-                      onTap: _selectDate,
-                      decoration: appInputDecoration(
-                          hintText: _isNasabah
-                              ? 'dd/mm/yyyy (opsional)'
-                              : 'dd/mm/yyyy',
-                          // Read-only box, so the picker is the only way in
-                          // and this is the only way back out (PIL-478).
-                          suffixIcon: (_isNasabah &&
-                                  _dobController.text.trim().isNotEmpty)
-                              ? IconButton(
-                                  tooltip: 'Hapus tanggal lahir',
-                                  onPressed: () => setState(() {
-                                    _dobController.clear();
-                                    _selectedDob = null;
-                                  }),
-                                  icon: const Icon(Icons.close,
-                                      color: AppColors.black),
-                                )
-                              : const Icon(Icons.calendar_today_outlined,
-                                  color: AppColors.black)),
-                      // Optional for a nasabah only (PIL-478). A pengelola
-                      // still has to give one: `is_profile_complete` gates
-                      // their bank registration on it server-side, so making
-                      // it optional here would just fail later and less
-                      // clearly. Same split as `alamat` on this screen.
-                      validator: (value) {
-                        if (_isNasabah) return null;
-                        if (value == null || value.isEmpty) {
-                          return 'Tanggal lahir wajib diisi';
-                        }
-                        return null;
-                      },
-                    ),
+                  second: OnboardingBirthDateField(
+                    controller: _dobController,
+                    onTap: _selectDate,
+                    isOptional: _isNasabah,
+                    onClear: _clearDate,
                   ),
                 ),
                 OnboardingPhoneField(
