@@ -460,7 +460,7 @@ void main() {
     await tester.ensureVisible(find.text('Tambah Item'));
     await tester.tap(find.text('Tambah Item'));
     await tester.pump();
-    final dropdown = find.byType(DropdownButton<String>).last;
+    final dropdown = find.byKey(const Key('pilih-jenis-sampah')).last;
     await tester.ensureVisible(dropdown);
     await tester.pumpAndSettle();
     await tester.tap(dropdown);
@@ -477,7 +477,7 @@ void main() {
     await tester.ensureVisible(find.text('Tambah Item'));
     await tester.tap(find.text('Tambah Item'));
     await tester.pump();
-    final dropdown = find.byType(DropdownButton<String>).last;
+    final dropdown = find.byKey(const Key('pilih-jenis-sampah')).last;
     await tester.ensureVisible(dropdown);
     await tester.pumpAndSettle();
     await tester.tap(dropdown);

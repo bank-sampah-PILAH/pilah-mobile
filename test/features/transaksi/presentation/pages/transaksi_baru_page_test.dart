@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -551,6 +552,121 @@ void main() {
     await tester.enterText(find.byType(TextFormField).last, '2,5');
     await tester.pump();
     expect(find.text('Rp 5.000'), findsWidgets);
+  });
+
+  group('jenis picker', () {
+    Future<void> openPicker(WidgetTester tester) async {
+      await open(tester);
+      await tester.ensureVisible(find.text('Tambah Item Setoran'));
+      await tester.tap(find.text('Tambah Item Setoran'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pilih Jenis').last);
+      await tester.pumpAndSettle();
+    }
+
+    List<String> order(WidgetTester tester) => ['Botol PET', 'Kardus'].toList()
+      ..sort((a, b) => tester
+          .getTopLeft(find.text(a).last)
+          .dy
+          .compareTo(tester.getTopLeft(find.text(b).last).dy));
+
+    testWidgets('searching narrows the list and can be reset', (tester) async {
+      await openPicker(tester);
+
+      await tester.enterText(find.byKey(const Key('cari-jenis-sampah')), 'zzz');
+      await tester.pumpAndSettle();
+      expect(find.text('Jenis sampah tidak ditemukan.'), findsOneWidget);
+
+      await tester.tap(find.text('Reset filter'));
+      await tester.pumpAndSettle();
+      expect(find.text('Botol PET'), findsOneWidget);
+      expect(find.text('Kardus'), findsOneWidget);
+    });
+
+    testWidgets('unticking a category filters the list', (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('kategori-plastik')).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Kertas'), findsWidgets, reason: 'the chip names it');
+
+      expect(find.text('Kardus'), findsOneWidget);
+      expect(find.text('Botol PET'), findsNothing);
+    });
+
+    testWidgets('with no category ticked it says so and offers all of them',
+        (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('kategori-semua')).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tidak ada kategori'), findsOneWidget);
+      expect(find.text('Tidak ada kategori yang dipilih.'), findsOneWidget);
+      expect(find.text('Botol PET'), findsNothing);
+      expect(find.text('Jenis sampah tidak ditemukan.'), findsNothing,
+          reason: 'not a failed search');
+
+      // The menu is still open; a tap outside only closes it.
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('pilih-semua-kategori')));
+      await tester.pumpAndSettle();
+      expect(find.text('Botol PET'), findsOneWidget);
+      expect(find.text('Kardus'), findsOneWidget);
+    });
+
+    testWidgets('a jenis already chosen on the row is ticked when it reopens',
+        (tester) async {
+      await open(tester);
+      await addItem(tester, 'Botol PET');
+
+      await tester.tap(find.byKey(const Key('pilih-jenis-sampah')).first);
+      await tester.pumpAndSettle();
+
+      Finder tick(String id) => find.descendant(
+          of: find.byKey(Key('jenis-sampah-$id')),
+          matching: find.byIcon(Icons.check));
+      expect(tick('j1'), findsOneWidget);
+      expect(tick('j2'), findsNothing);
+    });
+
+    testWidgets('an empty catalog says there is nothing to pick yet',
+        (tester) async {
+      api.on('GET', '/api/v1/jenis-sampah', json: {'results': []});
+
+      await openPicker(tester);
+
+      expect(find.text('Belum ada jenis sampah aktif.'), findsOneWidget);
+    });
+
+    testWidgets('a catalog that failed to load says why', (tester) async {
+      api.fail('GET', '/api/v1/jenis-sampah', DioExceptionType.receiveTimeout);
+
+      await openPicker(tester);
+
+      expect(find.text('Receive Timeout'), findsOneWidget);
+      expect(find.text('Belum ada jenis sampah aktif.'), findsNothing);
+    });
+
+    testWidgets('sorting by price flips with a second tap', (tester) async {
+      await openPicker(tester);
+      expect(order(tester), ['Botol PET', 'Kardus'], reason: 'A-Z by default');
+
+      await tester.tap(find.byKey(const Key('urutkan-jenis-sampah')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('urut-jenis-sampah-harga')));
+      await tester.pumpAndSettle();
+      expect(order(tester), ['Kardus', 'Botol PET'], reason: 'cheapest first');
+
+      await tester.tap(find.byKey(const Key('urut-jenis-sampah-harga')));
+      await tester.pumpAndSettle();
+      expect(order(tester), ['Botol PET', 'Kardus'], reason: 'dearest first');
+    });
   });
 
   testWidgets('the same jenis cannot be added twice', (tester) async {
