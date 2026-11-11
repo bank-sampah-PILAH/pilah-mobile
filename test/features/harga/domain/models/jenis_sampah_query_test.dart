@@ -38,6 +38,7 @@ void main() {
     test('isDefault hanya benar untuk query bawaan', () {
       expect(const JenisSampahQuery().isDefault, isTrue);
       expect(const JenisSampahQuery(search: 'a').isDefault, isFalse);
+      expect(const JenisSampahQuery(kategori: {'plastik'}).isDefault, isFalse);
       expect(const JenisSampahQuery(ascending: false).isDefault, isFalse);
       expect(
           const JenisSampahQuery(sortField: JenisSampahSortField.harga)
@@ -62,6 +63,27 @@ void main() {
 
     test('kategori tidak ikut dicari', () {
       expect(ids(const JenisSampahQuery(search: 'logam').apply(all)), isEmpty);
+    });
+  });
+
+  group('filter', () {
+    test('satu kategori', () {
+      expect(ids(const JenisSampahQuery(kategori: {'plastik'}).apply(all)),
+          ['1', '4']);
+    });
+
+    test('kategori tanpa jenis memberi daftar kosong', () {
+      expect(const JenisSampahQuery(kategori: {'kaca'}).apply(all), isEmpty);
+    });
+
+    test('beberapa kategori sekaligus', () {
+      const q = JenisSampahQuery(kategori: {'plastik', 'logam'});
+      expect(ids(q.apply(all)), ['3', '1', '4']);
+    });
+
+    test('digabung dengan cari', () {
+      const q = JenisSampahQuery(kategori: {'plastik'}, search: 'gelas');
+      expect(ids(q.apply(all)), ['4']);
     });
   });
 
@@ -115,10 +137,42 @@ void main() {
     });
   });
 
+  group('isFiltering', () {
+    test('cari atau kategori menyempitkan, urutan tidak', () {
+      expect(const JenisSampahQuery().isFiltering, isFalse);
+      expect(const JenisSampahQuery(ascending: false).isFiltering, isFalse);
+      expect(const JenisSampahQuery(search: '  ').isFiltering, isFalse);
+      expect(const JenisSampahQuery(search: 'a').isFiltering, isTrue);
+      expect(const JenisSampahQuery(kategori: {'dll'}).isFiltering, isTrue);
+    });
+  });
+
+  group('kategori tersedia', () {
+    test('urut tetap, hanya yang ada di data, kosong dibuang', () {
+      final cats = kategoriTersedia(
+          [lain, botol, gelas, kardus, jenis('9', 'x', 1, '')]);
+      expect(cats, ['kertas', 'plastik', 'dll']);
+    });
+
+    test('kategori tak dikenal ditaruh sebelum dll, urut abjad', () {
+      expect(kategoriTersedia([lain, jenis('8', 'a', 1, 'organik'), botol]),
+          ['plastik', 'organik', 'dll']);
+    });
+  });
+
+  group('label kategori', () {
+    test('dll menjadi Lainnya, lainnya diawali huruf besar', () {
+      expect(labelKategori('dll'), 'Lainnya');
+      expect(labelKategori('plastik'), 'Plastik');
+      expect(labelKategori('organik'), 'Organik');
+    });
+  });
+
   group('copyWith', () {
-    test('mengubah satu nilai', () {
-      const q = JenisSampahQuery(search: 'a');
-      expect(q.copyWith(search: 'b').search, 'b');
+    test('mengubah satu nilai, kategori bisa dikosongkan', () {
+      const q = JenisSampahQuery(kategori: {'plastik'}, search: 'a');
+      expect(q.copyWith(search: 'b').kategori, {'plastik'});
+      expect(q.copyWith(kategori: null).kategori, isNull);
       expect(q.copyWith(ascending: false).ascending, isFalse);
       expect(q.copyWith(sortField: JenisSampahSortField.harga).sortField,
           JenisSampahSortField.harga);
