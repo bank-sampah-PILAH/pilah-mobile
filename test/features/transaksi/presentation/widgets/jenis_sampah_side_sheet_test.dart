@@ -24,60 +24,81 @@ class _Catalog extends TestHargaNotifier {
 }
 
 void main() {
-  testWidgets('wide web opens the shared picker at the right edge',
-      (tester) async {
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1000, 800);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  for (final editing in [false, true]) {
+    testWidgets(
+        editing
+            ? 'the side sheet returns to the open edit dialog with historical price'
+            : 'wide web opens the shared picker at the right edge',
+        (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1000, 800);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final changes = <Map<String, dynamic>>[];
-    final router = GoRouter(
-      routes: [
-        jenisSampahSideSheetRoute(),
-        GoRoute(
-          path: '/',
-          builder: (context, state) => Scaffold(
-            body: ItemSetoranCard(
-              index: 0,
-              isWebOverride: true,
-              itemData: const {'berat': 2.5},
-              onChanged: changes.add,
-              onDelete: () {},
+      final changes = <Map<String, dynamic>>[];
+      final card = ItemSetoranCard(
+        index: 0,
+        isWebOverride: true,
+        itemData: const {'berat': 2.5},
+        hargaFor: editing ? (_) => 800 : null,
+        onChanged: changes.add,
+        onDelete: () {},
+      );
+      final router = GoRouter(
+        routes: [
+          jenisSampahSideSheetRoute(),
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: editing
+                  ? TextButton(
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (context) => Dialog(child: card),
+                      ),
+                      child: const Text('Edit setoran'),
+                    )
+                  : card,
             ),
           ),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-    final catalog = _Catalog([
-      HargaModel.fromJson({
-        'id': 'pet',
-        'nama_sampah': 'Botol PET',
-        'kategori': 'plastik',
-        'harga_per_kg': 2000,
-      }),
-    ]);
-    await tester.pumpWidget(
-      withHargaProvider(catalog, MaterialApp.router(routerConfig: router)),
-    );
-    await tester.tap(find.byKey(const Key('pilih-jenis-sampah')));
-    await tester.pumpAndSettle();
+        ],
+      );
+      addTearDown(router.dispose);
+      final catalog = _Catalog([
+        HargaModel.fromJson({
+          'id': 'pet',
+          'nama_sampah': 'Botol PET',
+          'kategori': 'plastik',
+          'harga_per_kg': 2000,
+        }),
+      ]);
+      await tester.pumpWidget(
+        withHargaProvider(catalog, MaterialApp.router(routerConfig: router)),
+      );
+      if (editing) {
+        await tester.tap(find.text('Edit setoran'));
+        await tester.pumpAndSettle();
+      }
+      final field = find.byKey(const Key('pilih-jenis-sampah'));
+      await tester.tap(field);
+      await tester.pumpAndSettle();
 
-    final picker = find.byType(PilihJenisSampahPicker);
-    expect(picker, findsOneWidget);
-    expect(ModalRoute.of(tester.element(picker))?.settings,
-        isA<SideSheetPage<HargaEntity>>());
-    expect(tester.getRect(picker).center.dx, greaterThan(500));
+      final picker = find.byType(PilihJenisSampahPicker);
+      expect(picker, findsOneWidget);
+      expect(ModalRoute.of(tester.element(picker))?.settings,
+          isA<SideSheetPage<HargaEntity>>());
+      expect(tester.getRect(picker).center.dx, greaterThan(500));
 
-    await tester.tap(find.byKey(const Key('jenis-sampah-pet')));
-    await tester.pumpAndSettle();
-    expect(picker, findsNothing);
-    expect(changes.single, {
-      'berat': 2.5,
-      'jenis': 'Botol PET',
-      'jenis_sampah_id': 'pet',
-      'harga': 2000,
+      await tester.tap(find.byKey(const Key('jenis-sampah-pet')));
+      await tester.pumpAndSettle();
+      expect(picker, findsNothing);
+      expect(field.hitTestable(), findsOneWidget);
+      expect(changes.single, {
+        'berat': 2.5,
+        'jenis': 'Botol PET',
+        'jenis_sampah_id': 'pet',
+        'harga': editing ? 800 : 2000,
+      });
     });
-  });
+  }
 }
