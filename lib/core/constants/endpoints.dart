@@ -8,6 +8,7 @@ class Endpoints {
 
   // onboarding
   static const String onboardingProfile = "/api/v1/onboarding/profile";
+  static const String onboardingRole = "/api/v1/onboarding/role";
   static const String onboardingDiscardRegistration =
       "/api/v1/onboarding/discard-registration";
   static const String onboardingBankSampah = "/api/v1/onboarding/bank-sampah";
