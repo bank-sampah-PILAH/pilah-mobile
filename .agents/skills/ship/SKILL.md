@@ -96,6 +96,23 @@ fi
 - Implement the prompt completely, including focused tests for new or changed behavior when the repository has a test convention.
 - Keep changes easy to review and separate responsibilities so each commit represents one coherent change.
 
+### Visual UI changes: design in Figma first
+
+This applies when the change alters how a screen looks or is laid out: a new screen, overlay (sheet, dialog, picker) or component, a layout, hierarchy, color or typography change, or a token change. It does not apply to logic, copy, API changes or bug fixes with no visual difference.
+
+1. Read `DESIGN.md` sections 6 to 8 (formats, tokens, the Figma kit and its component-to-widget map).
+2. Design it in the Figma file `VF8jKsBUS0K8jIG8ZEaIad` (team PILAH 2.0) with the Figma MCP. Load the `figma-use` skill before any `use_figma` call, and `figma-generate-library` when a component changes.
+   - Work on a scratch page named `WIP / <name>`; do not edit *Components*, *Mobile Screens* or *Mobile Overlays* yet. Start from a copy of the closest existing frame.
+   - Build from existing components, bind colors and text to variables and styles, and search the file before creating anything new.
+   - Run one `use_figma` call at a time (a failing script is rolled back), keep the number of calls low, and verify each step with a screenshot.
+3. Check the design against the checklist in `DESIGN.md` section 7 and the WCAG 2.1 AA baseline.
+4. **Checkpoint:** show the user a screenshot of the frame and wait for approval. Do not write UI code before the design is approved.
+5. Promote the approved frames into *Mobile Screens* or *Mobile Overlays*, merge any new component into *Components*, delete the WIP page, and update the table in `DESIGN.md` section 8.3 if a component was added or renamed. When a token or shared component changes, change the code and Figma in the same PR.
+6. Implement the approved frame in Flutter. Fetch its design context with `get_design_context` as a reference only (it is web-oriented): translate it into the shared widgets and tokens from `DESIGN.md`, and extract a shared widget when a pattern now appears twice.
+7. If the code has to deviate from the frame, the code wins; correct the frame before opening the PR.
+
+If the Figma MCP is not connected or the account has no edit seat in PILAH 2.0, stop and report it rather than shipping a visual change without a design, unless the user says to skip the design step.
+
 ## 4. Validate
 
 Run the checks documented by the repository first. If none are documented, detect and run applicable checks without inventing project files:
@@ -168,7 +185,7 @@ git push --set-upstream origin <kind>/<name>
   - if the required CLI is unavailable, stop after the successful push and report the exact command needed; do not fabricate a link.
 - Use `target_branch` as the PR/MR target; it defaults to `staging` unless the prompt explicitly names another target.
 - Derive a concise PR/MR title from the prompt and commits. Use the relevant conventional type prefix only when it improves clarity; do not duplicate noisy prefixes.
-- Write a focused description containing summary, key changes, and testing. Include the exact validation commands. Use a temporary file in the session scratchpad for multi-line descriptions, not a new project file.
+- Write a focused description containing summary, key changes, and testing. Include the exact validation commands. For user-visible UI changes, include screenshots of the resulting UI only: no before and after pairs and no Figma links. Use a temporary file in the session scratchpad for multi-line descriptions, not a new project file.
 - Create the PR/MR with the CLI and capture its returned URL and title.
 - Immediately assign the authenticated user to the new PR/MR and verify the command succeeds:
   - GitHub: `gh pr edit "<pr-url>" --add-assignee "@me"`.
