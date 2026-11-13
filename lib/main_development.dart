@@ -6,8 +6,9 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pilah_mobile/core/utils/platform_initialization.dart';
+import 'package:pilah_mobile/core/utils/firebase_initialization.dart';
+import 'package:pilah_mobile/core/notifications/firebase_push.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -30,11 +31,14 @@ Future<void> main() async {
 
   await initializePlatformServices(
     isWeb: kIsWeb,
+    initializeFirebaseOnWeb: kIsWeb && firebaseWebConfigured(dotenv.env),
     oauthClientId: dotenv.env['GOOGLE_SERVER_CLIENT_ID'],
-    initializeFirebase: () async {
-      await Firebase.initializeApp();
-    },
+    initializeFirebase: () => initializeFirebaseForEnvironment(
+      dotenv.env,
+      isWeb: kIsWeb,
+    ),
     initializeGoogle: GoogleSignIn.instance.initialize,
   );
   runApp(const App());
+  requestNotificationPermissionAfterFirstFrame();
 }

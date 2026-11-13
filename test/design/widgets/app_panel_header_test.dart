@@ -72,4 +72,27 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('help is only there when asked for, and sits left of close',
+      (tester) async {
+    await _pump(tester, const AppPanelHeader(title: 'Transaksi Baru'));
+    expect(find.byTooltip('Bantuan'), findsNothing);
+
+    var help = 0;
+    await _pump(
+      tester,
+      AppPanelHeader(
+        title: 'Transaksi Baru',
+        onHelp: () => help++,
+        helpTooltip: 'Panduan setoran',
+        onClose: () {},
+      ),
+    );
+
+    await tester.tap(find.byTooltip('Panduan setoran'));
+
+    expect(help, 1);
+    expect(tester.getCenter(find.byTooltip('Panduan setoran')).dx,
+        lessThan(tester.getCenter(find.byTooltip('Tutup')).dx));
+  });
 }

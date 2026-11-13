@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_pro
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/nasabah_support.dart';
 
 class MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
@@ -48,12 +49,14 @@ void main() {
   late MockApproveNasabahUseCase approveUseCase;
   late MockRejectNasabahUseCase rejectUseCase;
   late NasabahNotifier notifier;
+  late FakeAnalyticsClient analytics;
 
   setUpAll(() {
     registerFallbackValue(DecideNasabahParams(id: 'x'));
   });
 
   setUp(() {
+    analytics = FakeAnalyticsClient();
     getUseCase = MockGetNasabahUseCase();
     approveUseCase = MockApproveNasabahUseCase();
     rejectUseCase = MockRejectNasabahUseCase();
@@ -77,6 +80,7 @@ void main() {
         home: Scaffold(
           body: withNasabahProvider(
             notifier,
+            analytics: analytics,
             NasabahListItem(
               // Pengajuan yang menunggu keputusan (PIL-188).
               nasabah: NasabahEntity(
@@ -123,5 +127,24 @@ void main() {
         .single as DecideNasabahParams;
     expect(captured.id, 'NAS-0001');
     expect(captured.catatan, 'Data tidak valid');
+    expect(analytics.events.single.name, 'nasabah_pengajuan_diproses');
+    expect(analytics.events.single.properties['keputusan'], 'tolak');
+  });
+
+  testWidgets('approving a pending item is reported with its decision',
+      (tester) async {
+    when(
+      () => approveUseCase.execute(any()),
+    ).thenAnswer((_) async => const Right(null));
+
+    await tester.pumpWidget(host());
+    await tester.tap(find.byType(NasabahListItem));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Setujui'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Setujui').last);
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.single.properties['keputusan'], 'setuju');
   });
 }

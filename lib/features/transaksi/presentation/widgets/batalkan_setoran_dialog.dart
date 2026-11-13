@@ -1,0 +1,139 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/setoran_refresh.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
+
+/// Membuka konfirmasi "Hapus" untuk setoran [id]. Menjawab `true` bila
+/// setoran berhasil dibatalkan.
+Future<bool?> showBatalkanSetoranDialog(BuildContext context, String id) =>
+    showDialog<bool>(
+      context: context,
+      builder: (context) => BatalkanSetoranDialog(id: id),
+    );
+
+/// Konfirmasi "Hapus" setoran (PIL-428). Hapus adalah pembatalan: setoran
+/// disembunyikan dari riwayat dan tidak lagi dihitung.
+/// Alasan wajib diisi, seperti saat mengedit setoran.
+class BatalkanSetoranDialog extends ConsumerStatefulWidget {
+  const BatalkanSetoranDialog({super.key, required this.id});
+
+  final String id;
+
+  static const alasanKey = ValueKey('batalkan-setoran-alasan');
+
+  /// The success toast. It states what the backend now does: the setoran is
+  /// hidden from the riwayat (PIL-481), not kept there with a label.
+  static const berhasilMessage =
+      'Setoran dihapus dan disembunyikan dari riwayat.';
+
+  @override
+  ConsumerState<BatalkanSetoranDialog> createState() =>
+      _BatalkanSetoranDialogState();
+}
+
+class _BatalkanSetoranDialogState extends ConsumerState<BatalkanSetoranDialog> {
+  final _alasan = TextEditingController();
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _alasan.dispose();
+    super.dispose();
+  }
+
+  Future<void> _hapus() async {
+    if (_alasan.text.trim().isEmpty) {
+      setState(() => _error = 'Alasan pembatalan wajib diisi');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    // Read before the await: the dialog may be gone when the answer arrives.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final route = ModalRoute.of(context);
+    final result = await ref.read(transaksiProvider.notifier).batalkanTransaksi(
+        TransaksiBatalRequest(id: widget.id, alasan: _alasan.text));
+    if (result.detail != null) {
+      // The setoran is voided on the server whether or not this dialog is
+      // still open, so the feed and the selection always follow it.
+      container.read(aktivitasSelectionProvider.notifier).clear();
+      reloadAfterSetoranChange(container);
+    }
+    // Closed by other means while the request was in flight. Popping now
+    // would close the route underneath (the Riwayat page) instead.
+    if (!mounted || route?.isCurrent != true) return;
+    if (result.detail == null) {
+      setState(() {
+        _saving = false;
+        _error = result.error ?? 'Setoran gagal dibatalkan.';
+      });
+      return;
+    }
+    Navigator.of(context).pop(true);
+    AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
+          ctx,
+          title: 'Berhasil',
+          message: BatalkanSetoranDialog.berhasilMessage,
+        ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // While the void is sent, a barrier tap or the back button must not close
+    // the dialog: only its answer does. Idle, both still close it.
+    return PopScope(
+      canPop: !_saving,
+      child: _dialog(context),
+    );
+  }
+
+  Widget _dialog(BuildContext context) {
+    return AppDialog(
+      title: 'Hapus Setoran?',
+      // A short form: on a wide window the message would stretch it edge to edge.
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Setoran disembunyikan dari riwayat dan tidak lagi dihitung '
+              'ke saldo nasabah maupun laporan. Saldo nasabah dihitung ulang.',
+              style: AppTextStyle.small,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              key: BatalkanSetoranDialog.alasanKey,
+              controller: _alasan,
+              enabled: !_saving,
+              maxLines: 2,
+              maxLength: 255,
+              decoration: appInputDecoration(
+                hintText: 'Alasan pembatalan',
+                errorText: _error,
+                focusColor: AppColors.danger,
+              ),
+            ),
+          ],
+        ),
+      ),
+      confirmLabel: 'Hapus',
+      destructive: true,
+      isLoading: _saving,
+      onConfirm: _hapus,
+      onCancel: () => Navigator.of(context).pop(false),
+    );
+  }
+}

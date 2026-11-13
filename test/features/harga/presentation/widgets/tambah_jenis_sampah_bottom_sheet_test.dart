@@ -97,7 +97,9 @@ void main() {
     await tester.tap(find.text('Simpan Jenis Sampah'));
     await pumpToast(tester);
 
-    expect(find.text('Bagian ini wajib diisi.'), findsNWidgets(4));
+    expect(find.text('Bagian ini wajib diisi.'), findsNWidgets(3));
+    // Kode is no longer required (UAT 2026-11): the server numbers a new
+    // jenis sampah, so an empty form flags only the three true requireds.
     expect(api.requests.where((r) => r.method == 'POST'), isEmpty);
     await settleToasts(tester);
   });

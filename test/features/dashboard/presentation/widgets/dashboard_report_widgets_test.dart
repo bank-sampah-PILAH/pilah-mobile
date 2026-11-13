@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
+import '../../../../support/analytics_scope.dart';
 
 class _ReportingDataSource implements DashboardReportingDataSource {
   List<OperationalTrendBucket> trends = const [];
@@ -53,13 +54,13 @@ void main() {
           withdrawalCount: 1,
         ),
       );
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
           child: OperationalTrendsWidget(dataSource: source),
         ),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     final title = tester.widget<Text>(find.text('Tren operasional'));
@@ -104,13 +105,13 @@ void main() {
         WasteCategoryTotal(
             category: 'Plastik', totalWeightKg: 2, depositCount: 1),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
           child: DashboardReportsSection(dataSource: source),
         ),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(find.text('Periode laporan'), findsOneWidget);
@@ -140,11 +141,11 @@ void main() {
           withdrawalCount: 1,
         ),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
           body: SingleChildScrollView(
               child: OperationalTrendsWidget(dataSource: source))),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(find.text('Setoran'), findsOneWidget);
@@ -161,13 +162,13 @@ void main() {
     final source = _ReportingDataSource();
     final expectedRange = DashboardReportRange.currentMonth(DateTime.now());
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
           child: DashboardReportsSection(dataSource: source),
         ),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(source.requestedTrendRanges.single.start, expectedRange.start);
@@ -185,7 +186,7 @@ void main() {
         WasteCategoryTotal(
             category: 'Kertas', totalWeightKg: 8, depositCount: 1),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: WasteCategoriesWidget(
           dataSource: source,
@@ -195,7 +196,7 @@ void main() {
           ),
         ),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(tester.getTopLeft(find.text('Kertas')).dy,
@@ -234,9 +235,9 @@ void main() {
         WasteCategoryTotal(
             category: 'Logam', totalWeightKg: 1, depositCount: 1),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(
@@ -254,9 +255,9 @@ void main() {
         WasteCategoryTotal(
             category: 'Plastik', totalWeightKg: 1.5, depositCount: 2),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(find.text('1,5 kg'), findsOneWidget);
@@ -274,7 +275,7 @@ void main() {
           withdrawalCount: 0,
         ),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
           child: DashboardReportsSection(
@@ -286,7 +287,7 @@ void main() {
           ),
         ),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
     expect(source.requestedTrendRanges.single.start, DateTime(2026, 6, 1));
     expect(source.requestedCategoryRanges.single.start, DateTime(2026, 6, 1));
@@ -319,9 +320,9 @@ void main() {
           withdrawalCount: 0,
         ),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(body: OperationalTrendsWidget(dataSource: source)),
-    ));
+    )));
     await tester.pumpAndSettle();
     expect(find.text('Belum ada data'), findsOneWidget);
     expect(find.byType(LineChart), findsNothing);
@@ -339,11 +340,11 @@ void main() {
           withdrawalCount: 1,
         ),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
           body: SingleChildScrollView(
               child: OperationalTrendsWidget(dataSource: source))),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     final deposit = tester.widget<BarChart>(find.byType(BarChart).first).data;
@@ -380,9 +381,9 @@ void main() {
 
   testWidgets('empty category reports say there is no data', (tester) async {
     final source = _ReportingDataSource();
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(find.text('Belum ada data'), findsOneWidget);
@@ -395,9 +396,9 @@ void main() {
         WasteCategoryTotal(
             category: 'Plastik', totalWeightKg: 0, depositCount: 3),
       ];
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(find.text('Belum ada berat'), findsOneWidget);
@@ -408,7 +409,7 @@ void main() {
   testWidgets('empty and failed reports have independent feedback',
       (tester) async {
     final source = _ReportingDataSource()..categoryError = Exception('offline');
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: Column(children: [
           Expanded(
@@ -419,7 +420,7 @@ void main() {
                   child: WasteCategoriesWidget(dataSource: source))),
         ]),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
 
     expect(find.text('Belum ada data'), findsOneWidget);
@@ -428,7 +429,7 @@ void main() {
 
   testWidgets('KPI cards display values with and without units',
       (tester) async {
-    await tester.pumpWidget(const MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: Column(
           children: [
@@ -446,7 +447,7 @@ void main() {
           ],
         ),
       ),
-    ));
+    )));
 
     expect(find.text('Transaksi'), findsOneWidget);
     expect(find.text('7'), findsOneWidget);
@@ -471,7 +472,7 @@ void main() {
       end: DateTime(2026, 6, 30),
     );
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
           child: OperationalTrendsWidget(
@@ -480,7 +481,7 @@ void main() {
           ),
         ),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
     expect(source.requestedTrendGranularities.single, TrendGranularity.day);
 
@@ -517,14 +518,14 @@ void main() {
       end: DateTime(2026, 6, 30),
     );
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
         body: WasteCategoriesWidget(
           dataSource: source,
           initialRange: initialRange,
         ),
       ),
-    ));
+    )));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();

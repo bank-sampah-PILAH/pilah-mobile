@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/nasabah/data/repositories/nasabah_repository_impl.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
@@ -18,12 +19,21 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 
+import 'fake_analytics_client.dart';
 import 'stub_api.dart';
 
 /// A real [NasabahNotifier] over the nasabah stack, with only HTTP stubbed.
-Widget withNasabahProvider(NasabahNotifier notifier, Widget child) =>
+Widget withNasabahProvider(
+  NasabahNotifier notifier,
+  Widget child, {
+  FakeAnalyticsClient? analytics,
+}) =>
     ProviderScope(
-      overrides: [nasabahProvider.overrideWith(() => notifier)],
+      overrides: [
+        nasabahProvider.overrideWith(() => notifier),
+        if (analytics != null)
+          analyticsClientProvider.overrideWithValue(analytics),
+      ],
       child: child,
     );
 

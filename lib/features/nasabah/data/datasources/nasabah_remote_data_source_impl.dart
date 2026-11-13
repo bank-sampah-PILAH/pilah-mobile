@@ -21,6 +21,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
     int? pageSize,
     String status = 'aktif',
     String? search,
+    String urutan = 'nomor',
   }) async {
     // Penyaringan dilakukan server supaya paginasi tetap benar: menyaring di
     // aplikasi hanya akan menyaring halaman yang kebetulan sudah dimuat.
@@ -30,6 +31,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
       queryParams: {
         'status': status,
         'page': page,
+        'urutan': urutan,
         if (pageSize != null) 'page_size': pageSize,
         if (search != null && search.isNotEmpty) 'search': search,
       },

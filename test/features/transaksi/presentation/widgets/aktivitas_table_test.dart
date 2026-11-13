@@ -1,7 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -66,7 +68,9 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+      theme: AppTheme.light,
       home: Scaffold(
         body: AktivitasTable(
           items: items,
@@ -77,7 +81,7 @@ void main() {
           pagination: pagination,
         ),
       ),
-    ));
+    )));
   }
 
   test('row keys follow record identity', () {
@@ -127,6 +131,42 @@ void main() {
     expect(find.text('Kardus'), findsOneWidget);
   });
 
+  testWidgets('hovering an expanded row does not reload its details',
+      (tester) async {
+    final loaded = <String>[];
+    await pumpTable(
+      tester,
+      items: [_setoran('Ani', 't1')],
+      loadSetoranDetail: (id) async {
+        loaded.add(id);
+        return _detail('Plastik');
+      },
+    );
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik'), findsOneWidget);
+    expect(loaded, ['t1']);
+    final rowCenter = tester.getCenter(find.text('Ani'));
+    final detailCenter = tester.getCenter(find.text('Plastik'));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(rowCenter);
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('Plastik'), findsOneWidget);
+    expect(loaded, ['t1']);
+    await mouse.moveTo(detailCenter);
+    await tester.pump();
+    await mouse.moveTo(const Offset(1190, 890));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+
+    expect(find.text('Plastik'), findsOneWidget);
+    expect(loaded, ['t1']);
+  });
+
   testWidgets('replacing an expanded activity does not reuse its details',
       (tester) async {
     final loaded = <String>[];
@@ -154,6 +194,35 @@ void main() {
     expect(find.text('Citra'), findsOneWidget);
     expect(find.text('Kardus'), findsNothing);
     expect(loaded, ['t1']);
+  });
+
+  testWidgets('same-id setoran updates reload expanded details',
+      (tester) async {
+    var loadCount = 0;
+    Future<TransaksiDetailEntity?> loadDetail(String id) async {
+      loadCount++;
+      return _detail(loadCount == 1 ? 'Plastik' : 'Kardus');
+    }
+
+    await pumpTable(
+      tester,
+      items: [_setoran('Ani', 't1')],
+      loadSetoranDetail: loadDetail,
+    );
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik'), findsOneWidget);
+
+    await pumpTable(
+      tester,
+      items: [_setoran('Ani', 't1')],
+      loadSetoranDetail: loadDetail,
+    );
+    await tester.pumpAndSettle();
+
+    expect(loadCount, 2);
+    expect(find.text('Plastik'), findsNothing);
+    expect(find.text('Kardus'), findsOneWidget);
   });
 
   testWidgets('shows column headings and one row per activity', (tester) async {
@@ -200,32 +269,41 @@ void main() {
         greaterThan(tester.getBottomLeft(find.text('Ani')).dy));
   });
 
-  testWidgets('hovering a row tints it like the nasabah table', (tester) async {
-    final items = [_pencairan('Ani'), _pencairan('Budi')];
-    await pumpTable(tester, items: items);
-    Color? tint(int i) => tester
-        .widget<Container>(find
-            .descendant(
-                of: find.byKey(AktivitasTable.rowKey(items[i])),
-                matching: find.byType(Container))
-            .first)
-        .color;
-    expect(tint(0), isNull);
+  testWidgets('hover tint paints the row and its expanded detail',
+      (tester) async {
+    final item = _setoran('Ani', 't1');
+    await pumpTable(
+      tester,
+      items: [item],
+      loadSetoranDetail: (_) async => _detail('Plastik'),
+    );
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(AktivitasTable.rowKey(item));
+    final tint = find.descendant(of: row, matching: find.byType(ColoredBox));
+    final tintRect = tester.getRect(tint);
+    expect(tester.widget<ColoredBox>(tint).color, Colors.transparent);
+    expect(tintRect.top, lessThan(tester.getTopLeft(find.text('Ani')).dy));
+    expect(
+      tintRect.bottom,
+      greaterThan(tester.getBottomLeft(find.text('Plastik')).dy),
+    );
 
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     addTearDown(mouse.removePointer);
-    await mouse.addPointer(location: Offset.zero);
-    await mouse
-        .moveTo(tester.getCenter(find.byKey(AktivitasTable.rowKey(items[0]))));
+    await mouse.addPointer(location: const Offset(1190, 890));
+    await mouse.moveTo(tester.getCenter(find.text('Ani')));
     await tester.pump();
+    expect(tester.widget<ColoredBox>(tint).color, AppTheme.light.hoverColor);
 
-    expect(tint(0), AppColors.greenLight.withValues(alpha: 0.45));
-    expect(tint(1), isNull);
-
-    await mouse.moveTo(const Offset(1, 1));
+    await mouse.moveTo(tester.getCenter(find.text('Plastik')));
     await tester.pump();
+    expect(tester.widget<ColoredBox>(tint).color, AppTheme.light.hoverColor);
 
-    expect(tint(0), isNull);
+    await mouse.moveTo(const Offset(1190, 890));
+    await tester.pump();
+    expect(tester.widget<ColoredBox>(tint).color, Colors.transparent);
   });
 
   testWidgets('the card fills the screen and only its rows scroll',

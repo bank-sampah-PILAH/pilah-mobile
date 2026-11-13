@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,28 +67,13 @@ class DashboardHeader extends ConsumerWidget {
             ],
           ),
         ),
+        AppTapTarget(
+          label: 'Notifikasi',
+          onTap: () => NotificationsPage.open(context),
+          child: const Icon(Icons.notifications_outlined),
+        ),
         if (showProfile) ...[
           const SizedBox(width: 12),
-          // Pengumuman tidak punya tab di bottom bar, jadi pintunya di
-          // sini; di web lebar ada di sidebar.
-          AppTapTarget(
-            label: 'Kelola pengumuman',
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            onTap: null,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: AppColors.fill,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.campaign_outlined,
-                color: AppColors.grey100,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
           AppTapTarget(
             label: 'Buka profil',
             borderRadius: BorderRadius.circular(AppRadius.xl),

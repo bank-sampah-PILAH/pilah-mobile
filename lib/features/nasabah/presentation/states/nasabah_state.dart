@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_urutan.dart';
 
 abstract class NasabahState extends Equatable {
   const NasabahState();
@@ -25,6 +26,7 @@ class NasabahLoaded extends NasabahState {
   /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
   final bool? isActiveTab;
   final String searchQuery;
+  final NasabahUrutan urutan;
 
   /// Masih ada halaman berikutnya di server (PIL-214).
   final bool hasMore;
@@ -44,6 +46,7 @@ class NasabahLoaded extends NasabahState {
     required this.nasabahList,
     this.isActiveTab = true,
     this.searchQuery = '',
+    this.urutan = NasabahUrutan.nomor,
     this.hasMore = false,
     this.isLoadingMore = false,
     this.isReloading = false,
@@ -59,6 +62,7 @@ class NasabahLoaded extends NasabahState {
         nasabahList,
         isActiveTab,
         searchQuery,
+        urutan,
         hasMore,
         isLoadingMore,
         isReloading,

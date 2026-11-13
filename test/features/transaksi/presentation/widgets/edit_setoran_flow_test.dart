@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
@@ -16,6 +17,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_l
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
 
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/harga_support.dart';
 import '../../../../support/stub_api.dart';
 import '../../../../support/transaksi_support.dart';
@@ -104,7 +106,8 @@ void main() {
     api.on('GET', _path, json: _detail());
   });
 
-  Future<ProviderContainer> open(WidgetTester tester) async {
+  Future<ProviderContainer> open(WidgetTester tester,
+      {FakeAnalyticsClient? analytics}) async {
     final harga = buildHargaNotifier(api);
     final transaksi = buildTransaksiNotifier(api);
     final feed = _Feed(const RiwayatAktivitasState());
@@ -113,7 +116,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(withTransaksiProviders(
+    final app = withTransaksiProviders(
       transaksi: transaksi,
       riwayat: feed,
       harga: harga,
@@ -130,7 +133,13 @@ void main() {
           );
         }),
       ),
-    ));
+    );
+    await tester.pumpWidget(analytics == null
+        ? app
+        : ProviderScope(
+            overrides: [analyticsClientProvider.overrideWithValue(analytics)],
+            child: app,
+          ));
     await tester.tap(find.text('buka'));
     await tester.pumpAndSettle();
     return container;
@@ -180,6 +189,32 @@ void main() {
     expect(find.textContaining('Diubah'), findsNothing);
   });
 
+  testWidgets('marks the alasan as required and leaves the catatan optional',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(
+        find.bySemanticsLabel('ALASAN PERUBAHAN, wajib diisi'), findsOneWidget);
+    expect(find.text('CATATAN'), findsOneWidget);
+    expect(find.bySemanticsLabel('CATATAN, wajib diisi'), findsNothing);
+    handle.dispose();
+  });
+
+  testWidgets('shows the recorded type after it becomes inactive',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [_jenis('j2', 'Kardus', '1000')],
+    });
+
+    await open(tester);
+
+    final field = find.byKey(const Key('pilih-jenis-sampah'));
+    expect(find.descendant(of: field, matching: find.text('Botol PET')),
+        findsOneWidget);
+    expect(saveEnabled(tester), isFalse);
+  });
+
   testWidgets('starts from what was recorded and cannot save until changed',
       (tester) async {
     await open(tester);
@@ -193,6 +228,55 @@ void main() {
         find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
     await tester.pump();
     expect(saveEnabled(tester), isFalse, reason: 'alasan alone is not an edit');
+  });
+
+  testWidgets('marks the item list as required, like the nasabah form does',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(
+        find.bySemanticsLabel('RINCIAN SETORAN, wajib diisi'), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('says a change is still needed, and stops once one is made',
+      (tester) async {
+    await open(tester);
+
+    expect(find.byKey(EditSetoranSheet.changeHintKey), findsOneWidget);
+    expect(saveEnabled(tester), isFalse);
+
+    // Alasan is the field that carries the asterisk, so filling it is the
+    // moment a pengurus expects Simpan to wake up. It must not go quiet.
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
+    await tester.pump();
+    expect(find.byKey(EditSetoranSheet.changeHintKey), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextFormField, '2'), '3');
+    await tester.pump();
+    expect(find.byKey(EditSetoranSheet.changeHintKey), findsNothing);
+    expect(saveEnabled(tester), isTrue);
+  });
+
+  testWidgets('a fresh item asks for its jenis instead of just dying',
+      (tester) async {
+    await open(tester);
+
+    await tester.ensureVisible(find.text('Tambah Item'));
+    await tester.tap(find.text('Tambah Item'));
+    await tester.pumpAndSettle();
+
+    // The new row starts with berat 1.0 and no jenis, so the old message
+    // about berat said nothing and Simpan Perubahan stayed dead in silence.
+    expect(find.text('Pilih jenis sampah'), findsOneWidget);
+    expect(find.text('Berat harus lebih dari 0'), findsNothing);
+
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Tambah kardus');
+    await tester.pump();
+    expect(saveEnabled(tester), isFalse);
   });
 
   testWidgets('a changed weight is sent with the alasan and refreshes the feed',
@@ -220,6 +304,103 @@ void main() {
     expect(
         (container.read(riwayatAktivitasProvider.notifier) as _Feed).loads, 1);
     expect(find.text('Edit Setoran'), findsNothing);
+  });
+
+  testWidgets('analytics hears the edit was opened, then what was changed',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('PATCH', _path, json: _detail());
+    await open(tester, analytics: analytics);
+    expect(analytics.events.map((e) => e.name), ['setoran_ubah_dimulai']);
+
+    await tester.enterText(find.widgetWithText(TextFormField, '2'), '3');
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
+    await tester.pump();
+    await tester.ensureVisible(save());
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.map((e) => e.name),
+        ['setoran_ubah_dimulai', 'setoran_diubah']);
+    final saved = analytics.events.last.properties;
+    expect(saved['jumlah_item'], 1);
+    expect(saved['bidang_diubah'], ['item']);
+    // What was typed as the reason never leaves the app.
+    expect(saved.values.whereType<String>(), isNot(contains('Salah timbang')));
+  });
+
+  testWidgets('the edit says what kind of change was made, and how late',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('PATCH', _path, json: _detail());
+    await open(tester, analytics: analytics);
+
+    await tester.enterText(find.widgetWithText(TextFormField, '2'), '3');
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
+    await tester.pump();
+    await tester.ensureVisible(save());
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    final saved = analytics.events.last.properties;
+    expect(saved['jumlah_item_ditambah'], 0);
+    expect(saved['jumlah_item_dihapus'], 0);
+    expect(saved['jumlah_item_diubah_jenis'], 0);
+    expect(saved['jumlah_item_diubah_berat'], 1);
+    expect(saved['jeda_sejak_dibuat_hari_kelas'], 'lebih_7_hari');
+  });
+
+  testWidgets('leaving the sheet without saving is reported as cancelled',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    await open(tester, analytics: analytics);
+
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.map((e) => e.name),
+        ['setoran_ubah_dimulai', 'setoran_ubah_dibatalkan']);
+    expect(analytics.events.last.properties.keys.toSet(),
+        {'alur_id', 'durasi_detik'});
+  });
+
+  testWidgets('a note-only edit is reported as a change to the note',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('PATCH', _path, json: _detail(catatan: 'dikoreksi'));
+    await open(tester, analytics: analytics);
+
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.catatanKey), 'dikoreksi');
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Salah ketik');
+    await tester.pump();
+    await tester.ensureVisible(save());
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.last.name, 'setoran_diubah');
+    expect(analytics.events.last.properties['bidang_diubah'], ['catatan']);
+  });
+
+  testWidgets('a refused edit is not counted as made', (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('PATCH', _path,
+        status: 409,
+        json: {'error': 'Perubahan ini membuat saldo nasabah menjadi negatif'});
+    await open(tester, analytics: analytics);
+
+    await tester.enterText(find.widgetWithText(TextFormField, '2'), '1');
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Salah timbang');
+    await tester.pump();
+    await tester.ensureVisible(save());
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    expect(analytics.events.map((e) => e.name), ['setoran_ubah_dimulai']);
   });
 
   testWidgets('a note-only change sends no items', (tester) async {
@@ -293,7 +474,7 @@ void main() {
     await tester.ensureVisible(find.text('Tambah Item'));
     await tester.tap(find.text('Tambah Item'));
     await tester.pump();
-    final dropdown = find.byType(DropdownButton<String>).last;
+    final dropdown = find.byKey(const Key('pilih-jenis-sampah')).last;
     await tester.ensureVisible(dropdown);
     await tester.pumpAndSettle();
     await tester.tap(dropdown);
@@ -310,7 +491,7 @@ void main() {
     await tester.ensureVisible(find.text('Tambah Item'));
     await tester.tap(find.text('Tambah Item'));
     await tester.pump();
-    final dropdown = find.byType(DropdownButton<String>).last;
+    final dropdown = find.byKey(const Key('pilih-jenis-sampah')).last;
     await tester.ensureVisible(dropdown);
     await tester.pumpAndSettle();
     await tester.tap(dropdown);
@@ -328,6 +509,24 @@ void main() {
     // Kardus costs 1.000 today but was 800 when the setoran was recorded.
     expect(find.text('800'), findsOneWidget);
     expect(find.text('1.000'), findsNothing);
+  });
+
+  testWidgets('adding a row is counted as an added item', (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('PATCH', _path, json: _detail());
+    await open(tester, analytics: analytics);
+
+    await addKardus(tester);
+    await tester.enterText(
+        find.byKey(EditSetoranSheet.alasanKey), 'Ada yang terlewat');
+    await tester.pump();
+    await tester.ensureVisible(save());
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    final saved = analytics.events.last.properties;
+    expect(saved['jumlah_item_ditambah'], 1);
+    expect(saved['jumlah_item_diubah_berat'], 0);
   });
 
   testWidgets('a jenis with no price on the setoran date gets none',
@@ -365,6 +564,7 @@ void main() {
                   if (selecting)
                     AktivitasSelectionBar(
                       onEdit: (id) => showEditSetoranSheet(context, id),
+                      onHapus: (_) {},
                     ),
                   const Expanded(child: AktivitasListView(isWeb: false)),
                 ]),
@@ -452,7 +652,7 @@ void main() {
     });
 
     testWidgets(
-        'only one setoran can be selected: tapping another moves the choice',
+        'tapping another row adds it: Edit is only for a single selection',
         (tester) async {
       final container = await pumpFeed(tester);
       await hold(tester, 'Budi');
@@ -460,11 +660,9 @@ void main() {
       await tester.tap(find.text('Sari'));
       await tester.pump();
 
-      expect(find.text('1 dipilih'), findsOneWidget);
-      expect(
-          find.byKey(const ValueKey('aktivitas-row-selected')), findsOneWidget);
-      expect(container.read(aktivitasSelectionProvider), 't2');
-      expect(find.byKey(AktivitasSelectionBar.editKey), findsOneWidget);
+      expect(find.text('2 dipilih'), findsOneWidget);
+      expect(container.read(aktivitasSelectionProvider), {'t1', 't2'});
+      expect(find.byKey(AktivitasSelectionBar.editKey), findsNothing);
     });
 
     testWidgets('tapping the selected row again leaves the selection mode',

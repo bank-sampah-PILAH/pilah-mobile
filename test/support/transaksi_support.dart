@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/core/analytics/analytics_client.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
@@ -6,6 +8,7 @@ import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remot
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/batalkan_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
@@ -23,6 +26,7 @@ Widget withTransaksiProviders({
   RiwayatAktivitasNotifier? riwayat,
   NasabahNotifier? nasabah,
   HargaNotifier? harga,
+  AnalyticsClient? analytics,
 }) =>
     ProviderScope(
       overrides: [
@@ -31,6 +35,8 @@ Widget withTransaksiProviders({
           riwayatAktivitasProvider.overrideWith(() => riwayat),
         if (nasabah != null) nasabahProvider.overrideWith(() => nasabah),
         if (harga != null) hargaProvider.overrideWith(() => harga),
+        if (analytics != null)
+          analyticsClientProvider.overrideWithValue(analytics),
       ],
       child: child,
     );
@@ -55,5 +61,9 @@ TransaksiNotifier buildTransaksiNotifier(StubApi api) {
     ExportTransaksiUseCase(repository),
     ResendWaUseCase(repository),
     EditTransaksiUseCase(repository),
+    (
+      useCase: BatalkanTransaksiUseCase(repository),
+      sessionKey: () => api.utils.accessToken
+    ),
   );
 }

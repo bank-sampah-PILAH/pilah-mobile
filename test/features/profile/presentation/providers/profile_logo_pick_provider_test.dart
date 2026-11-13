@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -12,6 +13,14 @@ import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.d
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import '../../../../support/profile_support.dart';
+
+/// Builds a picker-style path with the *platform* separator.
+///
+/// A native picker hands back a platform path and `XFile.name` splits on the
+/// platform separator, so a POSIX literal such as _picked('x.jpg') keeps its whole
+/// directory as the filename on Windows and the assertions below read
+/// _picked('x.jpg') where they mean 'x.jpg'.
+String _picked(String name) => ['tmp', name].join(Platform.pathSeparator);
 
 class _MockDataSource extends Mock implements ProfileRemoteDataSource {}
 
@@ -160,7 +169,7 @@ void main() {
 
     test('holds cropped bytes and filename, not the gallery original',
         () async {
-      stubPickAndCrop('/tmp/picked.heic', '/tmp/image_cropper_1.jpg');
+      stubPickAndCrop(_picked('picked.heic'), _picked('image_cropper_1.jpg'));
 
       await notifier.pickLogo();
 
@@ -169,7 +178,7 @@ void main() {
     });
 
     test('reads from the gallery, not the camera', () async {
-      stubPickAndCrop('/tmp/picked.jpg', '/tmp/cropped.jpg');
+      stubPickAndCrop(_picked('picked.jpg'), _picked('cropped.jpg'));
 
       await notifier.pickLogo();
 
@@ -181,11 +190,11 @@ void main() {
     });
 
     test('crops square and bounded with the native JPEG conversion', () async {
-      stubPickAndCrop('/tmp/picked.heic', '/tmp/cropped.jpg');
+      stubPickAndCrop(_picked('picked.heic'), _picked('cropped.jpg'));
 
       await notifier.pickLogo();
 
-      expect(cropArgs[#sourcePath], '/tmp/picked.heic');
+      expect(cropArgs[#sourcePath], _picked('picked.heic'));
       expect([cropArgs[#maxWidth], cropArgs[#maxHeight]], [1024, 1024]);
       final ratio = cropArgs[#aspectRatio] as CropAspectRatio;
       expect([ratio.ratioX, ratio.ratioY], [1.0, 1.0]);
@@ -203,7 +212,7 @@ void main() {
     });
 
     test('a cancelled pick keeps the logo already chosen', () async {
-      stubPickAndCrop('/tmp/first.jpg', '/tmp/first-cropped.jpg');
+      stubPickAndCrop(_picked('first.jpg'), _picked('first-cropped.jpg'));
       await notifier.pickLogo();
       stubPick(null);
 
@@ -214,9 +223,9 @@ void main() {
     });
 
     test('a cancelled crop keeps the logo already chosen', () async {
-      stubPickAndCrop('/tmp/first.jpg', '/tmp/first-cropped.jpg');
+      stubPickAndCrop(_picked('first.jpg'), _picked('first-cropped.jpg'));
       await notifier.pickLogo();
-      stubPick('/tmp/second.jpg');
+      stubPick(_picked('second.jpg'));
       stubCrop(null);
 
       await notifier.pickLogo();
@@ -253,7 +262,7 @@ void main() {
 
     test('sends native cropped bytes along with the text fields', () async {
       notifier.setStateForTest(notifier.state.copyWith(bankSampah: _stored));
-      stubPickAndCrop('/tmp/picked.heic', '/tmp/cropped.jpg');
+      stubPickAndCrop(_picked('picked.heic'), _picked('cropped.jpg'));
       await notifier.pickLogo();
       stubUpdate();
 

@@ -165,6 +165,7 @@ void main() {
     void capture(LogEvent event) => logs.add(event.message.toString());
     Logger.addLogListener(capture);
     try {
+      await dio.post('/ping', data: {'password': 'do-not-log'});
       await dio.post('/ping', data: '{"password":"do-not-log"');
     } finally {
       Logger.removeLogListener(capture);
@@ -172,5 +173,35 @@ void main() {
 
     expect(logs.join('\n'), contains('[REDACTED]'));
     expect(logs.join('\n'), isNot(contains('do-not-log')));
+  });
+
+  test('redacts device tokens from request and response logs', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
+      ..httpClientAdapter = api
+      ..interceptors.add(interceptors);
+    api.on('POST', '/api/v1/device-tokens/', json: {'token': 'response-token'});
+    api.on('POST', '/api/v1/device-tokens/error/',
+        status: 500, json: {'token': 'error-token'});
+    final logs = <String>[];
+    void capture(LogEvent event) => logs.add(event.message.toString());
+    Logger.addLogListener(capture);
+    try {
+      await dio.post('/api/v1/device-tokens/',
+          data: {'token': 'request-token', 'platform': 'android'});
+      await expectLater(
+        dio.post('/api/v1/device-tokens/error/',
+            data: {'token': 'error-request-token'}),
+        throwsA(isA<DioException>()),
+      );
+    } finally {
+      Logger.removeLogListener(capture);
+    }
+
+    final output = logs.join('\n');
+    expect(output, contains('[REDACTED]'));
+    expect(output, isNot(contains('request-token')));
+    expect(output, isNot(contains('response-token')));
+    expect(output, isNot(contains('error-token')));
+    expect(output, isNot(contains('error-request-token')));
   });
 }

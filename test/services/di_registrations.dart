@@ -4,6 +4,10 @@ import 'package:pilah_mobile/core/constants/app_key.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:image_cropper/image_cropper.dart' show ImageCropper;
 import 'package:image_picker/image_picker.dart' show ImagePicker;
+import 'package:pilah_mobile/core/analytics/analytics_client.dart'
+    show AnalyticsClient;
+import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart'
+    show AnalyticsConsentStore;
 import 'package:pilah_mobile/core/client/app_environment.dart'
     show AppEnvironment;
 import 'package:pilah_mobile/core/client/network_service.dart'
@@ -138,6 +142,8 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaks
     show ExportTransaksiUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart'
     show EditTransaksiUseCase;
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/batalkan_transaksi_usecase.dart'
+    show BatalkanTransaksiUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart'
     show GetAktivitasUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart'
@@ -164,6 +170,8 @@ final diRegistrations = <(String, String?, Object Function())>[
     null,
     () => di<AppStorage>(instanceName: 'shared_preferences')
   ),
+  ('AnalyticsClient', null, () => di<AnalyticsClient>()),
+  ('AnalyticsConsentStore', null, () => di<AnalyticsConsentStore>()),
   ('SecureDatabase', null, () => di<SecureDatabase>()),
   ('NetworkUtils', null, () => di<NetworkUtils>()),
   ('AppEnvironment', AppKey.prodEnv, () => di<AppEnvironment>()),
@@ -251,6 +259,7 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('AddTransaksiUseCase', null, () => di<AddTransaksiUseCase>()),
   ('ExportTransaksiUseCase', null, () => di<ExportTransaksiUseCase>()),
   ('EditTransaksiUseCase', null, () => di<EditTransaksiUseCase>()),
+  ('BatalkanTransaksiUseCase', null, () => di<BatalkanTransaksiUseCase>()),
   ('GetTransaksiDetailUseCase', null, () => di<GetTransaksiDetailUseCase>()),
   ('GetTransaksiUseCase', null, () => di<GetTransaksiUseCase>()),
   ('ResendWaUseCase', null, () => di<ResendWaUseCase>()),

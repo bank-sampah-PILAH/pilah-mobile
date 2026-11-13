@@ -4,9 +4,10 @@ import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
 
-NasabahEntity _nasabah(String name) => NasabahEntity(
+NasabahEntity _nasabah(String name, {String idNasabah = 'NAS-0002'}) =>
+    NasabahEntity(
       id: 'NAS-0002',
-      idNasabah: 'NAS-0002',
+      idNasabah: idNasabah,
       name: name,
       phone: '+628333333332',
       balance: 'Rp 484.250',
@@ -42,6 +43,31 @@ void main() {
     final name = tester.getRect(find.textContaining('Nasabah Kedua'));
     final balance = tester.getRect(find.text('Rp 484.250'));
     expect(balance.left - name.right, greaterThanOrEqualTo(8));
+  });
+
+  testWidgets('the longest ID stays on one line without overflowing',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final id = 'MEMBER-${'0' * 23}'; // `Nasabah.nomor` allows 30 characters
+
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: NasabahListItem(
+            nasabah: _nasabah('Nasabah Kedua PILAH', idNasabah: id),
+          ),
+        ),
+      ),
+    ));
+
+    final text = tester.widget<Text>(find.text('ID: $id'));
+    expect(text.maxLines, 1);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('the card is announced as a button that reads the nasabah',

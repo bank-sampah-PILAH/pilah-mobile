@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ui' show SemanticsAction;
-import '../../../support/stub_api.dart';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +23,12 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
-import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../support/approved_membership.dart';
 import '../../../support/auth_support.dart';
 import '../../../support/fake_riwayat.dart';
+import '../../../support/profile_support.dart';
 
 /// Counts calls to [home] so a pull-to-refresh test can assert the load ran
 /// again, without caring how many times the widget tree rebuilds.
@@ -131,14 +131,6 @@ void main() {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
         repository ?? PreviewNasabahRepository(bankName: bankName));
-    // The beranda page resolves the pengumuman section from the service
-    // locator, so the stub API behind it needs the same registration.
-    final pengumumanApi = StubApi();
-    pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
-        json: {'items': [], 'unread_count': 0});
-    di.registerSingleton<NasabahPengumumanRepository>(
-        NasabahPengumumanRepository(pengumumanApi.network));
-    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
     di.registerFactory<PencairanUseCases>(() => payoutUseCases);
     registerFakeRiwayat(riwayatFixture);
@@ -155,7 +147,11 @@ void main() {
     router.go(LoginPage.route);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [nasabahApprovalProvider.overrideWith(() => approval)],
+        overrides: [
+          nasabahApprovalProvider.overrideWith(() => approval),
+          // The shell watches the profile for its logo; no data source here.
+          profileProvider.overrideWith(SilentProfileNotifier.new),
+        ],
         child: withAuthenticationProvider(
           auth,
           MaterialApp.router(routerConfig: router),

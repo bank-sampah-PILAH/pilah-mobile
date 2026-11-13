@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_recording_root.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_screen_tracker_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
@@ -21,8 +23,8 @@ import 'package:pilah_mobile/features/profile/presentation/providers/profile_pro
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
-import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 
@@ -115,6 +117,9 @@ class App extends StatelessWidget {
     final router = AppRouterConfig.getRouter();
     final app = Consumer(
       builder: (context, ref, child) {
+        // Listening from the root means every screen is reported, wherever the
+        // user goes; the client ignores it all until they have agreed.
+        ref.watch(analyticsScreenTrackerProvider);
         // Session hygiene belongs above the router so every logout and
         // rejected session resets user-scoped state, regardless of route.
         ref.listen(authenticationProvider, (previous, current) {
@@ -125,29 +130,44 @@ class App extends StatelessWidget {
           if (isWeb &&
               current is Authenticated &&
               !isSupportedWebRole(current.authEntity.role)) {
-            ref.read(authenticationProvider.notifier).logout();
-            AppNotification.afterNavigation(
-              (context) => AppNotification.showWarning(
+            // Flag before logging out, and raise the toast from the shell
+            // itself via afterNavigation: the bounce lands on whatever page
+            // the user is on, and the toast must survive both the page
+            // teardown and the redirect (CPBI-21 UAT finding). Toasting
+            // directly here dies with the page being torn down within one
+            // frame.
+            WebRoleBounceNotice.arm();
+            AppNotification.afterNavigation((context) {
+              AppNotification.showError(
                 context,
-                title: 'Akses web tidak tersedia',
+                title: 'Peran Tidak Didukung',
                 message:
-                    'Akun ini hanya dapat digunakan melalui aplikasi mobile.',
-              ),
-            );
+                    'Akun ini tidak memiliki peran Pengurus, sehingga tidak '
+                    'dapat mengakses aplikasi web. Silakan masuk dengan akun '
+                    'Pengurus.',
+              );
+            });
+            ref.read(authenticationProvider.notifier).logout();
           }
         });
         return _PendingInviteResumeWatcher(
           child: _BrowserTitleUpdater(
             router: router,
             enabled: isWeb,
-            child: MaterialApp.router(
-              title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
-              theme: AppTheme.light,
-              // Material widgets (date pickers, dialog buttons) in Indonesian.
-              locale: const Locale('id'),
-              supportedLocales: const [Locale('id')],
-              localizationsDelegates: GlobalMaterialLocalizations.delegates,
-              routerConfig: router,
+            child: AnalyticsRecordingRoot(
+              child: MaterialApp.router(
+                // The banner is drawn over the whole screen, so it would be in
+                // every frame of the recording of a debug build.
+                debugShowCheckedModeBanner: false,
+                title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+                theme: AppTheme.light,
+                // Material widgets (date pickers, dialog buttons) in
+                // Indonesian.
+                locale: const Locale('id'),
+                supportedLocales: const [Locale('id')],
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                routerConfig: router,
+              ),
             ),
           ),
         );

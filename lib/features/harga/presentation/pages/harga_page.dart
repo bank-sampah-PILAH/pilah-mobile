@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/core/analytics/search_analytics.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +16,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
@@ -27,6 +30,8 @@ import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
+import 'package:pilah_mobile/features/harga/domain/models/jenis_sampah_query.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_filter_bar.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
@@ -79,9 +84,70 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
 
   HargaEntity? get _selected => _editing ?? _viewing;
 
+  /// The session of searching the list, from the first words to the row opened.
+  late final SearchAnalytics _search;
+
+  /// Waits for typing to stop before the results are reported, because the list
+  /// filters on every key and each key is not a try.
+  Timer? _searchReport;
+
+  static const _searchReportDelay = Duration(seconds: 1);
+
+  void _searchChanged(String query) {
+    _search.queryChanged(query);
+    _searchReport?.cancel();
+    if (query.trim().length < SearchAnalytics.minLength) return;
+    _searchReport = Timer(_searchReportDelay, _reportResults);
+  }
+
+  /// Reports what the current words found, if they have not been reported yet.
+  void _reportResults() {
+    _searchReport?.cancel();
+    final state = ref.read(hargaProvider);
+    if (state is! HargaLoaded) return;
+    _search.resultsSettled(
+      query: state.searchQuery,
+      count: state.jenisSampahList.length,
+      filter: state.isActiveTab ? 'aktif' : 'tidak_aktif',
+    );
+  }
+
+  /// The tab changed while words are in the search: the list now shows another
+  /// set of rows, so what the words find is reported again, once typing and
+  /// switching have settled.
+  void _tabChanged(HargaState? previous, HargaState current) {
+    if (previous is! HargaLoaded || current is! HargaLoaded) return;
+    if (previous.isActiveTab == current.isActiveTab) return;
+    if (current.searchQuery.trim().length < SearchAnalytics.minLength) return;
+    _searchReport?.cancel();
+    _searchReport = Timer(_searchReportDelay, _reportResults);
+  }
+
+  /// A row of the list was opened. When the list is showing a search, that is
+  /// the row it led to; the try that was still waiting is reported first.
+  void _searchPicked(HargaEntity item) {
+    final state = ref.read(hargaProvider);
+    if (state is! HargaLoaded) return;
+    final index = state.jenisSampahList.indexWhere((e) => e.id == item.id);
+    if (index < 0) return;
+    // Only a try that is still waiting is reported first. The session ends with
+    // the pick, so settling again on a later tap would start a session that
+    // nobody searched for.
+    if (_searchReport?.isActive ?? false) _reportResults();
+    _search.picked(position: index + 1);
+  }
+
+  @override
+  void dispose() {
+    _searchReport?.cancel();
+    _search.closed();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    _search = SearchAnalytics(ref.read(analyticsClientProvider), area: 'harga');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(hargaProvider.notifier).loadHarga();
     });
@@ -137,6 +203,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
   /// bawahnya. Mengedit dan melihat riwayat harga adalah dua pilihan di dalam
   /// detail itu.
   void _openDetail(HargaEntity item) {
+    _searchPicked(item);
     if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
       setState(() {
         _viewing = item;
@@ -168,6 +235,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(hargaProvider, _tabChanged);
     ref.listen(hargaProvider, (previous, current) {
       if (widget.isWeb &&
           current is HargaLoaded &&
@@ -209,11 +277,19 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
     final state = ref.watch(hargaProvider);
     final isActiveTab = state is HargaLoaded ? state.isActiveTab : true;
     final web = context.layoutBreakpoint != LayoutBreakpoint.compact;
-    final search = CustomSearchField(
-      hintText: 'Cari jenis sampah...',
-      onChanged: (value) {
-        ref.read(hargaProvider.notifier).searchHarga(value);
-      },
+    final loadedState = state is HargaLoaded ? state : null;
+    final query = loadedState?.query ?? const JenisSampahQuery();
+    final kategori = loadedState?.kategori ?? const <String>[];
+    void changeQuery(JenisSampahQuery next) {
+      ref.read(hargaProvider.notifier).setQuery(next);
+      if (next.search != query.search) _searchChanged(next.search);
+    }
+
+    final search = JenisSampahFilterBar(
+      query: query,
+      kategori: kategori,
+      showKategori: false,
+      onChanged: changeQuery,
     );
     return Padding(
       padding: web
@@ -261,22 +337,34 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
             search,
           ],
           const SizedBox(height: 16),
-          Row(
-            children: [
-              AppChip(
-                label: 'Aktif',
-                selected: isActiveTab,
-                onTap: () =>
-                    ref.read(hargaProvider.notifier).setActiveTab(true),
-              ),
-              const SizedBox(width: 8),
-              AppChip(
-                label: 'Tidak Aktif',
-                selected: !isActiveTab,
-                onTap: () =>
-                    ref.read(hargaProvider.notifier).setActiveTab(false),
-              ),
-            ],
+          // Digeser, bukan dipotong, bila tiga chip tak muat di layar sempit.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                AppChip(
+                  label: 'Aktif',
+                  selected: isActiveTab,
+                  onTap: () =>
+                      ref.read(hargaProvider.notifier).setActiveTab(true),
+                ),
+                const SizedBox(width: 8),
+                AppChip(
+                  label: 'Tidak Aktif',
+                  selected: !isActiveTab,
+                  onTap: () =>
+                      ref.read(hargaProvider.notifier).setActiveTab(false),
+                ),
+                if (kategori.length > 1) ...[
+                  const SizedBox(width: 8),
+                  JenisSampahKategoriFilter(
+                    query: query,
+                    kategori: kategori,
+                    onChanged: changeQuery,
+                  ),
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -306,10 +394,11 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
       _ => PageState.loading,
     };
 
-    final isSearching = loaded?.searchQuery.isNotEmpty ?? false;
+    final isSearching = loaded?.query.isFiltering ?? false;
     final isActiveTab = loaded?.isActiveTab ?? true;
 
     final empty = _emptyState(
+      noCategory: loaded?.query.tidakAdaKategori ?? false,
       isSearching: isSearching,
       isActiveTab: isActiveTab,
     );
@@ -404,13 +493,22 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
   /// sejajar: ketiga nilai itu harus menggambarkan keadaan yang sama, dan
   /// memisahkannya membuat salah satu mudah tertinggal saat yang lain diubah.
   ({String title, String subtitle, IconData icon}) _emptyState({
+    required bool noCategory,
     required bool isSearching,
     required bool isActiveTab,
   }) {
+    if (noCategory) {
+      return (
+        title: 'Tidak Ada Kategori yang Dipilih',
+        subtitle: 'Pilih kategori pada filter di atas untuk menampilkan '
+            'jenis sampah.',
+        icon: Icons.filter_list_off,
+      );
+    }
     if (isSearching) {
       return (
         title: 'Jenis Sampah Tidak Ditemukan',
-        subtitle: 'Coba kata kunci yang berbeda',
+        subtitle: 'Coba kata kunci atau kategori yang berbeda',
         icon: Icons.search_off,
       );
     }

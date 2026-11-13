@@ -17,6 +17,9 @@ class AppChip extends StatelessWidget {
   final VoidCallback? onTap;
   final IconData? icon;
 
+  /// An icon after the label, such as the arrow of a chip that opens a menu.
+  final IconData? trailingIcon;
+
   /// A small count after the label, such as how many items the filter holds.
   final int? count;
 
@@ -30,6 +33,7 @@ class AppChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.icon,
+    this.trailingIcon,
     this.count,
   }) : onColor = false;
 
@@ -39,6 +43,7 @@ class AppChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.icon,
+    this.trailingIcon,
     this.count,
   }) : onColor = true;
 
@@ -98,6 +103,10 @@ class AppChip extends StatelessWidget {
                       const SizedBox(width: 6),
                       _CountBadge(
                           count: count!, selected: selected, color: color),
+                    ],
+                    if (trailingIcon != null) ...[
+                      const SizedBox(width: 4),
+                      Icon(trailingIcon, size: 18, color: color),
                     ],
                   ],
                 ),

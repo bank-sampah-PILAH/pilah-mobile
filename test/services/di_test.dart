@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/client/network_utils.dart';
 import 'package:pilah_mobile/core/constants/app_key.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
@@ -10,6 +11,7 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/riwayat_harga_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 
 void main() {
   setUp(() => configureDependencies(environment: AppKey.devEnv));
@@ -17,6 +19,18 @@ void main() {
 
   test('wires the nasabah repository on top of the generated graph', () {
     expect(di.isRegistered<NasabahRepository>(), isTrue);
+  });
+
+  test('transaction provider reads the current shared session, not a snapshot',
+      () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final session = di<NetworkUtils>();
+    session.setToken(accessToken: 'demo-first', refreshToken: 'demo-refresh');
+    final notifier = container.read(transaksiProvider.notifier);
+    expect(notifier.sessionKey, 'demo-first');
+    session.setToken(accessToken: 'demo-next', refreshToken: 'demo-refresh');
+    expect(notifier.sessionKey, 'demo-next');
   });
 
   test('provides one shared image picker and cropper', () {

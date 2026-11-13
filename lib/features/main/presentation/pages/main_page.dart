@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_consent_prompt.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -10,6 +11,8 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
@@ -18,10 +21,11 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/setoran_sheet_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 /// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
 const _profileBranch = 7;
-const _pengumumanBranch = 8;
 
 class MainPage extends ConsumerWidget {
   const MainPage({
@@ -50,9 +54,11 @@ class MainPage extends ConsumerWidget {
         navigationShell.goBranch(0, initialLocation: true);
       }
     });
-    return _RoleShell(
-      navigationShell: navigationShell,
-      isWebOverride: isWebOverride,
+    return AnalyticsConsentPrompt(
+      child: _RoleShell(
+        navigationShell: navigationShell,
+        isWebOverride: isWebOverride,
+      ),
     );
   }
 }
@@ -84,6 +90,19 @@ class _RoleShell extends ConsumerWidget {
         navigationShell: navigationShell,
         isWebOverride: isWebOverride,
       );
+    }
+    // Rail/drawer heads draw the bank logo once loaded. The profile notifier
+    // is app-scoped and lazy: without this, a session that never opened the
+    // Profile page keeps initials forever. Silent — rail must not flash a
+    // spinner for it. Watched, not read: a logo that lands after the first
+    // frame still reaches the rail.
+    final profile = ref.watch(profileProvider);
+    if (profile.status == ProfileStatus.initial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ref.read(profileProvider.notifier).load(silent: true);
+        }
+      });
     }
     return _ShellContent(
       role: role!,
@@ -119,11 +138,8 @@ class _ShellContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final approval = _watchApproval(context, ref);
     final limitedNasabah = _isLimitedNasabah(approval);
-    // Only a confirmed status may discard the current route; initial loading
-    // must leave the current route intact.
-    final confirmedLimitedNasabah = role == 'nasabah' &&
-        approval is NasabahApprovalLoaded &&
-        limitedNasabah;
+    final bankSampahLogoUrl =
+        _bankSampahLogoUrl(ref.watch(profileProvider), approval);
     final form = NavigationForm.resolve(
       isWeb: isWebOverride ?? kIsWeb,
       width: MediaQuery.sizeOf(context).width,
@@ -132,20 +148,15 @@ class _ShellContent extends ConsumerWidget {
         limitedNasabah: limitedNasabah,
         bottomBar: form == NavigationForm.bottomBar);
     final selected = branches.indexOf(navigationShell.currentIndex);
-    if (confirmedLimitedNasabah && selected < 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
-      });
-    }
+    // Only a confirmed status may discard the current route; initial loading
+    // must leave the current route intact.
+    _resetConfirmedStrandedRoute(context, approval, limitedNasabah, selected);
     final offDestination = _isOffDestination(selected, limitedNasabah);
     final routeGuard =
         _routeGuard(selected, limitedNasabah, offDestination, form);
     if (routeGuard != null) return routeGuard;
 
-    final body =
-        limitedNasabah && navigationShell.currentIndex != _profileBranch
-            ? NasabahVerificationHome(name: name)
-            : navigationShell;
+    final body = _shellBody(limitedNasabah);
     final select = _selectionHandler(ref, branches, selected);
     final railSelected = offDestination ? null : (selected < 0 ? 0 : selected);
     if (form == NavigationForm.bottomBar) {
@@ -155,12 +166,55 @@ class _ShellContent extends ConsumerWidget {
       context,
       ref,
       body,
-      limitedNasabah,
       railSelected,
       select,
       form,
+      bankSampahLogoUrl,
     );
   }
+
+  /// Logo bank sampah untuk kepala rail/drawer. Pengurus memperbarui logo
+  /// lewat GET /bank-sampah/me (profileProvider di-watch, jadi simpanan di
+  /// halaman Profil langsung tercermin di sini); nasabah memakai logo yang
+  /// datang bersama keanggotaannya dari GET /nasabah/me.
+  String? _bankSampahLogoUrl(
+    ProfileState profile,
+    NasabahApprovalState? approval,
+  ) {
+    if (role != 'nasabah') {
+      return profile.status == ProfileStatus.loaded
+          ? profile.bankSampah?.fotoLogo
+          : null;
+    }
+    if (approval is! NasabahApprovalLoaded || approval.memberships.isEmpty) {
+      return null;
+    }
+    final membership = approval.memberships.firstWhere(
+      (m) => m.status == MembershipStatus.approved && m.isActive,
+      orElse: () => approval.memberships.first,
+    );
+    return membership.bankSampahLogoUrl;
+  }
+
+  void _resetConfirmedStrandedRoute(
+    BuildContext context,
+    NasabahApprovalState? approval,
+    bool limitedNasabah,
+    int selected,
+  ) {
+    final confirmed = role == 'nasabah' &&
+        approval is NasabahApprovalLoaded &&
+        limitedNasabah;
+    if (!confirmed || selected >= 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
+    });
+  }
+
+  Widget _shellBody(bool limitedNasabah) =>
+      limitedNasabah && navigationShell.currentIndex != _profileBranch
+          ? NasabahVerificationHome(name: name)
+          : navigationShell;
 
   NasabahApprovalState? _watchApproval(BuildContext context, WidgetRef ref) {
     if (role != 'nasabah') return null;
@@ -186,8 +240,7 @@ class _ShellContent extends ConsumerWidget {
   bool _isOffDestination(int selected, bool limitedNasabah) =>
       selected < 0 &&
       ((RoleNavigationBar.isStaff(role) &&
-              (navigationShell.currentIndex == _profileBranch ||
-                  navigationShell.currentIndex == _pengumumanBranch)) ||
+              navigationShell.currentIndex == _profileBranch) ||
           (role == 'nasabah' &&
               !limitedNasabah &&
               navigationShell.currentIndex == 4));
@@ -247,16 +300,18 @@ class _ShellContent extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Widget body,
-    bool limitedNasabah,
     int? selected,
     ValueChanged<int> onSelected,
     NavigationForm form,
+    String? bankSampahLogoUrl,
   ) {
     final account = ref.watch(authenticationProvider);
     final profileName =
         account is Authenticated ? account.authEntity.name : null;
     final profileEmail =
         account is Authenticated ? account.authEntity.email : null;
+    final limitedNasabah =
+        _isLimitedNasabah(ref.watch(nasabahApprovalProvider));
     final routeInformationProvider =
         GoRouter.of(context).routeInformationProvider;
     return AnimatedBuilder(
@@ -268,14 +323,18 @@ class _ShellContent extends ConsumerWidget {
           limitedNasabah: limitedNasabah,
           currentIndex: selected,
           bankSampahNama: bankSampahNama,
+          bankSampahLogoUrl: bankSampahLogoUrl,
           profileName: profileName,
           profileEmail: profileEmail,
           onProfile: () => navigationShell.goBranch(_profileBranch),
           onHome: () => navigationShell.goBranch(0, initialLocation: true),
           onAddTransaction: role == 'pengelola'
-              ? () => context.push(TransaksiBaruPage.route)
+              ? () => openSetoranBaru(context, isWeb: isWebOverride ?? kIsWeb)
               : null,
-          transactionSelected: currentPath == TransaksiBaruPage.route,
+          // Panel samping tidak mengubah path, jadi path saja tidak lagi
+          // cukup untuk menyorot menunya.
+          transactionSelected: currentPath == TransaksiBaruPage.route ||
+              ref.watch(setoranSheetProvider),
           profileSelected: currentPath == AppLocations.profile,
           onSelected: onSelected,
         );

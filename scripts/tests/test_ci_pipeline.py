@@ -3,7 +3,6 @@ import pathlib
 import unittest
 
 import yaml
-
 from scripts import select_ci_changes
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -54,6 +53,21 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("github.event_name == 'pull_request'", browser["if"])
         self.assertIn("browser_test_files", str(browser["steps"]))
 
+        changed_browser_run = next(
+            step["run"]
+            for step in browser["steps"]
+            if step.get("name") == "Run changed browser test files outside the fixed browser suite"
+        )
+        self.assertIn(
+            'flutter test --platform chrome "$test_file"', changed_browser_run
+        )
+        self.assertNotIn("flutter test --platform chrome --coverage", changed_browser_run)
+        self.assertIn("dart run test --platform chrome", changed_browser_run)
+        self.assertIn(
+            '--coverage-path="coverage/browser-selected-${index}.info"',
+            changed_browser_run,
+        )
+
     def test_staging_runs_all_shards_and_owns_coverage_gates(self):
         ci = workflow("ci.yml")
         tests = ci["jobs"]["test_shards"]
@@ -98,6 +112,20 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("EXPECTED_SHARDS", str(steps[merge_index]["env"]))
         self.assertIn('"$EXPECTED_SHARDS"', steps[merge_index]["run"])
         self.assertIn("p+0 >= 25", steps[global_index]["run"])
+
+    def test_posthog_secrets_feed_every_mobile_build(self):
+        targets = (
+            (workflow("ci.yml")["jobs"]["debug_apk"]["steps"], "append_posthog_env.py staging .env"),
+            (workflow("cd-staging.yml")["jobs"]["distribute"]["steps"], "append_posthog_env.py staging .env"),
+            (workflow("cd-production.yml")["jobs"]["release"]["steps"], "prepare_web_env.py production .env"),
+            (workflow("deploy-web.yml")["jobs"]["deploy"]["steps"], 'prepare_web_env.py "$FLAVOR" .env'),
+        )
+        secrets = ("ENABLE_POSTHOG", "POSTHOG_API_KEY", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
+        for steps, command in targets:
+            with self.subTest(command=command):
+                step = next(step for step in steps if command in step.get("run", ""))
+                for name in secrets:
+                    self.assertEqual(step["env"][name], f"${{{{ secrets.{name} }}}}")
 
     def test_verify_accepts_only_intentionally_skipped_jobs(self):
         ci = workflow("ci.yml")

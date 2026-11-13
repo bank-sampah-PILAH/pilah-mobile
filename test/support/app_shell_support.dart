@@ -258,4 +258,10 @@ class TestAuthenticationSession
     state = Unauthenticated();
     return const Right(null);
   }
+
+  @override
+  Future<Either<NetworkException, void>> discardRegistration() async {
+    state = Unauthenticated();
+    return const Right(null);
+  }
 }

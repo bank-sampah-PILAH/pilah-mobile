@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_search_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -21,6 +24,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_order_controls.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
@@ -82,10 +86,7 @@ class _Header extends ConsumerWidget {
     return AppPageHeader(
       title: 'Daftar Nasabah',
       subtitle: Text('${notifier.activeCount} nasabah aktif'),
-      search: CustomSearchField(
-        hintText: 'Cari nama nasabah...',
-        onChanged: notifier.searchNasabah,
-      ),
+      search: const NasabahSearchField(),
       actions: [
         AppButton(
           label: 'Tambah Nasabah',
@@ -113,12 +114,19 @@ class _Toolbar extends ConsumerWidget {
         : state is NasabahLoading
             ? state.isActiveTab
             : notifier.isActiveTab;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: NasabahFilterChips(
-        activeTab: activeTab,
-        onTabChanged: notifier.setActiveTab,
-      ),
+    return Wrap(
+      spacing: AppSpacing.xl,
+      runSpacing: AppSpacing.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        IntrinsicWidth(
+          child: NasabahFilterChips(
+            activeTab: activeTab,
+            onTabChanged: notifier.setActiveTab,
+          ),
+        ),
+        const NasabahOrderControls(),
+      ],
     );
   }
 }
@@ -304,23 +312,32 @@ class _RowState extends ConsumerState<_Row> {
   String get _idUntukApi => n.id.isNotEmpty ? n.id : n.idNasabah;
 
   Future<void> _decide(bool reject) async {
+    nasabahSearchPicked(ref, n.id);
     final notifier = ref.read(nasabahProvider.notifier);
+    final analytics = ref.read(analyticsClientProvider);
     final overlay = Navigator.of(context, rootNavigator: true).context;
+    final opened = Stopwatch()..start();
     final catatan = await showNasabahApprovalDialog(context,
         isApproving: !reject, customerName: n.name);
     if (catatan == null) return;
     final error = await notifier.decideNasabah(_idUntukApi,
         approve: !reject, catatan: catatan);
+    if (error == null) {
+      nasabahDecided(analytics, approved: !reject, sinceOpened: opened.elapsed);
+    }
     if (overlay.mounted && error != null) {
       AppNotification.showError(overlay,
           title: 'Gagal', message: error.displayMessage);
     }
   }
 
-  void _open() => showAdaptiveSurface<void>(
-        context,
-        builder: (_) => DetailNasabahBottomSheet(nasabah: n),
-      );
+  void _open() {
+    nasabahSearchPicked(ref, n.id);
+    showAdaptiveSurface<void>(
+      context,
+      builder: (_) => DetailNasabahBottomSheet(nasabah: n),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

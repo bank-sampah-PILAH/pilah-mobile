@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/network_utils.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/bulk_void_result.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/batalkan_beberapa_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/batalkan_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
@@ -19,8 +23,18 @@ final transaksiProvider = NotifierProvider<TransaksiNotifier, TransaksiState>(
     di<ExportTransaksiUseCase>(),
     di<ResendWaUseCase>(),
     di<EditTransaksiUseCase>(),
+    (
+      useCase: di<BatalkanTransaksiUseCase>(),
+      sessionKey: () => di<NetworkUtils>().accessToken
+    ),
   ),
 );
+
+/// The existing void operation and the session in which it is authorized.
+typedef SetoranVoidAction = ({
+  BatalkanTransaksiUseCase useCase,
+  String Function()? sessionKey
+});
 
 class TransaksiNotifier extends Notifier<TransaksiState> {
   final GetTransaksiUseCase getTransaksiUseCase;
@@ -29,6 +43,10 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
   final ExportTransaksiUseCase exportTransaksiUseCase;
   final ResendWaUseCase resendWaUseCase;
   final EditTransaksiUseCase editTransaksiUseCase;
+  final BatalkanTransaksiUseCase batalkanTransaksiUseCase;
+  final String Function()? _sessionKey;
+
+  String? get sessionKey => _sessionKey?.call();
 
   List<TransaksiGroupEntity> _allTransaksi = [];
   String _periode = 'bulan_ini';
@@ -43,7 +61,9 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
     this.exportTransaksiUseCase,
     this.resendWaUseCase,
     this.editTransaksiUseCase,
-  );
+    SetoranVoidAction voidAction,
+  )   : batalkanTransaksiUseCase = voidAction.useCase,
+        _sessionKey = voidAction.sessionKey;
 
   @override
   TransaksiState build() => TransaksiInitial();
@@ -126,9 +146,35 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
     );
   }
 
+  /// Voids ("hapus") a setoran (PIL-428). Like [editTransaksi], a refusal such
+  /// as "saldonya sudah dicairkan" reaches the pengurus in the backend's words.
+  Future<({TransaksiDetailEntity? detail, String? error})> batalkanTransaksi(
+      TransaksiBatalRequest request) async {
+    final result = await batalkanTransaksiUseCase.execute(request);
+    return result.fold(
+      (failure) => (detail: null, error: failure.displayMessage),
+      (detail) => (detail: detail, error: null),
+    );
+  }
+
   Future<TransaksiDetailEntity?> fetchTransaksiDetail(String id) async {
     final result = await getTransaksiDetailUseCase.execute(id);
     return result.fold((_) => null, (data) => data);
+  }
+
+  Future<BulkVoidResult> batalkanBeberapaTransaksi({
+    required List<String> ids,
+    required String alasan,
+    required bool Function() canContinue,
+    void Function(int, int)? onProgress,
+  }) {
+    final session = sessionKey;
+    return BatalkanBeberapaTransaksiUseCase(batalkanTransaksiUseCase).execute(
+      ids: ids,
+      alasan: alasan,
+      canContinue: () => ref.mounted && sessionKey == session && canContinue(),
+      onProgress: onProgress,
+    );
   }
 
   /// Resends the WhatsApp notification for transaction [id]. Returns whether it

@@ -18,5 +18,9 @@ abstract class AuthenticationUseCases {
 
   Future<Either<NetworkException, void>> logout();
 
+  /// Deletes the signed-in profile-incomplete account so registration can
+  /// restart with a different role.
+  Future<Either<NetworkException, void>> discardRegistration();
+
   Future<bool> hasSession();
 }

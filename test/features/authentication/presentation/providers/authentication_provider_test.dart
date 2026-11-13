@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
@@ -9,6 +10,8 @@ import 'package:google_sign_in_platform_interface/google_sign_in_platform_interf
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/notifications/push_presentation.dart';
+import 'package:pilah_mobile/core/notifications/push_session.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
@@ -25,18 +28,27 @@ class _MockGoogleSignInPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements google_sign_in.GoogleSignInPlatform {}
 
+class _MockPushSession extends Mock implements PushSession {}
+
+class _MockPushPresentation extends Mock
+    implements PushPresentation<RemoteMessage> {}
+
 class _Harness {
   _Harness(
     this.useCases,
     this.googleUseCase, {
     AuthenticationStates? initialState,
     bool isWeb = false,
+    PushSession? pushSession,
+    PushPresentation<RemoteMessage>? pushPresentation,
   }) {
     notifier = _TestAuthenticationNotifier(
       useCases,
       googleUseCase,
       initialState: initialState ?? AuthenticationInitial(),
       isWeb: isWeb,
+      pushSession: pushSession,
+      pushPresentation: pushPresentation,
     );
     container = ProviderContainer(
       overrides: [authenticationProvider.overrideWith(() => notifier)],
@@ -72,7 +84,15 @@ class _TestAuthenticationNotifier extends AuthenticationNotifier {
     LoginWithGoogleUseCase googleUseCase, {
     required this.initialState,
     required bool isWeb,
-  }) : super(useCases, googleUseCase, isWebOverride: isWeb);
+    PushSession? pushSession,
+    PushPresentation<RemoteMessage>? pushPresentation,
+  }) : super(
+          useCases,
+          googleUseCase,
+          isWebOverride: isWeb,
+          pushSession: pushSession,
+          pushPresentation: pushPresentation,
+        );
 
   final AuthenticationStates initialState;
 
@@ -124,6 +144,38 @@ void main() {
     expect(harness.states,
         [AuthenticationLoading(), Authenticated(authEntity: auth)]);
     verify(() => useCases.postLogin('test@example.com', 'password')).called(1);
+  });
+
+  test('starts push on sign-in and stops it on logout and account deletion',
+      () async {
+    final session = _MockPushSession();
+    final presentation = _MockPushPresentation();
+    when(() => session.start()).thenAnswer((_) async {});
+    when(() => session.stop()).thenAnswer((_) async {});
+    when(() => presentation.start()).thenAnswer((_) async {});
+    when(() => presentation.stop()).thenAnswer((_) async {});
+    final pushHarness = _Harness(
+      useCases,
+      googleUseCase,
+      pushSession: session,
+      pushPresentation: presentation,
+    );
+    addTearDown(pushHarness.close);
+    when(() => useCases.postLogin('test@example.com', 'password'))
+        .thenAnswer((_) async => const Right(auth));
+    when(() => useCases.logout()).thenAnswer((_) async => const Right(null));
+    when(() => useCases.discardRegistration())
+        .thenAnswer((_) async => const Right(null));
+
+    await pushHarness.notifier.postLogin('test@example.com', 'password');
+    await Future<void>.delayed(Duration.zero);
+    await pushHarness.notifier.logout();
+    await pushHarness.notifier.discardRegistration();
+
+    verify(() => session.start()).called(1);
+    verify(() => presentation.start()).called(1);
+    verify(() => session.stop()).called(2);
+    verify(() => presentation.stop()).called(2);
   });
 
   test('password login failure is shown', () async {
@@ -539,5 +591,54 @@ void main() {
 
     await pending;
     expect(harness.states, [AuthenticationLoading()]);
+  });
+
+  group('discardRegistration', () {
+    test('deletes the fresh account and ends unauthenticated', () async {
+      when(() => useCases.discardRegistration())
+          .thenAnswer((_) async => const Right(null));
+
+      await harness.notifier.discardRegistration();
+
+      expect(harness.states, [AuthenticationLoading(), Unauthenticated()]);
+      verify(() => useCases.discardRegistration()).called(1);
+    });
+
+    test('a refusal still logs out and reports the reason', () async {
+      when(() => useCases.discardRegistration()).thenAnswer(
+        (_) async => Left(GeneralException(message: 'Profil sudah lengkap.')),
+      );
+      final errors = <String>[];
+
+      await harness.notifier.discardRegistration(onError: errors.add);
+
+      // The session goes regardless: the exit dialog has already promised
+      // logout, so keeping a half-deleted account signed in helps nobody.
+      expect(harness.states, [AuthenticationLoading(), Unauthenticated()]);
+      expect(errors, ['Profil sudah lengkap.']);
+    });
+
+    test('web discard signs out of Google before deleting the account',
+        () async {
+      final original = google_sign_in.GoogleSignInPlatform.instance;
+      final platform = _MockGoogleSignInPlatform();
+      google_sign_in.GoogleSignInPlatform.instance = platform;
+      final calls = <String>[];
+      when(() => platform.signOut(const google_sign_in.SignOutParams()))
+          .thenAnswer((_) async => calls.add('Google sign-out'));
+      when(() => useCases.discardRegistration()).thenAnswer((_) async {
+        calls.add('PILAH discard');
+        return const Right(null);
+      });
+      final webHarness = _Harness(useCases, googleUseCase, isWeb: true);
+      addTearDown(webHarness.close);
+      addTearDown(
+          () => google_sign_in.GoogleSignInPlatform.instance = original);
+
+      await webHarness.notifier.discardRegistration();
+
+      expect(calls, ['Google sign-out', 'PILAH discard']);
+      expect(webHarness.states.last, isA<Unauthenticated>());
+    });
   });
 }

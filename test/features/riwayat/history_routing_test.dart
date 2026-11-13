@@ -20,6 +20,7 @@ import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_da
 import 'package:pilah_mobile/features/riwayat/data/repositories/riwayat_repository_impl.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -28,6 +29,7 @@ import 'package:pilah_mobile/services/di.dart';
 import '../../support/approved_membership.dart';
 import '../../support/auth_support.dart';
 import '../../support/nasabah_approval_support.dart';
+import '../../support/profile_support.dart';
 import '../../support/stub_api.dart';
 
 class _Environment extends Mock implements AppEnvironment {}
@@ -147,6 +149,8 @@ void main() {
       overrides: [
         nasabahApprovalProvider.overrideWith(() => approval),
         authenticationProvider.overrideWith(() => auth),
+        // The shell watches the profile for its logo; no data source here.
+        profileProvider.overrideWith(SilentProfileNotifier.new),
         riwayatHistoryProvider.overrideWith(
           () => RiwayatHistoryNotifier(
             GetRiwayatHistoryUseCase(di<RiwayatRepository>()),

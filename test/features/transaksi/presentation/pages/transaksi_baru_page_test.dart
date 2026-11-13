@@ -1,12 +1,14 @@
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
@@ -16,6 +18,7 @@ import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remot
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_form_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart';
@@ -26,6 +29,7 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../support/dashboard_support.dart';
+import '../../../../support/fake_analytics_client.dart';
 import '../../../../support/harga_support.dart';
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pencairan_support.dart';
@@ -111,7 +115,9 @@ void main() {
 
   /// Opens the real page with its controllers, over the stubbed API.
   Future<GoRouter> open(WidgetTester tester,
-      {Size window = const Size(800, 2600), bool closeTutorial = true}) async {
+      {Size window = const Size(800, 2600),
+      bool closeTutorial = true,
+      FakeAnalyticsClient? analytics}) async {
     final harga = buildHargaNotifier(api);
     final profile = buildProfileNotifier(api);
     final transaksi = buildTransaksiNotifier(api);
@@ -136,6 +142,8 @@ void main() {
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => recent),
           profileProvider.overrideWith(() => profile),
+          if (analytics != null)
+            analyticsClientProvider.overrideWithValue(analytics),
         ],
         child: withTransaksiProviders(
           child: app,
@@ -221,8 +229,9 @@ void main() {
 
     expect(find.text('Pilih nasabah'), findsOneWidget);
     expect(
-      find.text('Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
-          'ketuk lagi nama nasabah yang tampil.'),
+      find.text(wrapTutorialText(
+          'Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+          'ketuk lagi nama nasabah yang tampil.')),
       findsOneWidget,
     );
     expect(find.text('Budi Santoso'), findsOneWidget);
@@ -256,8 +265,9 @@ void main() {
       expect(find.text(title), findsOneWidget);
       if (title == 'Atur item setoran') {
         expect(
-          find.text('Setelah menambah item, pilih jenis sampah dan isi berat '
-              '(kg). Harga/kg dan subtotal dihitung otomatis.'),
+          find.text(wrapTutorialText(
+              'Setelah menambah item, pilih jenis sampah dan isi berat (kg). '
+              'Harga/kg dan subtotal dihitung otomatis.')),
           findsOneWidget,
         );
       }
@@ -287,8 +297,9 @@ void main() {
 
     expect(find.text('Atur item setoran'), findsOneWidget);
     expect(
-      find.text('Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
-          'otomatis; tekan × untuk menghapus item.'),
+      find.text(wrapTutorialText(
+          'Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+          'otomatis; tekan × untuk menghapus item.')),
       findsOneWidget,
     );
     expect(
@@ -328,6 +339,17 @@ void main() {
     expect(find.text('Transaksi Baru'), findsOneWidget);
     expect(find.text('Belum Ada Item Setoran'), findsOneWidget);
     expect(find.text('0 item'), findsOneWidget);
+  });
+
+  testWidgets('marks the customer and the item list as required fields',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(find.bySemanticsLabel('PILIH NASABAH, wajib diisi'), findsOneWidget);
+    expect(
+        find.bySemanticsLabel('DAFTAR SETORAN, wajib diisi'), findsOneWidget);
+    handle.dispose();
   });
 
   testWidgets('submitting an empty form flags the customer and the items',
@@ -532,6 +554,121 @@ void main() {
     expect(find.text('Rp 5.000'), findsWidgets);
   });
 
+  group('jenis picker', () {
+    Future<void> openPicker(WidgetTester tester) async {
+      await open(tester);
+      await tester.ensureVisible(find.text('Tambah Item Setoran'));
+      await tester.tap(find.text('Tambah Item Setoran'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pilih Jenis').last);
+      await tester.pumpAndSettle();
+    }
+
+    List<String> order(WidgetTester tester) => ['Botol PET', 'Kardus'].toList()
+      ..sort((a, b) => tester
+          .getTopLeft(find.text(a).last)
+          .dy
+          .compareTo(tester.getTopLeft(find.text(b).last).dy));
+
+    testWidgets('searching narrows the list and can be reset', (tester) async {
+      await openPicker(tester);
+
+      await tester.enterText(find.byKey(const Key('cari-jenis-sampah')), 'zzz');
+      await tester.pumpAndSettle();
+      expect(find.text('Jenis sampah tidak ditemukan.'), findsOneWidget);
+
+      await tester.tap(find.text('Reset filter'));
+      await tester.pumpAndSettle();
+      expect(find.text('Botol PET'), findsOneWidget);
+      expect(find.text('Kardus'), findsOneWidget);
+    });
+
+    testWidgets('unticking a category filters the list', (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('kategori-plastik')).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Kertas'), findsWidgets, reason: 'the chip names it');
+
+      expect(find.text('Kardus'), findsOneWidget);
+      expect(find.text('Botol PET'), findsNothing);
+    });
+
+    testWidgets('with no category ticked it says so and offers all of them',
+        (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('kategori-semua')).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tidak ada kategori'), findsOneWidget);
+      expect(find.text('Tidak ada kategori yang dipilih.'), findsOneWidget);
+      expect(find.text('Botol PET'), findsNothing);
+      expect(find.text('Jenis sampah tidak ditemukan.'), findsNothing,
+          reason: 'not a failed search');
+
+      // The menu is still open; a tap outside only closes it.
+      await tester.tap(find.byKey(const Key('filter-kategori')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('pilih-semua-kategori')));
+      await tester.pumpAndSettle();
+      expect(find.text('Botol PET'), findsOneWidget);
+      expect(find.text('Kardus'), findsOneWidget);
+    });
+
+    testWidgets('a jenis already chosen on the row is ticked when it reopens',
+        (tester) async {
+      await open(tester);
+      await addItem(tester, 'Botol PET');
+
+      await tester.tap(find.byKey(const Key('pilih-jenis-sampah')).first);
+      await tester.pumpAndSettle();
+
+      Finder tick(String id) => find.descendant(
+          of: find.byKey(Key('jenis-sampah-$id')),
+          matching: find.byIcon(Icons.check));
+      expect(tick('j1'), findsOneWidget);
+      expect(tick('j2'), findsNothing);
+    });
+
+    testWidgets('an empty catalog says there is nothing to pick yet',
+        (tester) async {
+      api.on('GET', '/api/v1/jenis-sampah', json: {'results': []});
+
+      await openPicker(tester);
+
+      expect(find.text('Belum ada jenis sampah aktif.'), findsOneWidget);
+    });
+
+    testWidgets('a catalog that failed to load says why', (tester) async {
+      api.fail('GET', '/api/v1/jenis-sampah', DioExceptionType.receiveTimeout);
+
+      await openPicker(tester);
+
+      expect(find.text('Receive Timeout'), findsOneWidget);
+      expect(find.text('Belum ada jenis sampah aktif.'), findsNothing);
+    });
+
+    testWidgets('sorting by price flips with a second tap', (tester) async {
+      await openPicker(tester);
+      expect(order(tester), ['Botol PET', 'Kardus'], reason: 'A-Z by default');
+
+      await tester.tap(find.byKey(const Key('urutkan-jenis-sampah')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('urut-jenis-sampah-harga')));
+      await tester.pumpAndSettle();
+      expect(order(tester), ['Kardus', 'Botol PET'], reason: 'cheapest first');
+
+      await tester.tap(find.byKey(const Key('urut-jenis-sampah-harga')));
+      await tester.pumpAndSettle();
+      expect(order(tester), ['Botol PET', 'Kardus'], reason: 'dearest first');
+    });
+  });
+
   testWidgets('the same jenis cannot be added twice', (tester) async {
     await open(tester);
     await addItem(tester, 'Botol PET');
@@ -587,6 +724,226 @@ void main() {
     await settleToasts(tester);
   });
 
+  testWidgets('a saved transaksi is reported to analytics by its item count',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester, analytics: analytics);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+
+    await save(tester);
+
+    final saved =
+        analytics.events.singleWhere((e) => e.name == 'setoran_disimpan');
+    expect(saved.properties['jumlah_item'], 1);
+  });
+
+  testWidgets('a transaksi the server refuses is not reported as saved',
+      (tester) async {
+    final analytics = FakeAnalyticsClient();
+    api.on('POST', '/api/v1/transaksi', status: 500, json: {'detail': 'x'});
+    await open(tester, analytics: analytics);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+
+    await save(tester);
+
+    expect(analytics.events.map((e) => e.name),
+        isNot(contains('setoran_disimpan')));
+    await settleToasts(tester);
+  });
+
+  group('the events of a setoran', () {
+    List<String> names(FakeAnalyticsClient a) =>
+        a.events.map((e) => e.name).toList();
+
+    testWidgets('opening the form starts a flow', (tester) async {
+      final analytics = FakeAnalyticsClient();
+
+      await open(tester, analytics: analytics);
+
+      expect(names(analytics), ['setoran_dimulai']);
+      expect(analytics.events.single.properties['alur_id'], isNotEmpty);
+    });
+
+    testWidgets('saving walks the funnel, all under one flow id',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 201, json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      await save(tester);
+
+      expect(names(analytics), [
+        'setoran_dimulai',
+        'setoran_nasabah_dipilih',
+        'setoran_item_diisi',
+        'setoran_simpan_ditekan',
+        'setoran_disimpan',
+      ]);
+      expect(analytics.events.map((e) => e.properties['alur_id']).toSet(),
+          hasLength(1));
+      final saved = analytics.events.last.properties;
+      expect(saved['jumlah_item'], 1);
+      expect(saved['jumlah_jenis_berbeda'], 1);
+      expect(saved['berat_total_kg'], 1.0);
+      expect(saved['percobaan_ke'], 1);
+      // Nobody and nothing worth money is named.
+      expect(
+          saved.values.whereType<String>(), isNot(contains(contains('Budi'))));
+    });
+
+    testWidgets('each item that gets filled is reported once, in order',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+
+      await addItem(tester, 'Botol PET');
+      await addItem(tester, 'Kardus');
+      // Editing the weight of a counted item is not a new item.
+      await tester.enterText(find.byType(TextFormField).first, '3');
+      await tester.pumpAndSettle();
+
+      final filled = analytics.events
+          .where((e) => e.name == 'setoran_item_diisi')
+          .toList();
+      expect(filled.map((e) => e.properties['item_ke']), [1, 2]);
+      expect(filled.first.properties.keys.toSet(), {'alur_id', 'item_ke'});
+    });
+
+    testWidgets('an item card that has no jenis yet is not reported',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+
+      await tester.ensureVisible(find.text('Tambah Item Setoran'));
+      await tester.tap(find.text('Tambah Item Setoran'));
+      await tester.pumpAndSettle();
+
+      expect(names(analytics), isNot(contains('setoran_item_diisi')));
+    });
+
+    testWidgets(
+        'an empty form is refused with the fixed names of what is missing',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+
+      await save(tester);
+
+      expect(names(analytics),
+          ['setoran_dimulai', 'setoran_simpan_ditekan', 'validasi_gagal']);
+      final refused = analytics.events.last.properties;
+      expect(refused['tugas'], 'setoran');
+      expect(refused['masalah'], ['nasabah_belum_dipilih', 'belum_ada_item']);
+      await settleToasts(tester);
+    });
+
+    testWidgets('a failed save is not counted as saved', (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 500, json: {'detail': 'x'});
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      await save(tester);
+
+      expect(names(analytics).last, 'setoran_simpan_ditekan');
+      expect(names(analytics), isNot(contains('setoran_disimpan')));
+      await settleToasts(tester);
+    });
+
+    testWidgets('sending the WhatsApp message after saving is reported',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 201, json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await save(tester);
+
+      await tester.tap(find.text('Kirim WhatsApp'));
+      await pumpToast(tester);
+
+      final after = analytics.events
+          .singleWhere((e) => e.name == 'setoran_aksi_sesudah_simpan');
+      expect(after.properties['aksi'], 'kirim_wa');
+      expect(after.properties['berhasil'], isA<bool>());
+      expect(after.properties['template_wa_dipakai'], isA<bool>());
+      // Finishing after a save is not walking away from it.
+      expect(names(analytics), isNot(contains('setoran_dibatalkan')));
+      await settleToasts(tester);
+    });
+
+    testWidgets('finishing without sending the message is reported too',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      api.on('POST', '/api/v1/transaksi', status: 201, json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await save(tester);
+
+      await tester.tap(find.text('Selesai'));
+      await pumpToast(tester);
+
+      final after = analytics.events
+          .singleWhere((e) => e.name == 'setoran_aksi_sesudah_simpan');
+      expect(after.properties, {'aksi': 'selesai', 'alur_id': isA<String>()});
+      expect(names(analytics), isNot(contains('setoran_dibatalkan')));
+      await settleToasts(tester);
+    });
+
+    testWidgets('leaving before saving says how far the pengurus got',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+      await pickNasabah(tester);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(names(analytics).last, 'setoran_dibatalkan');
+      expect(analytics.events.last.properties['langkah_terakhir'], 'item');
+    });
+
+    testWidgets('leaving without choosing a nasabah is the first step',
+        (tester) async {
+      final analytics = FakeAnalyticsClient();
+      await open(tester, analytics: analytics);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(analytics.events.last.properties['langkah_terakhir'], 'nasabah');
+    });
+  });
+
   testWidgets('a saved transaksi opens the success sheet and WhatsApp draft',
       (tester) async {
     api.on('POST', '/api/v1/transaksi', status: 201, json: {
@@ -627,7 +984,7 @@ void main() {
           'the nasabah tab keeps its cached balance while this page is open',
     );
 
-    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+    await tester.tap(find.text('Kirim WhatsApp'));
     await pumpToast(tester);
 
     final launched = verify(() => launcher.launchUrl(captureAny(), any()))
@@ -637,6 +994,77 @@ void main() {
     expect(find.text('route:/'), findsOneWidget);
     expect(
         find.textContaining('Pesan WhatsApp sudah disiapkan'), findsOneWidget);
+    await settleToasts(tester);
+  });
+
+  testWidgets('finishing after a save leaves the form without opening WhatsApp',
+      (tester) async {
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+    await save(tester);
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
+
+    await tester.tap(find.text('Selesai'));
+    await pumpToast(tester);
+
+    verifyNever(() => launcher.launchUrl(any(), any()));
+    expect(find.byType(TransaksiBerhasilPanel), findsNothing);
+    expect(find.text('route:/'), findsOneWidget);
+    expect(find.textContaining('Transaksi disimpan'), findsOneWidget);
+    expect(find.textContaining('WhatsApp'), findsNothing);
+    await settleToasts(tester);
+  });
+
+  testWidgets('the success panel cannot be dismissed without choosing',
+      (tester) async {
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+    await save(tester);
+
+    await tester.tapAt(const Offset(2, 2));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
+  });
+
+  /// On a phone the success panel is a bottom sheet, and a sheet route pops on
+  /// Android back unless something intercepts it. Back would leave the pengurus
+  /// on a still-filled form whose idempotency key was already spent, one tap
+  /// from recording the same setoran twice.
+  testWidgets('on a phone the success panel survives the back button',
+      (tester) async {
+    api.on('POST', '/api/v1/transaksi', status: 201, json: {
+      'id': 't1',
+      'total_nilai': '5000',
+      'saldo_setelah_transaksi': '30000',
+      'items': [{}],
+    });
+    await open(tester, window: const Size(390, 2600));
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+    await save(tester);
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
     await settleToasts(tester);
   });
 
@@ -692,7 +1120,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.close).first);
       await finishSave(tester);
 
-      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await tester.tap(find.text('Kirim WhatsApp'));
       await pumpToast(tester);
 
       final launched = verify(() => launcher.launchUrl(captureAny(), any()))
@@ -891,7 +1319,7 @@ void main() {
         (tester) async {
       await saveSuccessfully(tester, const Size(1440, 1200));
 
-      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await tester.tap(find.text('Kirim WhatsApp'));
       await pumpToast(tester);
 
       final launched = verify(() => launcher.launchUrl(captureAny(), any()))
@@ -918,7 +1346,7 @@ void main() {
     await addItem(tester, 'Botol PET');
     await save(tester);
 
-    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+    await tester.tap(find.text('Kirim WhatsApp'));
     await pumpToast(tester);
 
     expect(find.textContaining('WhatsApp tidak dapat dibuka'), findsOneWidget);
@@ -940,7 +1368,7 @@ void main() {
     await addItem(tester, 'Botol PET');
     await save(tester);
 
-    await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+    await tester.tap(find.text('Kirim WhatsApp'));
     await pumpToast(tester);
 
     expect(find.textContaining('WhatsApp tidak dapat dibuka'), findsOneWidget);

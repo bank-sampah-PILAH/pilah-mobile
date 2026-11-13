@@ -6,6 +6,8 @@ abstract class TransaksiRemoteDataSource {
   Future<TransaksiCreated> addTransaksi(TransaksiRequest request);
   Future<TransaksiDetailEntity> getTransaksiDetail(String id);
   Future<TransaksiDetailEntity> editTransaksi(TransaksiEditRequest request);
+  Future<TransaksiDetailEntity> batalkanTransaksi(
+      TransaksiBatalRequest request);
   Future<TransaksiExport> exportTransaksi(TransaksiFilter filter);
 
   /// Resends the WhatsApp notification for a transaction. Returns the resulting

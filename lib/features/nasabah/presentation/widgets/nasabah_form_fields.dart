@@ -126,14 +126,17 @@ class NasabahNameField extends StatelessWidget {
 
   final TextEditingController controller;
 
+  /// What is wrong with [value], or null when it is fine.
+  static String? errorFor(String? value) =>
+      (value == null || value.trim().isEmpty) ? _wajibDiisi : null;
+
   @override
   Widget build(BuildContext context) {
     return NasabahFormField(
       label: 'NAMA LENGKAP',
       child: TextFormField(
         controller: controller,
-        validator: (value) =>
-            (value == null || value.trim().isEmpty) ? _wajibDiisi : null,
+        validator: errorFor,
         decoration: appInputDecoration(hintText: 'Contoh: Budi Santoso'),
       ),
     );
@@ -149,14 +152,15 @@ class NasabahIdField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
-    required this.validator,
+    // Kosong sejak server menomori ID otomatis untuk baris baru (UAT).
+    this.validator,
     this.onChanged,
     this.hasError = false,
   });
 
   final TextEditingController controller;
   final String hintText;
-  final FormFieldValidator<String> validator;
+  final FormFieldValidator<String>? validator;
   final VoidCallback? onChanged;
   final bool hasError;
 
@@ -185,6 +189,10 @@ class NasabahGenderField extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
 
+  /// What is wrong with [value], or null when it is fine.
+  static String? errorFor(String? value) =>
+      (value == null || value.isEmpty) ? 'Pilih jenis kelamin.' : null;
+
   @override
   Widget build(BuildContext context) {
     return NasabahFormField(
@@ -193,8 +201,7 @@ class NasabahGenderField extends StatelessWidget {
       child: DropdownButtonFormField<String>(
         borderRadius: BorderRadius.circular(AppRadius.md),
         initialValue: value,
-        validator: (value) =>
-            (value == null || value.isEmpty) ? 'Pilih jenis kelamin.' : null,
+        validator: errorFor,
         hint: const Text('— Pilih —'),
         decoration: appInputDecoration(),
         icon: const Icon(Icons.arrow_drop_down, color: AppColors.grey100),
@@ -228,6 +235,14 @@ class NasabahEmailField extends StatelessWidget {
 
   static final _format = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
+  /// What is wrong with [value], or null when it is fine. [serverError] is an
+  /// error the backend gave for it that has not been edited away yet.
+  static String? errorFor(String? value, [String? serverError]) {
+    if (value == null || value.trim().isEmpty) return 'Email wajib diisi.';
+    if (!_format.hasMatch(value.trim())) return 'Format email tidak valid.';
+    return serverError;
+  }
+
   @override
   Widget build(BuildContext context) {
     return NasabahFormField(
@@ -238,15 +253,7 @@ class NasabahEmailField extends StatelessWidget {
         keyboardType: TextInputType.emailAddress,
         autovalidateMode: AutovalidateMode.onUserInteraction,
         onChanged: (_) => onChanged?.call(),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Email wajib diisi.';
-          }
-          if (!_format.hasMatch(value.trim())) {
-            return 'Format email tidak valid.';
-          }
-          return serverError?.call();
-        },
+        validator: (value) => errorFor(value, serverError?.call()),
         decoration: appInputDecoration(hintText: 'Contoh: budi@gmail.com'),
       ),
     );
@@ -272,32 +279,57 @@ Future<void> pickNasabahBirthDate(
 }
 
 /// The date of birth, picked with [onTap] rather than typed.
+/// The birth date of a nasabah. Optional since PIL-478.
+///
+/// UAT found the date neither much needed nor comfortable to ask for, so the
+/// field carries no validator and no `*`, and says `(opsional)` in its hint
+/// the way `DESIGN.md` asks an optional field to.
+///
+/// The box is read-only and opens a date picker, which leaves no way to take
+/// a date back once given. [onClear] is that way out: the clear button
+/// appears only while there is something to clear, so a nasabah who would
+/// rather not have the date on file can have it removed.
 class NasabahBirthDateField extends StatelessWidget {
   const NasabahBirthDateField({
     super.key,
     required this.controller,
     required this.onTap,
+    this.onClear,
   });
 
   final TextEditingController controller;
   final VoidCallback onTap;
 
+  /// Empties the field. Without it the box only ever gains a date.
+  final VoidCallback? onClear;
+
   @override
   Widget build(BuildContext context) {
     return NasabahFormField(
       label: 'TANGGAL LAHIR',
-      child: TextFormField(
-        controller: controller,
-        readOnly: true,
-        onTap: onTap,
-        validator: (value) =>
-            (value == null || value.trim().isEmpty) ? _wajibDiisi : null,
-        decoration: appInputDecoration(
-          hintText: 'dd/mm/yyyy',
-          suffixIcon: const Icon(
-            Icons.calendar_today,
-            color: AppColors.grey100,
-            size: 20,
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) => TextFormField(
+          controller: controller,
+          readOnly: true,
+          onTap: onTap,
+          decoration: appInputDecoration(
+            hintText: 'dd/mm/yyyy (opsional)',
+            suffixIcon: (onClear != null && value.text.trim().isNotEmpty)
+                ? IconButton(
+                    tooltip: 'Hapus tanggal lahir',
+                    onPressed: onClear,
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.grey100,
+                      size: 20,
+                    ),
+                  )
+                : const Icon(
+                    Icons.calendar_today,
+                    color: AppColors.grey100,
+                    size: 20,
+                  ),
           ),
         ),
       ),
@@ -322,6 +354,18 @@ class NasabahPhoneField extends StatelessWidget {
 
   static final _format = RegExp(r'^8[1-9][0-9]{7,11}$');
 
+  /// What is wrong with [value], or null when it is fine. [serverError] is an
+  /// error the backend gave for it that has not been edited away yet.
+  static String? errorFor(String? value, [String? serverError]) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Nomor WhatsApp wajib diisi.';
+    }
+    if (!_format.hasMatch(value)) {
+      return 'Format nomor tidak valid. Mulai dengan angka 8';
+    }
+    return serverError;
+  }
+
   @override
   Widget build(BuildContext context) {
     return NasabahFormField(
@@ -332,15 +376,7 @@ class NasabahPhoneField extends StatelessWidget {
         autovalidateMode: AutovalidateMode.onUserInteraction,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         onChanged: (_) => onChanged?.call(),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Nomor WhatsApp wajib diisi.';
-          }
-          if (!_format.hasMatch(value)) {
-            return 'Format nomor tidak valid. Mulai dengan angka 8';
-          }
-          return serverError?.call();
-        },
+        validator: (value) => errorFor(value, serverError?.call()),
         decoration: appInputDecoration(
           hintText: '812-3456-7890',
           prefixIcon: const PhonePrefix(),

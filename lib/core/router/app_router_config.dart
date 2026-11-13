@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/core/router/locked_routes.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
@@ -29,8 +30,8 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
-import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pengumuman_routes.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
@@ -39,14 +40,12 @@ import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.da
 import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
 import 'package:pilah_mobile/features/legal/presentation/pages/legal_document_page.dart';
 import 'package:pilah_mobile/features/legal/presentation/pages/legal_information_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/draft_pencairan_routes.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
@@ -190,59 +189,30 @@ class AppRouterConfig {
         name: TransaksiBaruPage.route,
         builder: (context, state) => const TransaksiBaruPage(),
       ),
-      GoRoute(
-        path: DraftListPage.route,
-        name: DraftListPage.route,
-        builder: (context, state) => const DraftListPage(),
-      ),
-      GoRoute(
-        path: PilihNasabahPencairanPage.route,
-        name: PilihNasabahPencairanPage.route,
-        builder: (context, state) => const PilihNasabahPencairanPage(),
-      ),
-      GoRoute(
-        path: PengumumanPage.route,
-        name: PengumumanPage.route,
-        builder: (context, state) => PengumumanPage(
-          membershipId: state.uri.queryParameters['keanggotaan_id'],
-        ),
-      ),
-      GoRoute(
-        path: PengumumanDetailPage.route,
-        name: PengumumanDetailPage.route,
-        // Without the row (a stale link) there is nothing to show.
-        redirect: (context, state) =>
-            state.extra is PengumumanEntity ? null : PengumumanPage.route,
-        builder: (context, state) => PengumumanDetailPage(
-          pengumuman: state.extra! as PengumumanEntity,
-        ),
-      ),
-      GoRoute(
-        path: PengumumanFormPage.route,
-        name: PengumumanFormPage.route,
-        // Without args (a stale link, or a router restored on its own) there
-        // is nothing to edit, so fall back to the dashboard.
-        redirect: (context, state) =>
-            state.extra is PengumumanFormArgs ? null : AppLocations.dashboard,
-        builder: (context, state) =>
-            PengumumanFormPage(args: state.extra! as PengumumanFormArgs),
-      ),
-      GoRoute(
-        path: DraftEditorPage.route,
-        name: DraftEditorPage.route,
-        // The editor needs to know which draft. A saved draft is named by the
-        // link's ?id=, so a refreshed web tab reopens it; a new draft lives
-        // only in extra, and without either there is nothing to show.
-        redirect: (context, state) =>
-            DraftEditorArgs.fromRoute(state.extra, state.uri.queryParameters) ==
-                    null
-                ? DraftListPage.route
-                : null,
-        builder: (context, state) => DraftEditorPage(
-          args: DraftEditorArgs.fromRoute(
-              state.extra, state.uri.queryParameters)!,
-        ),
-      ),
+      // Panel setoran: route sendiri, bukan dialog yang dibuka pada navigator.
+      // Hanya route yang punya entri riwayat peramban, dan tanpa entri itu
+      // tombol kembali mem-pop halaman di belakang panel dan membuang isian
+      // yang belum tersimpan tanpa bertanya.
+      setoranSideSheetRoute(),
+      // Creating a pencairan is locked for handover (PIL-434), the same way
+      // and for the same reason as pengumuman below: the paths come from
+      // [draftPencairanRoutes], which keeps the routes as they were, the
+      // editor's guard included, compiled and tested but not registered.
+      // Re-enabling the flow is registering that list in place of this call -
+      // together with putting Pencairan back in transaksiPilihanTerbuka, the
+      // other half of the lock.
+      ...lockedRoutes(draftPencairanRoutes),
+      // Pengumuman is locked for handover (PIL-436); [lockedRoutes] carries
+      // why a lock is a redirect rather than a deletion. The paths come from
+      // [pengumumanRoutes] rather than being retyped here, so the locked set
+      // cannot drift from the real one: that list holds the routes as they
+      // were, guards included, compiled and tested but not registered.
+      // Re-enabling the feature is registering it in place of this call.
+      ...lockedRoutes(pengumumanRoutes),
+      // Kelola Pengumuman is not in that list because it was a shell branch,
+      // not a top-level route, so its lock is declared here on its own and
+      // restoring it means bringing the branch and its rail destination back.
+      lockedRoute(PengumumanKelolaPage.route),
       // Both pages take their pencairan as extra, which a refreshed web tab
       // or a pasted link doesn't carry; those go back to the laporan, where
       // the pencairan is picked from the activity list.
@@ -365,6 +335,7 @@ class AppRouterConfig {
           message:
               'Beranda Bank Sampah Induk sedang disiapkan. Data organisasi Anda sudah tersimpan.',
           registrationInProgress: false,
+          showNotificationHistory: true,
         ),
       ),
       StatefulShellRoute.indexedStack(
@@ -468,15 +439,6 @@ class AppRouterConfig {
                 path: ProfilePage.route,
                 name: ProfilePage.route,
                 builder: (_, __) => const ProfilePage()),
-          ]),
-          // Kelola Pengumuman: destinasi rail dan drawer staff (branch 8). Di
-          // aplikasi dibuka dari Profil.
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: PengumumanKelolaPage.route,
-              name: PengumumanKelolaPage.route,
-              builder: (context, state) => const PengumumanKelolaPage(),
-            ),
           ]),
         ],
       ),

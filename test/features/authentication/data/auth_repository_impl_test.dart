@@ -181,4 +181,29 @@ void main() {
       verifyNever(() => local.saveToken(any()));
     });
   });
+
+  group('discardRegistration', () {
+    test('clears the persisted session after a successful delete', () async {
+      when(() => remote.discardRegistration()).thenAnswer((_) async {});
+      when(() => local.clearToken()).thenAnswer((_) async {});
+
+      expect((await repo.discardRegistration()).isRight(), isTrue);
+      verify(() => local.clearToken()).called(1);
+    });
+
+    test('surfaces an Error as a Left instead of throwing', () async {
+      // The remote source may fail outside Dio's exception wrapping (a decode
+      // Error on an unexpected reply shape) — an Error, not an Exception.
+      when(() => remote.discardRegistration())
+          .thenThrow(ArgumentError('unexpected reply shape'));
+      when(() => local.clearToken()).thenAnswer((_) async {});
+
+      final result = await repo.discardRegistration();
+
+      expect(result.isLeft(), isTrue);
+      // A refusal still ends the session in the notifier, so the token must
+      // not survive to restore it on the next cold start.
+      verify(() => local.clearToken()).called(1);
+    });
+  });
 }

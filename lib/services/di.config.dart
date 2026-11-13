@@ -15,6 +15,9 @@ import 'package:image_cropper/image_cropper.dart' as _i183;
 import 'package:image_picker/image_picker.dart' as _i183;
 import 'package:injectable/injectable.dart' as _i526;
 
+import '../core/analytics/analytics_client.dart' as _i986;
+import '../core/analytics/analytics_consent_store.dart' as _i357;
+import '../core/analytics/analytics_module.dart' as _i940;
 import '../core/client/app_environment.dart' as _i119;
 import '../core/client/network_service.dart' as _i941;
 import '../core/client/network_utils.dart' as _i936;
@@ -171,6 +174,8 @@ import '../features/transaksi/domain/repositories/transaksi_repository.dart'
     as _i1031;
 import '../features/transaksi/domain/use_cases/add_transaksi_usecase.dart'
     as _i839;
+import '../features/transaksi/domain/use_cases/batalkan_transaksi_usecase.dart'
+    as _i818;
 import '../features/transaksi/domain/use_cases/edit_transaksi_usecase.dart'
     as _i526;
 import '../features/transaksi/domain/use_cases/export_transaksi_usecase.dart'
@@ -197,8 +202,11 @@ extension GetItInjectableX on _i174.GetIt {
       environment,
       environmentFilter,
     );
+    final analyticsModule = _$AnalyticsModule();
     final imagePickerModule = _$ImagePickerModule();
     final storageModule = _$StorageModule();
+    gh.lazySingleton<_i986.AnalyticsClient>(
+        () => analyticsModule.analyticsClient());
     gh.lazySingleton<_i183.ImagePicker>(() => imagePickerModule.imagePicker);
     gh.lazySingleton<_i183.ImageCropper>(() => imagePickerModule.imageCropper);
     gh.lazySingleton<_i901.InviteTokenStore>(() => _i901.InviteTokenStore());
@@ -216,6 +224,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i124.SecureDatabase>(
         () => const _i124.SecureDatabaseImpl());
+    gh.lazySingleton<_i357.AnalyticsConsentStore>(() =>
+        analyticsModule.analyticsConsentStore(
+            gh<_i812.AppStorage>(instanceName: 'shared_preferences')));
     gh.lazySingleton<_i936.NetworkUtils>(
         () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
     gh.factory<_i119.AppEnvironment>(
@@ -342,6 +353,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i839.AddTransaksiUseCase>(
         () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i818.BatalkanTransaksiUseCase>(
+        () => _i818.BatalkanTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i526.EditTransaksiUseCase>(
         () => _i526.EditTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i67.ExportTransaksiUseCase>(
@@ -373,6 +386,8 @@ extension GetItInjectableX on _i174.GetIt {
     return this;
   }
 }
+
+class _$AnalyticsModule extends _i940.AnalyticsModule {}
 
 class _$ImagePickerModule extends _i189.ImagePickerModule {}
 

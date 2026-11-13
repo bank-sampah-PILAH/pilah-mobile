@@ -134,6 +134,53 @@ void main() {
 
       expect(find.byType(Text), findsOneWidget);
     });
+
+    testWidgets('drops the star when the field is not required',
+        (tester) async {
+      await _pump(
+        tester,
+        const OnboardingFormField(
+          label: 'TANGGAL LAHIR',
+          isRequired: false,
+          child: TextField(key: Key('field')),
+        ),
+      );
+
+      expect(
+        find.textContaining('TANGGAL LAHIR', findRichText: true),
+        findsOneWidget,
+      );
+      // The form's own line reads "Semua kolom bertanda * wajib diisi.", so a
+      // star here would tell the user the opposite of the truth (PIL-478).
+      expect(find.textContaining('*', findRichText: true), findsNothing);
+    });
+
+    testWidgets('tells a screen reader whether the field is required',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        const Column(
+          children: [
+            OnboardingFormField(
+              label: 'NAMA LENGKAP',
+              child: TextField(key: Key('wajib')),
+            ),
+            OnboardingFormField(
+              label: 'TANGGAL LAHIR',
+              isRequired: false,
+              child: TextField(key: Key('opsional')),
+            ),
+          ],
+        ),
+      );
+
+      expect(
+          find.bySemanticsLabel('NAMA LENGKAP, wajib diisi'), findsOneWidget);
+      expect(find.bySemanticsLabel('TANGGAL LAHIR, opsional'), findsOneWidget);
+      expect(find.bySemanticsLabel('TANGGAL LAHIR, wajib diisi'), findsNothing);
+      handle.dispose();
+    });
   });
 
   group('OnboardingFormCard', () {

@@ -9,8 +9,11 @@ class CompleteProfileRequest {
   /// Backend enum value: `laki-laki` or `perempuan`.
   final String jenisKelamin;
 
-  /// ISO date, `yyyy-MM-dd`.
-  final String tanggalLahir;
+  /// ISO date, `yyyy-MM-dd`, or null when it was not given.
+  ///
+  /// Optional for a nasabah since PIL-478. A pengelola still gives one,
+  /// because their profile has to be complete before a bank registration.
+  final String? tanggalLahir;
 
   /// Local number digits (e.g. `81234567890`); the backend normalizes it.
   final String noHp;
@@ -22,7 +25,7 @@ class CompleteProfileRequest {
   const CompleteProfileRequest({
     required this.nama,
     required this.jenisKelamin,
-    required this.tanggalLahir,
+    this.tanggalLahir,
     required this.noHp,
     this.alamat = '',
   });
@@ -30,7 +33,8 @@ class CompleteProfileRequest {
   Map<String, dynamic> toJson() => {
         'nama': nama,
         'jenis_kelamin': jenisKelamin,
-        'tanggal_lahir': tanggalLahir,
+        'tanggal_lahir':
+            (tanggalLahir?.trim().isEmpty ?? true) ? null : tanggalLahir,
         'no_hp': noHp,
         if (alamat.trim().isNotEmpty) 'alamat': alamat,
       };

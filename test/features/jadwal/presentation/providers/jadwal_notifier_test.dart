@@ -454,6 +454,29 @@ void main() {
     verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
   });
 
+  test(
+      'says whether a status change can start, so a skipped one is not taken for done',
+      () async {
+    final existing = _existingSchedule();
+    final transitionResult =
+        Completer<Either<NetworkException, JadwalEntity>>();
+    when(() => repository.getJadwal(page: 1, date: null))
+        .thenAnswer((_) async => Right(_page([existing])));
+    when(() => repository.transition('schedule-1', 'terbitkan'))
+        .thenAnswer((_) => transitionResult.future);
+    final cubit = createNotifier(repository);
+
+    await cubit.loadJadwal();
+    expect(cubit.canChangeStatus, isTrue);
+    final first = cubit.changeStatus('schedule-1', 'terbitkan');
+    await Future<void>.delayed(Duration.zero);
+    expect(cubit.canChangeStatus, isFalse);
+    transitionResult.complete(Right(existing));
+    await first;
+
+    expect(cubit.canChangeStatus, isTrue);
+  });
+
   test('keeps status transitions locked during a list refresh', () async {
     final existing = _existingSchedule();
     final transitionResult =

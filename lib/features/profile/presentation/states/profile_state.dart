@@ -10,6 +10,10 @@ class ProfileState extends Equatable {
   final BankSampahProfile? bankSampah;
   final WaTemplate? waTemplate;
   final List<TeamMember> team;
+  final TeamInvite? invite;
+  final String? inviteError;
+  final bool isLoadingInvite;
+  final bool isCreatingInvite;
   final String? error;
   final bool isSavingTemplate;
 
@@ -22,6 +26,10 @@ class ProfileState extends Equatable {
     this.bankSampah,
     this.waTemplate,
     this.team = const [],
+    this.invite,
+    this.inviteError,
+    this.isLoadingInvite = false,
+    this.isCreatingInvite = false,
     this.error,
     this.isSavingTemplate = false,
     this.selectedLogoBytes,
@@ -35,6 +43,11 @@ class ProfileState extends Equatable {
     BankSampahProfile? bankSampah,
     WaTemplate? waTemplate,
     List<TeamMember>? team,
+    TeamInvite? invite,
+    String? inviteError,
+    bool clearInviteError = false,
+    bool? isLoadingInvite,
+    bool? isCreatingInvite,
     String? error,
     bool? isSavingTemplate,
     Uint8List? selectedLogoBytes,
@@ -46,6 +59,10 @@ class ProfileState extends Equatable {
       bankSampah: bankSampah ?? this.bankSampah,
       waTemplate: waTemplate ?? this.waTemplate,
       team: team ?? this.team,
+      invite: invite ?? this.invite,
+      inviteError: clearInviteError ? null : (inviteError ?? this.inviteError),
+      isLoadingInvite: isLoadingInvite ?? this.isLoadingInvite,
+      isCreatingInvite: isCreatingInvite ?? this.isCreatingInvite,
       error: error ?? this.error,
       isSavingTemplate: isSavingTemplate ?? this.isSavingTemplate,
       selectedLogoBytes: clearSelectedLogo
@@ -63,6 +80,10 @@ class ProfileState extends Equatable {
         bankSampah,
         waTemplate,
         team,
+        invite,
+        inviteError,
+        isLoadingInvite,
+        isCreatingInvite,
         error,
         isSavingTemplate,
         selectedLogoBytes,

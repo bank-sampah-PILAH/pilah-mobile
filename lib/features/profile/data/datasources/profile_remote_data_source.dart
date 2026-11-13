@@ -25,7 +25,8 @@ abstract class ProfileRemoteDataSource {
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
   Future<List<TeamMember>> getTeam();
-  Future<String> generateInviteUrl();
+  Future<TeamInvite?> getTeamInvite();
+  Future<TeamInvite> createTeamInvite();
 }
 
 @LazySingleton(as: ProfileRemoteDataSource)
@@ -135,10 +136,27 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   }
 
   @override
-  Future<String> generateInviteUrl() async {
+  Future<TeamInvite?> getTeamInvite() async {
+    final response = await networkService.get(Endpoints.teamInvite);
+    final json = response.data as Map<String, dynamic>;
+    final invite = _mapTeamInvite(json);
+    return invite.token == null &&
+            invite.url == null &&
+            invite.expiresAt == null
+        ? null
+        : invite;
+  }
+
+  @override
+  Future<TeamInvite> createTeamInvite() async {
     final response =
         await networkService.post(Endpoints.teamInvite, data: const {});
-    final json = response.data as Map<String, dynamic>;
-    return json['invite_url']?.toString() ?? '';
+    return _mapTeamInvite(response.data as Map<String, dynamic>);
   }
+
+  TeamInvite _mapTeamInvite(Map<String, dynamic> json) => TeamInvite(
+        token: json['token']?.toString(),
+        url: json['invite_url']?.toString(),
+        expiresAt: DateTime.tryParse(json['expires_at']?.toString() ?? ''),
+      );
 }

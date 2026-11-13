@@ -53,12 +53,10 @@ class RoleNavigationDrawer extends StatelessWidget {
             key: destinationKey(index),
             destination: destinations[index],
             selected: navigation.currentIndex == index,
-            onTap: destinations[index].disabled
-                ? null
-                : () {
-                    Navigator.maybeOf(context)?.maybePop();
-                    navigation.onSelected(index);
-                  },
+            onTap: () {
+              Navigator.maybeOf(context)?.maybePop();
+              navigation.onSelected(index);
+            },
           ),
     ];
   }
@@ -85,6 +83,7 @@ class RoleNavigationDrawer extends StatelessWidget {
             _BankHeader(
               label: BankSampahLabel.of(navigation.bankSampahNama),
               initials: BankSampahLabel.initialsOf(navigation.bankSampahNama),
+              logoUrl: navigation.bankSampahLogoUrl,
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
@@ -167,10 +166,17 @@ class _BrandHeader extends StatelessWidget {
 }
 
 class _BankHeader extends StatelessWidget {
-  const _BankHeader({required this.label, required this.initials});
+  const _BankHeader({
+    required this.label,
+    required this.initials,
+    this.logoUrl,
+  });
 
   final String label;
   final String initials;
+
+  /// Logo tersimpan bank sampah; null/kosong menggambar inisial.
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -180,6 +186,11 @@ class _BankHeader extends StatelessWidget {
             CircleAvatar(
               radius: 18,
               backgroundColor: AppColors.greenDark,
+              foregroundImage: (logoUrl?.isNotEmpty ?? false)
+                  ? NetworkImage(logoUrl!)
+                  : null,
+              onForegroundImageError:
+                  (logoUrl?.isNotEmpty ?? false) ? (_, __) {} : null,
               child: Text(
                 initials,
                 style: AppTextStyle.extraSmall.copyWith(
@@ -213,14 +224,13 @@ class _Destination extends StatelessWidget {
 
   final RoleDestination destination;
   final bool selected;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Semantics(
           button: true,
-          enabled: onTap != null,
           selected: selected,
           label: destination.label,
           excludeSemantics: true,
@@ -236,30 +246,20 @@ class _Destination extends StatelessWidget {
                     height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: selected && onTap != null
-                          ? AppColors.greenLight
-                          : null,
+                      color: selected ? AppColors.greenLight : null,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Icon(
                       destination.icon,
-                      color: onTap == null
-                          ? AppColors.grey100
-                          : selected
-                              ? AppColors.greenDark
-                              : AppColors.inkSoft,
+                      color: selected ? AppColors.greenDark : AppColors.inkSoft,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     destination.label,
                     style: AppTextStyle.small.copyWith(
-                      color: onTap == null
-                          ? AppColors.grey100
-                          : selected
-                              ? AppColors.greenDark
-                              : AppColors.inkSoft,
-                      fontWeight: selected && onTap != null
+                      color: selected ? AppColors.greenDark : AppColors.inkSoft,
+                      fontWeight: selected
                           ? AppFontWeight.semibold
                           : AppFontWeight.medium,
                     ),

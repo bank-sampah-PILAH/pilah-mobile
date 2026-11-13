@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/core/analytics/search_analytics.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/riwayat_analytics.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../domain/entities/aktivitas_entity.dart';
 import '../../domain/entities/transaksi_filter.dart';
@@ -19,7 +22,13 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
   RiwayatAktivitasNotifier(this._getAktivitas, this._export);
 
   @override
-  RiwayatAktivitasState build() => const RiwayatAktivitasState();
+  RiwayatAktivitasState build() {
+    ref.onDispose(_search.closed);
+    return const RiwayatAktivitasState();
+  }
+
+  late final SearchAnalytics _search =
+      SearchAnalytics(ref.read(analyticsClientProvider), area: 'riwayat');
   final GetAktivitasUseCase _getAktivitas;
   final ExportTransaksiUseCase _export;
   int _generation = 0;
@@ -70,6 +79,7 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
             pageSize: _pageSize ?? 20,
             totalCount: page.totalCount,
             hasNext: page.hasNext);
+        _search.resultsSettled(query: state.search, count: page.totalCount);
       },
     );
   }
@@ -148,10 +158,15 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
     return '${item.tipe.name}:$id';
   }
 
+  void _filterChanged(RiwayatFilterKind kind, {String? value}) =>
+      riwayatFilterChanged(ref.read(analyticsClientProvider), kind,
+          value: value);
+
   void setPeriode(String periode) {
     if (state.periode == periode && state.dariTanggal == null) return;
     state = RiwayatAktivitasState(
         periode: periode, tipeFilter: state.tipeFilter, search: state.search);
+    _filterChanged(RiwayatFilterKind.periode, value: periode);
     load();
   }
 
@@ -162,24 +177,42 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
         sampaiTanggal: end,
         tipeFilter: state.tipeFilter,
         search: state.search);
+    _filterChanged(RiwayatFilterKind.periode, value: 'kustom');
     load();
   }
 
   void setTipeFilter(AktivitasTipeFilter tipe) {
     if (state.tipeFilter == tipe) return;
     state = state.copyWith(tipeFilter: tipe, items: []);
+    _filterChanged(RiwayatFilterKind.tipe, value: tipe.name);
     load();
   }
 
   void search(String query) {
     if (state.search == query.trim()) return;
     state = state.copyWith(search: query.trim(), items: []);
+    _search.queryChanged(state.search);
     load();
   }
+
+  /// A row of the report was opened. When the report is showing a search, that
+  /// is the row it led to, and its position in the results is reported.
+  void rowOpened(ActivitasEntity item) {
+    final key = _key(item);
+    final index = state.items.indexWhere((other) => _key(other) == key);
+    if (index >= 0) _search.picked(position: index + 1);
+  }
+
+  /// The pengurus left the report while it was showing a search. The report
+  /// itself stays alive in the shell, so only this ends the search, and the
+  /// next words typed start a new one.
+  void searchLeft() => _search.closed();
 
   /// Kembali ke periode, tipe, dan pencarian bawaan, lalu memuat ulang.
   void resetFilters() {
     state = const RiwayatAktivitasState();
+    _search.queryChanged('');
+    _filterChanged(RiwayatFilterKind.reset);
     load();
   }
 
@@ -192,6 +225,7 @@ class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
   }
 
   void reset() {
+    _search.closed();
     _generation++;
     _page = 0;
     _pageSize = null;
