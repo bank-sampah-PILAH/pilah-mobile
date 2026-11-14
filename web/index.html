@@ -28,6 +28,20 @@
       });
     }
   </script>
+  <script>
+    // PostHog replay reads the canvas between frames. WebKit draws on an on-screen
+    // WebGL canvas whose buffer is cleared after each frame unless it is preserved,
+    // so iOS Safari replays come out blank. Must run before Flutter creates its canvas.
+    (() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (type, attrs) {
+        if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+          attrs = Object.assign({}, attrs, { preserveDrawingBuffer: true });
+        }
+        return original.call(this, type, attrs);
+      };
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
