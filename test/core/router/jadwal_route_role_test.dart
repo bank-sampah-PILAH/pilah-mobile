@@ -179,10 +179,13 @@ void main() {
     );
     expect(requestedDates.where((date) => date == nextDate), hasLength(1));
 
+    // Pick a day in nextDate's month that can never equal selectedDate
+    // (nextDate - 1 day) or nextDate: for day > 10 use the 5th (always
+    // below nextDate.day - 1), otherwise the 20th (always above it).
     final manualDate = DateTime(
       nextDate.year,
       nextDate.month,
-      nextDate.day == 15 ? 16 : 15,
+      nextDate.day > 10 ? 5 : 20,
     );
     await tester.tap(find.byKey(const ValueKey('jadwal-calendar-toggle')));
     await tester.pumpAndSettle();
