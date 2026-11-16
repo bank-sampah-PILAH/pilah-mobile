@@ -233,6 +233,25 @@ void main() {
       expect(pencairanOpened, isTrue);
     });
 
+    testWidgets('collapsed rail opens Setoran from the enabled chooser',
+        (tester) async {
+      var setoranOpened = false;
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(720, 900),
+        onAddTransaction: () => setoranOpened = true,
+        onPencairan: () {},
+      );
+
+      await tester.tap(find.byKey(RoleTransactionMenu.menuKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
+      await tester.pumpAndSettle();
+
+      expect(setoranOpened, isTrue);
+    });
+
     testWidgets('collapsed rail offers no Pencairan without its callback',
         (tester) async {
       await taps(

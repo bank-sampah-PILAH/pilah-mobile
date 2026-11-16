@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
@@ -95,6 +96,10 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
         builder: (_, __) => const Scaffold(body: Text('Form Setoran')),
       ),
       setoranSideSheetRoute(),
+      GoRoute(
+        path: DraftListPage.route,
+        builder: (_, __) => const Scaffold(body: Text('draft list route')),
+      ),
       GoRoute(
         path: '/approval-bank-sampah/detail',
         builder: (_, __) => const Text('application details'),
@@ -222,6 +227,26 @@ void main() {
           .selected,
       isFalse,
     );
+  });
+
+  testWidgets('Pengurus opens Pencairan from the web transaction menu',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await mount(
+      tester,
+      session('pengelola'),
+      isWebOverride: true,
+    );
+    expect(find.byType(NavigationRail), findsOneWidget);
+
+    await tester.tap(find.byKey(RoleTransactionMenu.pencairanKey));
+    await tester.pumpAndSettle();
+
+    expect(find.text('draft list route'), findsOneWidget);
   });
 
   testWidgets('loads membership status after an initial shell state',
