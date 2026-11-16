@@ -31,8 +31,6 @@ class RoleHandoffPage extends ConsumerWidget {
 
   static const registerNasabahRoute = '/register-nasabah';
   static const nasabahDashboardRoute = '/nasabah-dashboard';
-  static const registerIndukRoute = '/register-bank-sampah-induk';
-  static const indukDashboardRoute = '/pengelola-induk-dashboard';
 
   Future<void> _changeAccount(BuildContext context) async {
     try {

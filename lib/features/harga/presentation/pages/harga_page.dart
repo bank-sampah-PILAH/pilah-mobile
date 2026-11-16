@@ -16,7 +16,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
@@ -31,6 +30,8 @@ import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
+import 'package:pilah_mobile/features/harga/domain/models/jenis_sampah_query.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_filter_bar.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
@@ -276,12 +277,19 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
     final state = ref.watch(hargaProvider);
     final isActiveTab = state is HargaLoaded ? state.isActiveTab : true;
     final web = context.layoutBreakpoint != LayoutBreakpoint.compact;
-    final search = CustomSearchField(
-      hintText: 'Cari jenis sampah...',
-      onChanged: (value) {
-        ref.read(hargaProvider.notifier).searchHarga(value);
-        _searchChanged(value);
-      },
+    final loadedState = state is HargaLoaded ? state : null;
+    final query = loadedState?.query ?? const JenisSampahQuery();
+    final kategori = loadedState?.kategori ?? const <String>[];
+    void changeQuery(JenisSampahQuery next) {
+      ref.read(hargaProvider.notifier).setQuery(next);
+      if (next.search != query.search) _searchChanged(next.search);
+    }
+
+    final search = JenisSampahFilterBar(
+      query: query,
+      kategori: kategori,
+      showKategori: false,
+      onChanged: changeQuery,
     );
     return Padding(
       padding: web
@@ -329,22 +337,34 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
             search,
           ],
           const SizedBox(height: 16),
-          Row(
-            children: [
-              AppChip(
-                label: 'Aktif',
-                selected: isActiveTab,
-                onTap: () =>
-                    ref.read(hargaProvider.notifier).setActiveTab(true),
-              ),
-              const SizedBox(width: 8),
-              AppChip(
-                label: 'Tidak Aktif',
-                selected: !isActiveTab,
-                onTap: () =>
-                    ref.read(hargaProvider.notifier).setActiveTab(false),
-              ),
-            ],
+          // Digeser, bukan dipotong, bila tiga chip tak muat di layar sempit.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                AppChip(
+                  label: 'Aktif',
+                  selected: isActiveTab,
+                  onTap: () =>
+                      ref.read(hargaProvider.notifier).setActiveTab(true),
+                ),
+                const SizedBox(width: 8),
+                AppChip(
+                  label: 'Tidak Aktif',
+                  selected: !isActiveTab,
+                  onTap: () =>
+                      ref.read(hargaProvider.notifier).setActiveTab(false),
+                ),
+                if (kategori.length > 1) ...[
+                  const SizedBox(width: 8),
+                  JenisSampahKategoriFilter(
+                    query: query,
+                    kategori: kategori,
+                    onChanged: changeQuery,
+                  ),
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -374,10 +394,11 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
       _ => PageState.loading,
     };
 
-    final isSearching = loaded?.searchQuery.isNotEmpty ?? false;
+    final isSearching = loaded?.query.isFiltering ?? false;
     final isActiveTab = loaded?.isActiveTab ?? true;
 
     final empty = _emptyState(
+      noCategory: loaded?.query.tidakAdaKategori ?? false,
       isSearching: isSearching,
       isActiveTab: isActiveTab,
     );
@@ -472,13 +493,22 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
   /// sejajar: ketiga nilai itu harus menggambarkan keadaan yang sama, dan
   /// memisahkannya membuat salah satu mudah tertinggal saat yang lain diubah.
   ({String title, String subtitle, IconData icon}) _emptyState({
+    required bool noCategory,
     required bool isSearching,
     required bool isActiveTab,
   }) {
+    if (noCategory) {
+      return (
+        title: 'Tidak Ada Kategori yang Dipilih',
+        subtitle: 'Pilih kategori pada filter di atas untuk menampilkan '
+            'jenis sampah.',
+        icon: Icons.filter_list_off,
+      );
+    }
     if (isSearching) {
       return (
         title: 'Jenis Sampah Tidak Ditemukan',
-        subtitle: 'Coba kata kunci yang berbeda',
+        subtitle: 'Coba kata kunci atau kategori yang berbeda',
         icon: Icons.search_off,
       );
     }

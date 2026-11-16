@@ -152,9 +152,22 @@ void main() {
       await openHapus(tester);
 
       expect(find.text('Hapus Setoran?'), findsOneWidget);
-      expect(find.textContaining('label "Dibatalkan"'), findsOneWidget);
+      // PIL-481: the backend no longer lists a voided setoran, so the dialog
+      // must not promise it stays in the riwayat.
+      expect(find.textContaining('disembunyikan dari riwayat'), findsOneWidget);
+      expect(find.textContaining('label "Dibatalkan"'), findsNothing);
       expect(find.textContaining('tidak lagi dihitung'), findsOneWidget);
+      expect(
+          find.textContaining('Saldo nasabah dihitung ulang.'), findsOneWidget);
       expect(api.requests, isEmpty);
+    });
+
+    test('the success toast says the row is hidden, as the backend now does',
+        () {
+      // The toast needs the app's root navigator, which a widget test does not
+      // have, so the copy is pinned as a constant instead.
+      expect(BatalkanSetoranDialog.berhasilMessage,
+          'Setoran dihapus dan disembunyikan dari riwayat.');
     });
 
     testWidgets('Hapus without an alasan is refused on the spot',

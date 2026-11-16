@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_filter_bar.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -294,7 +295,8 @@ void main() {
     await openPage(tester, size: const Size(1000, 900));
 
     final title = tester.getRect(find.text('Jenis Sampah & Harga'));
-    final search = tester.getRect(find.byType(TextField));
+    // Search field plus the sort button beside it share the 360-wide slot.
+    final search = tester.getRect(find.byType(JenisSampahFilterBar));
     expect(title.left, 32);
     expect(search.width, 360);
     expect(search.left, greaterThan(title.right));
@@ -420,6 +422,26 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'zzz');
     await tester.pumpAndSettle();
     expect(find.text('Jenis Sampah Tidak Ditemukan'), findsOneWidget);
+  });
+
+  testWidgets(
+      'no category ticked says so, and ticking one brings the rows back',
+      (tester) async {
+    await openPage(tester);
+
+    await tester.tap(find.byKey(const Key('filter-kategori')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('kategori-semua')).first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tidak Ada Kategori yang Dipilih'), findsOneWidget);
+    expect(find.text('Tidak ada kategori'), findsOneWidget);
+    expect(find.text('Botol PET'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('kategori-kertas')).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Kardus'), findsOneWidget);
+    expect(find.text('Botol PET'), findsNothing);
   });
 
   testWidgets('empty tabs explain themselves', (tester) async {

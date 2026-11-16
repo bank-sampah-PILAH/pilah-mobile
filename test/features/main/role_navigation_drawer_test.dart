@@ -109,17 +109,6 @@ void main() {
       );
     });
 
-    testWidgets('hides the transaction menu from Pengelola Induk',
-        (tester) async {
-      await mountDrawer(
-        tester,
-        role: 'pengelola_induk',
-        onAddTransaction: () {},
-      );
-
-      expect(find.text('Transaksi'), findsNothing);
-    });
-
     testWidgets('reports the menu index that was tapped', (tester) async {
       final selected = await mountDrawer(tester);
       await tester.tap(find.text('Harga'));
@@ -332,14 +321,6 @@ void main() {
             .selected,
         isTrue,
       );
-    });
-
-    testWidgets('Pengelola Induk keeps Aktivitas', (tester) async {
-      await mountDrawer(tester,
-          role: 'pengelola_induk', onAddTransaction: () {});
-
-      expect(find.text('Aktivitas'), findsOneWidget);
-      expect(find.text('Riwayat'), findsNothing);
     });
 
     testWidgets('a stored bank logo is drawn in the header', (tester) async {

@@ -1,3 +1,9 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:pilah_mobile/core/notifications/push_presentation.dart';
+import 'dart:async';
+import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/notifications/firebase_push.dart';
+import 'package:pilah_mobile/core/notifications/push_session.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -12,6 +18,8 @@ final authenticationProvider =
   () => AuthenticationNotifier(
     di<AuthenticationUseCases>(),
     di<LoginWithGoogleUseCase>(),
+    pushSession: createPushSession(di<NetworkService>()),
+    pushPresentation: createPushPresentation(),
   ),
 );
 
@@ -20,12 +28,18 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
     this._useCases,
     this._loginWithGoogleUseCase, {
     bool? isWebOverride,
-  })  : _isWeb = isWebOverride ?? kIsWeb,
+    PushSession? pushSession,
+    PushPresentation<RemoteMessage>? pushPresentation,
+  })  : _pushPresentation = pushPresentation,
+        _pushSession = pushSession,
+        _isWeb = isWebOverride ?? kIsWeb,
         super();
 
   final AuthenticationUseCases _useCases;
   final LoginWithGoogleUseCase _loginWithGoogleUseCase;
   final bool _isWeb;
+  final PushSession? _pushSession;
+  final PushPresentation<RemoteMessage>? _pushPresentation;
   AuthEntity? _activeSession;
 
   @override
@@ -147,6 +161,10 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
         // Clear the PILAH session even if Google's sign-out fails.
       }
     }
+    try {
+      await _pushPresentation?.stop();
+      await _pushSession?.stop();
+    } catch (_) {}
     await _useCases.logout();
     if (ref.mounted) _emitUnauthenticated();
   }
@@ -169,6 +187,10 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
         // Account deletion must not depend on Google's sign-out succeeding.
       }
     }
+    try {
+      await _pushPresentation?.stop();
+      await _pushSession?.stop();
+    } catch (_) {}
     final result = await _useCases.discardRegistration();
     if (!ref.mounted) return;
     result.fold(
@@ -204,6 +226,12 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
         : previous?.email.trim().toLowerCase() ==
             entity.email.trim().toLowerCase();
     if (previous != null && !sameAccount) _emitUnauthenticated();
+    if (previous == null || !sameAccount) {
+      unawaited(
+          _pushSession?.start().catchError((_) {}) ?? Future<void>.value());
+      unawaited(_pushPresentation?.start().catchError((_) {}) ??
+          Future<void>.value());
+    }
     _activeSession = entity;
     state = Authenticated(authEntity: entity);
   }

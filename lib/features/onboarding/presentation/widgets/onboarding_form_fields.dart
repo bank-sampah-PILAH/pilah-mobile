@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
@@ -110,6 +111,72 @@ class OnboardingAddressField extends StatelessWidget {
           }
           return null;
         },
+      ),
+    );
+  }
+}
+
+/// A birth date picked from a calendar, optional for a nasabah (PIL-478).
+///
+/// The box is [readOnly] so the picker is the only way a date gets in. That
+/// makes the clear button the only way one gets back out, which is why it
+/// exists at all rather than being left to a long-press or a select-all.
+///
+/// [isOptional] drives the whole field at once: the star on the label, the
+/// "(opsional)" hint, whether a clear button is offered, and whether an empty
+/// value validates. Keeping them on one flag is deliberate — a pengelola is
+/// still required to give a birth date, because `is_profile_complete` gates
+/// their bank registration on it server-side, and a form that let them skip
+/// it would fail later and less clearly.
+class OnboardingBirthDateField extends StatelessWidget {
+  const OnboardingBirthDateField({
+    super.key,
+    required this.controller,
+    required this.onTap,
+    required this.isOptional,
+    this.onClear,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onTap;
+  final bool isOptional;
+
+  /// Empties the field. Only ever offered while [isOptional].
+  final VoidCallback? onClear;
+
+  /// What is wrong with [value], or null when it is fine. Static so the
+  /// screen's own tests can state the rule without pumping a widget.
+  static String? errorFor(String? value, {required bool isOptional}) {
+    if (isOptional) return null;
+    if (value == null || value.isEmpty) return 'Tanggal lahir wajib diisi';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final offersClear = isOptional && onClear != null;
+    return OnboardingFormField(
+      label: 'TANGGAL LAHIR',
+      isRequired: !isOptional,
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) => TextFormField(
+          controller: controller,
+          readOnly: true,
+          onTap: onTap,
+          decoration: appInputDecoration(
+            hintText: isOptional ? 'dd/mm/yyyy (opsional)' : 'dd/mm/yyyy',
+            suffixIcon: (offersClear && value.text.trim().isNotEmpty)
+                ? IconButton(
+                    tooltip: 'Hapus tanggal lahir',
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close, color: AppColors.black),
+                  )
+                : const Icon(Icons.calendar_today_outlined,
+                    color: AppColors.black),
+          ),
+          validator: (value) => errorFor(value, isOptional: isOptional),
+        ),
       ),
     );
   }

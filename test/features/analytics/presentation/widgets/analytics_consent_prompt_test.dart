@@ -114,4 +114,46 @@ void main() {
 
     expect(find.text(_title), findsNothing);
   });
+
+  testWidgets('does not ask when the answer is settled while the frame ends',
+      (tester) async {
+    final auth = TestAuthenticationNotifier(initialState: _signedInAs(role));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        authenticationProvider.overrideWith(() => auth),
+        analyticsClientProvider.overrideWithValue(client),
+        analyticsConsentStoreProvider
+            .overrideWithValue(AnalyticsConsentStore(storage)),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: AnalyticsConsentPrompt(
+          child: Scaffold(
+            body: _WhenAsked(
+              () => auth.setStateForTest(_signedInAs('nasabah')),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_title), findsNothing);
+  });
+}
+
+/// Runs [onAsked] the moment somebody is due to be asked, which is right after
+/// the prompt has started waiting for the frame to end.
+class _WhenAsked extends ConsumerWidget {
+  const _WhenAsked(this.onAsked);
+
+  final VoidCallback onAsked;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<bool>(analyticsNeedsPromptProvider, (_, needsPrompt) {
+      if (needsPrompt) Future.microtask(onAsked);
+    });
+    return const Text('beranda');
+  }
 }

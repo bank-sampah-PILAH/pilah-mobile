@@ -41,4 +41,61 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets('marks a required field with an asterisk', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
+        ),
+      ),
+    );
+
+    expect(find.text('ALASAN PERUBAHAN'), findsOneWidget);
+    expect(find.text('*'), findsOneWidget);
+  });
+
+  testWidgets('leaves a field unmarked unless it is required', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: AppFieldLabel('CATATAN'))),
+    );
+
+    expect(find.text('CATATAN'), findsOneWidget);
+    expect(find.text('*'), findsNothing);
+  });
+
+  testWidgets('draws the required marker in the danger red at caption size',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
+        ),
+      ),
+    );
+
+    final style =
+        tester.renderObject<RenderParagraph>(find.text('*')).text.style;
+    expect(style?.color, AppColors.danger);
+    expect(style?.fontSize, 10);
+    expect(style?.fontWeight, FontWeight.bold);
+  });
+
+  testWidgets('is read by a screen reader as wajib diisi when required',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppFieldLabel('ALASAN PERUBAHAN', isRequired: true),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel('ALASAN PERUBAHAN, wajib diisi'),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
 }

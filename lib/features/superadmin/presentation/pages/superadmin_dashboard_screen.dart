@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
@@ -166,7 +168,8 @@ class _SuperAdminDashboardScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Expanded(
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -184,6 +187,14 @@ class _SuperAdminDashboardScreenState
                         fontWeight: AppFontWeight.bold),
                   ),
                 ],
+              )),
+              AppTapTarget(
+                label: 'Notifikasi',
+                onTap: () => NotificationsPage.open(context),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                ),
               ),
               PopupMenuButton<_DashboardMenuAction>(
                 tooltip: 'Menu akun',

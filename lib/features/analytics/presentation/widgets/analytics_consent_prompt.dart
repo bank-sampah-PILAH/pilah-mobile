@@ -39,7 +39,11 @@ class _AnalyticsConsentPromptState
     // The dialog needs the Navigator below this widget, which exists only once
     // the first frame has been built.
     await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) return;
+    // Whoever was to be asked may have been settled while the frame was built.
+    if (!mounted || !ref.read(analyticsNeedsPromptProvider)) {
+      _asking = false;
+      return;
+    }
     final agreed = await showAnalyticsConsentDialog(
       context,
       recordsScreen: ref.read(analyticsClientProvider).recordsScreen,

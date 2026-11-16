@@ -32,9 +32,8 @@ class RoleDestination {
 /// Urutan daftar adalah urutan tampil, dan indeks pada daftar inilah yang
 /// dipakai sebagai currentIndex oleh kedua bentuk.
 abstract final class RoleDestinations {
-  /// `true` bila [role] adalah pengurus atau pengelola induk.
-  static bool isStaff(String? role) =>
-      role == 'pengelola' || role == 'pengelola_induk';
+  /// `true` bila [role] adalah Pengurus.
+  static bool isStaff(String? role) => role == 'pengelola';
 
   /// Branch Aktivitas. Pengurus di web membukanya sebagai "Riwayat" dari
   /// akordeon Transaksi, bukan sebagai destinasi tersendiri.

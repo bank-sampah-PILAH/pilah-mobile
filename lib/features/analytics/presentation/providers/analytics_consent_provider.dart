@@ -67,7 +67,11 @@ final analyticsNeedsPromptProvider = Provider<bool>(
     // Cheapest checks first: the saved choice is only read when it can matter.
     if (!ref.watch(analyticsEligibleProvider)) return false;
     if (!ref.watch(analyticsClientProvider).isAvailable) return false;
-    return ref.watch(analyticsConsentProvider).value == ConsentChoice.unset;
+    // While the saved choice is being read again, the old answer is still
+    // there: after signing in it is the "unset" of nobody being signed in.
+    // Only an answer that has finished loading says whether to ask.
+    final consent = ref.watch(analyticsConsentProvider);
+    return !consent.isLoading && consent.value == ConsentChoice.unset;
   },
   dependencies: [
     analyticsEligibleProvider,

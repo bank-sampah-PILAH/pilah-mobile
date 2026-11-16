@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
@@ -86,6 +88,31 @@ void main() {
       tester.getSemantics(tab('Disetujui')),
       isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
     );
+    handle.dispose();
+  });
+
+  testWidgets('opens notification history from the Super Admin header',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    stubTabs();
+    api.on('GET', '/api/v1/notifications/', json: {
+      'count': 0,
+      'next': null,
+      'previous': null,
+      'results': [],
+    });
+    di.registerSingleton<NetworkService>(api.network);
+    addTearDown(() => di.unregister<NetworkService>());
+    await openScreen(tester);
+
+    expect(find.bySemanticsLabel('Notifikasi'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Notifikasi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada notifikasi.'), findsOneWidget);
+    expect(
+        api.requests.any((request) => request.path == '/api/v1/notifications/'),
+        isTrue);
     handle.dispose();
   });
 

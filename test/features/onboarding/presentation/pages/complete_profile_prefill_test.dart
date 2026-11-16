@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/onboarding_support.dart';
@@ -127,5 +128,45 @@ void main() {
     // The field isn't even shown for this role, so the saved value must not
     // leak in anywhere on screen.
     expect(find.text('Jl. Melati No. 5'), findsNothing);
+  });
+
+  testWidgets('clearing a prefilled tanggal lahir empties it on the screen',
+      (tester) async {
+    // The screen's own clear handler, not the field widget's: tapping the
+    // button has to reset `_selectedDob` as well as the controller, or the
+    // next submit would send the date the user just removed (PIL-478).
+    await _pumpScreen(
+      tester,
+      const AuthEntity(
+        id: 'user-1',
+        name: 'Nasabah PILAH',
+        email: 'nasabah@example.com',
+        photoUrl: '',
+        token: 'jwt',
+        nextStep: 'complete_profile',
+        role: 'nasabah',
+        jenisKelamin: 'perempuan',
+        tanggalLahir: '1998-05-20',
+      ),
+    );
+
+    expect(find.text('20/05/1998'), findsOneWidget);
+
+    // The tooltip wrapper is not hit-testable, so tap the button inside it.
+    final clearButton = find.descendant(
+      of: find.byType(OnboardingBirthDateField),
+      matching: find.byType(IconButton),
+    );
+    expect(clearButton, findsOneWidget);
+    // The sticky submit bar sits over the lower part of the form, so the
+    // button has to be scrolled clear of it before a tap can land.
+    await tester.ensureVisible(clearButton);
+    await tester.pumpAndSettle();
+    await tester.tap(clearButton);
+    await tester.pump();
+
+    expect(find.text('20/05/1998'), findsNothing);
+    expect(find.text('dd/mm/yyyy (opsional)'), findsOneWidget);
+    expect(find.byTooltip('Hapus tanggal lahir'), findsNothing);
   });
 }

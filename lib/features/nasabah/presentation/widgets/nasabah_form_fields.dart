@@ -279,35 +279,57 @@ Future<void> pickNasabahBirthDate(
 }
 
 /// The date of birth, picked with [onTap] rather than typed.
+/// The birth date of a nasabah. Optional since PIL-478.
+///
+/// UAT found the date neither much needed nor comfortable to ask for, so the
+/// field carries no validator and no `*`, and says `(opsional)` in its hint
+/// the way `DESIGN.md` asks an optional field to.
+///
+/// The box is read-only and opens a date picker, which leaves no way to take
+/// a date back once given. [onClear] is that way out: the clear button
+/// appears only while there is something to clear, so a nasabah who would
+/// rather not have the date on file can have it removed.
 class NasabahBirthDateField extends StatelessWidget {
   const NasabahBirthDateField({
     super.key,
     required this.controller,
     required this.onTap,
+    this.onClear,
   });
 
   final TextEditingController controller;
   final VoidCallback onTap;
 
-  /// What is wrong with [value], or null when it is fine.
-  static String? errorFor(String? value) =>
-      (value == null || value.trim().isEmpty) ? _wajibDiisi : null;
+  /// Empties the field. Without it the box only ever gains a date.
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
     return NasabahFormField(
       label: 'TANGGAL LAHIR',
-      child: TextFormField(
-        controller: controller,
-        readOnly: true,
-        onTap: onTap,
-        validator: errorFor,
-        decoration: appInputDecoration(
-          hintText: 'dd/mm/yyyy',
-          suffixIcon: const Icon(
-            Icons.calendar_today,
-            color: AppColors.grey100,
-            size: 20,
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) => TextFormField(
+          controller: controller,
+          readOnly: true,
+          onTap: onTap,
+          decoration: appInputDecoration(
+            hintText: 'dd/mm/yyyy (opsional)',
+            suffixIcon: (onClear != null && value.text.trim().isNotEmpty)
+                ? IconButton(
+                    tooltip: 'Hapus tanggal lahir',
+                    onPressed: onClear,
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.grey100,
+                      size: 20,
+                    ),
+                  )
+                : const Icon(
+                    Icons.calendar_today,
+                    color: AppColors.grey100,
+                    size: 20,
+                  ),
           ),
         ),
       ),

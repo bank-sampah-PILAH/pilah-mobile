@@ -161,7 +161,7 @@ void main() {
     },
   );
 
-  for (final role in ['pengelola', 'pengelola_induk']) {
+  for (final role in ['pengelola']) {
     testWidgets('$role retains the staff navigation', (tester) async {
       await mount(tester, session(role), isWebOverride: false);
       expect(find.text('Transaksi'), findsNothing,

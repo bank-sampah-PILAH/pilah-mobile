@@ -64,8 +64,10 @@ class _Feed extends RiwayatAktivitasNotifier {
     await onLoad?.call();
     state = state.copyWith(
       status: failRefresh ? AktivitasStatus.failure : AktivitasStatus.loaded,
+      // PIL-481: the backend leaves a voided setoran out of the riwayat.
       items: [
-        for (final id in ['s1', 's2']) _setoran(id, voided: voided.contains(id))
+        for (final id in ['s1', 's2'])
+          if (!voided.contains(id)) _setoran(id)
       ],
     );
   }
@@ -150,6 +152,14 @@ void main() {
     await pumpPage(tester);
     await openDialog(tester);
     expect(find.text('Hapus 2 setoran?'), findsOneWidget);
+    // PIL-481: voided setoran are hidden from the riwayat, not kept with a label.
+    expect(find.textContaining('disembunyikan dari riwayat'), findsOneWidget);
+    expect(find.textContaining('label "Dibatalkan"'), findsNothing);
+    // Same consequence as the single dialog, in the same words.
+    expect(
+        find.textContaining('ke saldo nasabah maupun laporan'), findsOneWidget);
+    expect(
+        find.textContaining('Saldo nasabah dihitung ulang.'), findsOneWidget);
     expect(api.requests, isEmpty);
     await tester.enterText(
         find.byKey(const ValueKey('bulk-void-alasan')), '   ');
@@ -189,11 +199,18 @@ void main() {
       expect(api.requests.every((r) => r.json['alasan'] == 'Salah pencatatan'),
           isTrue);
       expect(find.text('2 setoran berhasil dibatalkan.'), findsOneWidget);
+      // The riwayat no longer lists a voided setoran, so the note points at
+      // the detail, which the backend still serves by id.
+      expect(find.textContaining('Detail setoran tetap menyimpan'),
+          findsOneWidget);
+      expect(find.textContaining('Riwayat menyimpan'), findsNothing);
       expect(container.read(aktivitasSelectionProvider), isNull);
       expect(feed.loads, 2);
       await tester.tap(find.text('Selesai'));
       await tester.pumpAndSettle();
-      expect(find.text('Dibatalkan'), findsNWidgets(2));
+      expect(find.text('Dibatalkan'), findsNothing);
+      expect(find.text('Budi Santoso'), findsNothing);
+      expect(find.text('Sari Wijaya'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }

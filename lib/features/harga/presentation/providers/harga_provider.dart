@@ -3,6 +3,7 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
+import 'package:pilah_mobile/features/harga/domain/models/jenis_sampah_query.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/activate_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/add_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/deactivate_harga_usecase.dart';
@@ -33,7 +34,7 @@ class HargaNotifier extends Notifier<HargaState> {
   List<HargaEntity> _allHarga = [];
   int _permintaanTerakhir = 0;
   bool _isActiveTab = true;
-  String _searchQuery = '';
+  JenisSampahQuery _query = const JenisSampahQuery();
 
   HargaNotifier(
     this.getHargaUseCase,
@@ -48,7 +49,8 @@ class HargaNotifier extends Notifier<HargaState> {
   HargaState build() => HargaInitial();
 
   bool get isActiveTab => _isActiveTab;
-  String get searchQuery => _searchQuery;
+  String get searchQuery => _query.search;
+  JenisSampahQuery get query => _query;
 
   /// Every active jenis sampah, independent of the price-list page's
   /// active/inactive tab and search query. The Transaksi Baru dropdown reads
@@ -83,8 +85,12 @@ class HargaNotifier extends Notifier<HargaState> {
     _emitFiltered();
   }
 
-  void searchHarga(String query) {
-    _searchQuery = query;
+  void searchHarga(String query) => setQuery(_query.copyWith(search: query));
+
+  /// Cari, kategori, dan urutan sekaligus. Aturannya ada di
+  /// [JenisSampahQuery], sama dengan pemilih jenis di setoran.
+  void setQuery(JenisSampahQuery query) {
+    _query = query;
     _emitFiltered();
   }
 
@@ -153,25 +159,22 @@ class HargaNotifier extends Notifier<HargaState> {
   void reset() {
     _allHarga = [];
     _isActiveTab = true;
-    _searchQuery = '';
+    _query = const JenisSampahQuery();
     state = HargaInitial();
   }
 
   void _emitFiltered() {
-    final filtered = _allHarga.where((item) {
-      final matchesTab = item.isActive == _isActiveTab;
-      if (_searchQuery.isEmpty) return matchesTab;
-
-      final query = _searchQuery.toLowerCase();
-      final name = item.name.toLowerCase();
-      final category = item.category.toLowerCase();
-      return matchesTab && (name.contains(query) || category.contains(query));
-    }).toList();
+    final inTab = _allHarga.where((item) => item.isActive == _isActiveTab);
+    final kategori = kategoriTersedia(inTab.toList());
+    // Kategori yang tidak ada di tab ini (tab diganti, atau datanya berubah)
+    // tidak boleh menyisakan filter yang centangnya tak tampak.
+    _query = _query.sesuaikanKategori(kategori);
 
     state = HargaLoaded(
-      jenisSampahList: filtered,
+      jenisSampahList: _query.apply(inTab.toList()),
       isActiveTab: _isActiveTab,
-      searchQuery: _searchQuery,
+      query: _query,
+      kategori: kategori,
     );
   }
 }

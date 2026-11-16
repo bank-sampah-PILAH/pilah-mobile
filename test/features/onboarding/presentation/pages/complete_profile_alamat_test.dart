@@ -66,13 +66,6 @@ void main() {
     expect(_alamatHint, findsNothing);
   });
 
-  testWidgets('hides the alamat field for a pengelola induk account',
-      (tester) async {
-    await _pumpScreen(tester, role: 'pengelola_induk');
-
-    expect(_alamatHint, findsNothing);
-  });
-
   testWidgets(
       "labels step 2 'Pilih Bank Sampah' for a nasabah account, not the "
       'pengelola wording', (tester) async {

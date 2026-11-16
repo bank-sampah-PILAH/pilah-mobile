@@ -68,7 +68,7 @@ void main() {
       await tester.tap(find.byKey(const Key('unduh')));
       await Future<void>.delayed(const Duration(milliseconds: 300));
     });
-    await tester.pump();
+    await pumpToast(tester);
 
     expect(File('${paths.downloads}/draft-pencairan.pdf').existsSync(), isTrue);
     expect(find.textContaining('Berkas disimpan'), findsOneWidget);

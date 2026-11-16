@@ -57,7 +57,7 @@ class ProfilePage extends ConsumerWidget {
     final state = ref.watch(authenticationProvider);
     final role = state is Authenticated ? state.authEntity.role : null;
     if (role == 'nasabah') return const ProfilNasabahPage();
-    if (role == 'pengelola' || role == 'pengelola_induk') {
+    if (role == 'pengelola') {
       return _ProfileView(isWeb: isWeb ?? kIsWeb);
     }
     return const Scaffold(
@@ -199,8 +199,6 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     switch (role) {
       case 'superadmin':
         return 'Superadmin';
-      case 'pengelola_induk':
-        return 'Pengelola Induk';
       case 'pengelola':
       default:
         return 'Pengurus';

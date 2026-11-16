@@ -24,6 +24,18 @@ class PrepareWebEnvTest(unittest.TestCase):
                                     env=env, capture_output=True, text=True, check=False)
             return result, target.read_text() if target.exists() else None
 
+    def test_web_firebase_settings_are_public_and_complete(self):
+        base = f"BASE_URL_PROD=https://backend.run.app\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
+        firebase = ("FIREBASE_WEB_API_KEY=AIza-test\nFIREBASE_WEB_APP_ID=1:123:web:abc\n"
+                    "FIREBASE_MESSAGING_SENDER_ID=123\nFIREBASE_PROJECT_ID=pilah-app\n"
+                    "FIREBASE_WEB_VAPID_KEY=public_key\n")
+        result, output = self.prepare("production", base + firebase)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(firebase, output)
+        result, output = self.prepare("production", base + "FIREBASE_WEB_APP_ID=only-one\n")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIsNone(output)
+
     def test_normalize_api_base_to_origin_and_ship_only_public_settings(self):
         configs = (
             ("staging", "BASE_URL_DEV", "https://pilah-be-staging.fly.dev/api/v1/",

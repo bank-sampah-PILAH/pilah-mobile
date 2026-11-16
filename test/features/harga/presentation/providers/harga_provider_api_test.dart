@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/models/jenis_sampah_query.dart';
 import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 
@@ -94,16 +95,49 @@ void main() {
     expect(cubit.isActiveTab, isFalse);
   });
 
-  test('search narrows by name or category, case-insensitively', () async {
+  test('search narrows by name, case-insensitively', () async {
     await cubit.loadHarga();
 
-    cubit.searchHarga('KERTAS');
-    expect(
-        (cubit.state as HargaLoaded).jenisSampahList.map((e) => e.id), ['1']);
     cubit.searchHarga('sampah 4');
     expect(
         (cubit.state as HargaLoaded).jenisSampahList.map((e) => e.id), ['4']);
     expect(cubit.searchQuery, 'sampah 4');
+  });
+
+  List<String> ids() =>
+      (cubit.state as HargaLoaded).jenisSampahList.map((e) => e.id).toList();
+
+  test('the category filter and sort share one query with the search',
+      () async {
+    await cubit.loadHarga();
+    expect(ids(), ['1', '2', '4', '5', '6'], reason: 'A-Z by default');
+
+    cubit.setQuery(const JenisSampahQuery(kategori: {'kaca'}));
+    expect(ids(), ['4']);
+    expect(cubit.query.kategori, {'kaca'});
+
+    cubit.setQuery(const JenisSampahQuery(ascending: false));
+    expect(ids(), ['6', '5', '4', '2', '1']);
+  });
+
+  test('the loaded state lists the categories of the open tab', () async {
+    await cubit.loadHarga();
+
+    expect((cubit.state as HargaLoaded).kategori,
+        containsAll(['Kertas', 'kaca', 'organik']));
+    cubit.setActiveTab(false);
+    expect((cubit.state as HargaLoaded).kategori, ['logam']);
+  });
+
+  test('a category the other tab does not have is dropped on switching',
+      () async {
+    await cubit.loadHarga();
+    cubit.setQuery(const JenisSampahQuery(kategori: {'kaca'}, search: 'x'));
+
+    cubit.setActiveTab(false);
+
+    expect(cubit.query.kategori, isNull);
+    expect(cubit.query.search, 'x', reason: 'only the dead category goes');
   });
 
   test('a silent reload keeps the list on screen', () async {
@@ -201,6 +235,7 @@ void main() {
     expect(cubit.state, isA<HargaInitial>());
     expect(cubit.isActiveTab, isTrue);
     expect(cubit.searchQuery, '');
+    expect(cubit.query.isDefault, isTrue);
     expect(cubit.activeJenisSampah, isEmpty);
   });
 

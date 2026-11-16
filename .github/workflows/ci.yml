@@ -192,8 +192,7 @@ jobs:
               dart run test --platform chrome --dart2js-args=-O0 \
                 --coverage-path="coverage/browser-selected-${index}.info" "$test_file"
             else
-              flutter test --platform chrome --coverage \
-                --coverage-path="coverage/browser-selected-${index}.info" "$test_file"
+              flutter test --platform chrome "$test_file"
             fi
           done
 

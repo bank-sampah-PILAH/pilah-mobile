@@ -20,18 +20,6 @@ void main() {
         ),
       );
 
-  testWidgets('signs in with the Pengurus Induk role token', (tester) async {
-    await pumpButton(tester);
-
-    await tester.tap(find.text('Masuk dengan akun demo'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Pengelola Induk'));
-    await tester.pump();
-
-    expect(auth.lastIdToken,
-        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E');
-  });
-
   testWidgets('dispatches the selected seeded account token', (tester) async {
     await pumpButton(tester);
 

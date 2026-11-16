@@ -47,13 +47,6 @@ void main() {
           reason: 'nasabah destinations are all in the bottom bar');
     });
 
-    test('pengelola_induk sees the same destinations as pengelola', () {
-      expect(
-        RoleDestinations.forRole('pengelola_induk').map((d) => d.branchIndex),
-        RoleDestinations.forRole('pengelola').map((d) => d.branchIndex),
-      );
-    });
-
     test('an approved nasabah gets four destinations', () {
       final nasabah = RoleDestinations.forRole('nasabah');
       expect(nasabah.map((d) => d.label),
@@ -82,7 +75,7 @@ void main() {
     });
 
     test('every destination carries an icon and a non-empty label', () {
-      for (final role in ['pengelola', 'pengelola_induk', 'nasabah']) {
+      for (final role in ['pengelola', 'nasabah']) {
         for (final destination in RoleDestinations.forRole(role)) {
           expect(destination.icon, isA<IconData>());
           expect(destination.label, isNotEmpty);
