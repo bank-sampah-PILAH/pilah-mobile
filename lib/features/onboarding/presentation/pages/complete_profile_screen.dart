@@ -61,9 +61,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   DateTime? _selectedDob;
   bool _isLoading = false;
 
-  /// Only nasabah accounts have a use for a personal address here —
-  /// pengelola/pengelola induk give their organization's address on a
-  /// separate step.
+  /// Only nasabah accounts use a personal address here; Pengurus use their
+  /// bank sampah's address.
   bool get _isNasabah {
     final authState = ref.read(authenticationProvider);
     return authState is Authenticated && authState.authEntity.role == 'nasabah';

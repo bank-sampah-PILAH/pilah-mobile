@@ -32,7 +32,7 @@ class RoleDestination {
 /// Urutan daftar adalah urutan tampil, dan indeks pada daftar inilah yang
 /// dipakai sebagai currentIndex oleh kedua bentuk.
 abstract final class RoleDestinations {
-  /// `true` bila [role] adalah pengurus atau pengelola induk.
+  /// `true` bila [role] adalah Pengurus.
   static bool isStaff(String? role) =>
       role == 'pengelola';
 
