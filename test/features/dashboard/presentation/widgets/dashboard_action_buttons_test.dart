@@ -93,20 +93,19 @@ void main() {
     return router;
   }
 
-  testWidgets('Transaksi Baru opens the setoran panel with no chooser',
-      (tester) async {
+  testWidgets('choosing Setoran opens the setoran panel', (tester) async {
     await pumpActions(tester);
+    await tester.tap(find.text('Catat Setoran'));
+    await tester.pumpAndSettle();
 
     // The form itself is the evidence: on a wide window it arrives as a
     // panel over the dashboard rather than as the stub route behind it.
     expect(find.text('PILIH NASABAH'), findsOneWidget);
     expect(find.byType(Dialog), findsNothing);
     expect(find.byType(BottomSheet), findsNothing);
-    expect(find.text('Catat Setoran'), findsNothing,
-        reason: 'one open transaction is not a choice worth a tap');
   });
 
-  testWidgets('on a phone Transaksi Baru opens the setoran page',
+  testWidgets('on a phone choosing Setoran opens the setoran page',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -114,32 +113,18 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await pumpActions(tester, isWeb: false);
+    await tester.tap(find.text('Catat Setoran'));
+    await tester.pumpAndSettle();
 
     expect(find.text('Form Setoran'), findsOneWidget);
     expect(find.byType(BottomSheet), findsNothing);
   });
 
-  testWidgets('offers no Pencairan, before or after the tap', (tester) async {
+  testWidgets('offers Pencairan and opens its draft list', (tester) async {
     await pumpActions(tester);
 
-    expect(find.text('Pencairan'), findsNothing);
-    expect(find.text('Daftar Pencairan'), findsNothing);
-    expect(find.byIcon(Icons.payments_outlined), findsNothing);
-  });
-
-  testWidgets('reopening Pencairan is one edit: the chooser returns with it',
-      (tester) async {
-    // Proves the chooser and its wiring are still compiled and working, so
-    // closing Pencairan stays one edit to transaksiPilihanTerbuka (plus its
-    // route lock) rather than code to write again.
-    await pumpActions(tester, terbuka: TransaksiPilihan.values.toSet());
-
     expect(find.text('Catat Setoran'), findsOneWidget);
-    final pencairan = find
-        .ancestor(of: find.text('Pencairan'), matching: find.byType(InkWell))
-        .first;
-    expect(tester.widget<InkWell>(pencairan).onTap, isNotNull);
-
+    expect(find.text('Pencairan'), findsOneWidget);
     await tester.tap(find.text('Pencairan'));
     await tester.pumpAndSettle();
 
@@ -148,10 +133,8 @@ void main() {
 
   testWidgets('no open transaction refuses to draw the button at all',
       (tester) async {
-    // Closing the last transaction has to take the button with it: it would
-    // open a chooser whose every row is inert, the dead control CPBI-31
-    // forbids. Unreachable with the shipped constant, so the assert is the
-    // statement of that, and this test is what keeps it honest.
+    // The chooser requires at least one enabled choice; an empty set is a
+    // programmer error, not a disabled button users can reach.
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: DashboardActionButtons(terbuka: {})),
     ));

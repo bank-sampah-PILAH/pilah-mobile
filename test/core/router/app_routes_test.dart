@@ -15,7 +15,6 @@ import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_d
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
@@ -220,65 +219,36 @@ void main() {
       expect(find.byType(HargaPage), findsOneWidget);
     });
 
-    /// The dashboard every locked path falls back to does its own fetching.
-    void stubDashboard() {
-      api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
-      api.on('GET', '/api/v1/transaksi', json: {'results': []});
-      api.on('GET', '/api/v1/pencairan',
+    testWidgets('draft Pencairan is registered in the app router',
+        (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan',
           json: {'count': 0, 'next': null, 'results': []});
-    }
-
-    testWidgets(
-        'every draft pencairan URL lands on the dashboard, not an '
-        'error', (tester) async {
-      stubDashboard();
       final router = await boot(tester);
 
-      for (final path in const [
-        '/draft-pencairan',
-        '/draft-pencairan/pilih',
-        '/draft-pencairan/editor',
-      ]) {
-        await visit(tester, router, path);
+      await visit(tester, router, DraftListPage.route);
 
-        expect(find.byType(DraftListPage), findsNothing, reason: path);
-        expect(find.byType(PilihNasabahPencairanPage), findsNothing,
-            reason: path);
-        expect(find.byType(DraftEditorPage), findsNothing, reason: path);
-        // A deleted route would show go_router's "page not found" screen,
-        // which PIL-392 forbids as much as it forbids the page itself.
-        expect(find.byType(DashboardPage), findsOneWidget, reason: path);
-        expect(router.routerDelegate.currentConfiguration.uri.path,
-            isNot(startsWith('/draft-pencairan')),
-            reason: path);
-      }
+      expect(find.byType(DraftListPage), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          DraftListPage.route);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a locked path redirects by name as well as by URL',
-        (tester) async {
-      // The lock keeps the real route's name, so navigation that asks for a
-      // route by name lands on the dashboard too. Without the name,
-      // `goNamed` throws `GoError: no route with name` - a crash where the
-      // lock promises a redirect. Nothing in lib/ navigates by name today;
-      // this holds the stub to the promise for whatever does later.
-      stubDashboard();
+    testWidgets('draft list is reachable by route name', (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
       final router = await boot(tester);
 
       router.goNamed(DraftListPage.route);
       await tester.pumpAndSettle();
 
-      expect(find.byType(DraftListPage), findsNothing);
-      expect(find.byType(DashboardPage), findsOneWidget);
-      expect(router.routerDelegate.currentConfiguration.uri.path, '/dashboard');
+      expect(find.byType(DraftListPage), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          DraftListPage.route);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a saved draft cannot be continued from its id either',
+    testWidgets('a saved draft can still be continued from its id',
         (tester) async {
-      // The lock sits in front of the guard: args that used to open the
-      // editor - a ?id= a refreshed tab carries, or a draft in extra - do
-      // not get past it, and nothing is fetched for them.
-      stubDashboard();
       api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
       final router = await boot(tester);
 
@@ -288,13 +258,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(DraftEditorPage), findsNothing);
-      expect(find.text('Cair Oktober'), findsNothing);
-      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a new draft in extra cannot open the editor', (tester) async {
-      stubDashboard();
+    testWidgets('a new draft in extra opens the editor', (tester) async {
       final router = await boot(tester);
 
       router.go(
@@ -305,25 +273,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(DraftEditorPage), findsNothing);
-      expect(find.text('Ahmad'), findsNothing);
-      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the editor without a draft does not bounce through the list',
+    testWidgets('an editor without draft data returns to the draft list',
         (tester) async {
-      // Its own guard sends it to the draft list, which is locked too. The
-      // lock replaces that guard rather than running before it, so there is
-      // one redirect to the dashboard, not a chain through a locked path.
-      stubDashboard();
+      api.on('GET', '/api/v1/draft-pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
       final router = await boot(tester);
 
-      await visit(tester, router, '/draft-pencairan/editor');
+      await visit(tester, router, DraftEditorPage.route);
 
-      expect(find.byType(DraftListPage), findsNothing);
+      expect(find.byType(DraftListPage), findsOneWidget);
       expect(find.byType(DraftEditorPage), findsNothing);
-      expect(find.byType(DashboardPage), findsOneWidget);
-      expect(router.routerDelegate.currentConfiguration.uri.path, '/dashboard');
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          DraftListPage.route);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('opens the jadwal page, honouring a date in the link',

@@ -11,14 +11,8 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import '../../../support/app_shell_support.dart';
 import '../../../support/stub_api.dart';
 
-/// The route-level guard PIL-434 took out of the live router.
-///
-/// While creating a pencairan is locked these routes are not registered, so
-/// nothing else exercises their `redirect`. The guard is the wiring that made
-/// the editor safe to reach — it refuses a link that names no draft, by `?id=`
-/// or by `extra` — and re-enabling the feature means registering the list
-/// again. Pinning it here keeps it compiled and tested instead of only
-/// recoverable from git history.
+/// The active route list keeps the editor safe to reach: it refuses a link
+/// that names no draft, by `?id=` or by `extra`.
 void main() {
   late StubApi api;
   late AppShell shell;
@@ -92,7 +86,7 @@ void main() {
     expect(find.byType(DraftEditorPage), findsOneWidget);
   });
 
-  test('the locked paths are derived from these routes, never retyped', () {
+  test('the draft routes stay in their user flow order', () {
     expect(
       draftPencairanRoutes.map((route) => route.path),
       [
@@ -100,8 +94,7 @@ void main() {
         PilihNasabahPencairanPage.route,
         DraftEditorPage.route,
       ],
-      reason: 'app_router_config builds its redirects from this list, so the '
-          'locked paths cannot drift from the real ones',
+      reason: 'the router registers this list so the flow cannot drift',
     );
   });
 }

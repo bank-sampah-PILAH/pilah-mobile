@@ -26,7 +26,9 @@ void main() {
     String? bankSampahLogoUrl,
     bool limitedNasabah = false,
     bool transactionSelected = false,
+    bool pencairanSelected = false,
     VoidCallback? onAddTransaction,
+    VoidCallback? onPencairan,
   }) async {
     final selected = <int>[];
     await pumpRouted(
@@ -40,8 +42,10 @@ void main() {
             bankSampahLogoUrl: bankSampahLogoUrl,
             limitedNasabah: limitedNasabah,
             transactionSelected: transactionSelected,
+            pencairanSelected: pencairanSelected,
             onSelected: selected.add,
             onAddTransaction: onAddTransaction,
+            onPencairan: onPencairan,
           ),
         ),
       ),
@@ -72,12 +76,17 @@ void main() {
 
     testWidgets('shows the expanded Transaksi menu before destinations',
         (tester) async {
-      var added = false;
-      await mountDrawer(tester, onAddTransaction: () => added = true);
+      var addedSetoran = false;
+      var addedPencairan = false;
+      await mountDrawer(
+        tester,
+        onAddTransaction: () => addedSetoran = true,
+        onPencairan: () => addedPencairan = true,
+      );
 
       expect(find.text('Transaksi'), findsOneWidget);
       expect(find.text('Setoran'), findsOneWidget);
-      expect(find.text('Pencairan'), findsNothing);
+      expect(find.text('Pencairan'), findsOneWidget);
       expect(find.text('Tambah Transaksi'), findsNothing);
       expect(
         tester.getTopLeft(find.text('Transaksi')).dy,
@@ -86,7 +95,10 @@ void main() {
 
       await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
-      expect(added, isTrue);
+      expect(addedSetoran, isTrue);
+      await tester.tap(find.byKey(RoleTransactionMenu.pencairanKey));
+      await tester.pumpAndSettle();
+      expect(addedPencairan, isTrue);
     });
 
     testWidgets('highlights Transaksi and Setoran on the Setoran page',
@@ -137,14 +149,32 @@ void main() {
           reason: 'the staff drawer now ends at the fifth destination');
     });
 
-    testWidgets('draws no Pencairan row at all', (tester) async {
-      await mountDrawer(tester, onAddTransaction: () {});
+    testWidgets('highlights the selected Pencairan entry', (tester) async {
+      await mountDrawer(
+        tester,
+        pencairanSelected: true,
+        onAddTransaction: () {},
+        onPencairan: () {},
+      );
 
-      expect(find.text('Pencairan'), findsNothing);
-      expect(find.byIcon(Icons.payments_outlined), findsNothing);
-      expect(find.byKey(RoleTransactionMenu.pencairanKey), findsNothing,
-          reason: 'creating a pencairan is closed for handover (PIL-434), and '
-              'a row that cannot be tapped is the dead menu PIL-392 forbids');
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.headerKey))
+            .selected,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.setoranKey))
+            .selected,
+        isFalse,
+      );
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.pencairanKey))
+            .selected,
+        isTrue,
+      );
     });
 
     testWidgets('marks the current destination as selected', (tester) async {

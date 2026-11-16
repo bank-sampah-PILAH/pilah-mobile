@@ -21,7 +21,9 @@ void main() {
     Size window = const Size(1440, 900),
     bool limitedNasabah = false,
     bool transactionSelected = false,
+    bool pencairanSelected = false,
     VoidCallback? onAddTransaction,
+    VoidCallback? onPencairan,
   }) async {
     final tapped = <int>[];
     await pumpRouted(
@@ -34,8 +36,10 @@ void main() {
               currentIndex: currentIndex,
               limitedNasabah: limitedNasabah,
               transactionSelected: transactionSelected,
+              pencairanSelected: pencairanSelected,
               onSelected: tapped.add,
               onAddTransaction: onAddTransaction,
+              onPencairan: onPencairan,
             ),
           ),
           const Expanded(child: SizedBox.shrink()),
@@ -169,7 +173,7 @@ void main() {
       expect((shortcut.icon as Icon).color, AppColors.greenDark);
     });
 
-    testWidgets('collapsed rail opens Setoran with one tap, without a menu',
+    testWidgets('collapsed rail opens Setoran with one tap when alone',
         (tester) async {
       var added = false;
       await taps(
@@ -209,7 +213,28 @@ void main() {
       expect(shortcut.tooltip, contains('Setoran'));
     });
 
-    testWidgets('the collapsed shortcut offers no Pencairan', (tester) async {
+    testWidgets('collapsed rail offers Pencairan when it is enabled',
+        (tester) async {
+      var pencairanOpened = false;
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(720, 900),
+        onAddTransaction: () {},
+        onPencairan: () => pencairanOpened = true,
+      );
+
+      await tester.tap(find.byKey(RoleTransactionMenu.menuKey));
+      await tester.pumpAndSettle();
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      await tester.tap(find.byKey(RoleTransactionMenu.pencairanKey));
+      await tester.pumpAndSettle();
+      expect(pencairanOpened, isTrue);
+    });
+
+    testWidgets('collapsed rail offers no Pencairan without its callback',
+        (tester) async {
       await taps(
         tester,
         role: 'pengelola',
@@ -223,6 +248,24 @@ void main() {
       expect(find.text('Pencairan'), findsNothing);
       expect(find.byKey(RoleTransactionMenu.pencairanKey), findsNothing);
       expect(find.byIcon(Icons.payments_outlined), findsNothing);
+    });
+
+    testWidgets('the wide rail opens the Pencairan row', (tester) async {
+      var pencairanOpened = false;
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(1440, 900),
+        onAddTransaction: () {},
+        onPencairan: () => pencairanOpened = true,
+      );
+
+      expect(find.text('Riwayat'), findsOneWidget);
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      await tester.tap(find.byKey(RoleTransactionMenu.pencairanKey));
+      await tester.pumpAndSettle();
+      expect(pencairanOpened, isTrue);
     });
 
     testWidgets('the wide rail keeps Riwayat and Setoran, and nothing dead',
