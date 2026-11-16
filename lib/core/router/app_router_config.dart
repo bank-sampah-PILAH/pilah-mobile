@@ -469,8 +469,7 @@ class AppRouterConfig {
     if (role == 'pengelola' && customerPaths.contains(path)) {
       return AppLocations.dashboard;
     }
-    if (!{'nasabah', 'pengelola', 'superadmin'}.contains(role) &&
-        protected) {
+    if (!{'nasabah', 'pengelola', 'superadmin'}.contains(role) && protected) {
       return LoginPage.route;
     }
     return null;

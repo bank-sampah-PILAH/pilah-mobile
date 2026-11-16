@@ -33,8 +33,7 @@ class RoleDestination {
 /// dipakai sebagai currentIndex oleh kedua bentuk.
 abstract final class RoleDestinations {
   /// `true` bila [role] adalah Pengurus.
-  static bool isStaff(String? role) =>
-      role == 'pengelola';
+  static bool isStaff(String? role) => role == 'pengelola';
 
   /// Branch Aktivitas. Pengurus di web membukanya sebagai "Riwayat" dari
   /// akordeon Transaksi, bukan sebagai destinasi tersendiri.

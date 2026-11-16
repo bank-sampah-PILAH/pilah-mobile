@@ -394,7 +394,6 @@ void main() {
       expect(rail.destinations.length, 5);
       expect(find.text('Aktivitas'), findsOneWidget);
     });
-
   });
 
   group('RoleNavigationRail: Transaksi rows look like the destinations', () {
