@@ -33,7 +33,6 @@ void main() {
         extraRoutes: [
           '/dashboard',
           '/superadmin-dashboard',
-          '/pengelola-induk-dashboard',
         ],
         wrap: (app) => ProviderScope(
           overrides: [authenticationProvider.overrideWith(() => auth)],
@@ -171,13 +170,13 @@ void main() {
         email: 'ayu@example.com',
         photoUrl: '',
         token: 'access-token',
-        role: 'pengelola_induk',
-        nextStep: 'pengelola_induk_dashboard',
+        role: 'pengelola',
+        nextStep: 'dashboard',
       ),
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('route:/pengelola-induk-dashboard'), findsOneWidget);
+    expect(find.text('route:/dashboard'), findsOneWidget);
   });
 
   testWidgets('shows a generic login error after a rejected email sign-in',

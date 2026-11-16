@@ -21,9 +21,6 @@ abstract class Secret {
   static String get demoPengurusEmail =>
       dotenv.env['DEMO_PENGURUS_EMAIL'] ?? 'pengurus.demo@example.com';
 
-  static String get demoPengelolaIndukEmail =>
-      dotenv.env['DEMO_PENGELOLA_INDUK_EMAIL'] ?? 'induk.demo@example.com';
-
   static String get demoCustomerEmail =>
       dotenv.env['DEMO_CUSTOMER_EMAIL'] ?? 'nasabah.demo@example.com';
 

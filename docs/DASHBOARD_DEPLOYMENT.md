@@ -1,7 +1,7 @@
 # Dashboard hosting (PIL-335)
 
 Separate static dashboard apps; no custom domain or DNS. Supported web roles:
-**Super Admin, Pengurus, Pengurus Induk** (not Nasabah). Native APK release
+**Super Admin and Pengurus** (not Nasabah). Native APK release
 workflows remain independent and unchanged.
 
 | Environment | Dashboard | API / entrypoint |

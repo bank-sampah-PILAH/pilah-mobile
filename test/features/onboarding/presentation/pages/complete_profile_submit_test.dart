@@ -24,8 +24,6 @@ const _routes = [
   '/superadmin-dashboard',
   '/register-nasabah',
   '/nasabah-dashboard',
-  '/register-bank-sampah-induk',
-  '/pengelola-induk-dashboard',
   '/login',
 ];
 
@@ -238,8 +236,6 @@ void main() {
       'superadmin_dashboard': 'route:/superadmin-dashboard',
       'register_nasabah': 'route:/register-nasabah',
       'nasabah_dashboard': 'route:/nasabah-dashboard',
-      'register_bank_sampah_induk': 'route:/register-bank-sampah-induk',
-      'pengelola_induk_dashboard': 'route:/pengelola-induk-dashboard',
       'something_new': 'route:/register-bank-sampah',
     };
     for (final entry in cases.entries) {

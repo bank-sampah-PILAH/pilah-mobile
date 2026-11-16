@@ -63,9 +63,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   DateTime? _selectedDob;
   bool _isLoading = false;
 
-  /// Only nasabah accounts have a use for a personal address here —
-  /// pengelola/pengelola induk give their organization's address on a
-  /// separate step.
+  /// Only nasabah accounts use a personal address here; Pengurus use their
+  /// bank sampah's address.
   bool get _isNasabah {
     final authState = ref.read(authenticationProvider);
     return authState is Authenticated && authState.authEntity.role == 'nasabah';
@@ -432,12 +431,6 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         break;
       case 'nasabah_dashboard':
         context.go('/nasabah-dashboard');
-        break;
-      case 'register_bank_sampah_induk':
-        context.go('/register-bank-sampah-induk');
-        break;
-      case 'pengelola_induk_dashboard':
-        context.go('/pengelola-induk-dashboard');
         break;
       default:
         // Fallback preserves prior behaviour: invited managers join an existing

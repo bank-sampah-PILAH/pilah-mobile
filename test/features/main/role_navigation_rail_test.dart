@@ -303,16 +303,6 @@ void main() {
           reason: 'Material asserts on any other value while extended');
     });
 
-    testWidgets('hides the transaction menu from Pengelola Induk',
-        (tester) async {
-      await taps(
-        tester,
-        role: 'pengelola_induk',
-        onAddTransaction: () {},
-      );
-      expect(find.text('Transaksi'), findsNothing);
-    });
-
     testWidgets('renders nothing at all for a role without navigation',
         (tester) async {
       await taps(tester, role: 'superadmin');
@@ -403,13 +393,6 @@ void main() {
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.destinations.length, 5);
       expect(find.text('Aktivitas'), findsOneWidget);
-    });
-
-    testWidgets('Pengelola Induk keeps Aktivitas', (tester) async {
-      await taps(tester, role: 'pengelola_induk', onAddTransaction: () {});
-
-      expect(find.text('Aktivitas'), findsOneWidget);
-      expect(find.text('Riwayat'), findsNothing);
     });
   });
 
