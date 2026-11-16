@@ -114,6 +114,8 @@ void main() {
     expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
     expect(find.text('Pengelola Bank Sampah Induk'), findsNothing);
     expect(find.text('Superadmin'), findsNothing);
+    expect(find.text('Kembali'), findsNothing,
+        reason: 'a fresh registration has no profile to return to');
     expect(tester.takeException(), isNull);
 
     await tester

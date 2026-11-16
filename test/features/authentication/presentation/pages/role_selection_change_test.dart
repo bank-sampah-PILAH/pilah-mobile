@@ -147,6 +147,24 @@ void main() {
     expect(auth.calls, isNot(contains('logout')));
   });
 
+  testWidgets(
+      'Kembali returns to Lengkapi Profil without changing the role or the '
+      'draft', (tester) async {
+    // Review on #174 (Tristan P2): on web the push to this page is not in
+    // the browser history, so browser Back leaves the app. The page itself
+    // offers the way back.
+    await pumpPage(tester, _account('pengelola'));
+
+    await tester.tap(find.text('Nasabah'));
+    await tester.pump();
+    await tester.tap(find.text('Kembali'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:/complete-profile'), findsOneWidget);
+    expect(auth.calls, isNot(contains('changeRole')));
+    expect(container.read(onboardingProvider.notifier).hasProfileDraft, isTrue);
+  });
+
   testWidgets('an account past the profile step is sent to login',
       (tester) async {
     await pumpPage(
