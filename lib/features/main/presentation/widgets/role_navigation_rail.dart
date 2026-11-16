@@ -88,7 +88,11 @@ class RoleNavigationRail extends StatelessWidget {
               onAddTransaction: navigation.role == 'pengelola'
                   ? navigation.onAddTransaction
                   : null,
+              onPencairan: navigation.role == 'pengelola'
+                  ? navigation.onPencairan
+                  : null,
               transactionSelected: navigation.transactionSelected,
+              pencairanSelected: navigation.pencairanSelected,
               onRiwayat: navigation.riwayatOpener(riwayat),
               riwayatSelected: navigation.riwayatIsCurrent(riwayat),
             ),
@@ -161,7 +165,9 @@ class _RailHeader extends StatelessWidget {
     required this.extended,
     this.onHome,
     this.onAddTransaction,
+    this.onPencairan,
     this.transactionSelected = false,
+    this.pencairanSelected = false,
     this.onRiwayat,
     this.riwayatSelected = false,
   });
@@ -174,7 +180,9 @@ class _RailHeader extends StatelessWidget {
   final bool extended;
   final VoidCallback? onHome;
   final VoidCallback? onAddTransaction;
+  final VoidCallback? onPencairan;
   final bool transactionSelected;
+  final bool pencairanSelected;
   final VoidCallback? onRiwayat;
   final bool riwayatSelected;
 
@@ -317,9 +325,11 @@ class _RailHeader extends StatelessWidget {
               width: headerWidth,
               child: RoleTransactionMenu(
                 onSetoran: onAddTransaction!,
+                onPencairan: onPencairan,
                 onRiwayat: onRiwayat,
                 compact: !extended,
                 selected: transactionSelected,
+                pencairanSelected: pencairanSelected,
                 riwayatSelected: riwayatSelected,
               ),
             ),

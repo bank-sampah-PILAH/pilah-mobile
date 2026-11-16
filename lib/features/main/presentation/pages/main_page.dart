@@ -20,6 +20,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/setoran_sheet_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
@@ -331,6 +332,10 @@ class _ShellContent extends ConsumerWidget {
           onAddTransaction: role == 'pengelola'
               ? () => openSetoranBaru(context, isWeb: isWebOverride ?? kIsWeb)
               : null,
+          onPencairan: role == 'pengelola'
+              ? () => context.push(DraftListPage.route)
+              : null,
+          pencairanSelected: currentPath.startsWith(DraftListPage.route),
           // Panel samping tidak mengubah path, jadi path saja tidak lagi
           // cukup untuk menyorot menunya.
           transactionSelected: currentPath == TransaksiBaruPage.route ||

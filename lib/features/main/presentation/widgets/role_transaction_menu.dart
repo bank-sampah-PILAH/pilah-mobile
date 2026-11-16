@@ -9,10 +9,12 @@ class RoleTransactionMenu extends StatelessWidget {
   const RoleTransactionMenu({
     super.key,
     required this.onSetoran,
+    this.onPencairan,
     this.onRiwayat,
     this.onClose,
     this.compact = false,
     this.selected = false,
+    this.pencairanSelected = false,
     this.riwayatSelected = false,
   });
 
@@ -20,13 +22,11 @@ class RoleTransactionMenu extends StatelessWidget {
   static const headerKey = ValueKey('transaction-menu-header');
   static const setoranKey = ValueKey('transaction-menu-setoran');
 
-  /// Pencairan tidak lagi digambar (PIL-434). Kuncinya tetap ada supaya
-  /// pengujian bisa menyatakan ketidakhadirannya, dan supaya baris itu kembali
-  /// dengan kunci yang sama ketika fiturnya dibuka lagi.
   static const pencairanKey = ValueKey('transaction-menu-pencairan');
   static const riwayatKey = ValueKey('transaction-menu-riwayat');
 
   final VoidCallback onSetoran;
+  final VoidCallback? onPencairan;
 
   /// Membuka riwayat transaksi. Null berarti Riwayat tidak ada di menu ini;
   /// menu ringkas tidak pernah menampilkannya.
@@ -34,6 +34,7 @@ class RoleTransactionMenu extends StatelessWidget {
   final VoidCallback? onClose;
   final bool compact;
   final bool selected;
+  final bool pencairanSelected;
   final bool riwayatSelected;
 
   void _openSetoran() {
@@ -46,26 +47,50 @@ class RoleTransactionMenu extends StatelessWidget {
     onRiwayat!();
   }
 
+  void _openPencairan() {
+    onClose?.call();
+    onPencairan!();
+  }
+
+  void _openCompactChoice(_TransactionChoice choice) {
+    switch (choice) {
+      case _TransactionChoice.setoran:
+        _openSetoran();
+      case _TransactionChoice.pencairan:
+        _openPencairan();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final selectionColor = selected ? AppColors.greenDark : AppColors.inkSoft;
+    final selectionColor = selected || pencairanSelected || riwayatSelected
+        ? AppColors.greenDark
+        : AppColors.inkSoft;
+    if (compact && onPencairan != null) {
+      return SizedBox(
+        width: 48,
+        height: 48,
+        child: PopupMenuButton<_TransactionChoice>(
+          key: menuKey,
+          tooltip: 'Transaksi',
+          onSelected: _openCompactChoice,
+          icon: Icon(Icons.receipt_long_outlined, color: selectionColor),
+          itemBuilder: (_) => const [
+            PopupMenuItem(
+              key: setoranKey,
+              value: _TransactionChoice.setoran,
+              child: Text('Setoran'),
+            ),
+            PopupMenuItem(
+              key: pencairanKey,
+              value: _TransactionChoice.pencairan,
+              child: Text('Pencairan'),
+            ),
+          ],
+        ),
+      );
+    }
     if (compact) {
-      // Setoran adalah satu-satunya transaksi yang terbuka (PIL-434), dan
-      // menu dengan satu isi menghabiskan satu ketukan untuk pilihan yang
-      // bukan pilihan. Jadi ikonnya langsung membuka Setoran. Ikon dan
-      // keadaan terpilihnya tetap milik kelompok Transaksi, karena itulah
-      // yang diwakili slot ini pada rail.
-      //
-      // Tooltipnya menyebut keduanya: ikon tanpa label pada rail ringkas
-      // hanya dinamai oleh tooltip itu, jadi menyebut *Setoran* saja membuat
-      // kelompok Transaksi tak bisa ditemukan oleh pembaca layar yang
-      // mencarinya seperti pada rail lebar, sementara menyebut *Transaksi*
-      // saja menjanjikan pilihan yang tidak akan muncul.
-      //
-      // Membuka kembali Pencairan menuntut slot ini digarap sendiri — menu
-      // pilihannya dulu di sini sudah dihapus, jadi tanpa itu rail lebar dan
-      // drawer menampilkan barisnya sementara rail ringkas tetap langsung ke
-      // Setoran.
       return SizedBox(
         width: 48,
         height: 48,
@@ -81,12 +106,16 @@ class RoleTransactionMenu extends StatelessWidget {
     return _TransactionAccordion(
       key: menuKey,
       onSetoran: _openSetoran,
+      onPencairan: onPencairan == null ? null : _openPencairan,
       onRiwayat: onRiwayat == null ? null : _openRiwayat,
       selected: selected,
+      pencairanSelected: pencairanSelected,
       riwayatSelected: riwayatSelected,
     );
   }
 }
+
+enum _TransactionChoice { setoran, pencairan }
 
 /// Akordeon Transaksi pada rail lebar dan drawer.
 ///
@@ -98,14 +127,18 @@ class _TransactionAccordion extends StatefulWidget {
   const _TransactionAccordion({
     super.key,
     required this.onSetoran,
+    required this.onPencairan,
     required this.onRiwayat,
     required this.selected,
+    required this.pencairanSelected,
     required this.riwayatSelected,
   });
 
   final VoidCallback onSetoran;
+  final VoidCallback? onPencairan;
   final VoidCallback? onRiwayat;
   final bool selected;
+  final bool pencairanSelected;
   final bool riwayatSelected;
 
   @override
@@ -117,7 +150,8 @@ class _TransactionAccordionState extends State<_TransactionAccordion> {
 
   @override
   Widget build(BuildContext context) {
-    final groupSelected = widget.selected || widget.riwayatSelected;
+    final groupSelected =
+        widget.selected || widget.pencairanSelected || widget.riwayatSelected;
     final groupColor = groupSelected ? AppColors.greenDark : AppColors.inkSoft;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -158,6 +192,14 @@ class _TransactionAccordionState extends State<_TransactionAccordion> {
                         selected: widget.selected,
                         onTap: widget.onSetoran,
                       ),
+                      if (widget.onPencairan != null)
+                        RoleMenuRow(
+                          key: RoleTransactionMenu.pencairanKey,
+                          icon: Icons.payments_outlined,
+                          label: 'Pencairan',
+                          selected: widget.pencairanSelected,
+                          onTap: widget.onPencairan,
+                        ),
                     ],
                   ),
                 )

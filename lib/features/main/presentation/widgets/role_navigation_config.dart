@@ -15,7 +15,9 @@ class RoleNavigationConfig {
     this.onProfile,
     this.onHome,
     this.onAddTransaction,
+    this.onPencairan,
     this.transactionSelected = false,
+    this.pencairanSelected = false,
     this.profileSelected = false,
     this.limitedNasabah = false,
   });
@@ -33,7 +35,9 @@ class RoleNavigationConfig {
   final VoidCallback? onProfile;
   final VoidCallback? onHome;
   final VoidCallback? onAddTransaction;
+  final VoidCallback? onPencairan;
   final bool transactionSelected;
+  final bool pencairanSelected;
   final bool profileSelected;
   final bool limitedNasabah;
 

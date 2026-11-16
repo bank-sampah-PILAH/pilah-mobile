@@ -12,20 +12,18 @@ import 'package:pilah_mobile/core/router/app_locations.dart';
 /// basi diantar ke berandanya sendiri, bukan ke halaman staf.
 ///
 /// Pengganti ini sengaja **tidak** memakai `redirect` route aslinya: penjaga
-/// asli mengalihkan ke halaman lain di dalam fiturnya sendiri (editor draft ke
-/// daftar draft, misalnya), yang ikut terkunci, sehingga menyalinnya hanya
-/// menambah satu lompatan sebelum sampai ke tempat yang sama.
+/// asli dapat mengalihkan ke halaman lain di dalam fitur yang sama, yang ikut
+/// terkunci, sehingga menyalinnya hanya menambah satu lompatan.
 ///
 /// Yang dikunci adalah **jalurnya**, dan [name] route aslinya ikut dibawa:
 /// `goNamed` pada fitur yang terkunci pun berakhir pada pengalihan yang sama,
 /// bukan pada `GoError: no route with name`, yaitu sebuah kerusakan dan bukan
 /// penolakan yang rapi. Sebaliknya `routes:` anak **tidak** dibaca, jadi pola
-/// ini mengandaikan route fitur yang datar seperti `draftPencairanRoutes` dan
-/// `pengumumanRoutes`; fitur dengan route bersarang harus mengunci anaknya
-/// sendiri, sebab anak yang tidak terdaftar memunculkan *page not found* yang
-/// justru dihindari di atas.
+/// ini mengandaikan route fitur yang datar seperti `pengumumanRoutes`; fitur
+/// dengan route bersarang harus mengunci anaknya sendiri, sebab anak yang tidak
+/// terdaftar memunculkan *page not found* yang justru dihindari di atas.
 ///
-/// Dipakai oleh Pengumuman (PIL-436) dan draft Pencairan (PIL-434).
+/// Dipakai oleh Pengumuman (PIL-436).
 GoRoute lockedRoute(
   String path, {
   String to = AppLocations.dashboard,
@@ -34,7 +32,7 @@ GoRoute lockedRoute(
     GoRoute(path: path, name: name, redirect: (_, __) => to);
 
 /// Versi daftar dari [lockedRoute], dibaca dari daftar route fitur yang
-/// sebenarnya (lihat `pengumumanRoutes`, `draftPencairanRoutes`).
+/// sebenarnya (lihat `pengumumanRoutes`).
 ///
 /// Jalur yang dikunci dibaca dari daftar yang sama dengan jalur yang
 /// sesungguhnya, jadi keduanya tidak bisa menyimpang; dan membuka kembali

@@ -6,18 +6,15 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/dashboard/analytics/dashboard_analytics.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/transaksi_chooser_sheet.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/draft_pencairan_routes.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/setoran_side_sheet.dart';
 
-/// Transaksi yang terbuka untuk Pengurus.
-///
-/// Pencairan ditutup dulu (CPBI-31), jadi hanya setoran. Membukanya kembali
-/// berarti menambahkannya di sini, lalu membuka kembali route-nya di
-/// [draftPencairanRoutes], lalu merilis ulang aplikasi — hardcode, tanpa
-/// pengaturan jarak jauh, sebagaimana diminta CPBI-31.
-const transaksiPilihanTerbuka = {TransaksiPilihan.setoran};
+/// Transaksi yang tersedia untuk Pengurus.
+const transaksiPilihanTerbuka = {
+  TransaksiPilihan.setoran,
+  TransaksiPilihan.pencairan,
+};
 
 /// Pengurus dashboard action area: the two things done most, side by side.
 /// Which transactions Transaksi Baru offers is [terbuka]; everything else is
@@ -33,19 +30,12 @@ class DashboardActionButtons extends ConsumerWidget {
   /// penuh. Null berarti pakai `kIsWeb`.
   final bool? isWeb;
 
-  /// Transaksi yang bisa dicatat dari tombol ini. Bawaannya
-  /// [transaksiPilihanTerbuka]; pemanggil lain hanya ada di pengujian, yang
-  /// memakainya untuk menyatakan bahwa membuka kembali sebuah transaksi tidak
-  /// menuntut kode baru.
+  /// Transaksi yang bisa dicatat dari tombol ini.
   final Set<TransaksiPilihan> terbuka;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Nol transaksi terbuka bukan keadaan yang punya tampilan: tombolnya akan
-    // membuka pemilih yang seluruh barisnya mati, kontrol mati yang sama
-    // dengan yang dilarang CPBI-31. Menutup transaksi yang terakhir berarti
-    // menyingkirkan tombol ini, bukan mengosongkan daftarnya — dan keliru di
-    // sini keliru sejak digambar, bukan baru ketika ditekan.
+    // No enabled action can leave the chooser with nothing to select.
     assert(terbuka.isNotEmpty, 'Transaksi Baru tanpa transaksi yang terbuka');
     return Row(
       children: [
@@ -90,10 +80,7 @@ class DashboardActionButtons extends ConsumerWidget {
   }
 
   Future<void> _openTransaksiBaru(BuildContext context, bool? isWeb) async {
-    // Satu transaksi yang terbuka bukan pilihan: memintanya dipilih hanya
-    // menghabiskan satu ketukan, dan pemilih berisi satu isi adalah kontrol
-    // mati yang sama dengan yang dilarang CPBI-31 (alasan yang sama dipakai
-    // PIL-435 untuk menyembunyikan pemilih tipe di Riwayat).
+    // Skip a redundant chooser when this configuration has only one action.
     final choice = terbuka.length == 1
         ? terbuka.single
         : await showAdaptiveSurface<TransaksiPilihan>(
@@ -106,10 +93,7 @@ class DashboardActionButtons extends ConsumerWidget {
 
   /// Formulir yang mencatat transaksi yang dipilih.
   ///
-  /// Pencairan tetap punya cabangnya walaupun sedang ditutup: penguncian
-  /// dinyatakan di [terbuka] dan di route-nya, bukan dengan menghapus jalan
-  /// masuknya dari sini, supaya keduanya bisa dibuka kembali tanpa menulis
-  /// ulang apa pun — dan supaya tidak ada cabang yang tak bisa diuji.
+  /// Both actions stay wired here; availability is controlled by [terbuka].
   Future<void> _openForm(
     BuildContext context,
     TransaksiPilihan choice,
