@@ -402,12 +402,6 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       case 'nasabah_dashboard':
         context.go('/nasabah-dashboard');
         break;
-      case 'register_bank_sampah_induk':
-        context.go('/register-bank-sampah-induk');
-        break;
-      case 'pengelola_induk_dashboard':
-        context.go('/pengelola-induk-dashboard');
-        break;
       default:
         // Fallback preserves prior behaviour: invited managers join an existing
         // bank sampah (dashboard), new managers continue to registration.

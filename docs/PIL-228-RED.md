@@ -5,7 +5,7 @@
 The follow-up request supersedes the RED-only checkpoint below. `RoleNavigationBar`
 is now a reusable presentation component. `MainPage` maps its four visible tabs
 to the correct StatefulShellRoute branches: customers use home/history/bank/profile,
-while pengelola and pengelola_induk use dashboard/customers/prices/reports.
+while pengelola uses dashboard/customers/prices/reports.
 Staff profile keeps its standalone appearance. Unsupported and signed-out sessions
 cannot inherit the staff navigation or its content; superadmin retains its own flow.
 Changing supported roles resets the selected branch to home.
@@ -32,8 +32,7 @@ Source: https://linear.app/pilah-2/issue/PIL-228/reusable-navigation-bar-berdasa
 
 The ticket has no description. Parent PIL-151 requires customer navigation to
 history and bank information. The proposed customer tabs are Beranda, Riwayat,
-Bank Sampah, and Profil. Pengelola and pengelola_induk retain the current staff
-tabs. Superadmin retains its separate flow; unknown and signed-out sessions
+Bank Sampah, and Profil. Pengelola retains the current staff tabs. Superadmin retains its separate flow; unknown and signed-out sessions
 must not inherit the staff navigation. These menu choices are explicit design
 assumptions for the next phase.
 
@@ -45,8 +44,8 @@ GREEN should extract a reusable role-aware navigation component and integrate
 it into the production shell, with role-change and route-guard tests.
 
 Backend: existing `GET /api/v1/auth/me` returns the authoritative `role`.
-PIL-225's dependency chain adds nasabah and pengelola_induk to the earlier
-pengelola/superadmin roles. A separate navigation API is unnecessary. Hiding a
+PIL-225's dependency chain adds nasabah to the earlier pengelola/superadmin
+roles. A separate navigation API is unnecessary. Hiding a
 menu does not replace backend authorization.
 
 Validation on Flutter 3.41.3:

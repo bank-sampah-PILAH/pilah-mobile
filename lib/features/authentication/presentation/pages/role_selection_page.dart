@@ -356,12 +356,6 @@ const _roleOptions = [
     'Mengelola transaksi dan anggota bank sampah.',
     Icons.storefront_outlined,
   ),
-  _RoleOption(
-    GoogleRegistrationRole.pengelolaInduk,
-    'Pengelola Bank Sampah Induk',
-    'Mendampingi unit-unit bank sampah.',
-    Icons.account_balance_outlined,
-  ),
 ];
 
 class _RoleCard extends StatelessWidget {

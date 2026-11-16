@@ -72,7 +72,7 @@ void main() {
     });
 
     test('discards a token a non-pengelola role cannot spend', () {
-      for (final role in ['superadmin', 'pengelola_induk', 'nasabah']) {
+      for (final role in ['superadmin', 'nasabah']) {
         di<InviteTokenStore>().save('invite-token-abc');
 
         expect(

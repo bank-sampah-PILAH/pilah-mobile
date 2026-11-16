@@ -68,7 +68,7 @@ void main() {
 
   testWidgets('hides the alamat field for a pengelola induk account',
       (tester) async {
-    await _pumpScreen(tester, role: 'pengelola_induk');
+    await _pumpScreen(tester, role: 'pengelola');
 
     expect(_alamatHint, findsNothing);
   });

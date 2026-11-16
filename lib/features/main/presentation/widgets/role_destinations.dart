@@ -34,7 +34,7 @@ class RoleDestination {
 abstract final class RoleDestinations {
   /// `true` bila [role] adalah pengurus atau pengelola induk.
   static bool isStaff(String? role) =>
-      role == 'pengelola' || role == 'pengelola_induk';
+      role == 'pengelola';
 
   /// Branch Aktivitas. Pengurus di web membukanya sebagai "Riwayat" dari
   /// akordeon Transaksi, bukan sebagai destinasi tersendiri.

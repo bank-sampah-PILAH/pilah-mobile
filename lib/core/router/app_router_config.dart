@@ -319,25 +319,6 @@ class AppRouterConfig {
           membership: state.extra as NasabahMembershipEntity,
         ),
       ),
-      GoRoute(
-        path: RoleHandoffPage.registerIndukRoute,
-        builder: (context, state) => const RoleHandoffPage(
-          title: 'Profil Pengelola Induk Tersimpan',
-          message:
-              'Pendaftaran Bank Sampah Induk akan dilanjutkan pada langkah berikutnya. Progres Anda tetap tersimpan.',
-          registrationInProgress: true,
-        ),
-      ),
-      GoRoute(
-        path: RoleHandoffPage.indukDashboardRoute,
-        builder: (context, state) => const RoleHandoffPage(
-          title: 'Akun Pengelola Induk Siap',
-          message:
-              'Beranda Bank Sampah Induk sedang disiapkan. Data organisasi Anda sudah tersimpan.',
-          registrationInProgress: false,
-          showNotificationHistory: true,
-        ),
-      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainPage(navigationShell: navigationShell);
@@ -485,12 +466,10 @@ class AppRouterConfig {
     if (role == 'nasabah' && staffPaths.contains(path)) {
       return AppLocations.dashboard;
     }
-    if ((role == 'pengelola' || role == 'pengelola_induk') &&
-        customerPaths.contains(path)) {
+    if (role == 'pengelola' && customerPaths.contains(path)) {
       return AppLocations.dashboard;
     }
-    if (!{'nasabah', 'pengelola', 'pengelola_induk', 'superadmin'}
-            .contains(role) &&
+    if (!{'nasabah', 'pengelola', 'superadmin'}.contains(role) &&
         protected) {
       return LoginPage.route;
     }

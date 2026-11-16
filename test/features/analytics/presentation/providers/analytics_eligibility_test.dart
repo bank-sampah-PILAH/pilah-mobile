@@ -32,7 +32,7 @@ void main() {
         _containerFor(_signedInAs('pengelola')).read(analyticsEligibleProvider),
         isTrue);
     expect(
-        _containerFor(_signedInAs('pengelola_induk'))
+        _containerFor(_signedInAs('pengelola'))
             .read(analyticsEligibleProvider),
         isTrue);
     expect(
