@@ -32,7 +32,10 @@
     // PostHog replay reads the canvas between frames. WebKit draws on an on-screen
     // WebGL canvas whose buffer is cleared after each frame unless it is preserved,
     // so iOS Safari replays come out blank. Must run before Flutter creates its canvas.
+    // Only WebKit needs it (every iOS browser, iPad and macOS Safari report Apple's
+    // vendor); Chromium and Firefox keep the original getContext and skip the cost.
     (() => {
+      if (navigator.vendor !== 'Apple Computer, Inc.') return;
       const original = HTMLCanvasElement.prototype.getContext;
       HTMLCanvasElement.prototype.getContext = function (type, attrs) {
         if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
