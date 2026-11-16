@@ -16,9 +16,8 @@ const completeProfileLocation = '/complete-profile';
 const inviteProcessingLocation = '/invite-processing';
 
 const superadminDashboardLocation = '/superadmin-dashboard';
-const pengelolaIndukDashboardLocation = '/pengelola-induk-dashboard';
 
-const _webSupportedRoles = {'superadmin', 'pengelola', 'pengelola_induk'};
+const _webSupportedRoles = {'superadmin', 'pengelola'};
 
 /// Query flag the web router appends when a signed-in session's role has no
 /// web shell: the login page reads it to raise a visible toast explaining the
@@ -104,7 +103,6 @@ String? signedOutRedirect({required bool signedOut, required String path}) =>
 const _homeLocations = {
   AppLocations.dashboard,
   superadminDashboardLocation,
-  pengelolaIndukDashboardLocation,
 };
 
 /// Where the splash sends a restored session. A fully onboarded user goes back
@@ -156,10 +154,6 @@ String locationForAuthStep(
       return '/register-nasabah';
     case 'nasabah_dashboard':
       return AppLocations.dashboard;
-    case 'register_bank_sampah_induk':
-      return '/register-bank-sampah-induk';
-    case 'pengelola_induk_dashboard':
-      return pengelolaIndukDashboardLocation;
     case 'complete_profile':
       return completeProfileLocation;
     case 'register_bank_sampah':

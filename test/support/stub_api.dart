@@ -22,9 +22,6 @@ class StubEnvironment implements AppEnvironment {
   String get demoPengurusEmail => 'pengurus@demo.test';
 
   @override
-  String get demoPengelolaIndukEmail => 'induk@demo.test';
-
-  @override
   String get demoCustomerEmail => 'customer@demo.test';
 
   @override

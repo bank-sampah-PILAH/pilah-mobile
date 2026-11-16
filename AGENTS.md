@@ -55,7 +55,7 @@
 - For web UI changes, use Playwright to QA both a desktop-sized browser and a
   mobile-sized browser viewport. Mobile viewport emulation checks responsive
   web UI only; it does not verify native mobile behavior.
-- Web UI is supported only for Super Admin, Pengurus, and Pengurus Induk. Do
+- Web UI is supported only for Super Admin and Pengurus. Do
   not describe or imply Nasabah web support. Current web entrypoints skip
   Firebase initialization because no web-supported flow uses Firebase; add
   FlutterFire web options before introducing a Firebase-backed web flow.

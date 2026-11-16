@@ -70,24 +70,25 @@ void main() {
           size.width >= 840 ? findsOneWidget : findsNothing);
       expect(find.byType(OnboardingFlowLayout), findsOneWidget);
       final firstTitle = kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah';
-      final secondTitle =
-          kIsWeb ? 'Pengelola Bank Sampah Induk' : 'Pengurus Bank Sampah';
+      final secondTitle = 'Pengurus Bank Sampah';
       final first = tester.getRect(find.text(firstTitle));
-      final second = tester.getRect(find.text(secondTitle));
-      if (size.width >= 600) {
-        expect(second.left, greaterThan(first.right));
-        Finder cardFor(String title) => find
-            .ancestor(
-              of: find.text(title),
-              matching: find.byWidgetPredicate((widget) =>
-                  widget is Semantics &&
-                  widget.properties.inMutuallyExclusiveGroup == true),
-            )
-            .first;
-        expect(tester.getSize(cardFor(firstTitle)).height,
-            tester.getSize(cardFor(secondTitle)).height);
-      } else {
-        expect(second.top, greaterThan(first.bottom));
+      if (!kIsWeb) {
+        final second = tester.getRect(find.text(secondTitle));
+        if (size.width >= 600) {
+          expect(second.left, greaterThan(first.right));
+          Finder cardFor(String title) => find
+              .ancestor(
+                of: find.text(title),
+                matching: find.byWidgetPredicate((widget) =>
+                    widget is Semantics &&
+                    widget.properties.inMutuallyExclusiveGroup == true),
+              )
+              .first;
+          expect(tester.getSize(cardFor(firstTitle)).height,
+              tester.getSize(cardFor(secondTitle)).height);
+        } else {
+          expect(second.top, greaterThan(first.bottom));
+        }
       }
       expect(find.text('Daftar Akun'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -111,7 +112,7 @@ void main() {
     expect(find.text('ayu@example.com'), findsOneWidget);
     expect(find.text('Nasabah'), kIsWeb ? findsNothing : findsOneWidget);
     expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
-    expect(find.text('Pengelola Bank Sampah Induk'), findsOneWidget);
+    expect(find.text('Pengelola Bank Sampah Induk'), findsNothing);
     expect(find.text('Superadmin'), findsNothing);
     expect(tester.takeException(), isNull);
 

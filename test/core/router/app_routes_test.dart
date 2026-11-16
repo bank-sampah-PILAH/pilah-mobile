@@ -36,7 +36,6 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_
 import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_approval_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
@@ -102,13 +101,10 @@ void main() {
         '/register-nasabah': RegisterNasabahScreen,
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
-        '/pengelola-induk-dashboard': RoleHandoffPage,
-        '/register-bank-sampah-induk': RoleHandoffPage,
       };
 
       for (final entry in pages.entries) {
-        await visit(tester, router, entry.key,
-            settle: !entry.key.contains('induk'));
+        await visit(tester, router, entry.key);
         expect(find.byType(entry.value), findsOneWidget, reason: entry.key);
       }
     });
@@ -550,7 +546,7 @@ void main() {
   });
 
   group('invites for other roles', () {
-    for (final role in ['nasabah', 'pengelola_induk']) {
+    for (final role in ['nasabah', 'superadmin']) {
       testWidgets('are discarded for a $role', (tester) async {
         shell.signedInAsRole(role);
         final router = await boot(tester);

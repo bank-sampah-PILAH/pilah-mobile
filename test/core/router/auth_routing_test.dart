@@ -4,7 +4,7 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 void main() {
   group('isSupportedWebRole', () {
     test('allows only roles supported by the web app', () {
-      for (final role in ['superadmin', 'pengelola', 'pengelola_induk']) {
+      for (final role in ['superadmin', 'pengelola']) {
         expect(isSupportedWebRole(role), isTrue);
       }
       for (final role in ['nasabah', 'unknown', null]) {
@@ -104,16 +104,6 @@ void main() {
         locationForAuthStep('nasabah_dashboard', role: 'nasabah'),
         '/dashboard',
       );
-      expect(
-        locationForAuthStep('register_bank_sampah_induk',
-            role: 'pengelola_induk'),
-        '/register-bank-sampah-induk',
-      );
-      expect(
-        locationForAuthStep('pengelola_induk_dashboard',
-            role: 'pengelola_induk'),
-        '/pengelola-induk-dashboard',
-      );
       expect(locationForAuthStep(null), '/dashboard');
     });
 
@@ -165,22 +155,10 @@ void main() {
       );
     });
 
-    test('non-pengelola roles do not enter the invite flow', () {
+    test('a migrated Pengurus account retains the regular dashboard route', () {
       expect(
-        locationForAuthStep(
-          'superadmin_dashboard',
-          hasPendingInvite: true,
-          role: 'superadmin',
-        ),
-        '/superadmin-dashboard',
-      );
-      expect(
-        locationForAuthStep(
-          'pengelola_induk_dashboard',
-          hasPendingInvite: true,
-          role: 'pengelola_induk',
-        ),
-        '/pengelola-induk-dashboard',
+        locationForAuthStep('dashboard', role: 'pengelola'),
+        '/dashboard',
       );
     });
 
@@ -293,11 +271,8 @@ void main() {
       );
     });
 
-    test('returns Super Admin and Pengurus Induk to the page they were on', () {
-      for (final home in [
-        '/superadmin-dashboard',
-        '/pengelola-induk-dashboard',
-      ]) {
+    test('returns Super Admin to the page they were on', () {
+      for (final home in ['/superadmin-dashboard']) {
         expect(
           locationAfterRestore(target: home, from: '/profile'),
           '/profile',

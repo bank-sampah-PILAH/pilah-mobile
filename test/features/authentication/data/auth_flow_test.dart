@@ -221,7 +221,7 @@ void main() {
       api.on('POST', '/api/v1/auth/google/register', json: ['x']);
 
       final result = await stack.repository.registerGoogleUser(
-          registrationToken: 'r', role: GoogleRegistrationRole.pengelolaInduk);
+          registrationToken: 'r', role: GoogleRegistrationRole.pengelola);
 
       expect(result.fold((l) => l, (r) => null), isA<GeneralException>());
     });

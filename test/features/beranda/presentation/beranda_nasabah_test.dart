@@ -65,9 +65,6 @@ class _TestAppEnvironment implements AppEnvironment {
   String get demoPengurusEmail => '';
 
   @override
-  String get demoPengelolaIndukEmail => '';
-
-  @override
   String get demoCustomerEmail => '';
 
   @override
