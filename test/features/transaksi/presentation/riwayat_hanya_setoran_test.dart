@@ -65,8 +65,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  test('Riwayat opens on semua and asks the server for all activity',
-      () async {
+  test('Riwayat opens on semua and asks the server for all activity', () async {
     final notifier = harness.notifier;
     expect(notifier.state.tipeFilter, AktivitasTipeFilter.semua);
 

@@ -291,8 +291,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  testWidgets('filters Riwayat between Setoran and Pencairan',
-      (tester) async {
+  testWidgets('filters Riwayat between Setoran and Pencairan', (tester) async {
     usePhone(tester);
     await pumpPage(tester);
 
