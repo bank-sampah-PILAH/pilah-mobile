@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_u
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
@@ -290,7 +291,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  testWidgets('lists setoran only, with no type selector (PIL-435)',
+  testWidgets('filters Riwayat between Setoran and Pencairan',
       (tester) async {
     usePhone(tester);
     await pumpPage(tester);
@@ -298,13 +299,27 @@ void main() {
     expect(find.text('Riwayat Aktivitas'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsOneWidget);
     expect(find.text('Citra Lestari'), findsOneWidget);
+    expect(find.text('Ani Wijaya'), findsOneWidget);
+    final filter = tester.widget<SegmentedButton<AktivitasTipeFilter>>(
+      find.byType(SegmentedButton<AktivitasTipeFilter>),
+    );
+    expect(filter.segments.map((segment) => segment.value), [
+      AktivitasTipeFilter.semua,
+      AktivitasTipeFilter.setoran,
+      AktivitasTipeFilter.pencairan,
+    ]);
+
+    await tester.tap(find.text('Pencairan').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Ani Wijaya'), findsOneWidget);
+    expect(find.text('Budi Santoso'), findsNothing);
+    expect(find.text('Citra Lestari'), findsNothing);
+
+    await tester.tap(find.text('Setoran').first);
+    await tester.pumpAndSettle();
     expect(find.text('Ani Wijaya'), findsNothing);
-    expect(find.text('Semua'), findsNothing);
-    expect(find.text('Pencairan'), findsNothing);
-    expect(find.text('22/09/2026'), findsNWidgets(2));
-    expect(find.text('08:00'), findsOneWidget);
-    expect(find.text('07:00'), findsOneWidget);
-    expect(find.text('10:00'), findsNothing);
+    expect(find.text('Budi Santoso'), findsOneWidget);
+    expect(find.text('Citra Lestari'), findsOneWidget);
     if (!kIsWeb) expect(find.byType(WebPaginationBar), findsNothing);
   });
 

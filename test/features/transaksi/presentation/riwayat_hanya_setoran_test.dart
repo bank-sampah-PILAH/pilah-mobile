@@ -25,8 +25,7 @@ const _setoranSaja = AktivitasSummary(
   saldo: 150000,
 );
 
-/// PIL-435 (CPBI-31): Pencairan is closed for now, so Riwayat offers only
-/// setoran: no Semua or Pencairan type, and no pencairan totals.
+/// Riwayat exposes all transaction types and filters the feed accordingly.
 void main() {
   late _Feed feed;
   late NotifierHarness<RiwayatAktivitasNotifier, RiwayatAktivitasState> harness;
@@ -66,19 +65,19 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  test('Riwayat opens on setoran and asks the server for setoran only',
+  test('Riwayat opens on semua and asks the server for all activity',
       () async {
     final notifier = harness.notifier;
-    expect(notifier.state.tipeFilter, AktivitasTipeFilter.setoran);
+    expect(notifier.state.tipeFilter, AktivitasTipeFilter.semua);
 
     await notifier.load();
 
     final filter = verify(() => feed.execute(captureAny())).captured.single
         as TransaksiFilter;
-    expect(filter.tipe, 'setoran');
+    expect(filter.tipe, 'semua');
   });
 
-  test('Reset returns to setoran, not to Semua', () async {
+  test('Reset returns to semua', () async {
     final notifier = harness.notifier;
     notifier.setPeriode('12_bulan');
     notifier.search('Budi');
@@ -87,30 +86,45 @@ void main() {
     notifier.resetFilters();
     await pumpEventQueue();
 
-    expect(notifier.state.tipeFilter, AktivitasTipeFilter.setoran);
+    expect(notifier.state.tipeFilter, AktivitasTipeFilter.semua);
     expect(notifier.state.periode, 'bulan_ini');
     expect(notifier.state.search, isEmpty);
   });
 
   for (final width in [1200.0, 360.0]) {
-    testWidgets('at ${width.toInt()}px there is no type selector to tap',
+    testWidgets('at ${width.toInt()}px Riwayat exposes all activity types',
         (tester) async {
       useWidth(tester, width);
       await pump(tester, const AktivitasFilterBar());
 
-      expect(find.byType(SegmentedButton<AktivitasTipeFilter>), findsNothing);
+      expect(find.byType(SegmentedButton<AktivitasTipeFilter>), findsOneWidget);
       for (final label in ['Semua', 'Setoran', 'Pencairan']) {
-        expect(find.text(label), findsNothing);
+        expect(find.text(label), findsOneWidget);
       }
-      // The rest of the bar is untouched, and nothing invites a Reset.
-      expect(find.text('Bulan Ini'), findsOneWidget);
-      expect(find.text('Reset'), findsNothing);
-      expect(find.byTooltip('Reset filter'), findsNothing);
+      await tester.tap(find.text('Pencairan'));
+      await tester.pumpAndSettle();
+      expect(harness.notifier.state.tipeFilter, AktivitasTipeFilter.pencairan);
+      await tester.tap(find.text('Setoran'));
+      await tester.pumpAndSettle();
+      expect(harness.notifier.state.tipeFilter, AktivitasTipeFilter.setoran);
       expect(tester.takeException(), isNull);
     });
   }
 
   for (final width in [1440.0, 360.0]) {
+    testWidgets(
+        'at ${width.toInt()}px the semua summary includes pencairan and saldo',
+        (tester) async {
+      useWidth(tester, width);
+      await harness.notifier.load();
+      await pump(tester, const AktivitasSummaryView());
+
+      expect(find.text('Total Nilai Setoran'), findsOneWidget);
+      expect(find.text('Total Pencairan'), findsOneWidget);
+      expect(find.text('Saldo Periode'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
         'at ${width.toInt()}px the setoran summary has no pencairan or saldo',
         (tester) async {

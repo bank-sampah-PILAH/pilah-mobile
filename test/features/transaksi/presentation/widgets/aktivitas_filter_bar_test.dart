@@ -69,12 +69,10 @@ void main() {
     await tester.pump();
   }
 
-  // Semua and Pencairan are closed for now (PIL-435); these two tests keep
-  // the selector working for when they reopen.
+  // The default available filters include Semua, Setoran, and Pencairan.
   testWidgets('wide: type segments, period button and labeled export',
       (tester) async {
-    await pumpBar(tester,
-        width: 1200, tipeTersedia: AktivitasTipeFilter.values.toSet());
+    await pumpBar(tester, width: 1200);
 
     for (final label in ['Semua', 'Setoran', 'Pencairan', 'Bulan Ini']) {
       expect(find.text(label), findsOneWidget);
@@ -86,8 +84,7 @@ void main() {
 
   testWidgets('phone: the type segments sit above the period field',
       (tester) async {
-    await pumpBar(tester,
-        width: 360, tipeTersedia: AktivitasTipeFilter.values.toSet());
+    await pumpBar(tester, width: 360);
 
     final segments = find.byType(SegmentedButton<AktivitasTipeFilter>);
     expect(segments, findsOneWidget);
@@ -105,8 +102,7 @@ void main() {
   });
 
   testWidgets('choosing a type segment filters the feed', (tester) async {
-    await pumpBar(tester,
-        width: 1200, tipeTersedia: AktivitasTipeFilter.values.toSet());
+    await pumpBar(tester, width: 1200);
 
     await tester.tap(find.text('Pencairan'));
     await tester.pump();
