@@ -206,21 +206,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                 : _changeAccount,
         progress: const OnboardingProgress(currentStep: 0),
         actions: OnboardingActions(
-            // Lengkapi Profil pushed this page, and on web a push is not in
-            // the browser history: the account needs a way back here.
-            secondary: account == null
-                ? null
-                : AppButton(
-                    label: 'Kembali',
-                    variant: AppButtonVariant.neutral,
-                    onPressed: isBusy
-                        ? null
-                        : () => handleOnboardingStepPop(
-                              context,
-                              didPop: false,
-                              isWizardStep: true,
-                            ),
-                  ),
+            secondary: account == null ? null : _backToProfile(isBusy),
             primary: AppButton(
               label: 'Lanjutkan',
               trailingIcon: Icons.arrow_forward,
@@ -268,6 +254,23 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
           ],
         ),
       ),
+    );
+  }
+
+  /// Kembali for a signed-in account. Lengkapi Profil pushed this page, and on
+  /// web a push is not in the browser history, so the page offers the way
+  /// back itself: pop when the push is on the stack, else go to the profile.
+  Widget _backToProfile(bool isBusy) {
+    return AppButton(
+      label: 'Kembali',
+      variant: AppButtonVariant.neutral,
+      onPressed: isBusy
+          ? null
+          : () => handleOnboardingStepPop(
+                context,
+                didPop: false,
+                isWizardStep: true,
+              ),
     );
   }
 
