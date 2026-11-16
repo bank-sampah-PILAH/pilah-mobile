@@ -206,12 +206,27 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                 : _changeAccount,
         progress: const OnboardingProgress(currentStep: 0),
         actions: OnboardingActions(
+            // Lengkapi Profil pushed this page, and on web a push is not in
+            // the browser history: the account needs a way back here.
+            secondary: account == null
+                ? null
+                : AppButton(
+                    label: 'Kembali',
+                    variant: AppButtonVariant.neutral,
+                    onPressed: isBusy
+                        ? null
+                        : () => handleOnboardingStepPop(
+                              context,
+                              didPop: false,
+                              isWizardStep: true,
+                            ),
+                  ),
             primary: AppButton(
-          label: 'Lanjutkan',
-          trailingIcon: Icons.arrow_forward,
-          isLoading: isLoading,
-          onPressed: _canContinue && !isBusy ? _continueRegistration : null,
-        )),
+              label: 'Lanjutkan',
+              trailingIcon: Icons.arrow_forward,
+              isLoading: isLoading,
+              onPressed: _canContinue && !isBusy ? _continueRegistration : null,
+            )),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
