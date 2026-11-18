@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 
@@ -45,6 +46,20 @@ void main() {
     expect(find.byIcon(Icons.download_outlined), findsOneWidget);
   });
 
+  testWidgets('on a desktop window the buttons stay under the page',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester);
+
+    const kolom = LayoutBreakpoint.formMaxWidth;
+    expect(tester.getTopLeft(find.byKey(const Key('bagikan'))).dx,
+        greaterThanOrEqualTo(720 - kolom / 2));
+    expect(tester.getTopRight(find.byKey(const Key('unduh'))).dx,
+        lessThanOrEqualTo(720 + kolom / 2));
+  });
+
   testWidgets('Unduh saves the file and says where it went', (tester) async {
     final paths = installFakePathProvider(downloads: 'Download');
     await pump(tester);
@@ -53,7 +68,7 @@ void main() {
       await tester.tap(find.byKey(const Key('unduh')));
       await Future<void>.delayed(const Duration(milliseconds: 300));
     });
-    await tester.pump();
+    await pumpToast(tester);
 
     expect(File('${paths.downloads}/draft-pencairan.pdf').existsSync(), isTrue);
     expect(find.textContaining('Berkas disimpan'), findsOneWidget);

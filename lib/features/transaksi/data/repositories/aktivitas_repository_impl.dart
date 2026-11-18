@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/pencairan/data/model/mapper/pencairan_mapp
 import 'package:pilah_mobile/features/pencairan/data/model/responses/pencairan_response.dart';
 import '../../domain/entities/aktivitas_entity.dart';
 import '../../domain/entities/aktivitas_page.dart';
+import '../../domain/entities/aktivitas_summary.dart';
 import '../../domain/entities/transaksi_filter.dart';
 import '../../domain/repositories/aktivitas_repository.dart';
 import '../datasources/transaksi_remote_data_source_impl.dart';
@@ -44,6 +45,9 @@ class AktivitasRepositoryImpl implements AktivitasRepository {
       return ActivitasEntity.fromTransaksi(mapper.mapListItem(data,
           DateTime.tryParse(data['tanggal']?.toString() ?? '')?.toLocal()));
     }).toList();
-    return AktivitasPage(items, json['next'] != null);
+    return AktivitasPage(items, json['next'] != null,
+        totalCount:
+            int.tryParse(json['count']?.toString() ?? '') ?? items.length,
+        summary: AktivitasSummary.fromJson(json['summary']));
   }
 }

@@ -63,13 +63,17 @@ class NasabahModel extends NasabahEntity {
   }
 
   /// Builds the request body for POST/PUT `/nasabah` from a [NasabahRequest].
+  ///
+  /// Kode kosong dibiarkan kosong: server menomori baris baru otomatis dari
+  /// ID terbesar bank sampah (UAT 2026-11), jadi klien tidak mengarang angka.
   static Map<String, dynamic> toPayload(NasabahRequest request) {
+    final kode = request.kode.trim();
     return {
-      'kode': request.kode.trim(),
+      if (kode.isNotEmpty) 'kode': kode,
       'nama': request.nama.trim(),
       'email': request.email.trim(),
       'jenis_kelamin': genderValue(request.jenisKelamin),
-      'tanggal_lahir': displayToIso(request.tanggalLahir),
+      'tanggal_lahir': tanggalLahirPayload(request.tanggalLahir),
       'no_hp': request.noHp.trim(),
       'alamat': request.alamat.trim(),
     };
@@ -107,6 +111,18 @@ class NasabahModel extends NasabahEntity {
     final month = parts[1].padLeft(2, '0');
     final day = parts[2].padLeft(2, '0');
     return '$day/$month/$year';
+  }
+
+  /// What `tanggal_lahir` carries on the wire, `null` when the pengurus left
+  /// it out (PIL-478).
+  ///
+  /// The key stays in the body so that clearing a date already on record is
+  /// sent as a change rather than read as "leave it alone". It is `null` and
+  /// not `''` because an empty string is not a date: the API rejects it with
+  /// a format error, which would make an optional field look broken.
+  static String? tanggalLahirPayload(String display) {
+    final trimmed = display.trim();
+    return trimmed.isEmpty ? null : displayToIso(trimmed);
   }
 
   /// `dd/MM/yyyy` -> `YYYY-MM-DD` for the API. Falls back to the raw value if

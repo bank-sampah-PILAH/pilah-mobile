@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
+import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_jenis_sampah_picker.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
+
+  /// Harga per kg yang dipakai ketika pengelola memilih jenis. Bawaannya harga
+  /// hari ini; edit setoran memberi harga pada tanggal setoran.
+  final int Function(HargaEntity jenis)? hargaFor;
 
   /// Dipanggil ketika pengelola menekan Enter pada kotak berat. Opsional, jadi
   /// pemanggil yang tidak peduli tidak perlu berubah.
@@ -27,6 +37,7 @@ class ItemSetoranCard extends StatelessWidget {
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
+    this.hargaFor,
     this.onSubmitted,
     this.hasError = false,
     this.errorText,
@@ -38,17 +49,18 @@ class ItemSetoranCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedType = itemData['jenis'] as String?;
+    final selectedId = itemData['jenis_sampah_id'] as String?;
     final harga = itemData['harga'] as int? ?? 0;
     final berat = itemData['berat'] as num? ?? 1.0;
-    final subtotal = (harga * berat).round();
+    final subtotal = setoranSubtotal(harga, berat);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!, width: 1.5),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,76 +73,80 @@ class ItemSetoranCard extends StatelessWidget {
                   height: 48,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
-                        color: hasError ? errorColor : Colors.grey[200]!),
+                        color: hasError ? errorColor : AppColors.border),
                   ),
-                  child: BlocBuilder<HargaCubit, HargaState>(
-                    builder: (context, state) {
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      ref.watch(hargaProvider);
                       // Source the options from the full active list rather than
                       // the price-list page's tab/search-filtered state, so the
-                      // dropdown always offers every active jenis sampah. The
-                      // BlocBuilder still rebuilds this once loadHarga() completes.
+                      // picker always offers every active jenis sampah. The
+                      // provider watch rebuilds this when loadHarga() completes.
                       final List<HargaEntity> activeList =
-                          context.read<HargaCubit>().activeJenisSampah;
-                      // Guard against a stale selection no longer in the list
-                      // (e.g. a jenis that was deactivated): DropdownButton
-                      // asserts if its value has no matching item.
-                      final selectedValue =
-                          activeList.any((t) => t.name == selectedType)
-                              ? selectedType
-                              : null;
+                          ref.read(hargaProvider.notifier).activeJenisSampah;
+                      final selected = activeList
+                          .where((type) => type.id == selectedId)
+                          .firstOrNull;
 
-                      return DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: selectedValue,
-                          hint: Row(
-                            children: [
+                      return InkWell(
+                        key: const Key('pilih-jenis-sampah'),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        onTap: () async {
+                          // Popup (dialog) di jendela lebar, bottom sheet di
+                          // ponsel. Bukan side sheet: di web formulir setoran
+                          // sendiri sudah side sheet, dan sheet di atas sheet
+                          // membingungkan.
+                          final picked = await showAdaptivePicker<HargaEntity>(
+                            context: context,
+                            builder: (context, presentation) =>
+                                PilihJenisSampahPicker(
+                              selectedId: selectedId,
+                              hargaFor: hargaFor,
+                              presentation: presentation,
+                            ),
+                          );
+                          if (!context.mounted || picked == null) return;
+                          onChanged({
+                            ...itemData,
+                            'jenis': picked.name,
+                            'jenis_sampah_id': picked.id,
+                            'harga': hargaFor?.call(picked) ?? picked.price,
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            if (selected == null) ...[
                               const Icon(Icons.recycling,
                                   color: AppColors.greenDark, size: 20),
                               const SizedBox(width: 8),
-                              Text(
-                                'Pilih Jenis',
-                                style: AppTextStyle.small
-                                    .copyWith(color: Colors.grey[500]),
+                              Expanded(
+                                child: Text(
+                                  selectedType ?? 'Pilih Jenis',
+                                  style: AppTextStyle.small
+                                      .copyWith(color: AppColors.grey100),
+                                ),
+                              ),
+                            ] else ...[
+                              Icon(selected.icon,
+                                  color: selected.iconColor, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  selectedType ?? selected.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle.small.copyWith(
+                                    color: AppColors.black,
+                                    fontWeight: AppFontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                          icon: Icon(Icons.keyboard_arrow_down,
-                              color: Colors.grey[400]),
-                          items: activeList.map((type) {
-                            return DropdownMenuItem<String>(
-                              value: type.name,
-                              child: Row(
-                                children: [
-                                  Icon(type.icon,
-                                      color: type.iconColor, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    type.name,
-                                    style: AppTextStyle.small.copyWith(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              final selected =
-                                  activeList.firstWhere((t) => t.name == value);
-                              onChanged({
-                                ...itemData,
-                                'jenis': value,
-                                'jenis_sampah_id': selected.id,
-                                'harga': selected.price,
-                              });
-                            }
-                          },
+                            const Icon(Icons.keyboard_arrow_down,
+                                color: AppColors.grey200),
+                          ],
                         ),
                       );
                     },
@@ -140,13 +156,13 @@ class ItemSetoranCard extends StatelessWidget {
               const SizedBox(width: 12),
               InkWell(
                 onTap: onDelete,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
                     color: errorLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Icon(Icons.close, color: errorColor, size: 20),
                 ),
@@ -157,8 +173,8 @@ class ItemSetoranCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               errorText!,
-              style:
-                  AppTextStyle.small.copyWith(color: errorColor, fontSize: 12),
+              style: AppTextStyle.small
+                  .copyWith(color: errorColor, fontSize: AppFontSize.sm),
             ),
           ],
           const SizedBox(height: 16),
@@ -168,16 +184,16 @@ class ItemSetoranCard extends StatelessWidget {
             children: [
               Text(
                 'Harga/kg:',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const SizedBox(width: 8),
               Container(
                 height: 40,
                 width: 120,
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -187,7 +203,7 @@ class ItemSetoranCard extends StatelessWidget {
                       child: Text(
                         'Rp',
                         style: AppTextStyle.small
-                            .copyWith(color: Colors.grey[500]),
+                            .copyWith(color: AppColors.grey100),
                       ),
                     ),
                     Expanded(
@@ -204,13 +220,10 @@ class ItemSetoranCard extends StatelessWidget {
                         // pengelola, jadi ia tidak punya urusan dengan papan
                         // tik sama sekali.
                         canRequestFocus: false,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.only(bottom: 12),
-                        ),
+                        decoration: appBorderlessInputDecoration(),
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.grey.shade700,
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.inkSoft,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
                     ),
@@ -220,7 +233,7 @@ class ItemSetoranCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '/kg',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
             ],
           ),
@@ -234,8 +247,8 @@ class ItemSetoranCard extends StatelessWidget {
                 height: 40,
                 width: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: TextFormField(
                   // Seed the field with the same comma-formatted weight shown
@@ -258,13 +271,10 @@ class ItemSetoranCard extends StatelessWidget {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => onSubmitted?.call(),
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
+                    color: AppColors.black,
+                    fontWeight: AppFontWeight.bold,
                   ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.only(bottom: 12),
-                  ),
+                  decoration: appBorderlessInputDecoration(),
                   onChanged: (value) {
                     final cleanValue = value.replaceAll(',', '.');
                     final newBerat = num.tryParse(cleanValue) ?? 0.0;
@@ -278,7 +288,7 @@ class ItemSetoranCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'kg',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const Spacer(),
               // Subtotal
@@ -288,15 +298,15 @@ class ItemSetoranCard extends StatelessWidget {
                   Text(
                     'Subtotal',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                   Text(
                     CurrencyFormatter.formatRupiah(subtotal),
                     style: AppTextStyle.title1.copyWith(
                       color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: AppFontSize.lg,
                     ),
                   ),
                 ],

@@ -3,7 +3,7 @@ bricks:
   feature:
     path: bricks/feature
 
-  # Storage provider bricks — used by spl_manager storage set <provider>
+  # Storage provider bricks — used by spl_manager storage add <provider>
   storage_secure:
     path: bricks/storage_secure
   storage_sqflite:

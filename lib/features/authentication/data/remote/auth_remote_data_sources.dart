@@ -18,6 +18,10 @@ abstract class AuthRemoteDataSources {
 
   /// Revokes [refreshToken] server-side (blacklists it).
   Future<void> logout(String refreshToken);
+
+  /// Deletes the caller's own profile-incomplete account, so the same Google
+  /// identity can register again and pick another role (UAT 2026-11).
+  Future<void> discardRegistration();
 }
 
 @LazySingleton(as: AuthRemoteDataSources)
@@ -66,5 +70,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
       Endpoints.logout,
       data: {'refresh_token': refreshToken},
     );
+  }
+
+  @override
+  Future<void> discardRegistration() async {
+    await networkService.delete(Endpoints.onboardingDiscardRegistration);
   }
 }

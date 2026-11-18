@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_button.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/design/widgets/atom/page_indicator.dart';
-import 'package:pilah_mobile/design/widgets/atom/primary_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 
 import '../../support/pump_app.dart';
@@ -13,68 +13,6 @@ import '../../support/pump_app.dart';
 Widget _host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
-  group('CustomOutlinedButton', () {
-    testWidgets('shows its title and icon, and reports taps', (tester) async {
-      var taps = 0;
-      await tester.pumpWidget(_host(CustomOutlinedButton(
-        title: 'Tambah',
-        icon: Icons.add,
-        borderColor: Colors.green,
-        textColor: Colors.green,
-        backgroundColor: Colors.yellow,
-        onPressed: () => taps++,
-      )));
-
-      expect(find.text('Tambah'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
-
-      await tester.tap(find.text('Tambah'));
-      expect(taps, 1);
-    });
-
-    testWidgets('a disabled button is greyed out and does nothing',
-        (tester) async {
-      await tester.pumpWidget(_host(CustomOutlinedButton(
-        title: 'Tambah',
-        icon: Icons.add,
-        onPressed: null,
-      )));
-
-      final text = tester.widget<Text>(find.text('Tambah'));
-      expect(text.style?.color, Colors.grey[500]);
-      expect(tester.widget<OutlinedButton>(find.byType(OutlinedButton)).enabled,
-          isFalse);
-    });
-
-    testWidgets('works without an icon', (tester) async {
-      await tester.pumpWidget(
-          _host(CustomOutlinedButton(title: 'Saja', onPressed: () {})));
-
-      expect(find.byType(Icon), findsNothing);
-    });
-  });
-
-  group('PrimaryButton', () {
-    testWidgets('shows its label and reports taps', (tester) async {
-      var taps = 0;
-      await tester
-          .pumpWidget(_host(PrimaryButton(text: 'Kirim', onTap: () => taps++)));
-
-      await tester.tap(find.text('Kirim'));
-
-      expect(taps, 1);
-    });
-
-    testWidgets('shows a spinner instead of the label while loading',
-        (tester) async {
-      await tester.pumpWidget(
-          _host(PrimaryButton(text: 'Kirim', onTap: () {}, isLoading: true)));
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Kirim'), findsNothing);
-    });
-  });
-
   group('AppTextButton', () {
     testWidgets('reports taps on its label', (tester) async {
       var taps = 0;
@@ -136,7 +74,40 @@ void main() {
         isError: true,
       )));
 
-      expect(tester.widget<Text>(find.text('Nama')).style?.color, Colors.red);
+      expect(
+        tester.widget<Text>(find.text('Nama')).style?.color,
+        AppColors.danger,
+      );
+    });
+
+    testWidgets('looks like every other field: white, 12 rounded, green focus',
+        (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(),
+        hint: 'Isi nama',
+      )));
+
+      final decoration =
+          tester.widget<TextField>(find.byType(TextField)).decoration!;
+      expect(decoration.filled, isTrue);
+      expect(decoration.fillColor, Colors.white);
+      final focused = decoration.focusedBorder! as OutlineInputBorder;
+      expect(focused.borderRadius, BorderRadius.circular(12));
+      expect(focused.borderSide.color, AppColors.greenDark);
+    });
+
+    testWidgets('the reveal icon is the app green, not the retired seed blue',
+        (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(text: 'rahasia'),
+        hint: 'Sandi',
+        obscureText: true,
+      )));
+
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.visibility)).color,
+        AppColors.greenDark,
+      );
     });
 
     testWidgets('a password field can reveal and hide its text',
@@ -206,6 +177,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('route:/'), findsOneWidget);
+    });
+
+    testWidgets(
+        'looks like the rest of the app: header, green icon, white page',
+        (tester) async {
+      await pumpRouted(
+        tester,
+        // ignore: prefer_const_constructors
+        ForgotPasswordPage(),
+        pushed: true,
+      );
+
+      expect(find.byType(AppBackHeader), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.lock_reset)).color,
+        AppColors.greenDark,
+      );
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+        Colors.white,
+      );
     });
   });
 }

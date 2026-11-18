@@ -22,9 +22,9 @@ String initialsOf(String name) {
 
 const List<(Color, Color)> _avatarPalette = [
   (AppColors.greenLight, AppColors.greenDark), // green
-  (Color(0xFFDBEAFE), Color(0xFF1E40AF)), // blue
-  (Color(0xFFF3E8FF), Color(0xFF6B21A8)), // purple
+  (AppColors.avatarBlue, AppColors.avatarBlueText), // blue
+  (AppColors.avatarPurple, AppColors.avatarPurpleText), // purple
   (AppColors.warningLight, AppColors.warning), // yellow
-  (Color(0xFFFFEDD5), Color(0xFF9A3412)), // orange
-  (Color(0xFFCCFBF1), Color(0xFF0F766E)), // teal
+  (AppColors.avatarOrange, AppColors.avatarOrangeText), // orange
+  (AppColors.avatarTeal, AppColors.avatarTealText), // teal
 ];

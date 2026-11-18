@@ -35,6 +35,23 @@ List<String> _renderedNetworkUrls(WidgetTester tester) => tester
 
 void main() {
   group('showProofImageDialog', () {
+    testWidgets('dims the page with the same barrier as every other dialog',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _openDialog(
+        tester,
+        imageUrl: 'https://storage.googleapis.com/pilah/kegiatan/bukti.jpg',
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final barrier = tester.widget<ModalBarrier>(
+        find.byType(ModalBarrier).last,
+      );
+      // The app sets no barrier of its own, so this is Flutter's default.
+      expect(barrier.color, Colors.black54);
+    });
+
     testWidgets('with no photo on record, shows nothing rather than a stand-in',
         (tester) async {
       await _openDialog(tester, imageUrl: null);

@@ -4,7 +4,6 @@ import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_da
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Fake riwayat layers for screen-level tests. Everything reads one in-memory
@@ -39,17 +38,17 @@ void registerFakeRiwayat(FakeRiwayatRemoteDataSource source) {
   di.registerLazySingleton<RiwayatRepository>(
     () => _FixedRepository(source),
   );
-  // The history screen resolves this factory; use cases wire the fake repo.
-  di.registerFactory<RiwayatHistoryCubit>(
-    () => RiwayatHistoryCubit(
-      GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
-      GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
-    ),
+  di.registerFactory<GetRiwayatHistoryUseCase>(
+    () => GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
+  );
+  di.registerFactory<GetRiwayatSetoranDetailUseCase>(
+    () => GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
   );
 }
 
 Future<void> unregisterFakeRiwayat() async {
-  await di.unregister<RiwayatHistoryCubit>();
+  await di.unregister<GetRiwayatHistoryUseCase>();
+  await di.unregister<GetRiwayatSetoranDetailUseCase>();
   await di.unregister<RiwayatRepository>();
   await di.unregister<RiwayatRemoteDataSource>();
 }

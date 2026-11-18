@@ -1,16 +1,11 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
-class MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
+import '../../../../support/nasabah_support.dart';
 
 void main() {
   // Tests measure text with a placeholder font unless the real one is loaded,
@@ -29,11 +24,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.light,
-      home: BlocProvider<NasabahCubit>.value(
-        value: MockNasabahCubit(),
-        child: const Scaffold(body: TambahNasabahBottomSheet()),
+    await tester.pumpWidget(withNasabahProvider(
+      TestNasabahNotifier(),
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(body: TambahNasabahBottomSheet()),
       ),
     ));
 

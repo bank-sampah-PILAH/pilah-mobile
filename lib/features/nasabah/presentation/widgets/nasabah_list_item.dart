@@ -1,15 +1,25 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/nasabah/analytics/nasabah_analytics.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_search_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
-class NasabahListItem extends StatelessWidget {
+class NasabahListItem extends ConsumerWidget {
   /// Satu nasabah sebagaimana dikembalikan API, dipakai apa adanya.
   ///
   /// Sebelumnya widget ini menerima dua belas parameter lepas lalu menyusunnya
@@ -18,12 +28,9 @@ class NasabahListItem extends StatelessWidget {
   /// kesalahan namanya baru terlihat saat dijalankan.
   final NasabahEntity nasabah;
 
-  final NasabahCubit? nasabahCubit;
-
   const NasabahListItem({
     super.key,
     required this.nasabah,
-    this.nasabahCubit,
   });
 
   bool get isActive => nasabah.isActive;
@@ -43,43 +50,44 @@ class NasabahListItem extends StatelessWidget {
   String get _idUntukApi =>
       nasabah.id.isNotEmpty ? nasabah.id : nasabah.idNasabah;
 
-  void _onTap(BuildContext context) {
+  void _onTap(BuildContext context, WidgetRef ref) {
+    nasabahSearchPicked(ref, nasabah.id);
     if (isPending) {
-      _showDecisionDialog(context);
+      _showDecisionDialog(context, ref);
       return;
     }
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    showAdaptiveSurface<void>(
+      context,
       builder: (context) => DetailNasabahBottomSheet(
         nasabah: nasabah,
-        nasabahCubit: nasabahCubit,
       ),
     );
   }
 
   /// Approve/reject flow for pending submissions (PIL-188). Captured before
   /// any await so notifications survive the list reload rebuilding this item.
-  Future<void> _showDecisionDialog(BuildContext context) async {
-    final cubit = nasabahCubit;
-    if (cubit == null) return;
+  Future<void> _showDecisionDialog(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(nasabahProvider.notifier);
+    final analytics = ref.read(analyticsClientProvider);
     final overlayContext = Navigator.of(context, rootNavigator: true).context;
 
     final reject = await _showActionSheet(context);
     if (reject == null || !context.mounted) return;
+    final opened = Stopwatch()..start();
     final catatan = await showNasabahApprovalDialog(
       context,
       isApproving: !reject,
       customerName: name,
     );
     if (catatan == null) return;
-    final error = await cubit.decideNasabah(
+    final error = await notifier.decideNasabah(
       _idUntukApi,
       approve: !reject,
       catatan: catatan,
     );
+    if (error == null) {
+      nasabahDecided(analytics, approved: !reject, sinceOpened: opened.elapsed);
+    }
     if (overlayContext.mounted && error != null) {
       AppNotification.showError(
         overlayContext,
@@ -92,45 +100,53 @@ class NasabahListItem extends StatelessWidget {
   /// Action sheet for a pending submission: Setujui / Tolak. Returns `true`
   /// to reject, `false` to approve, `null` when dismissed.
   Future<bool?> _showActionSheet(BuildContext context) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.greenDark,
-                ),
-                title: const Text('Setujui'),
-                onTap: () => Navigator.of(sheetContext).pop(false),
+    return showAdaptiveSurface<bool>(
+      context,
+      builder: (sheetContext) {
+        final options = Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.check_circle_outline,
+                color: AppColors.greenDark,
               ),
-              ListTile(
-                leading: const Icon(Icons.cancel_outlined, color: Colors.red),
-                title: const Text('Tolak'),
-                onTap: () => Navigator.of(sheetContext).pop(true),
-              ),
-            ],
+              title: const Text('Setujui'),
+              onTap: () => Navigator.of(sheetContext).pop(false),
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.cancel_outlined, color: AppColors.danger),
+              title: const Text('Tolak'),
+              onTap: () => Navigator.of(sheetContext).pop(true),
+            ),
+          ],
+        );
+        // Dialog sudah putih dan membulat; hanya sheet yang melayang di atas
+        // dasar halaman dengan kartunya sendiri.
+        if (DialogSurface.of(sheetContext)) {
+          return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8), child: options);
+        }
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: options,
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppTappableCard(
-      onTap: () => _onTap(context),
+      onTap: () => _onTap(context, ref),
       child: Row(
         children: [
           Container(
@@ -138,14 +154,14 @@ class NasabahListItem extends StatelessWidget {
             height: 50,
             decoration: BoxDecoration(
               color: avatarColor,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             alignment: Alignment.center,
             child: Text(
               initials,
               style: AppTextStyle.title1.copyWith(
                 color: textColor,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -160,9 +176,9 @@ class NasabahListItem extends StatelessWidget {
                       child: Text(
                         name,
                         style: AppTextStyle.title1.copyWith(
-                          color: isActive ? Colors.black87 : Colors.grey[600],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          color: isActive ? AppColors.black : AppColors.grey100,
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.lg,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -173,14 +189,21 @@ class NasabahListItem extends StatelessWidget {
                       _PendingBadge(),
                     ] else if (!isActive) ...[
                       const SizedBox(width: 8),
-                      CustomStatusBadge(isActive: false),
+                      const CustomStatusBadge(isActive: false),
                     ],
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'ID: ${nasabah.idNasabah}',
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey200),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   phone,
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey200),
                 ),
               ],
             ),
@@ -193,16 +216,16 @@ class NasabahListItem extends StatelessWidget {
               Text(
                 balance,
                 style: AppTextStyle.title1.copyWith(
-                  color: isActive ? AppColors.greenDark : Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                  color: isActive ? AppColors.greenDark : AppColors.grey100,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.md,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'saldo',
                 style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[400],
+                  color: AppColors.grey200,
                 ),
               ),
             ],
@@ -220,13 +243,13 @@ class _PendingBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.warningLight,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         'Menunggu',
         style: AppTextStyle.extraSmall.copyWith(
           color: AppColors.warning,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );

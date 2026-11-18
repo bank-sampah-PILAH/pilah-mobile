@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -10,8 +11,7 @@ import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_pre
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';
 import 'package:pilah_mobile/features/statement/domain/use_cases/statement_use_cases.dart';
-import 'package:pilah_mobile/features/statement/presentation/blocs/statement_export_cubit.dart';
-import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/statement/presentation/providers/statement_export_provider.dart';
 
 import '../../support/platform_fakes.dart';
 import '../../support/pump_app.dart';
@@ -23,24 +23,21 @@ const _pdf =
 
 void main() {
   late _UseCases useCases;
-  late StatementExportCubit cubit;
+  late StatementExportNotifier notifier;
 
   setUp(() {
     useCases = _UseCases();
-    cubit = StatementExportCubit(useCases);
-    di.registerSingleton<StatementExportCubit>(cubit);
-  });
-  tearDown(() async {
-    await di.unregister<StatementExportCubit>();
-    await cubit.close();
+    notifier = StatementExportNotifier(useCases);
   });
 
   Future<void> openButton(WidgetTester tester) =>
-      tester.pumpWidget(const MaterialApp(
-          home: Scaffold(
-              body: NasabahPdfPreviewButton(
-                  membershipId: 'member-1',
-                  previewViewer: Text('PDF content')))));
+      tester.pumpWidget(ProviderScope(
+          overrides: [statementExportProvider.overrideWith(() => notifier)],
+          child: const MaterialApp(
+              home: Scaffold(
+                  body: NasabahPdfPreviewButton(
+                      membershipId: 'member-1',
+                      previewViewer: Text('PDF content'))))));
 
   testWidgets(
       'PDF export opens a preview and returns to history without a navigator lock',
