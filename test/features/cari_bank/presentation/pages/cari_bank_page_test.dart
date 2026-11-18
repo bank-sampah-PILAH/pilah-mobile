@@ -390,6 +390,21 @@ void main() {
     expect(find.text('Bank Garis'), findsOneWidget);
   });
 
+  testWidgets('pull to refresh reloads the first page', (tester) async {
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b1', 'Bank Garis')]));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    final before = api.requests.where((r) => r.path == _directory).length;
+
+    await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+
+    expect(api.requests.where((r) => r.path == _directory).length, before + 1);
+    expect(find.text('Depok · Jl. Bank Garis'), findsOneWidget);
+  });
+
   testWidgets('the Daftar pill returns from Peta to the list', (tester) async {
     api.on('GET', _directory,
         json: bankSampahPage([
