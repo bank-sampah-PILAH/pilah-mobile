@@ -103,105 +103,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
   }
 
-  /// Opens the map picker and returns the picked coordinate trio, or null
-  /// when the user backs out.
-  Future<({double latitude, double longitude, double radiusKm})?>
-      _pilihTitikDiPeta(NavigatorState navigator) => navigator
-              .push<({double latitude, double longitude, double radiusKm})>(
-            MaterialPageRoute(builder: (_) => const MapPickerPage()),
-          );
-
-  /// Saves the picked point on the bank, leaving the rest of the record
-  /// untouched. Returns the error message, or null on success.
-  Future<String?> _simpanTitik(
-    ProfileNotifier notifier,
-    BankSampahProfile bank,
-    ({double latitude, double longitude, double radiusKm}) titik,
-  ) async {
-    // radiusKm belongs to cari, not the stored point.
-    final error = await notifier.updateBankSampah(
-      nama: bank.nama,
-      alamat: bank.alamat,
-      noHpPic: bank.noHpPic,
-      lokasi: (latitude: titik.latitude, longitude: titik.longitude),
-    );
-    return error?.displayMessage;
-  }
-
-  Future<void> _showLokasiPrompt(String bankNama) {
-    ({double latitude, double longitude, double radiusKm})? picked;
-    return showAdaptiveSurface<void>(
-      context,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) => Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Icon(Icons.location_on_outlined, size: 32),
-              const SizedBox(height: 12),
-              Text(
-                'Lengkapi lokasi bank sampah',
-                style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                      fontWeight: AppFontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$bankNama belum memasang titik lokasi di peta. Nasabah yang '
-                'mencari bank sampah belum dapat menemukannya di peta.',
-                style: Theme.of(sheetContext).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 16),
-              AppButton(
-                key: const Key('prompt_pilih_peta'),
-                // After a failed save the pick is kept, so the same button
-                // retries it instead of asking for the point again.
-                label: picked == null ? 'Pilih di Peta' : 'Simpan Lokasi',
-                expand: false,
-                onPressed: () async {
-                  // Everything the save needs is captured before the await so
-                  // no BuildContext is used across the picker gap.
-                  final navigator =
-                      Navigator.of(sheetContext, rootNavigator: true);
-                  final container =
-                      ProviderScope.containerOf(sheetContext, listen: false);
-                  final notifier = container.read(profileProvider.notifier);
-                  // ensureBank() is a no-op when the profile is already cached.
-                  await notifier.ensureBank();
-                  if (!sheetContext.mounted) return;
-                  picked ??= await _pilihTitikDiPeta(navigator);
-                  final titik = picked;
-                  if (titik == null) return;
-                  if (sheetContext.mounted) setSheetState(() {});
-                  final bank = container.read(profileProvider).bankSampah;
-                  if (bank == null) return;
-                  final error = await _simpanTitik(notifier, bank, titik);
-                  if (!sheetContext.mounted) return;
-                  if (error != null) {
-                    // Keep the sheet and the picked point so the user can
-                    // retry the save without hunting the spot again.
-                    ScaffoldMessenger.of(sheetContext)
-                        .showSnackBar(SnackBar(content: Text(error)));
-                    return;
-                  }
-                  navigator.pop();
-                },
-              ),
-              const SizedBox(height: 8),
-              AppButton(
-                label: 'Nanti',
-                variant: AppButtonVariant.text,
-                expand: false,
-                onPressed: () => Navigator.of(sheetContext).pop(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Future<void> _showLokasiPrompt(String bankNama) => showAdaptiveSurface<void>(
+        context,
+        builder: (_) => _LokasiPromptSheet(bankNama: bankNama),
+      );
 
   /// Refetches everything the dashboard renders. The header's bank sampah name
   /// comes from the cached session rather than provider state, so auth refresh
@@ -330,4 +235,116 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           );
         },
       );
+}
+
+/// The PIL-326 lokasi prompt: pick a point, save it, and keep the pick when
+/// the save fails so the same button retries instead of re-picking.
+class _LokasiPromptSheet extends StatefulWidget {
+  const _LokasiPromptSheet({required this.bankNama});
+
+  final String bankNama;
+
+  @override
+  State<_LokasiPromptSheet> createState() => _LokasiPromptSheetState();
+}
+
+class _LokasiPromptSheetState extends State<_LokasiPromptSheet> {
+  ({double latitude, double longitude, double radiusKm})? _picked;
+
+  Future<void> _onPressed() async {
+    // Everything the save needs is captured before the await so no
+    // BuildContext is used across the picker gap.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final container = ProviderScope.containerOf(context, listen: false);
+    final notifier = container.read(profileProvider.notifier);
+    // ensureBank() is a no-op when the profile is already cached.
+    await notifier.ensureBank();
+    if (!mounted) return;
+    _picked ??= await _pilihTitikDiPeta(navigator);
+    final titik = _picked;
+    if (titik == null) return;
+    setState(() {});
+    final bank = container.read(profileProvider).bankSampah;
+    if (bank == null) return;
+    final error = await _simpanTitik(notifier, bank, titik);
+    if (!mounted) return;
+    if (error != null) {
+      // Keep the sheet and the picked point so the user can retry the save
+      // without hunting the spot again.
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    navigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final picked = _picked;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.location_on_outlined, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            'Lengkapi lokasi bank sampah',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: AppFontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${widget.bankNama} belum memasang titik lokasi di peta. Nasabah '
+            'yang mencari bank sampah belum dapat menemukannya di peta.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          AppButton(
+            key: const Key('prompt_pilih_peta'),
+            // After a failed save the pick is kept, so the same button
+            // retries it instead of asking for the point again.
+            label: picked == null ? 'Pilih di Peta' : 'Simpan Lokasi',
+            expand: false,
+            onPressed: _onPressed,
+          ),
+          const SizedBox(height: 8),
+          AppButton(
+            label: 'Nanti',
+            variant: AppButtonVariant.text,
+            expand: false,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Opens the map picker and returns the picked coordinate trio, or null when
+/// the user backs out.
+Future<({double latitude, double longitude, double radiusKm})?>
+    _pilihTitikDiPeta(NavigatorState navigator) =>
+        navigator.push<({double latitude, double longitude, double radiusKm})>(
+          MaterialPageRoute(builder: (_) => const MapPickerPage()),
+        );
+
+/// Saves the picked point on the bank, leaving the rest of the record
+/// untouched. Returns the error message, or null on success.
+Future<String?> _simpanTitik(
+  ProfileNotifier notifier,
+  BankSampahProfile bank,
+  ({double latitude, double longitude, double radiusKm}) titik,
+) async {
+  // radiusKm belongs to cari, not the stored point.
+  final error = await notifier.updateBankSampah(
+    nama: bank.nama,
+    alamat: bank.alamat,
+    noHpPic: bank.noHpPic,
+    lokasi: (latitude: titik.latitude, longitude: titik.longitude),
+  );
+  return error?.displayMessage;
 }
