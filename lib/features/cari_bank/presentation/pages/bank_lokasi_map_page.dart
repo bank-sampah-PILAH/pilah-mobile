@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/osm_tiles.dart';
 
@@ -96,24 +97,11 @@ class BankLokasiMapPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ElevatedButton.icon(
+                AppButton(
                   key: const Key('detail_bank_buka_di_maps'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.greenDark,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  icon: const Icon(Icons.near_me, size: 18),
-                  label: Text(
-                    'Buka di Maps',
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  label: 'Buka di Maps',
+                  variant: AppButtonVariant.primary,
+                  trailingIcon: Icons.near_me,
                   onPressed: () async {
                     final uri = Uri(
                       scheme: 'geo',
@@ -150,7 +138,7 @@ class _PinBank extends StatelessWidget {
           border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: AppColors.black.withValues(alpha: 0.3),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),

@@ -944,7 +944,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         Text(
           'LOKASI DI PETA',
           style: AppTextStyle.extraSmall.copyWith(
-            color: Colors.grey[500],
+            color: AppColors.grey100,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
           ),
@@ -963,9 +963,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                 ? Container(
                     height: 140,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: AppColors.grey100,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: AppColors.grey100),
                     ),
                     alignment: Alignment.center,
                     child: Column(
@@ -980,7 +980,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                         Text(
                           'Belum diatur — ketuk untuk memilih di peta',
                           style: AppTextStyle.extraSmall.copyWith(
-                            color: Colors.grey[500],
+                            color: AppColors.grey100,
                           ),
                         ),
                       ],
@@ -999,25 +999,13 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         // map keeps winning the gesture arena, so the tap goes to a button.
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton.icon(
+          child: AppButton(
             key: const Key('edit_lokasi_peta'),
+            label: pending != null ? 'Edit lokasi belum disimpan' : 'Edit',
+            variant: AppButtonVariant.outlined,
+            size: AppButtonSize.compact,
+            trailingIcon: Icons.edit_location_alt_outlined,
             onPressed: _openMapPicker,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.greenDark,
-              side: const BorderSide(color: AppColors.greenDark),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-            icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
-            label: Text(
-              pending != null ? 'Edit lokasi belum disimpan' : 'Edit',
-              style: AppTextStyle.small.copyWith(
-                color: AppColors.greenDark,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ),
         if (pending != null)
@@ -1025,7 +1013,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               'Tekan Simpan Pengaturan untuk menerapkan lokasi.',
-              style: AppTextStyle.extraSmall.copyWith(color: Colors.grey[500]),
+              style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
             ),
           ),
       ],

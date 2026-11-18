@@ -129,8 +129,12 @@ class _IsiDetail extends StatelessWidget {
         if (detail.lokasi != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
-            child: OutlinedButton.icon(
+            child: AppButton(
               key: const Key('detail_bank_buka_peta'),
+              label: 'Buka di Peta',
+              variant: AppButtonVariant.outlined,
+              size: AppButtonSize.compact,
+              trailingIcon: Icons.map_outlined,
               onPressed: () => Navigator.of(context, rootNavigator: true)
                   .push(MaterialPageRoute(
                 builder: (_) => BankLokasiMapPage(
@@ -139,22 +143,6 @@ class _IsiDetail extends StatelessWidget {
                   longitude: detail.lokasi!.longitude,
                 ),
               )),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.greenDark,
-                side: const BorderSide(color: AppColors.greenDark),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-              icon: const Icon(Icons.map_outlined, size: 18),
-              label: Text(
-                'Lihat Lokasi di Peta',
-                style: AppTextStyle.small.copyWith(
-                  color: AppColors.greenDark,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
         const SizedBox(height: 12),

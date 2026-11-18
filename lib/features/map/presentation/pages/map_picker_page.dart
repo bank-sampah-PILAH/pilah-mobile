@@ -9,9 +9,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/osm_tiles.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Full-screen OpenStreetMap picker (PIL-326).
@@ -34,8 +34,7 @@ class MapPickerPage extends StatefulWidget {
     this.initialRadiusKm,
     this.showRadius = false,
     this.tileLayerBuilder = osmTileLayer,
-    this.placeSearch,
-  });
+    this.placeSearch,  });
 
   /// Where the pin starts. Defaults to somewhere over Indonesia when the
   /// caller has nothing saved; zoomed out enough to see, in enough to pick.
@@ -61,7 +60,6 @@ class MapPickerPage extends StatefulWidget {
 
   /// The default search radius when nothing was saved before.
   static const radiusDefault = 5.0;
-
   @override
   State<MapPickerPage> createState() => _MapPickerPageState();
 }
@@ -256,17 +254,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: Text(
-            'Pilih Lokasi di Peta',
-            style: AppTextStyle.appBar.copyWith(color: NasabahStyle.ink),
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.white,
-          scrolledUnderElevation: 0,
-        ),
         body: Column(
           children: [
+            const AppBackHeader(title: 'Pilih Lokasi di Peta'),
             Expanded(
               child: Stack(
                 children: [
@@ -323,7 +313,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.7),
+                            color: AppColors.black.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -444,8 +434,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                               ),
                             ),
                           ),
-                      ],
-                    ),
+                      ],                    ),
                   ),
                 ],
               ),
@@ -610,7 +599,7 @@ class _TitikPusat extends StatelessWidget {
           border: Border.all(color: Colors.white, width: 3),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: AppColors.black.withValues(alpha: 0.3),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
