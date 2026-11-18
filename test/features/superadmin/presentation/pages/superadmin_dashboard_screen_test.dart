@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -298,5 +299,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('route:/login'), findsOneWidget);
+  });
+
+  testWidgets('the status icon of an approved bank is hidden in the recording',
+      (tester) async {
+    stubTabs();
+    await openScreen(tester);
+
+    api.on('GET', _path, json: {
+      'results': [bankRow('3', nama: 'Bank Aktif', status: 'active')],
+    });
+    await tester.tap(find.text('Disetujui'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.ancestor(
+        of: find.byIcon(Icons.check_box),
+        matching: find.byType(HideInReplay),
+      ),
+      findsOneWidget,
+    );
   });
 }
