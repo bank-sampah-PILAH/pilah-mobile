@@ -25,8 +25,6 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_c
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
@@ -57,9 +55,6 @@ class _ActivityNotifier extends RecentActivityNotifier {
     if (failing) state = RecentActivityError('gagal');
   }
 }
-
-class _FakeProfileCubit extends MockCubit<ProfileState>
-    implements ProfileCubit {}
 
 class _EmptyReportingDataSource implements DashboardReportingDataSource {
   @override
@@ -95,23 +90,9 @@ class _EmptyJadwalRepository implements JadwalRepository {
 
 void main() {
   late StubApi api;
-<<<<<<< HEAD
-  late DashboardCubit dashboard;
-  late _ActivityCubit activity;
-  late MockAuthBloc auth;
-  // The dead stand-in the prompt checks need: bank-less (null) forever, so
-  // no prompt opens and no extra fetch happens.
-  final profile = _FakeProfileCubit();
-
-  setUpAll(() {
-    registerFallbackValue(_FakeAuthEvent());
-    when(() => profile.ensureBank()).thenAnswer((_) async => null);
-  });
-=======
   late DashboardNotifier dashboard;
   late _ActivityNotifier activity;
   late TestAuthenticationNotifier auth;
->>>>>>> staging
   setUp(() async {
     await di.reset();
     di.registerSingleton<DashboardReportingDataSource>(
@@ -135,22 +116,11 @@ void main() {
   Future<void> pump(WidgetTester tester, Widget child) async {
     final router = await pumpRouted(
       tester,
-<<<<<<< HEAD
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          // The dashboard reads the bank location for the backfill prompt;
-          // these page tests never open it, so a dead cubit is enough.
-          BlocProvider<ProfileCubit>.value(value: profile),
-=======
       ProviderScope(
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => activity),
           authenticationProvider.overrideWith(() => auth),
->>>>>>> staging
         ],
         child: Scaffold(body: SingleChildScrollView(child: child)),
       ),
@@ -168,15 +138,6 @@ void main() {
   }) async {
     final router = await pumpRouted(
       tester,
-<<<<<<< HEAD
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          // The web dashboard reads the bank for the lokasi prompt section.
-          BlocProvider<ProfileCubit>.value(value: profile),
-=======
       ProviderScope(
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
@@ -184,7 +145,6 @@ void main() {
           authenticationProvider.overrideWith(() => auth),
           if (analytics != null)
             analyticsClientProvider.overrideWithValue(analytics),
->>>>>>> staging
         ],
         child: DashboardPage(isWeb: isWeb),
       ),
@@ -312,22 +272,11 @@ void main() {
     arrange(stats: {'total_nilai_bulan_ini': '5000'});
     await pumpRouted(
       tester,
-<<<<<<< HEAD
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          // Same dead stand-in as `pump` above: the backfill prompt never
-          // opens in this test.
-          BlocProvider<ProfileCubit>.value(value: profile),
-=======
       ProviderScope(
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => activity),
           authenticationProvider.overrideWith(() => auth),
->>>>>>> staging
         ],
         child: const DashboardPage(),
       ),

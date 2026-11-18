@@ -1,63 +1,59 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+// ignore: unnecessary_import
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/dashboard_support.dart';
 import '../../../../support/profile_support.dart';
 import '../../../../support/stub_api.dart';
 
-class _ActivityCubit extends MockCubit<RecentActivityState>
-    implements RecentActivityCubit {}
-
 void main() {
   late StubApi api;
-  late DashboardCubit dashboard;
-  late _ActivityCubit activity;
-  late ProfileCubit profile;
+  late DashboardNotifier dashboard;
+  late TestProfileNotifier profile;
 
+  /// ProviderScope overrides shared by every pump below. The dashboard loads
+  /// on open, its analytics report goes to a fake client, and the lokasi
+  /// prompt reads the bank through [profile].
   void arrange({Map<String, dynamic>? bank}) {
     api = StubApi();
     api.on('GET', '/api/v1/dashboard/stats', json: const {});
     api.on('GET', '/api/v1/bank-sampah/me', json: bank ?? bankJson());
-    dashboard = buildDashboardCubit(api);
-    addTearDown(dashboard.close);
-    activity = _ActivityCubit();
-    whenListen(activity, const Stream<RecentActivityState>.empty(),
-        initialState: RecentActivityLoaded(const []));
-    when(() => activity.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
-    profile = buildProfileCubit(api);
-    addTearDown(profile.close);
+    dashboard = buildDashboardNotifier(api);
+    profile = buildProfileNotifier(api);
   }
 
   Future<void> pumpPage(WidgetTester tester) async {
     await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-          BlocProvider<ProfileCubit>.value(value: profile),
-          BlocProvider<AuthenticationBloc>(
-            create: (_) => authBlocIn(
-              Authenticated(authEntity: testAuth()),
-            ),
+      ProviderScope(
+        overrides: [
+          dashboardProvider.overrideWith(() => dashboard),
+          recentActivityProvider.overrideWith(
+            () => _IdleActivityNotifier(_UnusedGetTransaksi(), _UnusedPencairan()),
+          ),
+          profileProvider.overrideWith(() => profile),
+          authenticationProvider.overrideWith(
+            () => authNotifierIn(Authenticated(authEntity: testAuth())),
           ),
         ],
         child: const MaterialApp(home: DashboardPage()),
       ),
     );
-    // initState fires the cubits, the post-frame callback resolves
-    // ensureBank()'s GET, and the prompt (if any) animates in.
+    // The post-frame callback fires the loads, resolves the prompt's
+    // ensureBank() read, and (if any) animates the sheet in.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
@@ -104,4 +100,20 @@ void main() {
 
     expect(find.text('Lengkapi lokasi bank sampah'), findsNothing);
   });
+}
+
+
+
+class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
+
+class _UnusedPencairan extends Mock implements PencairanUseCases {}
+
+class _IdleActivityNotifier extends RecentActivityNotifier {
+  _IdleActivityNotifier(super.getTransaksiUseCase, super.pencairanUseCases);
+
+  @override
+  RecentActivityState build() => const RecentActivityLoaded([]);
+
+  @override
+  Future<void> load({bool silent = false}) async {}
 }
