@@ -57,5 +57,10 @@
 		<true/>
 		<key>LSSupportsOpeningDocumentsInPlace</key>
 		<true/>
+		<!-- geolocator (LocationService, PIL-326/330): the OS only asks for
+		     location when this usage description is present. The feature is
+		     optional and degrades quietly when the user declines. -->
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Pilah memakai lokasi Anda untuk menampilkan bank sampah terdekat dan mengisi titik lokasi bank.</string>
 	</dict>
 </plist>

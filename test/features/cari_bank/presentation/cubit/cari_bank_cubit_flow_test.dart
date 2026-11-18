@@ -146,7 +146,35 @@ void main() {
     expect(halamanDua, hasLength(1));
   });
 
-  test('a failed muatBerikutnya surfaces the error state instead of appending',
+  test('a reload blocks pagination until the new first page lands', () async {
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b1', 'Bank Garis')],
+            count: 3, hasNext: true));
+    await cubit.load();
+
+    // The reload is still in flight; the stale first page must not invite a
+    // page-2 request with the new filters.
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b2', 'Bank Mawar')],
+            count: 2, hasNext: true));
+    api.latency = const Duration(milliseconds: 200);
+    final reload = cubit.load();
+    await cubit.muatBerikutnya();
+
+    expect(api.requests.where((r) => r.query['page'] == '2'), isEmpty);
+
+    await reload;
+    api.latency = null;
+    // The fresh first page owns pagination again, so the next scroll works.
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b3', 'Bank Melati')], count: 2));
+    await cubit.muatBerikutnya();
+    expect(api.requests.last.query['page'], '2');
+    final loaded = cubit.state as CariBankLoaded;
+    expect(loaded.items.map((b) => b.id), ['b2', 'b3']);
+  });
+
+  test('a failed muatBerikutnya keeps the loaded rows and exposes a retry',
       () async {
     api.on('GET', _directory,
         json: bankSampahPage([bankRow('b1', 'Bank Garis')],
@@ -156,9 +184,18 @@ void main() {
     api.on('GET', _directory, status: 500, json: {});
     await cubit.muatBerikutnya();
 
-    // A failed append surfaces the error state (the user's retry door), not
-    // a silently truncated list.
-    expect(cubit.state, isA<CariBankError>());
-    expect((cubit.state as CariBankError).message, isNotEmpty);
+    // The list stays on screen; the footer carries the failure and its retry.
+    final loaded = cubit.state as CariBankLoaded;
+    expect(loaded.items.map((b) => b.id), ['b1']);
+    expect(loaded.hasMore, isTrue);
+    expect(loaded.loadMoreError, isNotEmpty);
+
+    // Retry appends once the backend recovers.
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b2', 'Bank Mawar')], count: 2));
+    await cubit.muatBerikutnya();
+    final retried = cubit.state as CariBankLoaded;
+    expect(retried.items.map((b) => b.id), ['b1', 'b2']);
+    expect(retried.loadMoreError, isNull);
   });
 }
