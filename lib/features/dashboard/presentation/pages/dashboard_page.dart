@@ -143,10 +143,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       ProviderScope.containerOf(sheetContext, listen: false);
                   final notifier = container.read(profileProvider.notifier);
                   // Seed the cache before the await so the save below finds the
-                  // full profile in state even on first open.
-                  if (container.read(profileProvider).bankSampah == null) {
-                    await notifier.ensureBank();
-                  }
+                  // full profile in state even on first open. ensureBank() is a
+                  // no-op when the profile is already cached.
+                  await notifier.ensureBank();
                   if (picked == null) {
                     final result = await navigator.push<
                         ({double latitude, double longitude, double radiusKm})>(
