@@ -9,6 +9,13 @@ on:
     # First Monday of each month, off the hour.
     - cron: "53 2 * * 1"
   workflow_dispatch:
+  # Validate changes to this workflow on PRs touching it.
+  pull_request:
+    branches:
+      - staging
+      - main
+    paths:
+      - ".github/workflows/**"
 
 concurrency:
   group: scheduled-security-checks
