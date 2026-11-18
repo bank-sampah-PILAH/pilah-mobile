@@ -88,7 +88,11 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
   @override
   Future<List<BankSampahDirectoryEntity>> listBankSampahDirectory() async {
     final response = await networkService.get(Endpoints.bankSampahDirectory);
-    final list = response.data as List<dynamic>;
+    // The directory is paginated (PIL-308): {count, previous, next, results}.
+    // A bare list is still accepted so tests can stub either shape.
+    final data = response.data;
+    final list =
+        (data is Map<String, dynamic> ? data['results'] : data) as List<dynamic>;
     return list
         .map((item) =>
             BankSampahDirectoryEntity.fromJson(item as Map<String, dynamic>))

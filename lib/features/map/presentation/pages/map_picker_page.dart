@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
-import 'package:pilah_mobile/features/map/presentation/widgets/osm_tiles.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Full-screen OpenStreetMap picker (PIL-326).
@@ -19,7 +19,7 @@ class MapPickerPage extends StatefulWidget {
   const MapPickerPage({
     super.key,
     this.initialCenter,
-    this.tileLayerBuilder = osmTileLayer,
+    this.tileLayerBuilder = _osmTileLayer,
   });
 
   /// Where the pin starts. Defaults to somewhere over Indonesia when the
@@ -30,6 +30,13 @@ class MapPickerPage extends StatefulWidget {
   /// as any map child so a test can park a blank widget there instead of
   /// hand-rolling a TileProvider.
   final Widget Function() tileLayerBuilder;
+
+  static Widget _osmTileLayer() => TileLayer(
+        // Public OSM raster tiles, the source decided in PIL-326; the tile
+        // policy asks for a per-app user agent and visible attribution.
+        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        userAgentPackageName: 'id.pilah.app',
+      );
 
   @override
   State<MapPickerPage> createState() => _MapPickerPageState();
@@ -121,9 +128,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Pilih Lokasi di Peta')),
         body: Column(
           children: [
+            const AppBackHeader(title: 'Pilih Lokasi di Peta'),
             Expanded(
               child: FlutterMap(
                 mapController: _controller,
@@ -134,7 +141,11 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 ),
                 children: [
                   widget.tileLayerBuilder(),
-                  osmAttribution(),
+                  const RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution('© OpenStreetMap contributors')
+                    ],
+                  ),
                   // The fixed center pin: the map moves, the marker does not.
                   const Center(
                     child: Icon(
