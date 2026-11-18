@@ -29,9 +29,14 @@ class RegisterBankSampahScreen extends ConsumerStatefulWidget {
   /// itself is identical to a first-time registration.
   final bool isRejectedReapplication;
 
+  /// Test seam threaded to the map picker (PIL-326); null = the real OSM
+  /// layer, so widget tests never fetch tiles.
+  final Widget Function()? tileLayerBuilder;
+
   const RegisterBankSampahScreen({
     super.key,
     this.isRejectedReapplication = false,
+    this.tileLayerBuilder,
   });
 
   static const route = '/register-bank-sampah';
@@ -143,7 +148,9 @@ class _RegisterBankSampahScreenState
     final picked = await Navigator.of(context, rootNavigator: true)
         .push<({double latitude, double longitude, double radiusKm})>(
       MaterialPageRoute(
-        builder: (pickerContext) => const MapPickerPage(),
+        builder: (pickerContext) => widget.tileLayerBuilder == null
+            ? const MapPickerPage()
+            : MapPickerPage(tileLayerBuilder: widget.tileLayerBuilder!),
       ),
     );
     if (picked != null && mounted) {
