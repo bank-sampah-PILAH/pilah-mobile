@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 import 'package:pilah_mobile/core/analytics/screen_recorder.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 /// PostHog for the Android and iOS apps.
@@ -150,7 +151,8 @@ class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
       ..sessionReplay = true
       ..sessionReplayConfig = (PostHogSessionReplayConfig()
         ..maskAllTexts = true
-        ..maskAllImages = true)
+        ..maskAllImages = true
+        ..textMaskPolicy = replayTextMask)
       ..surveys = false
       ..preloadFeatureFlags = false
       ..capturePushNotificationSubscriptions = false
