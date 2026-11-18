@@ -49,6 +49,7 @@ Page<void> setoranSideSheetPage(LocalKey pageKey) => SideSheetPage<void>(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: AppPanelHeader(
               title: 'Transaksi Baru',
+              revealTitle: true,
               onHelp: startTutorial,
               helpTooltip: 'Panduan setoran',
               // maybePop, bukan pop: lewat jalan ini penjaga isian yang belum
