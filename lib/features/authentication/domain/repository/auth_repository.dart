@@ -16,6 +16,12 @@ abstract class AuthRepository {
     required GoogleRegistrationRole role,
   });
 
+  /// Switches a registering account's role while onboarding has not committed
+  /// anything for it, and keeps the session the backend issues for the new
+  /// role. A refusal leaves the stored session as it was.
+  Future<Either<NetworkException, AuthEntity>> changeRole(
+      GoogleRegistrationRole role);
+
   Future<Either<Exception, void>> saveToken(
     String accessToken,
     String refreshToken,

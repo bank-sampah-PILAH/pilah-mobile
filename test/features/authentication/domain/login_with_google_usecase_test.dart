@@ -50,4 +50,14 @@ void main() {
 
     expect(result.getOrElse(() => throw 'failed'), auth);
   });
+
+  test('changes a registering account to the chosen role', () async {
+    final auth = testAuth(role: 'nasabah');
+    when(() => repository.changeRole(GoogleRegistrationRole.nasabah))
+        .thenAnswer((_) async => Right(auth));
+
+    final result = await useCase.changeRole(GoogleRegistrationRole.nasabah);
+
+    expect(result.getOrElse(() => throw 'failed'), auth);
+  });
 }
