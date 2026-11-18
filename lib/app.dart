@@ -141,10 +141,7 @@ class App extends StatelessWidget {
               AppNotification.showError(
                 context,
                 title: 'Peran Tidak Didukung',
-                message:
-                    'Akun ini tidak memiliki peran Pengurus, sehingga tidak '
-                    'dapat mengakses aplikasi web. Silakan masuk dengan akun '
-                    'Pengurus.',
+                message: webRoleBounceMessage,
               );
             });
             ref.read(authenticationProvider.notifier).logout();

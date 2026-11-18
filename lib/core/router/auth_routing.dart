@@ -25,6 +25,12 @@ const _webSupportedRoles = {'superadmin', 'pengelola', 'nasabah'};
 /// a flash and believes the login silently failed (CPBI-21 UAT finding).
 const webRoleBounceFlag = 'peran-tak-tertinggal';
 
+/// Why the web signs out a session whose role it has no shell for. One text
+/// for both surfaces that raise it (app shell and login page).
+const webRoleBounceMessage =
+    'Akun ini tidak memiliki peran Nasabah atau Pengurus, sehingga tidak dapat '
+    'mengakses aplikasi web. Silakan masuk dengan akun Nasabah atau Pengurus.';
+
 /// One-shot flag: the app shell arms it when it logs a web session out for
 /// having a role the web does not support, and the login page consumes it to
 /// raise its explanatory toast. In-memory only — the flag answers "why am I
