@@ -193,8 +193,9 @@ class _RegisterBankSampahScreenState
                               '${_lokasi!.longitude.toStringAsFixed(6)}'
                           : 'Pilih di peta',
                       style: TextStyle(
-                        color:
-                            _lokasi != null ? AppColors.black : AppColors.grey200,
+                        color: _lokasi != null
+                            ? AppColors.black
+                            : AppColors.grey200,
                       ),
                     ),
                   ),

@@ -34,7 +34,8 @@ class MapPickerPage extends StatefulWidget {
     this.initialRadiusKm,
     this.showRadius = false,
     this.tileLayerBuilder = osmTileLayer,
-    this.placeSearch,  });
+    this.placeSearch,
+  });
 
   /// Where the pin starts. Defaults to somewhere over Indonesia when the
   /// caller has nothing saved; zoomed out enough to see, in enough to pick.
@@ -437,7 +438,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
                               ),
                             ),
                           ),
-                      ],                    ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -516,8 +518,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
                               decimal: true,
                             ),
                             style: NasabahStyle.text(14),
-                            decoration:
-                                appInputDecoration(hintText: 'Lintang').copyWith(
+                            decoration: appInputDecoration(hintText: 'Lintang')
+                                .copyWith(
                               labelText: 'Lintang',
                               labelStyle: NasabahStyle.text(
                                 13,
