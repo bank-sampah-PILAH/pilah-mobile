@@ -21,12 +21,11 @@ class AuthRepositoryImpl implements AuthRepository {
     this._localDataSources,
   );
 
-  Future<AuthEntity> _persistGoogleSession(Map<String, dynamic> payload) async {
-    final response = AuthResponse.fromJson(payload);
+  Future<AuthEntity> _persistSession(AuthResponse response) async {
     final entity = AuthMapper.mapResponseToDomain(response);
     await _localDataSources.saveToken(
       SaveTokenRequest(
-        accessToken: entity.token,
+        accessToken: response.accessToken,
         refreshToken: response.refreshToken,
       ),
     );
@@ -35,14 +34,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkException, AuthEntity>> postLogin(
-    String username,
+    String email,
     String password,
   ) async {
-    final request = PostLoginRequest(username: username, password: password);
-    return apiCall<AuthEntity>(
-      func: _remoteDataSources.postLogin(request),
-      mapper: (value) => AuthMapper.mapResponseToDomain(value),
-    );
+    final request = PostLoginRequest(email: email, password: password);
+    try {
+      final response = await _remoteDataSources.postLogin(request);
+      return Right(await _persistSession(response));
+    } on Exception catch (error) {
+      return Left(NetworkException.handleException(error));
+    } catch (error) {
+      return Left(GeneralException(message: error.toString()));
+    }
   }
 
   @override
@@ -61,7 +64,7 @@ class AuthRepositoryImpl implements AuthRepository {
           photoUrl: profile['picture']?.toString() ?? '',
         ));
       }
-      final entity = await _persistGoogleSession(payload);
+      final entity = await _persistSession(AuthResponse.fromJson(payload));
       return Right(GoogleSession(entity));
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
@@ -84,7 +87,7 @@ class AuthRepositoryImpl implements AuthRepository {
         registrationToken,
         role.wireValue,
       );
-      final entity = await _persistGoogleSession(payload);
+      final entity = await _persistSession(AuthResponse.fromJson(payload));
       return Right(entity);
     } on Exception catch (error) {
       return Left(NetworkException.handleException(error));
@@ -130,6 +133,25 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     await _localDataSources.clearToken();
     return const Right(null);
+  }
+
+  @override
+  Future<Either<NetworkException, void>> discardRegistration() async {
+    // Unlike logout, a failure here is worth reporting: the caller offers the
+    // user an explanation when the backend refuses to delete a committed
+    // account (a profile already complete, or a linked membership row).
+    // Tokens are cleared either way — the notifier ends the session regardless,
+    // so a surviving token would restore it on the next cold start.
+    try {
+      await _remoteDataSources.discardRegistration();
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    } catch (e) {
+      return Left(GeneralException(message: e.toString()));
+    } finally {
+      await _localDataSources.clearToken();
+    }
   }
 
   @override

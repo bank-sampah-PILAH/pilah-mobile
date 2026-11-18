@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/form_style.dart';
 import '../../constants/text_style.dart';
 
 class AppTextField extends StatefulWidget {
@@ -11,6 +12,10 @@ class AppTextField extends StatefulWidget {
   final bool obscureText;
   final bool isError;
   final void Function(String)? onChanged;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final Iterable<String>? autofillHints;
+  final ValueChanged<String>? onSubmitted;
   final List<TextInputFormatter>? inputFormatters;
 
   const AppTextField({
@@ -22,6 +27,10 @@ class AppTextField extends StatefulWidget {
     this.obscureText = false,
     this.isError = false,
     this.inputFormatters,
+    this.keyboardType,
+    this.textInputAction,
+    this.autofillHints,
+    this.onSubmitted,
   });
 
   @override
@@ -52,7 +61,7 @@ class _AppTextFieldState extends State<AppTextField> {
           Text(
             widget.label!,
             style: AppTextStyle.regularSemiBold.copyWith(
-              color: widget.isError ? Colors.red : Colors.black45,
+              color: widget.isError ? AppColors.danger : AppColors.grey100,
             ),
           ),
         ValueListenableBuilder(
@@ -62,15 +71,17 @@ class _AppTextFieldState extends State<AppTextField> {
               controller: widget.controller,
               obscureText: obscure,
               style: AppTextStyle.regularSemiBold.copyWith(
-                color: Colors.black,
+                color: AppColors.black,
               ),
               onChanged: widget.onChanged,
+              keyboardType: widget.keyboardType,
+              textInputAction: widget.textInputAction,
+              autofillHints: widget.autofillHints,
+              onSubmitted: widget.onSubmitted,
               inputFormatters: widget.inputFormatters,
-              decoration: InputDecoration(
+              decoration: appInputDecoration(
                 hintText: widget.hint,
-                hintStyle: AppTextStyle.regularSemiBold.copyWith(
-                  color: AppColors.grey200,
-                ),
+                hasError: widget.isError,
                 suffixIcon: widget.obscureText
                     ? IconButton(
                         tooltip: obscure
@@ -81,7 +92,8 @@ class _AppTextFieldState extends State<AppTextField> {
                         },
                         icon: Icon(
                           obscure ? Icons.visibility : Icons.visibility_off,
-                          color: obscure ? AppColors.primary : Colors.black45,
+                          color:
+                              obscure ? AppColors.greenDark : AppColors.grey100,
                         ),
                       )
                     : null,

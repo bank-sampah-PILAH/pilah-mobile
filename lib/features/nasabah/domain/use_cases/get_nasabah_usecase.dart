@@ -10,13 +10,17 @@ import 'package:pilah_mobile/features/nasabah/domain/repositories/nasabah_reposi
 /// [status] memakai kosakata backend: `aktif`, `tidak_aktif`, `menunggu`.
 class GetNasabahParams {
   final int page;
+  final int? pageSize;
   final String status;
   final String? search;
+  final String urutan;
 
   const GetNasabahParams({
     this.page = 1,
+    this.pageSize,
     this.status = 'aktif',
     this.search,
+    this.urutan = 'nomor',
   });
 }
 
@@ -33,8 +37,10 @@ class GetNasabahUseCase implements UseCase<HalamanNasabah, GetNasabahParams> {
     final params = args ?? const GetNasabahParams();
     return repository.getNasabah(
       page: params.page,
+      pageSize: params.pageSize,
       status: params.status,
       search: params.search,
+      urutan: params.urutan,
     );
   }
 }

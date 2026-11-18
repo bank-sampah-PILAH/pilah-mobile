@@ -22,9 +22,6 @@ class StubEnvironment implements AppEnvironment {
   String get demoPengurusEmail => 'pengurus@demo.test';
 
   @override
-  String get demoPengelolaIndukEmail => 'induk@demo.test';
-
-  @override
   String get demoCustomerEmail => 'customer@demo.test';
 
   @override
@@ -82,6 +79,23 @@ class StubApi implements HttpClientAdapter {
             Headers.contentTypeHeader: [Headers.jsonContentType],
           },
         );
+  }
+
+  /// Answers `METHOD path` with JSON generated from the request.
+  void onRequest(
+    String method,
+    String path, {
+    int status = 200,
+    required Object? Function(RequestOptions options) json,
+  }) {
+    _routes['${method.toUpperCase()} $path'] =
+        (options) => ResponseBody.fromString(
+              jsonEncode(json(options)),
+              status,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
   }
 
   /// Answers `METHOD path` with raw bytes.

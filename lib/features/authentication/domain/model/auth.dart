@@ -63,8 +63,7 @@ class GoogleRegistrationRequired extends GoogleAuthOutcome {
 
 enum GoogleRegistrationRole {
   nasabah('nasabah'),
-  pengelola('pengelola'),
-  pengelolaInduk('pengelola_induk');
+  pengelola('pengelola');
 
   const GoogleRegistrationRole(this.wireValue);
 

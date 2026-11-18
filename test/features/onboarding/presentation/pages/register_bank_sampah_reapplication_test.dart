@@ -1,17 +1,13 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/onboarding_support.dart';
+import '../../../../support/auth_support.dart';
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
@@ -20,34 +16,33 @@ class _MockOnboardingDataSource extends Mock
 ///
 /// The screen listens to [AuthenticationBloc] to bounce a logged-out user to
 /// the login page, so without one it throws ProviderNotFoundException before
-/// rendering anything. [OnboardingCubit] backs the wizard's back button.
+/// rendering anything. The onboarding provider backs the wizard's back button.
 Future<void> _pumpScreen(
   WidgetTester tester, {
   bool isRejectedReapplication = false,
-  OnboardingCubit? onboarding,
 }) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: AuthenticationInitial(),
-  );
+  final auth = authNotifierIn(AuthenticationInitial());
 
   await tester.pumpWidget(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthenticationBloc>.value(value: auth),
-        BlocProvider<OnboardingCubit>.value(
-          value: onboarding ?? OnboardingCubit(_MockOnboardingDataSource()),
-        ),
-      ],
-      child: MaterialApp(
-        home: RegisterBankSampahScreen(
-          isRejectedReapplication: isRejectedReapplication,
+    withOnboarding(
+      withAuthenticationProvider(
+        auth,
+        MaterialApp(
+          home: RegisterBankSampahScreen(
+            isRejectedReapplication: isRejectedReapplication,
+          ),
         ),
       ),
+      _MockOnboardingDataSource(),
     ),
   );
+}
+
+void _setViewport(WidgetTester tester, Size size) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 void main() {
@@ -78,6 +73,81 @@ void main() {
       expect(find.text('Pendaftaran Ditolak'), findsNothing);
       // Same form in both modes.
       expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+    });
+
+    for (final size in [
+      const Size(1440, 900),
+      const Size(768, 1024),
+      const Size(375, 812)
+    ]) {
+      testWidgets('adapts registration and reapplication at ${size.width}px',
+          (tester) async {
+        _setViewport(tester, size);
+        await _pumpScreen(tester);
+
+        final desktop = size.width >= 840;
+        expect(find.byKey(const ValueKey('onboarding-sidebar')),
+            desktop ? findsOneWidget : findsNothing);
+        final form = tester
+            .getRect(find.byKey(const ValueKey('onboarding-form-surface')));
+        expect(form.width, lessThanOrEqualTo(880));
+        expect(form.left, greaterThanOrEqualTo(0));
+        expect(form.right, lessThanOrEqualTo(size.width));
+        final pair = tester
+            .widget<OnboardingFieldPair>(find.byType(OnboardingFieldPair));
+        final details = tester.getRect(find.byWidget(pair.first));
+        final photo = tester.getRect(find.byWidget(pair.second));
+        if (size.width >= 600) {
+          expect(photo.left, greaterThan(details.right));
+        } else {
+          expect(photo.top, greaterThanOrEqualTo(details.bottom));
+        }
+        final actions =
+            tester.getRect(find.byKey(const ValueKey('onboarding-actions')));
+        expect(actions.bottom, size.height);
+        await tester.tap(find.text('Ajukan Pendaftaran'));
+        await tester.pump();
+        expect(find.text('Nama minimal 3 karakter'), findsOneWidget);
+        expect(find.text('Foto kegiatan wajib diunggah'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await _pumpScreen(tester, isRejectedReapplication: true);
+        expect(find.text('Pendaftaran Ditolak'), findsOneWidget);
+        expect(find.byType(OnboardingProgress), findsNothing);
+        expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('preserves entered bank data when the window is resized',
+        (tester) async {
+      _setViewport(tester, const Size(1440, 900));
+      await _pumpScreen(tester);
+      await tester.enterText(
+          find.byType(TextFormField).first, 'Bank Sampah Demo');
+      tester.view.physicalSize = const Size(375, 812);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextFormField, 'Bank Sampah Demo'),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('reveals the first error after submitting from the bottom',
+        (tester) async {
+      _setViewport(tester, const Size(375, 812));
+      await _pumpScreen(tester);
+      await tester.drag(find.byKey(const ValueKey('onboarding-content-scroll')),
+          const Offset(0, -800));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await tester.pumpAndSettle();
+      final error = tester.getRect(find.text('Nama minimal 3 karakter'));
+      expect(error.top, greaterThan(56));
+      expect(
+          error.bottom,
+          lessThan(tester
+              .getRect(find.byKey(const ValueKey('onboarding-actions')))
+              .top));
     });
 
     testWidgets('offers a way back to step one in both modes', (tester) async {

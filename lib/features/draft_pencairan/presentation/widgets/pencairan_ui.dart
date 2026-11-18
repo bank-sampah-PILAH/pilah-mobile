@@ -1,63 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The look of Catat Pencairan, shared by the draft screens so they read as
 /// one flow: a grey rounded back button, bold title, spaced section labels,
 /// white 12px inputs, pill chips and soft cards.
-
-/// Title row with the app's grey rounded back button. Going back uses
-/// `maybePop`, so a screen guarding unsaved edits with a `PopScope` is asked.
-class PencairanHeader extends StatelessWidget {
-  final String title;
-  final List<Widget> actions;
-
-  const PencairanHeader({
-    super.key,
-    required this.title,
-    this.actions = const [],
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          InkWell(
-            key: const Key('kembali'),
-            onTap: () => Navigator.of(context).maybePop(),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          ...actions,
-        ],
-      ),
-    );
-  }
-}
 
 /// Heading above a group of fields (`RINGKASAN`). [SectionLabel.field] is the
 /// quieter label of a single field inside a card (`NOMINAL`).
@@ -73,9 +26,9 @@ class SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         style: AppTextStyle.extraSmall.copyWith(
-          color: _field ? Colors.grey[700] : Colors.black87,
+          color: _field ? AppColors.inkSoft : AppColors.black,
           fontSize: _field ? 11 : 12,
-          fontWeight: FontWeight.bold,
+          fontWeight: AppFontWeight.bold,
           letterSpacing: 1.0,
         ),
       );
@@ -141,14 +94,14 @@ class PencairanCard extends StatelessWidget {
         padding: padding,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: borderColor == null
               ? null
               : Border.all(color: borderColor!, width: 2),
           boxShadow: _shadow
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: AppColors.black.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -180,7 +133,7 @@ class PencairanAvatar extends StatelessWidget {
         initialsOf(nama),
         style: AppTextStyle.small.copyWith(
           color: foreground,
-          fontWeight: FontWeight.bold,
+          fontWeight: AppFontWeight.bold,
           fontSize: size * 0.34,
         ),
       ),
@@ -203,8 +156,8 @@ class PencairanMetaLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted =
-        AppTextStyle.small.copyWith(color: Colors.grey[700], fontSize: 12);
+    final muted = AppTextStyle.small
+        .copyWith(color: AppColors.inkSoft, fontSize: AppFontSize.sm);
     return Text.rich(
       TextSpan(
         children: [
@@ -212,8 +165,8 @@ class PencairanMetaLine extends StatelessWidget {
           TextSpan(
             text: nama,
             style: muted.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
+              color: AppColors.black,
+              fontWeight: AppFontWeight.semibold,
             ),
           ),
           TextSpan(text: ' \u00b7 $waktu', style: muted),
@@ -265,12 +218,13 @@ class PencairanPopupMenu<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<T>(
       tooltip: tooltip,
-      icon: Icon(Icons.more_vert, color: Colors.grey[800]),
+      icon: const Icon(Icons.more_vert, color: AppColors.inkSoft),
       color: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 8,
-      shadowColor: Colors.black38,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shadowColor: AppColors.grey200,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       onSelected: onSelected,
       itemBuilder: (_) => [
         for (final entry in entries)
@@ -283,7 +237,7 @@ class PencairanPopupMenu<T> extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: entry.destruktif ? _merahMuda : _hijauMuda,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(
                     entry.icon,
@@ -296,7 +250,7 @@ class PencairanPopupMenu<T> extends StatelessWidget {
                   child: Text(
                     entry.label,
                     style: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                       color: entry.destruktif ? _merah : null,
                     ),
                   ),
@@ -331,74 +285,11 @@ class PencairanActionButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    final foreground = !enabled
-        ? Colors.grey[500]!
-        : filled
-            ? Colors.white
-            : AppColors.greenDark;
-    final onTap = isLoading ? null : onPressed;
-    final content = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        isLoading
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: foreground,
-                ),
-              )
-            : Icon(icon, color: foreground, size: 20),
-        const SizedBox(width: 8),
-        Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: AppTextStyle.title1.copyWith(
-                color: foreground,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    );
-    return SizedBox(
-      height: 52,
-      child: filled
-          ? ElevatedButton(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                disabledBackgroundColor: Colors.grey[300],
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: shape,
-                elevation: 0,
-              ),
-              child: content,
-            )
-          : OutlinedButton(
-              onPressed: onTap,
-              style: OutlinedButton.styleFrom(
-                backgroundColor: Colors.white,
-                side: BorderSide(
-                  color: enabled ? AppColors.greenDark : Colors.grey[300]!,
-                  width: 1.5,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: shape,
-              ),
-              child: content,
-            ),
-    );
-  }
+  Widget build(BuildContext context) => AppButton(
+        label: label,
+        icon: icon,
+        variant: filled ? AppButtonVariant.primary : AppButtonVariant.outlined,
+        isLoading: isLoading,
+        onPressed: onPressed,
+      );
 }

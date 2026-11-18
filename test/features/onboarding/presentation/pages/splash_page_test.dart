@@ -1,25 +1,16 @@
-import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/check_session_events.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
 
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
-
 void main() {
   late InviteTokenStore store;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
 
   setUp(() {
     store = InviteTokenStore();
@@ -28,34 +19,37 @@ void main() {
 
   tearDown(() => di.unregister<InviteTokenStore>());
 
-  Future<MockAuthBloc> open(
+  Future<TestAuthenticationNotifier> open(
     WidgetTester tester, {
     required AuthenticationStates initial,
     List<AuthenticationStates> then = const [],
     String? from,
   }) async {
-    final bloc = MockAuthBloc();
-    whenListen(bloc, Stream<AuthenticationStates>.fromIterable(then),
-        initialState: initial);
+    final auth = authNotifierIn(initial);
     await pumpRouted(
       tester,
-      BlocProvider<AuthenticationBloc>.value(
-        value: bloc,
+      withAuthenticationProvider(
+        auth,
         // A non-const instance so the constructor itself runs.
         // ignore: prefer_const_constructors
-        child: SplashPage(from: from),
+        SplashPage(from: from),
       ),
       extraRoutes: ['/login', '/dashboard', '/pending-approval', '/nasabah'],
     );
     await tester.pump(const Duration(seconds: 1));
+    for (final state in then) {
+      auth.setStateForTest(state);
+      await tester.pump();
+    }
     await tester.pumpAndSettle();
-    return bloc;
+    return auth;
   }
 
-  testWidgets('asks the bloc to restore the session on start', (tester) async {
-    final bloc = await open(tester, initial: AuthenticationInitial());
+  testWidgets('asks the auth provider to restore the session on start',
+      (tester) async {
+    final notifier = await open(tester, initial: AuthenticationInitial());
 
-    verify(() => bloc.add(any(that: isA<CheckSessionRequested>()))).called(1);
+    expect(notifier.calls, contains('checkSession'));
     expect(find.text('PILAH'), findsOneWidget);
     expect(find.text('Sistem Manajemen Bank Sampah'), findsOneWidget);
   });

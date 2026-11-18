@@ -12,8 +12,8 @@
 /// The returned string carries **no unit** — callers append `" kg"` themselves,
 /// so the number can sit inside any sentence.
 ///
-/// This shapes display text only. Domain values, cubit state, and API DTOs keep
-/// their `double`/dot-decimal form; nothing here feeds a calculation or payload.
+/// This shapes display text only. Domain values, provider state, and API DTOs
+/// keep their `double`/dot-decimal form; nothing here feeds a calculation or payload.
 class WeightFormatter {
   const WeightFormatter._(); // coverage:ignore-line
 

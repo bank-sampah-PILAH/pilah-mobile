@@ -14,16 +14,37 @@ void main() {
   group('RoleDestinations.forRole', () {
     test('staff get the five operational destinations in order', () {
       final staff = RoleDestinations.forRole('pengelola');
-      expect(staff.map((d) => d.label),
-          ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal']);
+      expect(staff.map((d) => d.label), [
+        'Dashboard',
+        'Nasabah',
+        'Harga',
+        'Aktivitas',
+        'Jadwal',
+      ]);
       expect(staff.map((d) => d.branchIndex), [0, 1, 2, 3, 4]);
     });
 
-    test('pengelola_induk sees the same destinations as pengelola', () {
+    test('Pengumuman is not a staff destination at all', () {
+      final staff = RoleDestinations.forRole('pengelola');
       expect(
-        RoleDestinations.forRole('pengelola_induk').map((d) => d.branchIndex),
-        RoleDestinations.forRole('pengelola').map((d) => d.branchIndex),
+        staff.map((d) => d.label),
+        isNot(contains('Pengumuman')),
+        reason: 'PIL-436 removes the entry point instead of disabling it, so '
+            'no dead menu is left for Pengurus to see',
       );
+      expect(staff.map((d) => d.branchIndex), isNot(contains(8)));
+      expect(
+          staff.map((d) => d.icon), isNot(contains(Icons.campaign_outlined)));
+    });
+
+    test('the bottom bar keeps all five staff destinations', () {
+      final bar = RoleDestinations.forRole('pengelola', bottomBar: true);
+      expect(bar.map((d) => d.label),
+          ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal']);
+      expect(RoleDestinations.branchIndicesFor('pengelola', bottomBar: true),
+          [0, 1, 2, 3, 4]);
+      expect(RoleDestinations.forRole('nasabah', bottomBar: true).length, 4,
+          reason: 'nasabah destinations are all in the bottom bar');
     });
 
     test('an approved nasabah gets five destinations', () {
@@ -54,7 +75,7 @@ void main() {
     });
 
     test('every destination carries an icon and a non-empty label', () {
-      for (final role in ['pengelola', 'pengelola_induk', 'nasabah']) {
+      for (final role in ['pengelola', 'nasabah']) {
         for (final destination in RoleDestinations.forRole(role)) {
           expect(destination.icon, isA<IconData>());
           expect(destination.label, isNotEmpty);

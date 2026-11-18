@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -169,9 +169,9 @@ class _PetaBankViewState extends State<PetaBankView> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                CustomPrimaryButton(
+                AppButton(
                   key: const Key('cari_bank_lihat_detail'),
-                  title: 'Lihat Detail',
+                  label: 'Lihat Detail',
                   icon: Icons.description_outlined,
                   onPressed: () {
                     Navigator.pop(sheetContext);

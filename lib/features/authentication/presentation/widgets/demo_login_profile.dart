@@ -24,13 +24,6 @@ abstract final class DemoLoginProfiles {
     tokenPrefix: 'dev',
   );
 
-  static const pengelolaInduk = DemoLoginProfile(
-    label: 'Pengelola Induk',
-    name: 'Pengelola Induk PILAH E2E',
-    email: 'induk.demo@example.com',
-    tokenPrefix: 'dev-pengelola-induk',
-  );
-
   static const customer = DemoLoginProfile(
     label: 'Nasabah',
     name: 'Nasabah PILAH E2E',
@@ -56,7 +49,6 @@ abstract final class DemoLoginProfiles {
 
   static const all = <DemoLoginProfile>[
     pengurus,
-    pengelolaInduk,
     customer,
     newNasabah,
     superadmin,
@@ -68,12 +60,6 @@ abstract final class DemoLoginProfiles {
           name: pengurus.name,
           email: environment.demoPengurusEmail,
           tokenPrefix: pengurus.tokenPrefix,
-        ),
-        DemoLoginProfile(
-          label: pengelolaInduk.label,
-          name: pengelolaInduk.name,
-          email: environment.demoPengelolaIndukEmail,
-          tokenPrefix: pengelolaInduk.tokenPrefix,
         ),
         DemoLoginProfile(
           label: customer.label,

@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class LoginHeader extends StatelessWidget {
-  const LoginHeader({super.key});
+  const LoginHeader({super.key, this.large = false});
+
+  /// Layar lebar: kolom kiri hanya berisi merek, jadi logo dan judulnya
+  /// dibesarkan untuk mengisinya.
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
@@ -19,25 +24,25 @@ class LoginHeader extends StatelessWidget {
         // logo cannot be stretched.
         SvgPicture.asset(
           'assets/svg/logo.svg',
-          height: 96,
+          height: large ? 160 : 96,
           semanticsLabel: 'Logo PILAH',
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: large ? 32 : 24),
         // Title
         Text(
           'PILAH',
           style: AppTextStyle.headline1.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 32,
+            fontWeight: AppFontWeight.bold,
+            fontSize: large ? 48 : 32,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: large ? 12 : 8),
         // Subtitle
         Text(
           'Sistem Manajemen Bank Sampah',
           style: AppTextStyle.small.copyWith(
             color: AppColors.grey100,
-            fontSize: 14,
+            fontSize: large ? 18 : 14,
           ),
         ),
       ],

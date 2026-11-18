@@ -1,17 +1,16 @@
-import 'package:bloc_test/bloc_test.dart';
+import 'package:dartz/dartz.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
-import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
+import 'nasabah_approval_support.dart';
 
-class _ApprovedMembershipCubit extends MockCubit<NasabahApprovalState>
-    implements NasabahApprovalCubit {}
+class _MockGetNasabahMembershipsUseCase extends Mock
+    implements GetNasabahMembershipsUseCase {}
 
-NasabahApprovalCubit registerApprovedMembership() {
-  final cubit = _ApprovedMembershipCubit();
-  whenListen(cubit, const Stream<NasabahApprovalState>.empty(),
-      initialState: const NasabahApprovalLoaded([
+GetNasabahMembershipsUseCase buildApprovedMembershipUseCase() {
+  final useCase = _MockGetNasabahMembershipsUseCase();
+  when(() => useCase.execute()).thenAnswer((_) async => const Right([
         NasabahMembershipEntity(
           id: 'membership',
           bankSampahId: 'bank',
@@ -22,12 +21,21 @@ NasabahApprovalCubit registerApprovedMembership() {
           isActive: true,
         ),
       ]));
-  when(() => cubit.load(silent: any(named: 'silent'))).thenAnswer((_) async {});
-  di.registerFactory<NasabahApprovalCubit>(() => cubit);
-  return cubit;
+  return useCase;
 }
 
-Future<void> unregisterApprovedMembership(NasabahApprovalCubit cubit) async {
-  await di.unregister<NasabahApprovalCubit>();
-  await cubit.close();
-}
+TestNasabahApprovalNotifier buildApprovedMembershipNotifier() =>
+    TestNasabahApprovalNotifier(
+      initialState: const NasabahApprovalLoaded([
+        NasabahMembershipEntity(
+          id: 'membership',
+          bankSampahId: 'bank',
+          bankSampahNama: 'Bank Sampah Melati',
+          bankSampahKota: 'Bandung',
+          bankSampahAlamat: 'Jl. Melati',
+          status: MembershipStatus.approved,
+          isActive: true,
+        ),
+      ]),
+      useCase: buildApprovedMembershipUseCase(),
+    );

@@ -9,8 +9,8 @@ import 'package:pilah_mobile/services/di.dart';
 /// `resetSessionScopedState`), so one tapped during a session with no way to
 /// redeem it would sit in the store and follow the *next* account signed in on
 /// this device into a bank sampah nobody invited them to. Only Pengurus
-/// (`pengelola`) can redeem invites; Nasabah, Superadmin, and Pengelola Induk
-/// are refused by `POST /invites/accept`. A missing or unknown role may be a
+/// (`pengelola`) can redeem invites; Nasabah and Superadmin are refused by
+/// `POST /invites/accept`. A missing or unknown role may be a
 /// partial auth response, so keep the token until the account is known.
 ///
 /// Returns `null` when there is nothing to redeem, or nothing here that can
@@ -34,7 +34,7 @@ String? resolvePendingInvite({required String? step, required String? role}) {
 
   // Only discard for roles the backend is known to reject. A missing or
   // unrecognized role may be a partial auth response, so don't lose the token.
-  if (role == 'nasabah' || role == 'superadmin' || role == 'pengelola_induk') {
+  if (role == 'nasabah' || role == 'superadmin') {
     store.clear();
   }
   return null;

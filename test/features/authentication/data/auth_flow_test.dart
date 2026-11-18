@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/data/auth_repository_impl.dart';
 import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_sources.dart';
@@ -26,13 +27,54 @@ void main() {
   });
 
   group('password login', () {
-    test('maps the response into the session entity', () async {
-      // `Endpoints.login` is `auth/login` without a leading slash, so the request
-      // goes to `http://api.testauth/login` (host `api.testauth`). Recorded as a
-      // suspected bug; the stub matches the path the client really sends.
-      api.on('POST', '/login', json: authPayload(bankStatus: 'active'));
+    test('stores the access and refresh tokens returned by the API', () async {
+      api.on('POST', '/api/v1/auth/login', json: authPayload());
 
-      final result = await stack.interactor.postLogin('siti', 'rahasia');
+      final result = await stack.interactor.postLogin('siti@x.test', 'secret');
+
+      expect(result.isRight(), isTrue);
+      expect(api.utils.accessToken, 'access-1');
+      expect(api.utils.refreshToken, 'refresh-1');
+      expect(await stack.database.getString('token'), 'access-1');
+      expect(await stack.database.getString('refresh_token'), 'refresh-1');
+    });
+
+    test('never logs the password sent to the API', () async {
+      api.on('POST', '/api/v1/auth/login', json: authPayload());
+      final logs = <String>[];
+      void capture(LogEvent event) => logs.add(event.message.toString());
+      Logger.addLogListener(capture);
+      try {
+        await stack.interactor.postLogin('siti@x.test', 'do-not-log');
+      } finally {
+        Logger.removeLogListener(capture);
+      }
+
+      expect(logs, isNotEmpty);
+      expect(logs.join('\n'), isNot(contains('do-not-log')));
+    });
+
+    test('never logs the password from a rejected login', () async {
+      api.on('POST', '/api/v1/auth/login',
+          status: 401, json: {'error': 'Kredensial salah'});
+      final logs = <String>[];
+      void capture(LogEvent event) => logs.add(event.message.toString());
+      Logger.addLogListener(capture);
+      try {
+        await stack.interactor.postLogin('siti@x.test', 'rejected-secret');
+      } finally {
+        Logger.removeLogListener(capture);
+      }
+
+      expect(logs, isNotEmpty);
+      expect(logs.join('\n'), isNot(contains('rejected-secret')));
+    });
+
+    test('maps the response into the session entity', () async {
+      api.on('POST', '/api/v1/auth/login',
+          json: authPayload(bankStatus: 'active'));
+
+      final result = await stack.interactor.postLogin('siti@x.test', 'rahasia');
 
       final auth = result.getOrElse(() => throw StateError('failed'));
       expect(auth.name, 'Siti Aminah');
@@ -41,22 +83,32 @@ void main() {
       expect(auth.bankSampahStatus, 'active');
       expect(auth.noHp, '+62812');
       expect(auth.photoUrl, contains('Siti%20Aminah'));
-      expect(api.last.json, {'username': 'siti', 'password': 'rahasia'});
+      expect(api.last.path, '/api/v1/auth/login');
+      expect(api.last.json, {'email': 'siti@x.test', 'password': 'rahasia'});
     });
 
     test('a rejected login is a failure', () async {
-      api.on('POST', '/login',
+      api.on('POST', '/api/v1/auth/login',
           status: 401, json: {'error': 'Kredensial salah'});
 
-      final result = await stack.interactor.postLogin('siti', 'x');
+      final result = await stack.interactor.postLogin('siti@x.test', 'x');
 
       expect(
           result.fold((l) => l.displayMessage, (r) => ''), 'Kredensial salah');
     });
 
+    test('a malformed success body is returned as a general failure', () async {
+      api.on('POST', '/api/v1/auth/login', json: {});
+
+      final result = await stack.interactor.postLogin('siti@x.test', 'secret');
+
+      expect(result.fold((error) => error, (auth) => null),
+          isA<GeneralException>());
+    });
+
     test('the request serialises its fields', () {
-      expect(const PostLoginRequest(username: 'a', password: 'b').toJson(),
-          {'username': 'a', 'password': 'b'});
+      expect(const PostLoginRequest(email: 'a', password: 'b').toJson(),
+          {'email': 'a', 'password': 'b'});
     });
 
     test('the response round-trips through JSON', () {
@@ -169,7 +221,7 @@ void main() {
       api.on('POST', '/api/v1/auth/google/register', json: ['x']);
 
       final result = await stack.repository.registerGoogleUser(
-          registrationToken: 'r', role: GoogleRegistrationRole.pengelolaInduk);
+          registrationToken: 'r', role: GoogleRegistrationRole.pengelola);
 
       expect(result.fold((l) => l, (r) => null), isA<GeneralException>());
     });
@@ -263,6 +315,49 @@ void main() {
       await stack.interactor.logout();
 
       expect(api.requests, isEmpty);
+    });
+  });
+
+  group('discarding an incomplete registration', () {
+    test('deletes the account and reports success', () async {
+      stack = AuthStack(api, stored: {'token': 'a', 'refresh_token': 'r'});
+      api.on('DELETE', '/api/v1/onboarding/discard-registration', json: {});
+
+      final result = await stack.interactor.discardRegistration();
+
+      expect(result.isRight(), isTrue);
+      expect(
+          api.requests.single.path, '/api/v1/onboarding/discard-registration');
+    });
+
+    test('a refusal from the backend is reported to the caller', () async {
+      stack = AuthStack(api, stored: {'token': 'a'});
+      api.on('DELETE', '/api/v1/onboarding/discard-registration',
+          status: 409,
+          json: {
+            'code': 'profile_complete',
+            'detail': 'Profil sudah lengkap.'
+          });
+
+      final result = await stack.interactor.discardRegistration();
+
+      expect(result.isLeft(), isTrue);
+      expect(
+        result.fold((f) => f.displayMessage, (_) => ''),
+        'Profil sudah lengkap.',
+      );
+      // The session ends either way, so no token may outlive the refusal.
+      expect(await stack.database.getString('token'), isNull);
+    });
+
+    test('a malformed body is a general failure, not a crash', () async {
+      stack = AuthStack(api, stored: {'token': 'a'});
+      // A Dart Error (not an Exception) escapes the on Exception guard, as an
+      // unexpected reply shape would.
+      api.crash(
+          'DELETE', '/api/v1/onboarding/discard-registration', TypeError());
+
+      expect((await stack.interactor.discardRegistration()).isLeft(), isTrue);
     });
   });
 }

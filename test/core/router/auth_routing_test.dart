@@ -4,7 +4,7 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 void main() {
   group('isSupportedWebRole', () {
     test('allows only roles supported by the web app', () {
-      for (final role in ['superadmin', 'pengelola', 'pengelola_induk']) {
+      for (final role in ['superadmin', 'pengelola']) {
         expect(isSupportedWebRole(role), isTrue);
       }
       for (final role in ['nasabah', 'unknown', null]) {
@@ -31,7 +31,7 @@ void main() {
           loginPath: '/login',
           role: 'nasabah',
         ),
-        '/login',
+        '/login?$webRoleBounceFlag=1',
       );
       expect(
         webRoleRedirect(
@@ -104,16 +104,6 @@ void main() {
         locationForAuthStep('nasabah_dashboard', role: 'nasabah'),
         '/dashboard',
       );
-      expect(
-        locationForAuthStep('register_bank_sampah_induk',
-            role: 'pengelola_induk'),
-        '/register-bank-sampah-induk',
-      );
-      expect(
-        locationForAuthStep('pengelola_induk_dashboard',
-            role: 'pengelola_induk'),
-        '/pengelola-induk-dashboard',
-      );
       expect(locationForAuthStep(null), '/dashboard');
     });
 
@@ -165,22 +155,10 @@ void main() {
       );
     });
 
-    test('non-pengelola roles do not enter the invite flow', () {
+    test('a migrated Pengurus account retains the regular dashboard route', () {
       expect(
-        locationForAuthStep(
-          'superadmin_dashboard',
-          hasPendingInvite: true,
-          role: 'superadmin',
-        ),
-        '/superadmin-dashboard',
-      );
-      expect(
-        locationForAuthStep(
-          'pengelola_induk_dashboard',
-          hasPendingInvite: true,
-          role: 'pengelola_induk',
-        ),
-        '/pengelola-induk-dashboard',
+        locationForAuthStep('dashboard', role: 'pengelola'),
+        '/dashboard',
       );
     });
 
@@ -267,6 +245,7 @@ void main() {
         '/choose-role',
         '/forgot_password',
         '/invite',
+        '/invite/web-token',
       ]) {
         expect(
           sessionRestoreRedirect(sessionChecked: false, path: path),
@@ -292,11 +271,8 @@ void main() {
       );
     });
 
-    test('returns Super Admin and Pengurus Induk to the page they were on', () {
-      for (final home in [
-        '/superadmin-dashboard',
-        '/pengelola-induk-dashboard',
-      ]) {
+    test('returns Super Admin to the page they were on', () {
+      for (final home in ['/superadmin-dashboard']) {
         expect(
           locationAfterRestore(target: home, from: '/profile'),
           '/profile',
@@ -330,6 +306,7 @@ void main() {
         '//evil.test',
         '/login',
         '/login?next=/nasabah',
+        '/invite/web-token',
       ]) {
         expect(
           locationAfterRestore(target: '/dashboard', from: from),
@@ -349,7 +326,12 @@ void main() {
     });
 
     test('leaves public paths alone', () {
-      for (final path in ['/splash', '/login', '/choose-role']) {
+      for (final path in [
+        '/splash',
+        '/login',
+        '/choose-role',
+        '/invite/web-token',
+      ]) {
         expect(signedOutRedirect(signedOut: true, path: path), isNull,
             reason: path);
       }
@@ -357,6 +339,31 @@ void main() {
 
     test('does nothing while a session exists', () {
       expect(signedOutRedirect(signedOut: false, path: '/dashboard'), isNull);
+    });
+  });
+
+  group('WebRoleBounceNotice', () {
+    test('is consumed once, then stays quiet for the next navigation', () {
+      WebRoleBounceNotice.reset();
+      expect(WebRoleBounceNotice.consume(), isFalse,
+          reason: 'nothing armed yet');
+
+      WebRoleBounceNotice.arm();
+      expect(WebRoleBounceNotice.consume(), isTrue,
+          reason: 'the armed bounce is reported exactly once');
+      expect(WebRoleBounceNotice.consume(), isFalse,
+          reason: 'a later manual login must not replay the toast');
+    });
+
+    test('stays silent off the web even when armed', () {
+      WebRoleBounceNotice.arm();
+      addTearDown(WebRoleBounceNotice.reset);
+      expect(WebRoleBounceNotice.consume(isWeb: false), isFalse);
+      // The flag is left armed: the native app still counts as a bounce
+      // consumer if it later consumes on a web surface.
+      expect(WebRoleBounceNotice.consume(), isTrue);
+      WebRoleBounceNotice.reset();
+      expect(WebRoleBounceNotice.consume(), isFalse);
     });
   });
 }

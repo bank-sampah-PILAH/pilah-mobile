@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
@@ -159,7 +160,7 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
           isExpanded: true,
           style: NasabahStyle.text(14),
           dropdownColor: Colors.white,
-          decoration: NasabahStyle.input(hint: 'Jenis sampah')
+          decoration: appInputDecoration(hintText: 'Jenis sampah')
               .copyWith(labelText: 'Jenis sampah'),
           items: widget.layananAsal
               .map(

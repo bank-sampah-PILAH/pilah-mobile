@@ -1,16 +1,12 @@
 import 'dart:async';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
+import '../../../../support/nasabah_support.dart';
 
 NasabahEntity _nasabah({bool isActive = true}) => NasabahEntity(
       id: 'nasabah-1',
@@ -44,50 +40,41 @@ NasabahRingkasan _ringkasan({List<String> berbeda = const []}) =>
       profilBerbeda: berbeda,
     );
 
-class _MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
-
-Widget _host(NasabahCubit cubit, {bool isActive = true}) {
+Widget _host(TestNasabahNotifier notifier, {bool isActive = true}) {
   final router = GoRouter(
     initialLocation: '/',
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => BlocProvider<NasabahCubit>.value(
-          value: cubit,
-          child: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => DetailNasabahBottomSheet(
-                    nasabah: _nasabah(isActive: isActive),
-                    nasabahCubit: cubit,
-                  ),
+        builder: (context, state) => Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => DetailNasabahBottomSheet(
+                  nasabah: _nasabah(isActive: isActive),
                 ),
-                child: const Text('Buka detail'),
               ),
+              child: const Text('Buka detail'),
             ),
           ),
         ),
       ),
     ],
   );
-  return MaterialApp.router(routerConfig: router);
+  return withNasabahProvider(
+    notifier,
+    MaterialApp.router(routerConfig: router),
+  );
 }
 
 void main() {
-  late _MockNasabahCubit cubit;
+  late TestNasabahNotifier cubit;
 
   setUp(() {
-    cubit = _MockNasabahCubit();
-    whenListen(
-      cubit,
-      const Stream<NasabahState>.empty(),
-      initialState: const NasabahLoaded(nasabahList: []),
-    );
+    cubit = TestNasabahNotifier();
   });
 
   Future<void> bukaDetail(WidgetTester tester, NasabahRingkasan r,
@@ -96,7 +83,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    when(() => cubit.fetchRingkasan(any())).thenAnswer((_) async => r);
+    cubit.fetchSummary = (_) async => r;
     await tester.pumpWidget(_host(cubit, isActive: isActive));
     await tester.tap(find.text('Buka detail'));
     await tester.pumpAndSettle();
@@ -124,24 +111,22 @@ void main() {
 
     testWidgets('menyamakan hanya setelah pengurus mengonfirmasi',
         (tester) async {
-      when(() => cubit.sinkronProfil(any())).thenAnswer((_) async => null);
+      cubit.syncProfile = (_) async => null;
       await bukaDetail(tester, _ringkasan(berbeda: ['no_hp']));
 
       await tester.tap(find.text('Samakan dengan data akun'));
       await tester.pumpAndSettle();
-      verifyNever(() => cubit.sinkronProfil(any()));
+      expect(cubit.synchronizedProfiles, isEmpty);
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Samakan'));
       await tester.pumpAndSettle();
 
-      verify(() => cubit.sinkronProfil('nasabah-1')).called(1);
+      expect(cubit.synchronizedProfiles, ['nasabah-1']);
     });
 
     testWidgets('gagal menyamakan: sheet tetap terbuka agar bisa dicoba lagi',
         (tester) async {
-      when(() => cubit.sinkronProfil(any())).thenAnswer(
-        (_) async => NetworkException.handleBadResponse(null),
-      );
+      cubit.syncProfile = (_) async => NetworkException.handleBadResponse(null);
       await bukaDetail(tester, _ringkasan(berbeda: ['no_hp']));
 
       await tester.tap(find.text('Samakan dengan data akun'));
@@ -152,7 +137,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 
-      verify(() => cubit.sinkronProfil('nasabah-1')).called(1);
+      expect(cubit.synchronizedProfiles, ['nasabah-1']);
       expect(find.text('Data akun berbeda'), findsOneWidget);
       expect(find.text('Gagal'), findsOneWidget);
 
@@ -164,7 +149,7 @@ void main() {
         'tombol nonaktif selama menyamakan agar tidak terkirim dua kali',
         (tester) async {
       final selesai = Completer<NetworkException?>();
-      when(() => cubit.sinkronProfil(any())).thenAnswer((_) => selesai.future);
+      cubit.syncProfile = (_) => selesai.future;
       await bukaDetail(tester, _ringkasan(berbeda: ['no_hp']));
 
       await tester.tap(find.text('Samakan dengan data akun'));
@@ -203,7 +188,7 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Batal'));
       await tester.pumpAndSettle();
 
-      verifyNever(() => cubit.sinkronProfil(any()));
+      expect(cubit.synchronizedProfiles, isEmpty);
     });
   });
 }

@@ -1,7 +1,7 @@
 ﻿// ignore_for_file: avoid_print
 part of '../spl_manager.dart';
 
-// ─── Code templates — State Management ───────────────────────────────────────
+// ─── Code templates — Riverpod ──────────────────────────────────────────────
 
 String _tplState(String className) => '''
 import 'package:equatable/equatable.dart';
@@ -32,80 +32,6 @@ class ${className}ErrorState extends ${className}State {
   const ${className}ErrorState({required this.message});
   @override
   List<Object?> get props => [message];
-}
-''';
-
-// ── BLoC ──────────────────────────────────────────────────────────────────────
-
-String _tplEvent(String className) => '''
-import 'package:equatable/equatable.dart';
-
-abstract class ${className}Event extends Equatable {
-  const ${className}Event();
-  @override
-  List<Object?> get props => [];
-}
-
-class Get${className}Event extends ${className}Event {
-  const Get${className}Event();
-}
-''';
-
-String _tplBloc(String module, String className) => '''
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
-
-import '../../domain/use_cases/${module}_use_cases.dart';
-import '${module}_event.dart';
-import '${module}_state.dart';
-
-@Injectable()
-class ${className}Bloc extends Bloc<${className}Event, ${className}State> {
-  final ${className}UseCases _useCases;
-
-  ${className}Bloc(this._useCases) : super(const ${className}InitialState()) {
-    on<Get${className}Event>(_onGet);
-  }
-
-  Future<void> _onGet(
-    Get${className}Event event,
-    Emitter<${className}State> emit,
-  ) async {
-    emit(const ${className}LoadingState());
-    final result = await _useCases.getSomething();
-    result.fold(
-      (failure) => emit(${className}ErrorState(message: failure.message ?? '')),
-      (data)    => emit(${className}SuccessState(data: data)),
-    );
-  }
-}
-''';
-
-// ── Cubit ─────────────────────────────────────────────────────────────────────
-
-String _tplCubit(String module, String className) => '''
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
-
-import '../../domain/use_cases/${module}_use_cases.dart';
-import '${module}_state.dart';
-
-// Cubit: no event classes needed. Call methods directly from UI.
-// Uses flutter_bloc — same package as Bloc, no extra dependency.
-@Injectable()
-class ${className}Cubit extends Cubit<${className}State> {
-  final ${className}UseCases _useCases;
-
-  ${className}Cubit(this._useCases) : super(const ${className}InitialState());
-
-  Future<void> getSomething() async {
-    emit(const ${className}LoadingState());
-    final result = await _useCases.getSomething();
-    result.fold(
-      (failure) => emit(${className}ErrorState(message: failure.message ?? '')),
-      (data)    => emit(${className}SuccessState(data: data)),
-    );
-  }
 }
 ''';
 
@@ -158,7 +84,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../app_storage.dart';
 
 /// [AppStorage] backed by FlutterSecureStorage.
-/// Managed by spl_manager. To switch: dart run codegen/spl_manager.dart storage set <provider>
+/// Managed by spl_manager. To switch: dart run codegen/spl_manager.dart storage default <provider>
 class SecureStorageProvider implements AppStorage {
   final FlutterSecureStorage _storage;
   const SecureStorageProvider(this._storage);
@@ -286,7 +212,7 @@ class SharedPrefsStorageProvider implements AppStorage {
 }
 ''';
 
-// ─── Data/Domain templates (shared across all state mgmt choices) ─────────────
+// ─── Data/Domain templates (shared by all features) ──────────────────────────
 
 /// [storageProvider] — the named backend to inject (e.g. 'sqflite').
 /// Null means no local storage for this feature.
@@ -516,111 +442,6 @@ void main() {
 
       expect(result.isLeft(), true);
     });
-  });
-}
-''';
-
-String _tplBlocTest(String module, String className) => '''
-import 'package:bloc_test/bloc_test.dart';
-import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/$module/domain/model/$module.dart';
-import 'package:pilah_mobile/features/$module/domain/use_cases/${module}_use_cases.dart';
-import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_bloc.dart';
-import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_event.dart';
-import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_state.dart';
-import 'package:dartz/dartz.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-
-class Mock${className}UseCases extends Mock implements ${className}UseCases {}
-
-void main() {
-  late Mock${className}UseCases mockUseCases;
-
-  setUp(() {
-    mockUseCases = Mock${className}UseCases();
-  });
-
-  group('${className}Bloc', () {
-    blocTest<${className}Bloc, ${className}State>(
-      'emits [Loading, Success] when getSomething succeeds',
-      build: () => ${className}Bloc(mockUseCases),
-      setUp: () {
-        when(() => mockUseCases.getSomething())
-            .thenAnswer((_) async => Right($className(id: 1)));
-      },
-      act: (bloc) => bloc.add(const Get${className}Event()),
-      expect: () => [
-        const ${className}LoadingState(),
-        isA<${className}SuccessState>(),
-      ],
-    );
-
-    blocTest<${className}Bloc, ${className}State>(
-      'emits [Loading, Error] when getSomething fails',
-      build: () => ${className}Bloc(mockUseCases),
-      setUp: () {
-        when(() => mockUseCases.getSomething())
-            .thenAnswer((_) async => Left(NetworkException(message: 'error')));
-      },
-      act: (bloc) => bloc.add(const Get${className}Event()),
-      expect: () => [
-        const ${className}LoadingState(),
-        isA<${className}ErrorState>(),
-      ],
-    );
-  });
-}
-''';
-
-String _tplCubitTest(String module, String className) => '''
-import 'package:bloc_test/bloc_test.dart';
-import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/$module/domain/model/$module.dart';
-import 'package:pilah_mobile/features/$module/domain/use_cases/${module}_use_cases.dart';
-import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_cubit.dart';
-import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_state.dart';
-import 'package:dartz/dartz.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-
-class Mock${className}UseCases extends Mock implements ${className}UseCases {}
-
-void main() {
-  late Mock${className}UseCases mockUseCases;
-
-  setUp(() {
-    mockUseCases = Mock${className}UseCases();
-  });
-
-  group('${className}Cubit', () {
-    blocTest<${className}Cubit, ${className}State>(
-      'emits [Loading, Success] when getSomething succeeds',
-      build: () => ${className}Cubit(mockUseCases),
-      setUp: () {
-        when(() => mockUseCases.getSomething())
-            .thenAnswer((_) async => Right($className(id: 1)));
-      },
-      act: (cubit) => cubit.getSomething(),
-      expect: () => [
-        const ${className}LoadingState(),
-        isA<${className}SuccessState>(),
-      ],
-    );
-
-    blocTest<${className}Cubit, ${className}State>(
-      'emits [Loading, Error] when getSomething fails',
-      build: () => ${className}Cubit(mockUseCases),
-      setUp: () {
-        when(() => mockUseCases.getSomething())
-            .thenAnswer((_) async => Left(NetworkException(message: 'error')));
-      },
-      act: (cubit) => cubit.getSomething(),
-      expect: () => [
-        const ${className}LoadingState(),
-        isA<${className}ErrorState>(),
-      ],
-    );
   });
 }
 ''';

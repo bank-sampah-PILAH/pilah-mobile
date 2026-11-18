@@ -1,8 +1,10 @@
-import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 
 import '../../../support/onboarding_support.dart';
 import '../../../support/stub_api.dart';
@@ -11,19 +13,14 @@ const _bank = '/api/v1/onboarding/bank-sampah';
 
 void main() {
   late StubApi api;
-  late OnboardingCubit cubit;
-  late File photo;
+  late OnboardingRemoteDataSource dataSource;
+  late ProviderContainer container;
 
   setUp(() {
     api = StubApi();
-    cubit = buildOnboardingCubit(api);
-    photo = File('${Directory.systemTemp.path}/onboarding_foto.jpg')
-      ..writeAsBytesSync([1, 2, 3]);
-  });
-
-  tearDown(() async {
-    await cubit.close();
-    if (photo.existsSync()) photo.deleteSync();
+    dataSource = buildOnboardingDataSource(api);
+    container = buildOnboardingContainer(dataSource);
+    addTearDown(container.dispose);
   });
 
   RegisterBankSampahRequest bankRequest(
@@ -32,18 +29,19 @@ void main() {
         nama: 'Bank Melati',
         alamat: 'Jl. Melati 1',
         noHpPic: '0812',
-        fotoKegiatanPath: photo.path,
+        fotoKegiatanBytes: Uint8List.fromList([1, 2, 3]),
+        fotoKegiatanFilename: 'onboarding_foto.jpg',
         lokasi: lokasi,
       );
 
   test('a picked location rides the registration as strings', () async {
     api.on('POST', _bank, json: {'next_step': 'pending'});
 
-    await cubit.registerBankSampah(
-      bankRequest(
-        lokasi: (latitude: -6.362829, longitude: 106.828655),
-      ),
-    );
+    await container
+        .read(onboardingProvider.notifier)
+        .submitRegistration(bankRequest(
+          lokasi: (latitude: -6.362829, longitude: 106.828655),
+        ));
 
     final form = api.last.body as dynamic;
     final fields = {
@@ -57,7 +55,9 @@ void main() {
   test('skipping the picker sends no coordinates at all', () async {
     api.on('POST', _bank, json: {'next_step': 'pending'});
 
-    await cubit.registerBankSampah(bankRequest());
+    await container
+        .read(onboardingProvider.notifier)
+        .submitRegistration(bankRequest());
 
     final keys = ((api.last.body as dynamic).fields as List<dynamic>)
         .map((f) => (f as dynamic).key);

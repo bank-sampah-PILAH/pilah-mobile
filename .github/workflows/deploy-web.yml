@@ -69,7 +69,12 @@ jobs:
       - name: Prepare public application environment
         env:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
-        run: python3 scripts/prepare_web_env.py "$FLAVOR" .env
+          ENABLE_POSTHOG: ${{ secrets.ENABLE_POSTHOG }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          POSTHOG_ENVIRONMENT: ${{ secrets.POSTHOG_ENVIRONMENT }}
+        run: |
+          python3 scripts/prepare_web_env.py "$FLAVOR" .env
 
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile

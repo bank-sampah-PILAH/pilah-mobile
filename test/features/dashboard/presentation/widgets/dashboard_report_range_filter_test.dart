@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_range_filter.dart';
+import '../../../../support/analytics_scope.dart';
 
 void main() {
   final june = DashboardReportRange(
@@ -12,7 +14,7 @@ void main() {
       WidgetTester tester, List<DashboardReportRange> changes,
       {DashboardReportRange? initialRange}) async {
     var range = initialRange ?? june;
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(withAnalytics(MaterialApp(
       home: Scaffold(
           body: StatefulBuilder(
               builder: (context, setState) => DashboardReportRangeFilter(
@@ -21,7 +23,7 @@ void main() {
                     changes.add(value);
                     setState(() => range = value);
                   }))),
-    ));
+    )));
   }
 
   Future<void> open(WidgetTester tester) async {
@@ -30,7 +32,7 @@ void main() {
   }
 
   Future<void> select(WidgetTester tester, String date) async {
-    await tester.tap(find.byKey(ValueKey('report-date-$date')));
+    await tester.tap(find.byKey(ValueKey('app-calendar-date-$date')));
     await tester.pumpAndSettle();
   }
 
@@ -42,19 +44,19 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final changes = <DashboardReportRange>[];
       await pumpFilter(tester, changes);
-      final custom =
-          tester.getRect(find.widgetWithText(OutlinedButton, 'Kustom'));
-      final caption =
-          tester.getRect(find.text('Showing from 2026-06-01 to 2026-06-30'));
+      final custom = tester.getRect(find.widgetWithText(AppButton, 'Kustom'));
+      final caption = tester
+          .getRect(find.text('Menampilkan 1 Juni 2026 sampai 30 Juni 2026'));
       expect(caption.left, greaterThan(custom.right));
       expect(caption.center.dy, closeTo(custom.center.dy, 1));
-      for (final label in ['Hari ini', '7 Hari', '30 Hari', 'Kustom']) {
-        expect(
-            tester.getSize(find.widgetWithText(OutlinedButton, label)).height,
-            48);
+      for (final label in ['Hari ini', '7 Hari', '30 Hari']) {
+        expect(tester.getSize(find.widgetWithText(AppChip, label)).height, 48);
       }
+      expect(
+          tester.getSize(find.widgetWithText(AppButton, 'Kustom')).height, 48);
       await open(tester);
       final panel = find.byKey(const ValueKey('report-range-calendar'));
+      expect(find.text('01/06/2026 – 30/06/2026'), findsOneWidget);
       final bounds = tester.getRect(panel);
       expect(bounds.width, lessThanOrEqualTo(336));
       expect(bounds.height, lessThan(size.height));
@@ -74,6 +76,27 @@ void main() {
     });
   }
 
+  testWidgets('range captions use full Indonesian month names', (tester) async {
+    final range = DashboardReportRange(
+        start: DateTime(2026, 10, 1), end: DateTime(2026, 10, 31));
+    await pumpFilter(tester, [], initialRange: range);
+
+    expect(find.text('Menampilkan 1 Oktober 2026 sampai 31 Oktober 2026'),
+        findsOneWidget);
+    expect(reportCategoryWeightSubtitle(range),
+        'Berat per kategori, 1 sampai 31 Oktober 2026');
+    expect(
+      reportCategoryWeightSubtitle(DashboardReportRange(
+          start: DateTime(2026, 10, 5), end: DateTime(2026, 10, 5))),
+      'Berat per kategori, 5 Oktober 2026',
+    );
+    expect(
+      reportCategoryWeightSubtitle(DashboardReportRange(
+          start: DateTime(2026, 9, 30), end: DateTime(2026, 10, 2))),
+      'Berat per kategori, 30 September 2026 sampai 2 Oktober 2026',
+    );
+  });
+
   testWidgets(
       'presets select inclusive trailing ranges and mark the active button',
       (tester) async {
@@ -87,9 +110,8 @@ void main() {
       expect(changes.last.start,
           DateTime(today.year, today.month, today.day - days + 1));
       expect(changes.last.end, today);
-      final button = tester
-          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, label));
-      expect(button.style!.backgroundColor!.resolve({}), AppColors.greenDark);
+      final chip = tester.widget<AppChip>(find.widgetWithText(AppChip, label));
+      expect(chip.selected, isTrue);
     }
   });
 
@@ -100,7 +122,10 @@ void main() {
     await open(tester);
     await tester.tap(find.text('Reset'));
     await tester.pumpAndSettle();
-    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+    expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Terapkan'))
+            .onPressed,
         isNull);
     await select(tester, '2026-06-20');
     await select(tester, '2026-06-10');
@@ -154,10 +179,11 @@ void main() {
             .onPressed,
         isNull);
     final disabled = tester.widget<TextButton>(
-        find.byKey(const ValueKey('report-date-2099-06-11')));
+        find.byKey(const ValueKey('app-calendar-date-2099-06-11')));
     expect(disabled.onPressed, isNull);
     await select(tester, '2099-06-10');
     await select(tester, '2099-06-10');
+    expect(find.text('10/06/2099 – 10/06/2099'), findsOneWidget);
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
     expect(changes.single.start, changes.single.end);

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 
 /// Asks the user to confirm an action and answers `true` only when they tap the
 /// confirm button. Cancelling, or dismissing by tapping outside or going back,
@@ -19,37 +18,14 @@ Future<bool> showAppConfirmDialog(
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(
-        title,
-        style: AppTextStyle.title1.copyWith(color: AppColors.black),
-      ),
-      content: Text(message, style: AppTextStyle.small),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: Text(
-            cancelLabel,
-            style: AppTextStyle.small.copyWith(
-              color: AppColors.grey100,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          style: destructive
-              ? FilledButton.styleFrom(backgroundColor: AppColors.danger)
-              : null,
-          child: Text(
-            confirmLabel,
-            style: AppTextStyle.small.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+    builder: (dialogContext) => AppDialog(
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
+      destructive: destructive,
+      onConfirm: () => Navigator.of(dialogContext).pop(true),
+      onCancel: () => Navigator.of(dialogContext).pop(false),
     ),
   );
   return confirmed ?? false;
