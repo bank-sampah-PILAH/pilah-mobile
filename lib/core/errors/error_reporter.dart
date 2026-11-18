@@ -1,5 +1,6 @@
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/errors/error_filter.dart';
+import 'package:pilah_mobile/core/errors/error_flows.dart';
 
 /// Tells the team about an error nobody expected. Screens and cubits never
 /// call a monitoring service themselves: they go through this, so what leaves
@@ -26,6 +27,37 @@ class NoopErrorReporter implements ErrorReporter {
     StackTrace stack, {
     Map<String, Object?> context = const {},
   }) {}
+}
+
+/// Adds the screen, and the core flow if there is one, to every error, so the
+/// team knows where it happened without anyone listing the screens by hand.
+class ContextualErrorReporter implements ErrorReporter {
+  ContextualErrorReporter({required this.inner, required this.currentScreen});
+
+  final ErrorReporter inner;
+
+  /// The name of the screen showing now (`AnalyticsScreenTracker.nameFor`), or
+  /// null when there is none yet.
+  final String? Function() currentScreen;
+
+  @override
+  void report(
+    Object error,
+    StackTrace stack, {
+    Map<String, Object?> context = const {},
+  }) {
+    final screen = currentScreen();
+    final flow = screen == null ? null : ErrorFlows.nameFor(screen);
+    inner.report(
+      error,
+      stack,
+      context: {
+        if (screen != null) 'layar': screen,
+        if (flow != null) 'alur': flow,
+        ...context,
+      },
+    );
+  }
 }
 
 /// Passes on only the errors worth telling the team about; see [ErrorFilter].

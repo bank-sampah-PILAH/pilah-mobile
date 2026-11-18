@@ -13,6 +13,7 @@ abstract final class AnalyticsProps {
     'aksi',
     'alasan',
     'alasan_gagal',
+    'alur',
     'alur_id',
     'area',
     'bagian',
