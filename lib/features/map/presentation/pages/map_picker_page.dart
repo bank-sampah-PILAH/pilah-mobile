@@ -184,9 +184,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
     final lat = double.tryParse(_latitudeField.text.replaceFirst(',', '.'));
     final lng = double.tryParse(_longitudeField.text.replaceFirst(',', '.'));
     String? message;
-    if (lat == null || lat < -90 || lat > 90) {
+    if (lat == null || !lat.isFinite || lat < -90 || lat > 90) {
       message = 'Lintang harus di antara -90 dan 90';
-    } else if (lng == null || lng < -180 || lng > 180) {
+    } else if (lng == null || !lng.isFinite || lng < -180 || lng > 180) {
       message = 'Bujur harus di antara -180 dan 180';
     }
     if (message != null) {
@@ -272,6 +272,12 @@ class _MapPickerPageState extends State<MapPickerPage> {
                       initialCenter: widget.initialCenter ?? _defaultCenter,
                       initialZoom: 16,
                       onMapEvent: (event) {
+                        // A pan means the user chose the camera over a typed
+                        // value: drop focus so the fields follow it again.
+                        if (_latitudeFocus.hasFocus ||
+                            _longitudeFocus.hasFocus) {
+                          FocusScope.of(context).unfocus();
+                        }
                         _syncFieldsTo(event.camera.center);
                         // The circle is drawn anchored to the camera center;
                         // every pan/zoom repaints it around the new center.

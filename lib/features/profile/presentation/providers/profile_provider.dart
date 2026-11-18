@@ -31,6 +31,10 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   final bool _isWeb;
 
+  /// Bumped by [reset]; a response from an earlier session must never reach
+  /// the state of the next signed-in user.
+  int _session = 0;
+
   @override
   ProfileState build() => const ProfileState();
 
@@ -51,12 +55,13 @@ class ProfileNotifier extends Notifier<ProfileState> {
       );
     }
 
+    final session = _session;
     final bankEither = await apiCall<BankSampahProfile>(
       func: _dataSource.getBankSampah(),
       mapper: (value) => value as BankSampahProfile,
     );
 
-    if (!ref.mounted) return;
+    if (!ref.mounted || session != _session) return;
     await bankEither.fold(
       (error) async => state = ProfileState(
           status: ProfileStatus.error, error: error.displayMessage),
@@ -82,7 +87,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
           inviteError =
               inviteEither.fold((error) => error.displayMessage, (_) => null);
         }
-        if (!ref.mounted) return;
+        if (!ref.mounted || session != _session) return;
         state = ProfileState(
           status: ProfileStatus.loaded,
           bankSampah: bank,
@@ -229,6 +234,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
   Future<BankSampahProfile?> ensureBank() async {
     final cached = state.bankSampah;
     if (cached != null) return cached;
+    final session = _session;
     final either = await apiCall<BankSampahProfile>(
       func: _dataSource.getBankSampah(),
       mapper: (value) => value as BankSampahProfile,
@@ -236,6 +242,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
     return either.fold(
       (_) => null,
       (bank) {
+        if (!ref.mounted || session != _session) return null;
         // Cached for the next caller (ProfilePage itself uses [load] and a
         // fresh GET, so a stale window is possible but harmless for display).
         state = state.copyWith(bankSampah: bank);
@@ -247,8 +254,13 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// Clears cached data and returns to the initial state (used on logout, since
   /// this notifier is an app-scoped singleton that outlives a session).
   ///
-  /// Pending logo bytes must not be uploaded by the next signed-in user.
-  void reset() => state = const ProfileState();
+  /// Pending logo bytes must not be uploaded by the next signed-in user, and
+  /// in-flight responses from the closing session are discarded by the
+  /// generation bump.
+  void reset() {
+    _session++;
+    state = const ProfileState();
+  }
 
   /// Explicitly creates or replaces the team's invitation link.
   Future<NetworkException?> createInvite() async {

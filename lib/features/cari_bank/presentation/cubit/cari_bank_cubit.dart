@@ -25,7 +25,7 @@ import 'package:pilah_mobile/services/di.dart';
 /// previously-picked point wins if one was saved in local storage, otherwise
 /// the device fix is tried; both paths then persist whatever a later
 /// [pilihDariPeta] puts in its place.
-@lazySingleton
+@injectable
 class CariBankCubit extends Cubit<CariBankState> {
   final CariBankRemoteDataSource _dataSource;
 
@@ -55,6 +55,7 @@ class CariBankCubit extends Cubit<CariBankState> {
   int _halaman = 1;
   bool _hasMore = false;
   bool _isLoadingMore = false;
+  String? _loadMoreError;
   int _totalCount = 0;
   int _generation = 0;
 
@@ -142,8 +143,16 @@ class CariBankCubit extends Cubit<CariBankState> {
     _jeda?.cancel();
     final generation = ++_generation;
     _isLoadingMore = false;
+    _loadMoreError = null;
+    // The old first page no longer owns the pagination: until the new one
+    // lands, a scroll must not ask for page+1 with the new filters.
+    _hasMore = false;
     if (isClosed) return;
-    if (state is! CariBankLoaded) emit(const CariBankLoading());
+    if (state is! CariBankLoaded) {
+      emit(const CariBankLoading());
+    } else {
+      _emitLoaded();
+    }
     final either = await apiCall<CariBankPage>(
       func: _dataSource.search(
         q: _q,
@@ -175,6 +184,7 @@ class CariBankCubit extends Cubit<CariBankState> {
     if (!_hasMore || _isLoadingMore || state is! CariBankLoaded) return;
     final generation = _generation;
     _isLoadingMore = true;
+    _loadMoreError = null;
     _emitLoaded();
     final either = await apiCall<CariBankPage>(
       func: _dataSource.search(
@@ -191,9 +201,12 @@ class CariBankCubit extends Cubit<CariBankState> {
     if (isClosed || generation != _generation) return;
     _isLoadingMore = false;
     either.fold(
-      (error) => emit(
-        CariBankError(error.displayMessage),
-      ),
+      (error) {
+        // The loaded rows stay on screen; the footer shows the retry instead
+        // of replacing the whole list with an error page.
+        _loadMoreError = error.displayMessage;
+        _emitLoaded();
+      },
       (page) {
         _items = [..._items, ...page.items];
         _halaman += 1;
@@ -213,6 +226,7 @@ class CariBankCubit extends Cubit<CariBankState> {
           searchQuery: _q,
           kotaFilter: _kota,
           dalamRadiusKm: _radiusKm,
+          loadMoreError: _loadMoreError,
         ),
       );
 }

@@ -122,6 +122,27 @@ void main() {
     expect(find.text('Bank Melati'), findsOneWidget);
   });
 
+  testWidgets('a bank on page two is listed and selectable', (tester) async {
+    api.onRequest('GET', _path, json: (options) {
+      if (options.uri.queryParameters['page'] == '2') {
+        return _page([_bank('b21', 'Bank Kedua Puluh Satu')]);
+      }
+      return {
+        'count': 21,
+        'previous': null,
+        'next': 'http://api.test$_path?page=2',
+        'results': [_bank('b1', 'Bank Melati')],
+      };
+    });
+
+    await openSheet(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bank Kedua Puluh Satu'));
+    await tester.pumpAndSettle();
+    expect(picked?.id, 'b21');
+  });
+
   testWidgets('choosing a bank closes the sheet with it', (tester) async {
     await openSheet(tester);
     await tester.pumpAndSettle();
