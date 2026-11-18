@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/file_downloader.dart';
+import 'package:pilah_mobile/core/utils/report_share_file.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../domain/model/draft_pencairan.dart';
@@ -30,7 +31,12 @@ Future<void> simpanBerkasDraft(BuildContext context, DraftExport file) async {
     message: 'Berkas disimpan ke folder ${saved.folder}',
     actionLabel: 'Bagikan',
     onAction: () => SharePlus.instance.share(
-      ShareParams(files: [XFile(saved.path)], text: 'Draft Pencairan PILAH'),
+      ShareParams(files: [
+        createReportShareFile(
+            saved: saved, filename: file.filename, bytes: file.bytes)
+      ], fileNameOverrides: [
+        file.filename
+      ], text: 'Draft Pencairan PILAH'),
     ),
   );
 }

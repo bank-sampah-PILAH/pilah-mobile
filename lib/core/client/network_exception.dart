@@ -100,20 +100,20 @@ class NetworkException implements Exception {
     final data = _body(response);
     if (data is Map) return _messageFromPayload(data);
     if (data is String && data.isNotEmpty) return data;
-    if (data is List<int> && data.isNotEmpty) {
-      return _messageFromBytes(data);
-    }
     return null;
   }
 
   static String? _messageFromPayload(Map payload) {
     final errors = payload['errors'];
     if (errors is Map && errors.isNotEmpty) {
-      final firstValue = errors.values.first;
-      if (firstValue is List && firstValue.isNotEmpty) {
-        return firstValue.first.toString();
+      // DRF nested validation (e.g. `items[*].berat`) nests lists inside
+      // lists; walk the whole structure and collect every message leaf.
+      final messages = _messageLeaves(errors);
+      if (messages.isNotEmpty) {
+        final distinct = messages.toSet().toList();
+        return distinct.length == 1 ? distinct.first : distinct.join(' • ');
       }
-      return firstValue.toString();
+      return null;
     }
     final singleError =
         payload['error'] ?? payload['message'] ?? payload['detail'];
@@ -121,17 +121,21 @@ class NetworkException implements Exception {
     return null;
   }
 
-  /// Byte payloads happen on `ResponseType.bytes` endpoints (PDF/XLSX
-  /// exports): the backend's 400 JSON body arrives as bytes, so it is decoded
-  /// here before the message is read — without this the user sees the generic
-  /// prefix instead of e.g. "Tidak ada data pada periode ini".
-  static String? _messageFromBytes(List<int> bytes) {
-    try {
-      final decoded = jsonDecode(utf8.decode(bytes, allowMalformed: true));
-      return decoded is Map ? _messageFromPayload(decoded) : null;
-    } catch (_) {
-      return null;
+  /// Depth-first walk collecting message strings; `[{"berat": ["msg"]}]`
+  /// yields ["msg"], a flat `["msg"]` yields ["msg"].
+  static List<String> _messageLeaves(dynamic node) {
+    if (node is String) {
+      return node.isEmpty ? const [] : [node];
     }
+    if (node is List) {
+      return [for (final child in node) ..._messageLeaves(child)];
+    }
+    if (node is Map) {
+      return [
+        for (final child in node.values) ..._messageLeaves(child),
+      ];
+    }
+    return const [];
   }
 
   /// Flattens `{"errors": {"field": ["msg"]}}` into `{field: "msg"}` so forms can

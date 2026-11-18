@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart';
-import 'package:pilah_mobile/features/statement/presentation/blocs/statement_export_cubit.dart';
-import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/statement/presentation/providers/statement_export_provider.dart';
 
 /// PDF icon beside the Setoran/Pencairan tabs (PIL-315). Fetches the
-/// activity statement through [StatementExportCubit] and opens the in-app
+/// activity statement through [StatementExportNotifier] and opens the in-app
 /// preview; from there the user downloads or shares it.
-class NasabahPdfPreviewButton extends StatelessWidget {
+class NasabahPdfPreviewButton extends ConsumerWidget {
   const NasabahPdfPreviewButton(
       {super.key, required this.membershipId, this.previewViewer});
 
   final String membershipId;
   final Widget? previewViewer;
 
-  Future<void> _openPreview(BuildContext context) async {
-    final cubit = di<StatementExportCubit>();
+  Future<void> _openPreview(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(statementExportProvider.notifier);
     final loading = AppNotification.showLoading(
       context,
       title: 'Informasi',
       message: 'Menyiapkan laporan PDF...',
     );
-    final export = await cubit.export(membershipId);
+    final export = await notifier.export(membershipId);
     if (!context.mounted) return;
     if (export == null) {
       await loading.dismiss();
@@ -30,8 +30,7 @@ class NasabahPdfPreviewButton extends StatelessWidget {
       AppNotification.showError(
         context,
         title: 'Gagal',
-        message:
-            cubit.state.error ?? 'Laporan PDF gagal dibuat. Coba lagi nanti.',
+        message: notifier.error ?? 'Laporan PDF gagal dibuat. Coba lagi nanti.',
       );
       return;
     }
@@ -51,10 +50,10 @@ class NasabahPdfPreviewButton extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => IconButton(
+  Widget build(BuildContext context, WidgetRef ref) => IconButton(
         tooltip: 'Pratinjau PDF',
         icon: const Icon(Icons.picture_as_pdf_outlined),
         color: NasabahStyle.ink,
-        onPressed: () => _openPreview(context),
+        onPressed: () => _openPreview(context, ref),
       );
 }

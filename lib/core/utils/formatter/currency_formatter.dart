@@ -18,6 +18,14 @@ abstract final class CurrencyFormatter {
     return 'Rp $sign${formatNumber(value.abs())}';
   }
 
+  /// An amount held in sen: `333399` -> `Rp 3.333,99`, `350000` -> `Rp 3.500`.
+  static String formatRupiahSen(int sen) {
+    final sign = sen < 0 ? '-' : '';
+    final rupiah = 'Rp $sign${formatNumber(sen.abs() ~/ 100)}';
+    final sisa = sen.abs() % 100;
+    return sisa == 0 ? rupiah : '$rupiah,${sisa.toString().padLeft(2, '0')}';
+  }
+
   /// Formats a number as the backend sends it (int, double or numeric string),
   /// rounded to whole rupiah. Missing or unparseable values read as `Rp 0`.
   static String formatRupiahValue(Object? value) {

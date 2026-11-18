@@ -1,0 +1,64 @@
+{
+  "source_commit": "eeaf4b90481de21407bf01cc79641ed1a5ef4d64",
+  "date": "2026-10-14",
+  "timezone": "Asia/Jakarta",
+  "role": "Pengurus",
+  "data": "Synthetic local QA database",
+  "native_android_tested": false,
+  "environment": "Fresh release web build; browser-only API URL override to localhost; application .env unchanged",
+  "web_bundle_sha256": "71a33f875e3a2482aba5f6770897580ed9e5c0547da6678bb5afe7b2b130e076",
+  "screenshots": [
+    {
+      "file": "pengurus-desktop.png",
+      "sha256": "0e679efaa54e2662d7c01a62fbd1c2f12daae4ba47a7b6c65ba66e4558d2cbfc"
+    },
+    {
+      "file": "pengurus-mobile.png",
+      "sha256": "3bb5724237db8865acb49845498b1cf01573defe67dffb7243d8dd911e673d5d"
+    },
+    {
+      "file": "pengurus-loading-desktop.png",
+      "sha256": "ecc469dd2d425f1d2b79e54647add681c066a5ac6052a0d1f99b9e5352ee1ac7"
+    },
+    {
+      "file": "pengurus-loading-mobile.png",
+      "sha256": "a9ea4d090d18836d1961c4d553adbfe013a8f8b7336f4263e01390c41b25d443"
+    },
+    {
+      "file": "pengurus-empty-desktop.png",
+      "sha256": "11127fa39c1c7798a12af00426de349a7fc13806e621b2e683633d0de2a7f878"
+    },
+    {
+      "file": "pengurus-empty-mobile.png",
+      "sha256": "a65f29e66124dce5e8fa517265326a9e8e4af44b1b3250c07afe21d433672294"
+    },
+    {
+      "file": "pengurus-error-desktop.png",
+      "sha256": "d14271c210b4b762e5aaf1fe208615e0efe274ca02be7de1c7b61b4770f30a1b"
+    },
+    {
+      "file": "pengurus-error-mobile.png",
+      "sha256": "035173a5d9eb399a40f48d378f3cb6baa676226101a653760dabe47d78c7e75c"
+    },
+    {
+      "file": "date-filter-desktop.png",
+      "sha256": "ebdbf89bfebe256875dde55fa0042945f96f81ef7ea48a94b488e49a120ab04f"
+    },
+    {
+      "file": "date-filter-phone.png",
+      "sha256": "fb1129874d8fbb984c67ce0f1dc3abe4d68b958b450653d6cc9eac9bf3b352d8"
+    },
+    {
+      "file": "pengurus-filtered-mobile.png",
+      "sha256": "5d8f2c39364b8820b8241c6c0572cfbf7e718608f457fd69edd90442edd3e980"
+    },
+    {
+      "file": "pengurus-phone390.png",
+      "sha256": "4941388179983177ea4dbb19166cfb4bb6d32d389bce965b47af1fda9b8406cc"
+    },
+    {
+      "file": "pengurus-tablet.png",
+      "sha256": "c5334ae5c445758d4fe981c28942d13e6efbed7609405614cb67621fb0264877"
+    }
+  ]
+}

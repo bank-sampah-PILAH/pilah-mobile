@@ -1,17 +1,14 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 
-class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
-    implements NasabahApprovalCubit {}
+import '../../../../support/nasabah_approval_support.dart';
 
 const _pending = NasabahMembershipEntity(
   id: 'membership-1',
@@ -33,26 +30,19 @@ const _approved = NasabahMembershipEntity(
   isActive: true,
 );
 
-Widget _wrap(NasabahApprovalCubit cubit) => MaterialApp(
-      home: BlocProvider<NasabahApprovalCubit>.value(
-        value: cubit,
-        child: const ApprovalBankSampahListView(),
-      ),
+Widget _wrap(TestNasabahApprovalNotifier notifier) => ProviderScope(
+      overrides: [nasabahApprovalProvider.overrideWith(() => notifier)],
+      child: const MaterialApp(home: ApprovalBankSampahListView()),
     );
 
+TestNasabahApprovalNotifier _notifier(NasabahApprovalState state) =>
+    TestNasabahApprovalNotifier(initialState: state);
+
 void main() {
-  late _MockNasabahApprovalCubit cubit;
-
-  setUp(() {
-    cubit = _MockNasabahApprovalCubit();
-  });
-
   testWidgets('renders one card per membership with the right status badge',
       (tester) async {
-    when(() => cubit.state)
-        .thenReturn(const NasabahApprovalLoaded([_pending, _approved]));
-
-    await tester.pumpWidget(_wrap(cubit));
+    await tester.pumpWidget(
+        _wrap(_notifier(const NasabahApprovalLoaded([_pending, _approved]))));
 
     expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
     expect(find.text('Bandung · Jl. Melati No. 5'), findsOneWidget);
@@ -63,32 +53,33 @@ void main() {
     expect(find.byIcon(Icons.recycling), findsNWidgets(2));
   });
 
-  testWidgets('pulling to refresh reloads silently', (tester) async {
-    when(() => cubit.state)
-        .thenReturn(const NasabahApprovalLoaded([_pending, _approved]));
-    when(() => cubit.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
+  testWidgets('loads memberships when the provider starts initial',
+      (tester) async {
+    final notifier = _notifier(const NasabahApprovalInitial());
+    await tester.pumpWidget(_wrap(notifier));
+    await tester.pumpAndSettle();
 
-    await tester.pumpWidget(_wrap(cubit));
+    expect(notifier.loadCalls, [false]);
+  });
+
+  testWidgets('pulling to refresh reloads silently', (tester) async {
+    final notifier =
+        _notifier(const NasabahApprovalLoaded([_pending, _approved]));
+    await tester.pumpWidget(_wrap(notifier));
     await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
     await tester.pumpAndSettle();
 
-    verify(() => cubit.load(silent: true)).called(1);
+    expect(notifier.loadCalls, [true]);
   });
 
   testWidgets('renders EmptyView when there are no memberships',
       (tester) async {
-    when(() => cubit.state).thenReturn(const NasabahApprovalLoaded([]));
-
-    await tester.pumpWidget(_wrap(cubit));
-
+    await tester.pumpWidget(_wrap(_notifier(const NasabahApprovalLoaded([]))));
     expect(find.byType(EmptyView), findsOneWidget);
   });
 
   testWidgets('renders skeletons while loading', (tester) async {
-    when(() => cubit.state).thenReturn(const NasabahApprovalLoading());
-
-    await tester.pumpWidget(_wrap(cubit));
+    await tester.pumpWidget(_wrap(_notifier(const NasabahApprovalLoading())));
     // SkeletonListItem runs its own Timer.periodic animation loop, so settle
     // would time out waiting for it to go idle.
     await tester.pump();
@@ -97,10 +88,8 @@ void main() {
   });
 
   testWidgets('renders EmptyView with the message on error', (tester) async {
-    when(() => cubit.state)
-        .thenReturn(const NasabahApprovalError('Gagal memuat'));
-
-    await tester.pumpWidget(_wrap(cubit));
+    await tester.pumpWidget(
+        _wrap(_notifier(const NasabahApprovalError('Gagal memuat'))));
 
     expect(find.byType(EmptyView), findsOneWidget);
     expect(find.text('Gagal memuat'), findsOneWidget);

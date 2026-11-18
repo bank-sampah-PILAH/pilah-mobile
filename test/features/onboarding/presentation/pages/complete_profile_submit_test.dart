@@ -1,17 +1,11 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -19,8 +13,6 @@ import '../../../../support/auth_support.dart';
 import '../../../../support/onboarding_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 const _profile = '/api/v1/onboarding/profile';
 const _accept = '/api/v1/invites/accept';
@@ -32,8 +24,6 @@ const _routes = [
   '/superadmin-dashboard',
   '/register-nasabah',
   '/nasabah-dashboard',
-  '/register-bank-sampah-induk',
-  '/pengelola-induk-dashboard',
   '/login',
 ];
 
@@ -63,21 +53,19 @@ AuthEntity _account({
 
 void main() {
   late StubApi api;
-  late OnboardingCubit onboarding;
+  late ProviderContainer onboarding;
   late InviteTokenStore store;
-  late MockAuthBloc auth;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
     api = StubApi();
-    onboarding = buildOnboardingCubit(api);
+    onboarding = buildOnboardingContainer(buildOnboardingDataSource(api));
     store = InviteTokenStore();
     di.registerSingleton<InviteTokenStore>(store);
   });
 
   tearDown(() async {
-    await onboarding.close();
+    onboarding.dispose();
     await di.unregister<InviteTokenStore>();
   });
 
@@ -85,19 +73,19 @@ void main() {
     WidgetTester tester,
     AuthEntity account, {
     bool inviteMode = false,
-    MockAuthBloc? bloc,
+    TestAuthenticationNotifier? authNotifier,
   }) async {
-    auth = bloc ?? authBlocIn(Authenticated(authEntity: account));
+    auth = authNotifier ?? authNotifierIn(Authenticated(authEntity: account));
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        // A non-const instance so the constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: CompleteProfileScreen(isInviteMode: inviteMode),
+      UncontrolledProviderScope(
+        container: onboarding,
+        child: withAuthenticationProvider(
+          auth,
+          // A non-const instance so the constructor itself runs.
+          // ignore: prefer_const_constructors
+          CompleteProfileScreen(isInviteMode: inviteMode),
+        ),
       ),
       extraRoutes: _routes,
       size: const Size(800, 2600),
@@ -142,6 +130,60 @@ void main() {
     await settleToasts(tester);
   });
 
+  group('tanggal lahir is optional for a nasabah (PIL-478)', () {
+    /// Everything [fill] does except pick a date, since that is the point.
+    Future<void> fillWithoutDate(WidgetTester tester) async {
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), 'Siti Rahayu');
+      await tester.ensureVisible(find.text('Pilih jenis kelamin'));
+      await tester.tap(find.text('Pilih jenis kelamin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Perempuan').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(fields.at(2), '81234567890');
+      await tester.enterText(fields.at(3), 'Jl. Melati No. 1');
+    }
+
+    testWidgets('an empty nasabah form does not ask for a birth date',
+        (tester) async {
+      await open(tester, _account(role: 'nasabah'));
+
+      await submit(tester);
+
+      expect(find.text('Tanggal lahir wajib diisi'), findsNothing);
+      // The other required fields still speak up, so this is the one field
+      // relaxing and not validation falling over.
+      expect(find.text('Nama minimal 3 karakter'), findsOneWidget);
+      expect(find.text('Nomor HP wajib diisi'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
+    testWidgets('a nasabah banks a draft with no birth date at all',
+        (tester) async {
+      await open(tester, _account(role: 'nasabah'));
+      await fillWithoutDate(tester);
+
+      await submit(tester);
+
+      expect(find.text('route:/register-nasabah'), findsOneWidget);
+      final draft = onboarding.read(onboardingProvider.notifier).profileDraft!;
+      expect(draft.tanggalLahir, isNull);
+      expect(draft.alamat, 'Jl. Melati No. 1');
+      await settleToasts(tester);
+    });
+
+    testWidgets('a pengelola is still asked for one', (tester) async {
+      // Their `is_profile_complete` gates a bank registration on it
+      // server-side, so relaxing it here would only fail later.
+      await open(tester, _account());
+
+      await submit(tester);
+
+      expect(find.text('Tanggal lahir wajib diisi'), findsOneWidget);
+      await settleToasts(tester);
+    });
+  });
+
   testWidgets('a malformed phone number is rejected', (tester) async {
     await open(tester, _account(bankStatus: 'active'));
     await fill(tester);
@@ -165,7 +207,8 @@ void main() {
     await submit(tester);
 
     expect(find.text('route:/register-nasabah'), findsOneWidget);
-    expect(onboarding.profileDraft!.alamat, 'Jl. Melati 1');
+    expect(onboarding.read(onboardingProvider.notifier).profileDraft!.alamat,
+        'Jl. Melati 1');
     expect(api.requests, isEmpty);
     await settleToasts(tester);
   });
@@ -178,7 +221,9 @@ void main() {
     await submit(tester);
 
     expect(find.text('route:/register-bank-sampah'), findsOneWidget);
-    expect(onboarding.profileDraft!.jenisKelamin, 'perempuan');
+    expect(
+        onboarding.read(onboardingProvider.notifier).profileDraft!.jenisKelamin,
+        'perempuan');
     expect(api.requests, isEmpty);
     await settleToasts(tester);
   });
@@ -191,8 +236,6 @@ void main() {
       'superadmin_dashboard': 'route:/superadmin-dashboard',
       'register_nasabah': 'route:/register-nasabah',
       'nasabah_dashboard': 'route:/nasabah-dashboard',
-      'register_bank_sampah_induk': 'route:/register-bank-sampah-induk',
-      'pengelola_induk_dashboard': 'route:/pengelola-induk-dashboard',
       'something_new': 'route:/register-bank-sampah',
     };
     for (final entry in cases.entries) {
@@ -204,8 +247,7 @@ void main() {
         await submit(tester);
 
         expect(find.text(entry.value), findsOneWidget);
-        verify(() => auth.add(any(that: isA<RefreshUserRequested>())))
-            .called(1);
+        expect(auth.calls, contains('refreshUser'));
         await settleToasts(tester);
       });
     }
@@ -320,7 +362,9 @@ void main() {
 
   group('prefilling', () {
     testWidgets('restores a banked draft', (tester) async {
-      onboarding.saveProfileDraft(const CompleteProfileDraftForTest().request);
+      onboarding
+          .read(onboardingProvider.notifier)
+          .saveProfileDraft(const CompleteProfileDraftForTest().request);
       await open(tester, _account());
 
       expect(
@@ -331,7 +375,7 @@ void main() {
 
     testWidgets('an unparsable draft date leaves the date empty',
         (tester) async {
-      onboarding.saveProfileDraft(
+      onboarding.read(onboardingProvider.notifier).saveProfileDraft(
           const CompleteProfileDraftForTest(tanggal: 'bukan-tanggal').request);
       await open(tester, _account());
 
@@ -375,24 +419,75 @@ void main() {
       expect(find.text('Batal Lengkapi Profil?'), findsOneWidget);
       await tester.tap(find.text('Batal'));
       await tester.pumpAndSettle();
-      verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+      expect(auth.calls, isNot(contains('logout')));
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ya, Keluar'));
       await tester.pumpAndSettle();
-      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+      expect(auth.calls, contains('logout'));
+    });
+
+    testWidgets('the logout button in the header asks before logging out',
+        (tester) async {
+      await open(tester, _account());
+
+      await tester.tap(find.byTooltip('Keluar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Batal Lengkapi Profil?'), findsOneWidget);
+
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('logout'));
     });
 
     testWidgets('signing out routes to the login page', (tester) async {
-      final bloc = MockAuthBloc();
-      whenListen(
-          bloc, Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
-          initialState: Authenticated(authEntity: _account()));
+      final signedOut = authNotifierIn(Authenticated(authEntity: _account()));
 
-      await open(tester, _account(), bloc: bloc);
+      await open(tester, _account(), authNotifier: signedOut);
+      signedOut.setStateForTest(Unauthenticated());
+      await tester.pumpAndSettle();
 
       expect(find.text('route:/login'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a fresh registration exit deletes the account, not just logs '
+        'out', (tester) async {
+      await open(tester, _account());
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      expect(auth.discardFailure, isNull);
+      expect(auth.calls, contains('logout'),
+          reason: 'discardRegistration shares the exit path with logout');
+    });
+
+    testWidgets('an invite-mode exit keeps the account', (tester) async {
+      await open(tester, _account(), inviteMode: true);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Akun Tidak Dihapus'), findsNothing);
+    });
+
+    testWidgets('a backend refusal still logs out and explains itself',
+        (tester) async {
+      await open(tester, _account());
+      auth.discardFailure = 'Profil sudah lengkap.';
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, Keluar'));
+      await pumpToast(tester);
+
+      expect(find.text('Akun Tidak Dihapus'), findsOneWidget);
+      expect(find.text('Profil sudah lengkap.'), findsOneWidget);
+      await settleToasts(tester);
     });
   });
 }

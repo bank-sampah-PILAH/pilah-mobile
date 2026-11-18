@@ -1,23 +1,20 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
-    implements NasabahApprovalCubit {}
+import '../../../../support/nasabah_approval_support.dart';
 
-class _MockNasabahAppealCubit extends MockCubit<NasabahAppealState>
-    implements NasabahAppealCubit {}
+class _MockAppealMembershipUseCase extends Mock
+    implements AppealMembershipUseCase {}
 
 const _first = NasabahMembershipEntity(
   id: 'membership-1',
@@ -42,24 +39,17 @@ const _second = NasabahMembershipEntity(
 void main() {
   testWidgets('tapping a list card pushes the detail route with the entity',
       (tester) async {
-    final cubit = _MockNasabahApprovalCubit();
-    // Two memberships so the assertion can't be satisfied by the list page
-    // alone: if the push never happened, the second card's own text would
-    // still be onstage from the list, but the detail page's own widget
-    // (carrying the tapped entity) and its "Riwayat Persetujuan" section
-    // would not be.
-    when(() => cubit.state)
-        .thenReturn(const NasabahApprovalLoaded([_first, _second]));
-
-    final appealCubit = _MockNasabahAppealCubit();
-    when(() => appealCubit.state).thenReturn(const NasabahAppealIdle());
-    if (di.isRegistered<NasabahAppealCubit>()) {
-      di.unregister<NasabahAppealCubit>();
+    final notifier = TestNasabahApprovalNotifier(
+      initialState: const NasabahApprovalLoaded([_first, _second]),
+    );
+    final appealUseCase = _MockAppealMembershipUseCase();
+    if (di.isRegistered<AppealMembershipUseCase>()) {
+      di.unregister<AppealMembershipUseCase>();
     }
-    di.registerFactory<NasabahAppealCubit>(() => appealCubit);
+    di.registerFactory<AppealMembershipUseCase>(() => appealUseCase);
     addTearDown(() {
-      if (di.isRegistered<NasabahAppealCubit>()) {
-        di.unregister<NasabahAppealCubit>();
+      if (di.isRegistered<AppealMembershipUseCase>()) {
+        di.unregister<AppealMembershipUseCase>();
       }
     });
 
@@ -68,10 +58,7 @@ void main() {
       routes: [
         GoRoute(
           path: ApprovalBankSampahListPage.route,
-          builder: (context, state) => BlocProvider<NasabahApprovalCubit>.value(
-            value: cubit,
-            child: const ApprovalBankSampahListView(),
-          ),
+          builder: (context, state) => const ApprovalBankSampahListView(),
         ),
         GoRoute(
           path: ApprovalBankSampahDetailPage.route,
@@ -83,11 +70,13 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [nasabahApprovalProvider.overrideWith(() => notifier)],
+      child: MaterialApp.router(routerConfig: router),
+    ));
     await tester.pump();
 
     expect(find.text('Bank Sampah Lestari'), findsOneWidget);
-
     await tester.tap(find.text('Bank Sampah Lestari'));
     await tester.pumpAndSettle();
 
@@ -101,25 +90,15 @@ void main() {
   testWidgets(
       'reloads memberships silently when returning from detail with changes',
       (tester) async {
-    final cubit = _MockNasabahApprovalCubit();
-    when(() => cubit.state).thenReturn(const NasabahApprovalLoaded([_first]));
-    when(() => cubit.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
-
-    // A stand-in detail route, not the real ApprovalBankSampahDetailPage: the
-    // detail page's own appeal-success-pops-true behaviour is already covered
-    // in approval_bank_sampah_detail_page_test.dart. This isolates the list
-    // page's own responsibility — reacting to whatever the pushed route pops
-    // with — from that collaborator.
+    final notifier = TestNasabahApprovalNotifier(
+      initialState: const NasabahApprovalLoaded([_first]),
+    );
     final router = GoRouter(
       initialLocation: ApprovalBankSampahListPage.route,
       routes: [
         GoRoute(
           path: ApprovalBankSampahListPage.route,
-          builder: (context, state) => BlocProvider<NasabahApprovalCubit>.value(
-            value: cubit,
-            child: const ApprovalBankSampahListView(),
-          ),
+          builder: (context, state) => const ApprovalBankSampahListView(),
         ),
         GoRoute(
           path: ApprovalBankSampahDetailPage.route,
@@ -132,33 +111,30 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [nasabahApprovalProvider.overrideWith(() => notifier)],
+      child: MaterialApp.router(routerConfig: router),
+    ));
     await tester.pump();
-
     await tester.tap(find.text('Bank Sampah Sejahtera'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Fake Detail'));
     await tester.pumpAndSettle();
 
-    verify(() => cubit.load(silent: true)).called(1);
+    expect(notifier.loadCalls, [true]);
   });
 
   testWidgets('does not reload when returning from detail without changes',
       (tester) async {
-    final cubit = _MockNasabahApprovalCubit();
-    when(() => cubit.state).thenReturn(const NasabahApprovalLoaded([_first]));
-    when(() => cubit.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
-
+    final notifier = TestNasabahApprovalNotifier(
+      initialState: const NasabahApprovalLoaded([_first]),
+    );
     final router = GoRouter(
       initialLocation: ApprovalBankSampahListPage.route,
       routes: [
         GoRoute(
           path: ApprovalBankSampahListPage.route,
-          builder: (context, state) => BlocProvider<NasabahApprovalCubit>.value(
-            value: cubit,
-            child: const ApprovalBankSampahListView(),
-          ),
+          builder: (context, state) => const ApprovalBankSampahListView(),
         ),
         GoRoute(
           path: ApprovalBankSampahDetailPage.route,
@@ -171,14 +147,16 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [nasabahApprovalProvider.overrideWith(() => notifier)],
+      child: MaterialApp.router(routerConfig: router),
+    ));
     await tester.pump();
-
     await tester.tap(find.text('Bank Sampah Sejahtera'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Fake Detail'));
     await tester.pumpAndSettle();
 
-    verifyNever(() => cubit.load(silent: true));
+    expect(notifier.loadCalls, isEmpty);
   });
 }

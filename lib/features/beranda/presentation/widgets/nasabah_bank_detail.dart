@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The single rendering of a nasabah's bank sampah — its identity, place in
 /// the network, and how to reach it. Shared by the standalone bank page and
@@ -26,7 +28,7 @@ class NasabahBankDetail extends StatelessWidget {
                 Text(
                   bank.name,
                   textAlign: TextAlign.center,
-                  style: NasabahStyle.text(20, weight: FontWeight.w700),
+                  style: NasabahStyle.text(20, weight: AppFontWeight.bold),
                 ),
                 if (_organizationLabel(bank.organizationType)
                     case final label?) ...[
@@ -36,11 +38,11 @@ class NasabahBankDetail extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: NasabahStyle.emeraldLight,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Text(label,
                         style: NasabahStyle.text(13,
-                            weight: FontWeight.w600,
+                            weight: AppFontWeight.semibold,
                             color: NasabahStyle.emeraldDark)),
                   ),
                 ],
@@ -131,7 +133,7 @@ class _BankLogo extends StatelessWidget {
         child: Text(
           _initialOf(name),
           style: NasabahStyle.text(28,
-              weight: FontWeight.w700, color: NasabahStyle.emeraldDark),
+              weight: AppFontWeight.bold, color: NasabahStyle.emeraldDark),
         ),
       );
 
@@ -170,7 +172,8 @@ class _InfoRow extends StatelessWidget {
                 children: [
                   Text(label,
                       style: NasabahStyle.text(11,
-                          weight: FontWeight.w600, color: NasabahStyle.muted)),
+                          weight: AppFontWeight.semibold,
+                          color: NasabahStyle.muted)),
                   const SizedBox(height: 4),
                   Text(value, style: NasabahStyle.text(15)),
                 ],
