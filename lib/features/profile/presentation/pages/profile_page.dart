@@ -1,44 +1,67 @@
+import 'dart:async';
+
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/widgets/analytics_consent_card.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/analytics/profile_analytics.dart';
 import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+class ProfilePage extends ConsumerWidget {
+  const ProfilePage({super.key, this.isWeb});
+
+  /// Mengganti `kIsWeb`, supaya test dapat memilih bentuk web atau aplikasi.
+  final bool? isWeb;
 
   static const route = AppLocations.profile;
 
-  // [ProfileCubit] is app-scoped and provided in [App]; loading is kicked off
-  // from _ProfileView's initState so the request carries the authenticated
-  // session rather than firing at cold start.
+  // Profile state is app-scoped; loading starts in _ProfileView after login.
   @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AuthenticationBloc>().state;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
     final role = state is Authenticated ? state.authEntity.role : null;
     if (role == 'nasabah') return const ProfilNasabahPage();
-    if (role == 'pengelola' || role == 'pengelola_induk') {
-      return const _ProfileView();
+    if (role == 'pengelola') {
+      return _ProfileView(isWeb: isWeb ?? kIsWeb);
     }
     return const Scaffold(
       body: SafeArea(
@@ -48,14 +71,16 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class _ProfileView extends StatefulWidget {
-  const _ProfileView();
+class _ProfileView extends ConsumerStatefulWidget {
+  const _ProfileView({required this.isWeb});
+
+  final bool isWeb;
 
   @override
-  State<_ProfileView> createState() => _ProfileViewState();
+  ConsumerState<_ProfileView> createState() => _ProfileViewState();
 }
 
-class _ProfileViewState extends State<_ProfileView>
+class _ProfileViewState extends ConsumerState<_ProfileView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _waController = TextEditingController();
@@ -71,6 +96,58 @@ class _ProfileViewState extends State<_ProfileView>
   // A point picked on the map since the last save. Held here rather than in the
   // cubit: like a form field it belongs to this screen until the user saves.
   Lokasi? _pendingLokasi;
+  Timer? _inviteCountdownTimer;
+  Timer? _inviteExpiryTimer;
+  String? _expiredInviteUrl;
+
+  /// Di browser halaman ini berada di dalam shell dengan rail, bukan didorong
+  /// di atasnya, jadi memakai gutter dan judul halaman tab web.
+  bool get _webShell =>
+      NavigationForm.resolve(
+        isWeb: widget.isWeb,
+        width: MediaQuery.sizeOf(context).width,
+      ) !=
+      NavigationForm.bottomBar;
+
+  double get _gutter => _webShell ? AppSpacing.webGutter : 16;
+
+  // Isi form saat dimuat atau terakhir disimpan; pembanding untuk [_dirty].
+  String _baseWa = '';
+  String _baseNama = '';
+  String _baseAlamat = '';
+  String _baseHp = '';
+
+  /// Ada isian yang berbeda dari yang tersimpan, atau logo baru yang dipilih
+  /// tetapi belum disimpan.
+  bool get _dirty =>
+      _waController.text != _baseWa ||
+      _namaBankController.text != _baseNama ||
+      _alamatBankController.text != _baseAlamat ||
+      _hpBankController.text != _baseHp ||
+      ref.read(profileProvider).selectedLogoBytes != null;
+
+  void _rebuildOnEdit() {
+    if (mounted) setState(() {});
+  }
+
+  /// The settings that differ from what was last saved, by their fixed names.
+  Set<ProfileSettingsField> get _changedFields => {
+        if (_namaBankController.text != _baseNama)
+          ProfileSettingsField.bankName,
+        if (_alamatBankController.text != _baseAlamat)
+          ProfileSettingsField.address,
+        if (_hpBankController.text != _baseHp) ProfileSettingsField.phone,
+        if (ref.read(profileProvider).selectedLogoBytes != null)
+          ProfileSettingsField.logo,
+        if (_waController.text != _baseWa) ProfileSettingsField.waTemplate,
+      };
+
+  void _markSaved() {
+    _baseWa = _waController.text;
+    _baseNama = _namaBankController.text;
+    _baseAlamat = _alamatBankController.text;
+    _baseHp = _hpBankController.text;
+  }
 
   @override
   void initState() {
@@ -80,15 +157,26 @@ class _ProfileViewState extends State<_ProfileView>
       setState(() {});
     });
 
-    // The cubit is app-scoped, so it may already hold a profile loaded on an
-    // earlier visit. Seed from what it has right now — the BlocListener below
-    // only fires on a *change*, so on a revisit it would never run and the form
-    // would sit empty over a profile that is actually loaded.
-    final cubit = context.read<ProfileCubit>();
-    _seed(cubit.state);
-    // silent: keeps an already-loaded profile on screen instead of collapsing
-    // the tab into a spinner. load() ignores it when there is nothing to keep.
-    cubit.load(silent: true);
+    // Seed cached state before refreshing so revisits keep their form values.
+    _seed(ref.read(profileProvider));
+    _scheduleInviteExpiry(ref.read(profileProvider).invite);
+    _inviteCountdownTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) {
+        if (mounted) setState(() {});
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(profileProvider.notifier).load(silent: true);
+    });
+    for (final c in [
+      _waController,
+      _namaBankController,
+      _alamatBankController,
+      _hpBankController,
+    ]) {
+      c.addListener(_rebuildOnEdit);
+    }
   }
 
   @override
@@ -99,6 +187,8 @@ class _ProfileViewState extends State<_ProfileView>
     _namaBankController.dispose();
     _alamatBankController.dispose();
     _hpBankController.dispose();
+    _inviteCountdownTimer?.cancel();
+    _inviteExpiryTimer?.cancel();
     super.dispose();
   }
 
@@ -115,8 +205,6 @@ class _ProfileViewState extends State<_ProfileView>
     switch (role) {
       case 'superadmin':
         return 'Superadmin';
-      case 'pengelola_induk':
-        return 'Pengelola Induk';
       case 'pengelola':
       default:
         return 'Pengurus';
@@ -129,16 +217,13 @@ class _ProfileViewState extends State<_ProfileView>
     return palette[seed.hashCode.abs() % palette.length];
   }
 
-  /// Returns to login once the bloc reports the sign-out. Clearing the
-  /// app-scoped cubit caches is handled centrally in [App], so it happens on
+  /// Returns to login once authentication reports sign-out. Clearing app-
+  /// scoped state is handled centrally in [App], so it happens on
   /// every logout path rather than only the one that passes through this page.
   void _onLoggedOut(BuildContext context, AuthenticationStates state) {
     if (state is! Unauthenticated) return;
     context.go(LoginPage.route);
   }
-
-  void _seedFromProfile(BuildContext context, ProfileState state) =>
-      _seed(state);
 
   /// Copies the loaded profile into the form controllers, once per field.
   ///
@@ -148,6 +233,7 @@ class _ProfileViewState extends State<_ProfileView>
   void _seed(ProfileState state) {
     if (!_waSeeded && state.waTemplate != null) {
       _waController.text = state.waTemplate!.template;
+      _baseWa = _waController.text;
       _waSeeded = true;
     }
     if (!_bankSeeded && state.bankSampah != null) {
@@ -155,6 +241,9 @@ class _ProfileViewState extends State<_ProfileView>
       _namaBankController.text = bank.nama;
       _alamatBankController.text = bank.alamat;
       _hpBankController.text = bank.noHpPic;
+      _baseNama = _namaBankController.text;
+      _baseAlamat = _alamatBankController.text;
+      _baseHp = _hpBankController.text;
       _bankSeeded = true;
     }
   }
@@ -189,9 +278,11 @@ class _ProfileViewState extends State<_ProfileView>
 
   Future<void> _onSaveSettings() async {
     if (!(_bankFormKey.currentState?.validate() ?? false)) return;
-    final cubit = context.read<ProfileCubit>();
+    final cubit = ref.read(profileProvider.notifier);
+    final changed = _changedFields;
+    final analytics = ref.read(analyticsClientProvider);
 
-    // One flag for the whole save rather than the cubit's `isSavingTemplate`,
+    // One flag for the whole save rather than the provider's `isSavingTemplate`,
     // which only covers the template write: the bank profile is saved first, and
     // the button has to read "Menyimpan..." for that leg too.
     setState(() => _isSavingSettings = true);
@@ -215,11 +306,15 @@ class _ProfileViewState extends State<_ProfileView>
     // an emptied field is a deliberate "drop my custom template", and the
     // transaksi notification falls back to the default when it reads back blank.
     // This is only safe because the controller is seeded from the stored
-    // template on mount as well as on the load emit (see [_seedFromProfile]); a
+    // template on mount as well as on provider updates (see [_seed]); a
     // field that silently stayed empty would blank the template on a save the
     // user made purely for the bank fields.
     final waErr = await cubit.saveWaTemplate(_waController.text.trim());
     if (!mounted) return;
+    if (waErr == null) {
+      profileSettingsSaved(analytics, changed);
+      _markSaved();
+    }
     setState(() => _isSavingSettings = false);
     _snack(
       waErr == null ? 'Pengaturan berhasil disimpan' : waErr.displayMessage,
@@ -227,103 +322,272 @@ class _ProfileViewState extends State<_ProfileView>
     );
   }
 
-  Future<void> _onCopyInvite() async {
-    final (:url, :error) = await context.read<ProfileCubit>().generateInvite();
+  Future<void> _confirmLogout() async {
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari akun?',
+      message: 'Anda perlu masuk kembali untuk mengakses akun ini.',
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
+    );
+    if (confirmed && mounted) {
+      ref.read(authenticationProvider.notifier).logout();
+    }
+  }
+
+  Future<void> _onCopyInvite(TeamInvite invite) async {
+    final state = ref.read(profileProvider);
+    if (state.inviteError != null) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
+      _snack(state.inviteError!, error: true);
+      return;
+    }
+    if (!invite.isValid || _expiredInviteUrl == invite.url) {
+      inviteLinkCopied(ref.read(analyticsClientProvider), success: false);
+      _snack('Link undangan sudah kedaluwarsa. Buat link baru untuk dibagikan.',
+          error: true);
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: invite.url!));
+    if (!mounted) return;
+    inviteLinkCopied(ref.read(analyticsClientProvider), success: true);
+    _snack('Link undangan disalin ke clipboard!');
+  }
+
+  Future<void> _onCreateInvite(TeamInvite? currentInvite) async {
+    if (currentInvite != null) {
+      final confirmed = await showAppConfirmDialog(
+        context,
+        title: 'Ganti link undangan?',
+        message: 'Link baru akan langsung membatalkan link undangan lama yang '
+            'mungkin masih dibagikan. Lanjutkan?',
+        confirmLabel: 'Ganti Link',
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    final error = await ref.read(profileProvider.notifier).createInvite();
     if (!mounted) return;
     if (error != null) {
       _snack(error.displayMessage, error: true);
       return;
     }
-    await Clipboard.setData(ClipboardData(text: url ?? ''));
-    if (!mounted) return;
-    _snack('Link undangan disalin ke clipboard!');
+    final created = ref.read(profileProvider).invite;
+    if (created?.isValid == true) {
+      _snack('Link undangan baru berhasil dibuat');
+    }
+  }
+
+  void _scheduleInviteExpiry(TeamInvite? invite) {
+    _inviteExpiryTimer?.cancel();
+    _expiredInviteUrl = null;
+    final expiresAt = invite?.expiresAt;
+    final url = invite?.url;
+    if (expiresAt == null || url == null) return;
+    final delay = expiresAt.difference(DateTime.now());
+    _inviteExpiryTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+      if (mounted) setState(() => _expiredInviteUrl = url);
+    });
+  }
+
+  String _remainingInviteTime(DateTime expiresAt) {
+    final remaining = expiresAt.difference(DateTime.now());
+    if (remaining.isNegative || remaining.inSeconds == 0) return 'Kedaluwarsa';
+    if (remaining.inHours >= 24) {
+      return 'Tersisa ${(remaining.inHours + 23) ~/ 24} hari';
+    }
+    if (remaining.inHours > 0) {
+      return 'Tersisa ${(remaining.inMinutes + 59) ~/ 60} jam';
+    }
+    return 'Tersisa ${((remaining.inSeconds + 59) ~/ 60).clamp(1, 59)} menit';
+  }
+
+  Widget _buildInviteActions(ProfileState state) {
+    final bankStatus = state.bankSampah?.status.toLowerCase();
+    if (bankStatus != 'active') {
+      return Text(
+        bankStatus == 'pending'
+            ? 'Undangan tersedia setelah bank sampah disetujui.'
+            : 'Undangan hanya tersedia untuk bank sampah yang aktif.',
+        style: AppTextStyle.small.copyWith(color: Colors.white),
+      );
+    }
+
+    if (state.isLoadingInvite) {
+      return Text('Memuat link undangan…',
+          style: AppTextStyle.small.copyWith(color: Colors.white));
+    }
+    if (state.inviteError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(state.inviteError!,
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Coba Lagi',
+            variant: AppButtonVariant.outlined,
+            onPressed: () =>
+                ref.read(profileProvider.notifier).load(silent: true),
+          ),
+        ],
+      );
+    }
+
+    final invite = state.invite;
+    if (invite == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Belum ada link undangan.',
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Buat Link Undangan',
+            variant: AppButtonVariant.outlined,
+            isLoading: state.isCreatingInvite,
+            onPressed:
+                state.isCreatingInvite ? null : () => _onCreateInvite(null),
+          ),
+        ],
+      );
+    }
+
+    return _buildStoredInviteActions(state, invite);
+  }
+
+  Widget _buildStoredInviteActions(ProfileState state, TeamInvite invite) {
+    final valid = invite.isValid && _expiredInviteUrl != invite.url;
+    final expiresAt = invite.expiresAt;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          valid
+              ? 'Link undangan aktif'
+              : 'Link undangan sudah kedaluwarsa. Buat link baru untuk membagikan undangan.',
+          style: AppTextStyle.small.copyWith(color: Colors.white),
+        ),
+        if (valid && invite.url != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          SelectableText(invite.url!,
+              style: AppTextStyle.small.copyWith(color: Colors.white)),
+          if (expiresAt != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '${_remainingInviteTime(expiresAt)} · Berlaku sampai ${DateFormat('dd/MM/yyyy HH:mm').format(expiresAt.toLocal())}',
+              style: AppTextStyle.small.copyWith(color: Colors.white),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+        ],
+        Row(
+          children: [
+            if (valid && invite.url != null) ...[
+              Expanded(
+                child: AppButton(
+                  label: 'Salin Link Undangan',
+                  variant: AppButtonVariant.tonal,
+                  icon: Icons.copy,
+                  onPressed: () => _onCopyInvite(invite),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            Expanded(
+              child: AppButton(
+                label: 'Buat Link Baru',
+                variant:
+                    valid ? AppButtonVariant.neutral : AppButtonVariant.tonal,
+                isLoading: state.isCreatingInvite,
+                onPressed: state.isCreatingInvite
+                    ? null
+                    : () => _onCreateInvite(valid ? invite : null),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   // ── Build ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final profileState = context.watch<ProfileCubit>().state;
-    final authState = context.watch<AuthenticationBloc>().state;
+    ref.listen(profileProvider, (_, next) {
+      _seed(next);
+      _scheduleInviteExpiry(next.invite);
+    });
+    ref.listen(authenticationProvider, (_, state) {
+      _onLoggedOut(context, state);
+    });
+    final profileState = ref.watch(profileProvider);
+    final authState = ref.watch(authenticationProvider);
     final auth = authState is Authenticated ? authState.authEntity : null;
 
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<AuthenticationBloc, AuthenticationStates>(
-            listener: _onLoggedOut),
-        BlocListener<ProfileCubit, ProfileState>(listener: _seedFromProfile),
-      ],
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        // The tabs scroll across the whole body, so their scrollbar is at the
+        // window edge; the frame keeps the content to a readable column.
+        child: ContentFrame(
           child: Column(
             children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
+              // Di browser rail di kiri adalah jalan keluarnya, jadi tidak ada
+              // tombol kembali; judulnya mengikuti halaman tab web lain.
+              ContentInset(
+                child: _webShell
+                    ? const Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.webGutter,
+                          AppSpacing.webTop,
+                          AppSpacing.webGutter,
+                          AppSpacing.md,
                         ),
-                        child: Icon(Icons.arrow_back,
-                            color: Colors.grey[800], size: 20),
+                        child: AppPageHeader(title: 'Profil & Pengaturan'),
+                      )
+                    : AppBackHeader(
+                        title: 'Profil & Pengaturan',
+                        onBack: () => context.canPop()
+                            ? context.pop()
+                            : context.go(AppLocations.dashboard),
                       ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          'Profil & Pengaturan',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyle.headline1.copyWith(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 36),
-                  ],
-                ),
               ),
-              const SizedBox(height: 16),
 
               // Tab Bar
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+              ContentInset(
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: _gutter),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 1),
+                    ),
                   ),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: AppColors.greenDark,
-                  unselectedLabelColor: Colors.grey[400],
-                  labelStyle: AppTextStyle.small.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                  child: TabBar(
+                    controller: _tabController,
+                    // Di web tab rata kiri selebar isinya, bukan dibagi rata
+                    // ke seluruh lebar halaman.
+                    isScrollable: _webShell,
+                    tabAlignment:
+                        _webShell ? TabAlignment.start : TabAlignment.fill,
+                    labelColor: AppColors.greenDark,
+                    unselectedLabelColor: AppColors.grey200,
+                    labelStyle: AppTextStyle.small.copyWith(
+                      fontWeight: AppFontWeight.bold,
+                      fontSize: AppFontSize.md,
+                    ),
+                    unselectedLabelStyle: AppTextStyle.small.copyWith(
+                      fontWeight: AppFontWeight.regular,
+                      fontSize: AppFontSize.md,
+                    ),
+                    indicatorColor: AppColors.greenDark,
+                    indicatorWeight: 3,
+                    tabs: const [
+                      Tab(text: 'Pengaturan Umum'),
+                      Tab(text: 'Manajemen Tim'),
+                    ],
                   ),
-                  unselectedLabelStyle: AppTextStyle.small.copyWith(
-                    fontWeight: FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                  indicatorColor: AppColors.greenDark,
-                  indicatorWeight: 3,
-                  tabs: const [
-                    Tab(text: 'Pengaturan Umum'),
-                    Tab(text: 'Manajemen Tim'),
-                  ],
                 ),
               ),
 
@@ -332,96 +596,69 @@ class _ProfileViewState extends State<_ProfileView>
                 child: _buildTabBody(profileState, auth),
               ),
 
-              // Bottom Buttons (only visible on Pengaturan Umum tab)
+              // Bar bawah: hanya Simpan, dan hanya di tab Pengaturan Umum.
               if (_tabController.index == 0 &&
                   profileState.status == ProfileStatus.loaded)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.transparent,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isSavingSettings ? null : _onSaveSettings,
-                          icon: _isSavingSettings
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.save_outlined,
-                                  color: Colors.white, size: 20),
-                          label: Text(
-                            _isSavingSettings
-                                ? 'Menyimpan...'
-                                : 'Simpan Pengaturan',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.greenDark,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final confirmed = await showAppConfirmDialog(
-                              context,
-                              title: 'Keluar dari akun?',
-                              message: 'Anda perlu masuk kembali untuk '
-                                  'mengakses akun ini.',
-                              confirmLabel: 'Ya, Keluar',
-                              destructive: true,
-                            );
-                            if (confirmed && context.mounted) {
-                              context
-                                  .read<AuthenticationBloc>()
-                                  .add(LogoutRequested());
-                            }
-                          },
-                          icon: Icon(Icons.logout,
-                              color: Colors.red[600], size: 20),
-                          label: Text(
-                            'Keluar dari Aplikasi',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.red[600],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            side: BorderSide(color: Colors.red[200]!),
-                            backgroundColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ContentInset(child: _buildActionBar()),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Bar bawah berisi Simpan saja, dan hanya ada bila ada yang berubah. Di web
+  /// ia rata kanan selebar isinya; di aplikasi selebar layar, dengan petunjuk di
+  /// atasnya. Keluar ada di paling bawah isi halaman.
+  Widget _buildActionBar() {
+    final dirty = _dirty;
+    // Tidak ada bar sama sekali sampai ada yang berubah; ia muncul bersama
+    // petunjuknya dan hilang lagi setelah tersimpan.
+    if (!dirty && !_isSavingSettings) return const SizedBox.shrink();
+    final showHint = dirty && !_isSavingSettings;
+    final save = AppButton(
+      label: _isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan',
+      icon: Icons.save_outlined,
+      expand: !_webShell,
+      leading: _isSavingSettings
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+          : null,
+      onPressed: _isSavingSettings ? null : _onSaveSettings,
+    );
+    final hint = Text(
+      'Perubahan belum disimpan',
+      style: AppTextStyle.small.copyWith(color: AppColors.warning),
+    );
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: _gutter,
+        vertical: AppSpacing.md,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: _webShell
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (showHint) ...[hint, const SizedBox(width: AppSpacing.lg)],
+                save,
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showHint) ...[hint, const SizedBox(height: AppSpacing.sm)],
+                save,
+              ],
+            ),
     );
   }
 
@@ -450,17 +687,19 @@ class _ProfileViewState extends State<_ProfileView>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off, color: Colors.grey[400], size: 48),
+            const Icon(Icons.cloud_off, color: AppColors.grey200, size: 48),
             const SizedBox(height: 16),
             Text(
               message ?? 'Gagal memuat data profil',
               textAlign: TextAlign.center,
-              style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: () => context.read<ProfileCubit>().load(),
-              child: const Text('Coba Lagi'),
+            AppButton(
+              label: 'Coba Lagi',
+              variant: AppButtonVariant.outlined,
+              expand: false,
+              onPressed: () => ref.read(profileProvider.notifier).load(),
             ),
           ],
         ),
@@ -470,76 +709,118 @@ class _ProfileViewState extends State<_ProfileView>
 
   // ── Tab 1: Pengaturan Umum ──────────────────────────────────────────
 
+  /// Kartu akun berisi identitas. Web sempit menaruh Keluar di bawah identitas;
+  /// desktop menaruhnya di samping, dan aplikasi tetap menaruhnya di bawah.
+  Widget _buildAccountCard(String name, AuthEntity? auth, String? logoUrl) {
+    final email = auth?.email.trim() ?? '';
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactWeb = _webShell &&
+            constraints.maxWidth < LayoutBreakpoint.expandedMinWidth;
+        final identity = Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.greenLight,
+              foregroundImage: (logoUrl?.isNotEmpty ?? false)
+                  ? NetworkImage(logoUrl!)
+                  : null,
+              onForegroundImageError:
+                  (logoUrl?.isNotEmpty ?? false) ? (_, __) {} : null,
+              child: Text(
+                _initials(name),
+                style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle.title1.copyWith(color: AppColors.black),
+                  ),
+                  if (email.isNotEmpty)
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          AppTextStyle.small.copyWith(color: AppColors.grey100),
+                    ),
+                  const SizedBox(height: AppSpacing.sm),
+                  CustomStatusBadge(statusText: _roleLabel(auth?.role)),
+                ],
+              ),
+            ),
+          ],
+        );
+        final logoutButton = AppButton(
+          label: 'Keluar dari Aplikasi',
+          variant: AppButtonVariant.destructiveOutlined,
+          size: AppButtonSize.compact,
+          icon: Icons.logout,
+          expand: false,
+          onPressed: _confirmLogout,
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: compactWeb
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    identity,
+                    const SizedBox(height: AppSpacing.md),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: logoutButton,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: identity),
+                    if (_webShell) ...[
+                      const SizedBox(width: AppSpacing.lg),
+                      logoutButton,
+                    ],
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  /// Keluar di aplikasi, di paling bawah isi halaman: aksi akun yang jarang
+  /// dipakai, jauh dari Simpan supaya tidak tertekan tanpa sengaja.
+  Widget _buildLogoutButton() => AppButton(
+        label: 'Keluar dari Aplikasi',
+        variant: AppButtonVariant.destructiveOutlined,
+        icon: Icons.logout,
+        onPressed: _confirmLogout,
+      );
+
+  /// Jarak kiri dan kanan isi tab: gutter web, atau 24 di desktop non-web dan
+  /// 16 di bawahnya.
+  double _sideGutter(bool isDesktop) {
+    if (_webShell) return _gutter;
+    return isDesktop ? 24.0 : 16.0;
+  }
+
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name =
         (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
-    final accountCard = Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.greenDark,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: AppColors.greenLight,
-            child: Text(
-              _initials(name),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (auth?.email.trim().isNotEmpty ?? false) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    auth!.email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _roleLabel(auth?.role),
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    final accountCard =
+        _buildAccountCard(name, auth, state.bankSampah?.fotoLogo);
     final bankProfile = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -549,14 +830,8 @@ class _ProfileViewState extends State<_ProfileView>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Form(
             key: _bankFormKey,
@@ -582,7 +857,7 @@ class _ProfileViewState extends State<_ProfileView>
                   controller: _hpBankController,
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone,
-                  iconColor: Colors.pink[400],
+                  iconColor: AppColors.inkSoft,
                   validator: _validateNomorHpPic,
                 ),
                 const SizedBox(height: 16),
@@ -601,11 +876,12 @@ class _ProfileViewState extends State<_ProfileView>
         final whatsappTemplate = _buildWhatsappTemplate(state);
 
         return AppRefreshIndicator(
-          onRefresh: () => context.read<ProfileCubit>().load(silent: true),
+          onRefresh: () =>
+              ref.read(profileProvider.notifier).load(silent: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-                isDesktop ? 24 : 16, 16, isDesktop ? 24 : 16, 24),
+            padding: ContentFrame.insetOf(context).add(EdgeInsets.fromLTRB(
+                _sideGutter(isDesktop), 16, _sideGutter(isDesktop), 24)),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -615,6 +891,8 @@ class _ProfileViewState extends State<_ProfileView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     accountCard,
+                    const SizedBox(height: AppSpacing.md),
+                    const LegalInformationButton(),
                     const SizedBox(height: 32),
                     if (isDesktop)
                       Row(
@@ -629,6 +907,15 @@ class _ProfileViewState extends State<_ProfileView>
                       bankProfile,
                       const SizedBox(height: 32),
                       whatsappTemplate,
+                    ],
+                    // Only where it applies, so a hidden card leaves no gap.
+                    if (ref.watch(analyticsToggleVisibleProvider)) ...[
+                      const SizedBox(height: 32),
+                      const AnalyticsConsentCard(),
+                    ],
+                    if (!_webShell) ...[
+                      const SizedBox(height: 32),
+                      _buildLogoutButton(),
                     ],
                   ],
                 ),
@@ -704,7 +991,7 @@ class _ProfileViewState extends State<_ProfileView>
   /// Opens the picker seeded from the point that will currently be saved, so
   /// opening it to tweak a pending pick does not start from the default center.
   Future<void> _openMapPicker() async {
-    final bank = context.read<ProfileCubit>().state.bankSampah?.lokasi;
+    final bank = ref.read(profileProvider).bankSampah?.lokasi;
     final initial = _pendingLokasi ?? bank;
     final picked = await Navigator.of(context).push<Lokasi>(MaterialPageRoute(
       builder: (_) => MapPickerPage(
@@ -752,7 +1039,16 @@ class _ProfileViewState extends State<_ProfileView>
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              onTap: () => context.read<ProfileCubit>().pickLogo(),
+              onTap: () async {
+                try {
+                  await ref.read(profileProvider.notifier).pickLogo();
+                } catch (_) {
+                  if (!mounted) return;
+                  AppNotification.showError(context,
+                      title: 'Gagal',
+                      message: 'Foto tidak dapat dibaca. Silakan coba lagi.');
+                }
+              },
               child: Container(
                 width: _logoDiameter,
                 height: _logoDiameter,
@@ -803,20 +1099,6 @@ class _ProfileViewState extends State<_ProfileView>
       );
     }
 
-    final file = state.selectedLogoFile;
-    if (file != null) {
-      return Image.file(
-        file,
-        width: _logoDiameter,
-        height: _logoDiameter,
-        fit: BoxFit.cover,
-        // The file came from the gallery a moment ago, so this is close to
-        // unreachable — but an unreadable pick should still leave a logo on
-        // screen rather than a broken-image glyph inside the avatar.
-        errorBuilder: (_, __, ___) => _logoPlaceholder,
-      );
-    }
-
     final url = state.bankSampah?.fotoLogo;
     if (url != null && url.isNotEmpty) {
       return Image.network(
@@ -859,142 +1141,124 @@ class _ProfileViewState extends State<_ProfileView>
     final isPengelolaUtama = team.any((m) => m.isCurrentUser && m.isPrimary);
 
     return AppRefreshIndicator(
-      onRefresh: () => context.read<ProfileCubit>().load(silent: true),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Invite Banner — owner only. Both the banner and its trailing gap
-            // are guarded so hiding it leaves no dangling spacing above the list.
-            if (isPengelolaUtama) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.greenDark,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Undang Pengurus Baru',
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _onCopyInvite,
-                        icon: const Icon(Icons.copy,
-                            color: AppColors.greenDark, size: 18),
-                        label: Text(
-                          'Salin Link Undangan',
-                          style: AppTextStyle.small.copyWith(
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.greenDark,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-            ],
-
-            // Section Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _sectionTitle('PENGELOLA TERGABUNG'),
+      onRefresh: () => ref.read(profileProvider.notifier).load(silent: true),
+      // A Builder, so the inset comes from the frame below the page body.
+      child: Builder(
+        builder: (context) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: ContentFrame.insetOf(context)
+              .add(const EdgeInsets.fromLTRB(16, 20, 16, 24)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Invite Banner — owner only. Both the banner and its trailing gap
+              // are guarded so hiding it leaves no dangling spacing above the list.
+              if (isPengelolaUtama) ...[
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.greenLight,
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.greenDark,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Undang Pengurus Baru',
+                        style: AppTextStyle.title1.copyWith(
+                          color: Colors.white,
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.lg,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Undang pengurus lain untuk bergabung ke bank sampah Anda.',
+                        style: AppTextStyle.small.copyWith(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInviteActions(state),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+              ],
+
+              // Section Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _sectionTitle('PENGELOLA TERGABUNG'),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenLight,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Text(
+                      '${team.length} aktif',
+                      style: AppTextStyle.extraSmall.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: AppFontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Member List Card
+              if (team.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
-                    '${team.length} aktif',
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    'Belum ada pengurus lain yang tergabung.',
+                    textAlign: TextAlign.center,
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100),
+                  ),
+                )
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < team.length; i++) ...[
+                        if (i > 0)
+                          const Divider(
+                              color: AppColors.fill,
+                              height: 1,
+                              thickness: 1,
+                              indent: 16,
+                              endIndent: 16),
+                        _buildMemberRow(team[i]),
+                      ],
+                    ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Member List Card
-            if (team.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: Text(
-                  'Belum ada pengurus lain yang tergabung.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-                ),
-              )
-            else
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    for (int i = 0; i < team.length; i++) ...[
-                      if (i > 0)
-                        Divider(
-                            color: Colors.grey[100],
-                            height: 1,
-                            thickness: 1,
-                            indent: 16,
-                            endIndent: 16),
-                      _buildMemberRow(team[i]),
-                    ],
-                  ],
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1012,8 +1276,8 @@ class _ProfileViewState extends State<_ProfileView>
               _initials(member.nama),
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontWeight: AppFontWeight.bold,
+                fontSize: AppFontSize.md,
               ),
             ),
           ),
@@ -1025,8 +1289,8 @@ class _ProfileViewState extends State<_ProfileView>
                   child: Text(
                     member.nama.isNotEmpty ? member.nama : member.email,
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                      fontWeight: AppFontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1038,14 +1302,14 @@ class _ProfileViewState extends State<_ProfileView>
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.greenDark,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Text(
                       'Anda',
                       style: AppTextStyle.extraSmall.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                        fontWeight: AppFontWeight.bold,
+                        fontSize: AppFontSize.xs,
                       ),
                     ),
                   ),
@@ -1058,13 +1322,13 @@ class _ProfileViewState extends State<_ProfileView>
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.greenLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Text(
               member.isPrimary ? 'Pengurus Utama' : 'Pengurus',
               style: AppTextStyle.extraSmall.copyWith(
                 color: AppColors.greenDark,
-                fontWeight: FontWeight.bold,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),
@@ -1083,15 +1347,15 @@ class _ProfileViewState extends State<_ProfileView>
           height: 16,
           decoration: BoxDecoration(
             color: AppColors.greenDark,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
         const SizedBox(width: 8),
         Text(
           label,
           style: AppTextStyle.extraSmall.copyWith(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.bold,
+            color: AppColors.grey100,
+            fontWeight: AppFontWeight.bold,
             letterSpacing: 1.0,
           ),
         ),
@@ -1114,8 +1378,8 @@ class _ProfileViewState extends State<_ProfileView>
         Text(
           label,
           style: AppTextStyle.extraSmall.copyWith(
-            color: Colors.grey[500],
-            fontWeight: FontWeight.bold,
+            color: AppColors.grey100,
+            fontWeight: AppFontWeight.bold,
             letterSpacing: 0.5,
           ),
         ),
@@ -1125,33 +1389,11 @@ class _ProfileViewState extends State<_ProfileView>
           validator: validator,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          style: AppTextStyle.small.copyWith(color: Colors.black87),
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: Colors.grey[50],
+          style: AppTextStyle.small.copyWith(color: AppColors.black),
+          decoration: appInputDecoration(
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: iconColor, size: 20)
                 : null,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.greenDark, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1.5),
-            ),
           ),
         ),
       ],
@@ -1171,8 +1413,8 @@ class _ProfileViewState extends State<_ProfileView>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey[200]!),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1183,7 +1425,7 @@ class _ProfileViewState extends State<_ProfileView>
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.greenLight.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   children: [
@@ -1195,7 +1437,7 @@ class _ProfileViewState extends State<_ProfileView>
                         'Pesan otomatis dikirim setelah transaksi',
                         style: AppTextStyle.small.copyWith(
                           color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         ),
                       ),
                     ),
@@ -1206,8 +1448,8 @@ class _ProfileViewState extends State<_ProfileView>
               Text(
                 'ISI PESAN',
                 style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
+                  color: AppColors.grey100,
+                  fontWeight: AppFontWeight.bold,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1218,28 +1460,13 @@ class _ProfileViewState extends State<_ProfileView>
                 minLines: 3,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.greenDark),
-                  ),
-                ),
-                style: AppTextStyle.small.copyWith(color: Colors.black87),
+                decoration: appInputDecoration(),
+                style: AppTextStyle.small.copyWith(color: AppColors.black),
               ),
               const SizedBox(height: 24),
               Text(
                 'Gunakan variabel berikut agar sistem mengisi otomatis:',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const SizedBox(height: 12),
               WaVariableChips(
@@ -1260,7 +1487,7 @@ class _ProfileViewState extends State<_ProfileView>
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppColors.greenLight.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1268,8 +1495,8 @@ class _ProfileViewState extends State<_ProfileView>
                         Text(
                           'PREVIEW PESAN',
                           style: AppTextStyle.extraSmall.copyWith(
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.bold,
+                            color: AppColors.grey100,
+                            fontWeight: AppFontWeight.bold,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -1280,7 +1507,7 @@ class _ProfileViewState extends State<_ProfileView>
                           // freely inside the scrollable tab.
                           softWrap: true,
                           style: AppTextStyle.small
-                              .copyWith(color: Colors.black87, height: 1.5),
+                              .copyWith(color: AppColors.black, height: 1.5),
                         ),
                       ],
                     ),

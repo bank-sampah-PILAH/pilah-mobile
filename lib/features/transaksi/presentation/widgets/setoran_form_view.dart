@@ -1,0 +1,973 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:pilah_mobile/features/transaksi/analytics/setoran_analytics.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
+import 'package:pilah_mobile/core/utils/uuid_v4.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_problem_reporter.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+/// Membangun header wadah formulir. [startTutorial] memulai panduan setoran,
+/// yang kuncinya hanya dikenal formulir.
+typedef SetoranHeaderBuilder = Widget Function(VoidCallback startTutorial);
+
+/// Memecah [text] di batas kata supaya tidak ada baris lebih panjang dari
+/// [maxChars].
+///
+/// Tooltip tutorial selebar baris terpanjangnya dan ditata terhadap lebar
+/// jendela, bukan lebar panel tempat formulir berada. Satu kalimat panjang pada
+/// satu baris membuatnya keluar dari panel 560 px ke halaman di belakangnya.
+/// Kata yang lebih panjang dari batas dibiarkan utuh.
+@visibleForTesting
+String wrapTutorialText(String text, {int maxChars = 36}) {
+  final lines = <String>[];
+  var line = '';
+  for (final word in text.split(' ')) {
+    if (line.isEmpty) {
+      line = word;
+    } else if (line.length + 1 + word.length <= maxChars) {
+      line = '$line $word';
+    } else {
+      lines.add(line);
+      line = word;
+    }
+  }
+  if (line.isNotEmpty) lines.add(line);
+  return lines.join('\n');
+}
+
+const _setoranTutorialSeenKey = 'pilah.setoran_tutorial_seen';
+
+final _setoranTutorialProgressProvider = Provider<SetoranTutorialProgress>(
+  (ref) => SetoranTutorialProgress(),
+);
+
+@visibleForTesting
+class SetoranTutorialProgress {
+  SetoranTutorialProgress({bool? isWeb}) : _isWeb = isWeb ?? kIsWeb;
+
+  final bool _isWeb;
+  bool _seenInMemory = false;
+
+  Future<bool> hasSeen() async {
+    if (!_isWeb) return _seenInMemory;
+    try {
+      return (await SharedPreferences.getInstance())
+              .getBool(_setoranTutorialSeenKey) ??
+          false;
+    } on Exception catch (error) {
+      debugPrint('Failed to read setoran tutorial status: $error');
+      return false;
+    }
+  }
+
+  Future<void> markSeen() {
+    if (!_isWeb) {
+      _seenInMemory = true;
+      return Future<void>.value();
+    }
+    return _persistSeen();
+  }
+
+  Future<void> _persistSeen() async {
+    try {
+      await (await SharedPreferences.getInstance())
+          .setBool(_setoranTutorialSeenKey, true);
+    } on Exception catch (error) {
+      debugPrint('Failed to save setoran tutorial status: $error');
+    }
+  }
+}
+
+/// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
+/// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
+/// Jenis belum dipilih (null) tidak dianggap duplikat: kartu kosong lebih dari
+/// satu tidak saling bertabrakan dan edit berat di kartu kosong tetap lolos.
+@visibleForTesting
+bool jenisSampahSudahAda(
+    List<Map<String, dynamic>> setoranItems, int index, String? newId) {
+  if (newId == null) return false;
+  return setoranItems
+      .asMap()
+      .entries
+      .any((e) => e.key != index && e.value['jenis_sampah_id'] == newId);
+}
+
+@visibleForTesting
+String newTransaksiIdempotencyKey() => newUuidV4();
+
+/// Isi dan keadaan formulir setoran, tanpa rangka halaman.
+///
+/// Tidak punya Scaffold, tidak membangun header sendiri, dan tidak pernah
+/// mem-pop sebuah route: wadahnya yang menentukan bagaimana formulir ini
+/// ditutup, lewat [onClose]. Itulah yang membuat formulir yang sama dapat
+/// berjalan sebagai halaman penuh dan sebagai panel samping.
+class SetoranFormView extends ConsumerStatefulWidget {
+  const SetoranFormView({
+    required this.onClose,
+    required this.headerBuilder,
+    super.key,
+  });
+
+  /// Dipanggil ketika formulir ditinggalkan atau selesai tersimpan.
+  ///
+  /// Halaman mem-pop route-nya; panel menutup panelnya. Formulir sendiri tidak
+  /// tahu yang mana, dan tidak boleh tahu: `GoRouter.pop()` dari dalam panel
+  /// akan mem-pop halaman di belakang panel, karena route panel dibuka
+  /// langsung pada Navigator dan tidak pernah masuk ke match list go_router.
+  final VoidCallback onClose;
+
+  /// Membangun header wadah: [AppBackHeader] pada halaman, `AppPanelHeader`
+  /// pada panel.
+  ///
+  /// Diterima dari luar tetapi dipasang di dalam AbsorbPointer formulir, jadi
+  /// tombol kembali ikut membeku selama penyimpanan berjalan — sama seperti
+  /// sebelum header ini dapat diganti. Pembangun menerima aksi untuk memulai
+  /// panduan setoran, yang kuncinya hanya dikenal formulir ini, supaya setiap
+  /// wadah dapat memasang tombol bantuannya di headernya sendiri.
+  final SetoranHeaderBuilder headerBuilder;
+
+  @override
+  ConsumerState<SetoranFormView> createState() => SetoranFormViewState();
+}
+
+class SetoranFormViewState extends ConsumerState<SetoranFormView> {
+  NasabahEntity? selectedCustomer;
+  List<Map<String, dynamic>> setoranItems = [];
+  bool _hasSubmitted = false;
+  bool _isSaving = false;
+  bool _saved = false;
+  int _nextRow = 0;
+  String? _idempotencyKey;
+  late final SetoranAnalytics _analytics;
+  late final SetoranTutorialProgress _tutorialProgress;
+  final _customerTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _addItemTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _itemDetailsTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _summaryTutorialKey = GlobalKey<State<StatefulWidget>>();
+  final _saveTutorialKey = GlobalKey<State<StatefulWidget>>();
+
+  List<GlobalKey<State<StatefulWidget>>> get _tutorialKeys => [
+        _customerTutorialKey,
+        _addItemTutorialKey,
+        _itemDetailsTutorialKey,
+        _summaryTutorialKey,
+        _saveTutorialKey,
+      ];
+
+  TooltipActionButton _tutorialAction({
+    required TooltipDefaultActionType type,
+    required String name,
+    List<GlobalKey> hideActionWidgetForShowcase = const [],
+  }) =>
+      TooltipActionButton.custom(
+        hideActionWidgetForShowcase: hideActionWidgetForShowcase,
+        button: AppButton(
+          label: name,
+          variant: AppButtonVariant.primary,
+          expand: false,
+          onPressed: () {
+            switch (type) {
+              case TooltipDefaultActionType.previous:
+                ShowcaseView.get().previous();
+              case TooltipDefaultActionType.skip:
+                ShowcaseView.get().dismiss();
+              case TooltipDefaultActionType.next:
+                ShowcaseView.get().next();
+            }
+          },
+        ),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _analytics = SetoranAnalytics(ref.read(analyticsClientProvider))..started();
+    _tutorialProgress = ref.read(_setoranTutorialProgressProvider);
+    ShowcaseView.register(
+      enableAutoScroll: true,
+      disableMovingAnimation: true,
+      onFinish: () => unawaited(_tutorialProgress.markSeen()),
+      onDismiss: (_) => unawaited(_tutorialProgress.markSeen()),
+      globalTooltipActionConfig: const TooltipActionConfig(
+        alignment: MainAxisAlignment.spaceBetween,
+        position: TooltipActionPosition.inside,
+      ),
+      globalTooltipActions: [
+        _tutorialAction(
+          type: TooltipDefaultActionType.previous,
+          name: 'Sebelumnya',
+          hideActionWidgetForShowcase: [_customerTutorialKey],
+        ),
+        _tutorialAction(
+          type: TooltipDefaultActionType.skip,
+          name: 'Lewati',
+        ),
+        _tutorialAction(
+          type: TooltipDefaultActionType.next,
+          name: 'Lanjut',
+        ),
+      ],
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_showTutorialIfNeeded());
+    });
+
+    // The harga picker reads an app-scoped singleton that is otherwise only
+    // populated by the Harga page. Load it here so the dropdown has options
+    // even when arriving straight from the dashboard. The nasabah picker
+    // fetches its own list when it opens, so it needs no preload.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(hargaProvider.notifier).loadHarga();
+    });
+
+    // The WhatsApp draft built on success renders the app-scoped saved template,
+    // otherwise populated by the Profile page. Fetch here once per session: a
+    // template already in hand needs no refresh — so someone who goes straight
+    // from the dashboard to a transaksi still gets their own wording instead of
+    // silently falling back to the default.
+    if (ref.read(profileProvider).waTemplate == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(profileProvider.notifier).load(silent: true);
+        }
+      });
+    }
+  }
+
+  /// Permintaan simpan sedang berjalan. Wadah memakainya untuk tidak menutup
+  /// formulir di tengahnya.
+  bool get isSaving => _isSaving;
+
+  /// Apakah ada isian yang belum tersimpan dan akan hilang bila formulir
+  /// ditutup sekarang.
+  ///
+  /// Dibaca oleh wadah, lewat sebuah GlobalKey, pada saat panel hendak
+  /// ditutup — bukan didorong ke atas saat berubah. Pertanyaannya hanya muncul
+  /// sekali, tepat ketika jawabannya dibutuhkan, jadi menariknya di saat itu
+  /// lebih sederhana daripada menjaga satu salinan keadaan di dua tempat.
+  ///
+  /// Kartu item yang baru ditambahkan dan masih kosong tetap dihitung: pengguna
+  /// sudah menekan "Tambah Item Setoran", dan membuang pekerjaan itu tanpa
+  /// bertanya sama saja mengabaikan satu langkah yang memang ia lakukan.
+  bool get hasUnsavedInput =>
+      !_saved && (selectedCustomer != null || setoranItems.isNotEmpty);
+
+  /// Keadaan form sebagai draft, supaya aturan kelayakannya hidup di satu
+  /// tempat dan dapat diuji tanpa widget.
+  SetoranDraft get _draft => SetoranDraft(
+        nasabahId: selectedCustomer?.id,
+        items: setoranItems
+            .map((item) => SetoranItemDraft(
+                  jenisSampahId: item['jenis_sampah_id'] as String?,
+                  berat: (item['berat'] as num?)?.toDouble() ?? 0,
+                ))
+            .toList(growable: false),
+      );
+
+  void _addItem() {
+    setState(() {
+      // `baris` tells the cards apart for analytics only; the card keeps it
+      // when it hands back the edited item.
+      setoranItems.add({
+        'jenis': null,
+        'jenis_sampah_id': null,
+        'harga': 0,
+        'berat': 1.0,
+        'baris': _nextRow++,
+      });
+    });
+  }
+
+  /// Tombol simpan. Satu definisi dipakai dua tata letak: pada lebar sempit ia
+  /// berlabuh di dasar formulir, pada layar lebar ia duduk di panel ringkasan.
+  Widget _summaryTutorialStep() => _tutorialStep(
+        key: _summaryTutorialKey,
+        title: 'Periksa total',
+        description:
+            'Harga mengikuti jenis sampah; subtotal dan grand total mengikuti berat.',
+        child: TransactionSummarySection(grandTotal: grandTotal),
+      );
+
+  Widget _saveButton() => _tutorialStep(
+        key: _saveTutorialKey,
+        title: 'Simpan transaksi',
+        description:
+            'Pastikan nasabah, item, dan total sudah benar sebelum menyimpan.',
+        child: AppButton(
+          label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
+          icon: Icons.save_outlined,
+          onPressed: _isSaving ? null : _handleSubmit,
+        ),
+      );
+
+  /// Kartu mana yang ditandai merah saat ini.
+  ///
+  /// Sebelum tombol simpan ditekan hanya berat nol yang ditandai: keadaan itu
+  /// tidak mungkin tercapai tanpa suntingan, karena [_addItem] memulai setiap
+  /// kartu pada 1 kg. Jenis yang belum dipilih justru keadaan awal kartu baru,
+  /// jadi menandainya saat itu berarti mengomeli pengelola yang belum
+  /// melakukan apa pun. Setelah simpan ditekan, semuanya ditandai.
+  Set<int> get _flaggedItemIndexes => _hasSubmitted
+      ? _draft.invalidItemIndexes
+      : _draft.itemIndexesWith(SetoranProblem.nonPositiveBerat);
+
+  /// Pesan untuk kartu ke-[index], mengikuti waktu yang sama.
+  ItemSetoranProblemReporter get _problems =>
+      _DraftItemProblems(draft: _draft, hasSubmitted: _hasSubmitted);
+
+  /// Ringkasan untuk notifikasi ketika simpan ditolak.
+  ///
+  /// Seluruh masalah disebut sekaligus, bukan satu per satu, supaya pengelola
+  /// tahu semua yang tersisa. Urutannya mengikuti urutan enum dan bukan urutan
+  /// penemuan, supaya pesan yang sama selalu terbaca sama.
+  String _problemsMessage(Set<SetoranProblem> problems) {
+    const copy = {
+      SetoranProblem.noNasabah: 'nasabah belum dipilih',
+      SetoranProblem.noItems: 'belum ada item setoran',
+      SetoranProblem.itemWithoutJenis: 'ada item tanpa jenis sampah',
+      SetoranProblem.nonPositiveBerat: 'ada item dengan berat 0',
+    };
+    final parts = SetoranProblem.values
+        .where(problems.contains)
+        .map((problem) => copy[problem]!);
+    return 'Periksa: ${parts.join(', ')}.';
+  }
+
+  Future<void> _handleSubmit() async {
+    // Pembekuan form memakai AbsorbPointer, yang menahan penunjuk tetapi bukan
+    // tombol. Enter karena itu masih dapat sampai ke sini saat permintaan
+    // sedang berjalan, jadi penjaganya ada di handler, bukan hanya di tombol.
+    if (_isSaving) return;
+
+    setState(() => _hasSubmitted = true);
+    _analytics.saveTapped(itemCount: setoranItems.length);
+
+    final problems = _draft.problems;
+    if (problems.isNotEmpty) {
+      _analytics.validationFailed(problems);
+      // Teks sebaris saja mudah terlewat ketika kartu yang bermasalah sudah
+      // tergulir keluar layar, dan pada layar lebar tombol simpan berada di
+      // panel kanan yang jauh dari kartunya.
+      AppNotification.showError(
+        context,
+        title: 'Belum Bisa Disimpan',
+        message: _problemsMessage(problems),
+      );
+      return;
+    }
+
+    final idempotencyKey = _idempotencyKey ?? newTransaksiIdempotencyKey();
+    _idempotencyKey = idempotencyKey;
+    final request = TransaksiRequest(
+      nasabahId: selectedCustomer!.id,
+      idempotencyKey: idempotencyKey,
+      items: setoranItems
+          .map((item) => ItemSetoranRequest(
+                jenisSampahId: item['jenis_sampah_id'] as String,
+                berat: (item['berat'] as num?)?.toDouble() ?? 0,
+              ))
+          .toList(),
+    );
+
+    final notifier = ref.read(transaksiProvider.notifier);
+    // Resolved before the await, so the WhatsApp template is read without
+    // reaching back through a BuildContext across an async gap.
+    final waTemplate = ref.read(profileProvider).waTemplate?.template;
+
+    // Diambil di sini, sebelum await, bukan sesudahnya. Draft WhatsApp harus
+    // menggambarkan setoran yang dikirim, dan satu-satunya cara memastikannya
+    // adalah menyalin bahannya pada saat pengiriman. Form dibekukan selama
+    // permintaan berjalan, jadi hari ini keduanya sejalan — tetapi kuncinya
+    // adalah properti UI, sementara ini properti datanya.
+    final waPhone = selectedCustomer!.phone;
+    final waNama = selectedCustomer!.name;
+    final waItems = setoranItems
+        .map((item) => WaSetoranItem(
+              namaSampah: (item['jenis'] as String?) ?? '',
+              berat: (item['berat'] as num?)?.toDouble() ?? 0,
+              // Only `{daftar_item_harga}` reads this; the form already holds
+              // the per-kg price it used to compute the running total.
+              hargaPerKg: (item['harga'] as num?)?.toInt() ?? 0,
+            ))
+        .toList(growable: false);
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    setState(() => _isSaving = true);
+    final result = await notifier.addTransaksi(request);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (result.error != null) {
+      AppNotification.showError(
+        context,
+        title: 'Gagal Menyimpan',
+        message: result.error!.displayMessage,
+      );
+      return;
+    }
+
+    _analytics.saved(
+      itemCount: request.items.length,
+      distinctJenis:
+          request.items.map((item) => item.jenisSampahId).toSet().length,
+      totalKg: request.items.fold(0.0, (sum, item) => sum + item.berat),
+    );
+
+    // Refresh the shell tabs that stay alive and won't re-init on their own.
+    // loadStats updates the dashboard metrics (Total Kas / Sampah / Transaksi);
+    // the dashboard's "Aktivitas Terbaru" and the Laporan list are separate
+    // cubits and each needs its own nudge — silent so those lists update in
+    // place rather than flashing skeletons behind the success sheet. The
+    // nasabah list holds a separate balance snapshot, so reload it too.
+    // Fire-and-forget, like loadStats, to keep the success modal responsive.
+    ref.read(dashboardProvider.notifier).loadStats();
+    ref.read(recentActivityProvider.notifier).load(silent: true);
+    ref.read(riwayatAktivitasProvider.notifier).load(silent: true);
+    ref.read(nasabahProvider.notifier).loadNasabah(silent: true);
+
+    final created = result.created!;
+    _idempotencyKey = null;
+    // Setoran sudah tercatat. Isian yang masih tampil di belakang panel sukses
+    // bukan lagi sesuatu yang belum tersimpan, jadi wadah tidak boleh bertanya
+    // apakah isian itu akan dibuang.
+    _saved = true;
+
+    // Dari salinan yang diambil sebelum await, bukan dari form sebagaimana
+    // keadaannya sekarang.
+    final waLink = buildWaSetoranLink(
+      phone: waPhone,
+      nama: waNama,
+      items: waItems,
+      customTemplate: waTemplate,
+      // Backend-authoritative, not the form's running total — the server fills
+      // each item's price from the master jenis sampah record, so its figures
+      // are the ones the nasabah's balance actually moved by.
+      total: created.totalNilai,
+      saldo: created.saldoSetelah,
+    );
+
+    // Bottom sheet pada telepon, dialog pada peramban — wadahnya dipilih oleh
+    // showAdaptiveConfirmation. Tetap tidak dapat ditutup sembarangan: memilih
+    // mengirim draft WhatsApp atau tidak adalah inti langkah ini.
+    await showAdaptiveConfirmation(
+      context: context,
+      dismissible: false,
+      builder: (sheetContext, _) => TransaksiBerhasilPanel(
+        customerName: selectedCustomer!.name,
+        totalSetoran: created.totalNilai,
+        newBalance: created.saldoSetelah,
+        itemCount: created.itemCount,
+        onKirimWa: () async {
+          // Both navigators are resolved up front, before the await. Reaching
+          // back for a BuildContext afterwards is what the
+          // use_build_context_synchronously diagnostic was pointing at, and the
+          // `mounted` check below can't cover it: that reports on this State,
+          // while `sheetContext` belongs to the modal route this callback is
+          // about to remove.
+          final sheetNavigator = Navigator.of(sheetContext);
+          // Wadahnya yang menutup dirinya, bukan formulir ini. `GoRouter.pop()`
+          // dulu benar ketika formulir selalu sebuah halaman; dari dalam panel
+          // ia akan mem-pop halaman di belakang panel dan meninggalkan panelnya
+          // menggantung di atas halaman yang sudah berganti.
+          final close = widget.onClose;
+
+          // TEMP (Twilio outage): the backend no longer dispatches this message,
+          // so instead of requesting a resend, we open WhatsApp with
+          // the same text pre-filled and let the pengelola press send.
+          // externalApplication hands the link to the installed WhatsApp rather
+          // than an in-app webview.
+          var opened = false;
+          try {
+            opened =
+                await launchUrl(waLink, mode: LaunchMode.externalApplication);
+          } catch (_) {
+            // Neither WhatsApp nor a browser could take the link, or the
+            // platform refused the intent outright. Same outcome as `false`:
+            // the transaksi is already saved, only the draft didn't open.
+            opened = false;
+          }
+          _analytics.afterSave(
+              opened: opened, templateUsed: waTemplate != null);
+          if (!mounted) return;
+
+          // Deferred rather than raised in this frame: see [_leaveAndNotify].
+          if (opened) {
+            // Deliberately not "terkirim": all that happened is that a draft was
+            // opened. The pengelola still has to press send inside WhatsApp, and
+            // claiming otherwise would leave them thinking the nasabah was
+            // notified when they closed the draft.
+            _leaveAndNotify(
+              sheetNavigator,
+              close,
+              (toastContext) => AppNotification.showSuccess(
+                toastContext,
+                title: 'Berhasil',
+                message:
+                    'Transaksi disimpan. Pesan WhatsApp sudah disiapkan — tekan kirim di WhatsApp.',
+              ),
+            );
+          } else {
+            // The transaksi itself was saved — only the WhatsApp draft failed to
+            // open. Red would read as "your transaction didn't go through".
+            _leaveAndNotify(
+              sheetNavigator,
+              close,
+              (toastContext) => AppNotification.showWarning(
+                toastContext,
+                title: 'Peringatan',
+                message:
+                    'Transaksi disimpan, namun WhatsApp tidak dapat dibuka. Silakan hubungi nasabah secara manual.',
+              ),
+            );
+          }
+        },
+        onSelesai: () {
+          _analytics.finishedWithoutMessage();
+          // Nothing to wait for, so nothing separates these from the pop. The
+          // container closes itself, as above: from inside the side sheet
+          // `GoRouter.pop()` would pop the page behind the panel.
+          //
+          // Invariant: no `await` may come before `Navigator.of(sheetContext)`
+          // below. Unlike onKirimWa this does not capture the navigator ahead
+          // of time, so an await here would resolve a context whose route may
+          // already be gone. If this ever needs to wait, capture first.
+          _leaveAndNotify(
+            Navigator.of(sheetContext),
+            widget.onClose,
+            (toastContext) => AppNotification.showSuccess(
+              toastContext,
+              title: 'Berhasil',
+              message: 'Transaksi disimpan.',
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Menutup panel sukses, lalu formulir lewat wadahnya, dan menampilkan
+  /// pemberitahuan sesudah tujuan selesai berganti.
+  ///
+  /// Dua jalan keluar memakainya, supaya urutan tutup tidak bisa menyimpang di
+  /// salah satunya. Toast ditunda, bukan dimunculkan di frame ini: Flushbar
+  /// menampilkan diri dengan mendorong route, dan Navigator menambatkan route
+  /// imperatif ke route berbasis halaman di bawahnya — di frame ini itu halaman
+  /// yang sedang keluar, sehingga toast ikut hancur bersamanya.
+  /// [AppNotification.afterNavigation] menunggu tujuan stabil dan menampilkan di
+  /// navigator akar.
+  void _leaveAndNotify(
+    NavigatorState sheetNavigator,
+    VoidCallback close,
+    void Function(BuildContext toastContext) toast,
+  ) {
+    sheetNavigator.pop();
+    close();
+    AppNotification.afterNavigation(toast);
+  }
+
+  /// How far the pengurus has got, for when they leave without saving.
+  SetoranStep get _currentStep {
+    if (selectedCustomer == null) return SetoranStep.nasabah;
+    return _draft.problems.isEmpty ? SetoranStep.siapSimpan : SetoranStep.item;
+  }
+
+  int get grandTotal {
+    return setoranItems.fold(0, (sum, item) {
+      final harga = item['harga'] as int? ?? 0;
+      final berat = item['berat'] as num? ?? 1.0;
+      return sum + setoranSubtotal(harga, berat);
+    });
+  }
+
+  void _startTutorial() => ShowcaseView.get().startShowCase(_tutorialKeys);
+
+  Future<void> _showTutorialIfNeeded() async {
+    if (await _tutorialProgress.hasSeen() || !mounted) return;
+    ShowcaseView.get().startShowCase(_tutorialKeys);
+  }
+
+  Widget _tutorialStep({
+    required GlobalKey<State<StatefulWidget>> key,
+    required String title,
+    required String description,
+    required Widget child,
+  }) =>
+      Showcase(
+        key: key,
+        title: title,
+        description: wrapTutorialText(description),
+        targetShapeBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        tooltipBackgroundColor: AppColors.greenDark,
+        textColor: Colors.white,
+        titleTextStyle: AppTextStyle.headline3.copyWith(color: Colors.white),
+        descTextStyle: AppTextStyle.small.copyWith(color: Colors.white),
+        child: child,
+      );
+
+  @override
+  void dispose() {
+    _analytics.leftWithoutSaving(_currentStep);
+    ShowcaseView.get().unregister();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Yang menentukan tata letak adalah lebar yang tersedia untuk formulir
+    // ini, bukan lebar jendela. Di dalam panel samping jendelanya bisa saja
+    // expanded sementara panelnya hanya 560 px; membaca jendela di sana akan
+    // memasang kolom isian dan panel ringkasan 340 px berdampingan di ruang
+    // yang hanya cukup untuk satu kolom. Di halaman penuh keduanya sama, jadi
+    // perilaku halaman tidak berubah.
+    return LayoutBuilder(builder: (context, constraints) {
+      final sideBySide = LayoutBreakpoint.fromWidth(constraints.maxWidth) ==
+          LayoutBreakpoint.expanded;
+      // Dibekukan selama permintaan berjalan. Mematikan tombol simpan saja tidak
+      // cukup: picker nasabah, kolom berat dan tombol hapus tetap hidup, dan
+      // menyuntingnya di tengah round trip mengubah apa yang diceritakan kepada
+      // nasabah tanpa mengubah apa yang tersimpan. Tidak memakai PageStateView:
+      // ia menggantikan isi halaman dengan skeleton dan sengaja menyembunyikan
+      // konten lama, yang pada sebuah form berarti menghilangkan isian yang
+      // baru saja ditulis pengelola.
+      return AbsorbPointer(
+        absorbing: _isSaving,
+        child: SafeArea(
+          // Both panes scroll out to the window edges, so their scrollbars sit
+          // there; the frame's inset keeps the content to a readable column.
+          child: ContentFrame(
+              child: Column(
+            children: [
+              // Header
+              ContentInset(child: widget.headerBuilder(_startTutorial)),
+
+              Expanded(
+                child: Builder(builder: (context) {
+                  final inset = ContentFrame.insetOf(context);
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.fromLTRB(
+                              16.0 + inset.left, 8.0, 16.0, 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Section 1: PILIH NASABAH
+                              const AppFieldLabel('PILIH NASABAH',
+                                  isRequired: true),
+                              const SizedBox(height: 16),
+                              _tutorialStep(
+                                key: _customerTutorialKey,
+                                title: 'Pilih nasabah',
+                                description:
+                                    'Ketuk kolom ini untuk memilih nasabah. Untuk mengganti, '
+                                    'ketuk lagi nama nasabah yang tampil.',
+                                child: PilihNasabahSection(
+                                  selectedCustomer: selectedCustomer,
+                                  onCustomerSelected: (customer) {
+                                    setState(() {
+                                      selectedCustomer = customer;
+                                    });
+                                    _analytics.nasabahChosen();
+                                  },
+                                  hasError:
+                                      _hasSubmitted && selectedCustomer == null,
+                                  errorText: 'Nasabah harus dipilih',
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Section 2: DAFTAR SETORAN
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const AppFieldLabel('DAFTAR SETORAN',
+                                      isRequired: true),
+                                  Text(
+                                    '${setoranItems.length} item',
+                                    style: AppTextStyle.small.copyWith(
+                                      color: AppColors.grey100,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+
+                              _buildItemsSection(),
+                              const SizedBox(height: 16),
+
+                              // Add Item Button
+                              _tutorialStep(
+                                key: _addItemTutorialKey,
+                                title: 'Tambah item setoran',
+                                description:
+                                    'Tekan tombol ini untuk menambahkan satu item per jenis sampah.',
+                                child: AppButton(
+                                  label: 'Tambah Item Setoran',
+                                  variant: AppButtonVariant.outlined,
+                                  icon: Icons.add,
+                                  onPressed: _addItem,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              if (!sideBySide) ...[
+                                _summaryTutorialStep(),
+                                const SizedBox(height: 24),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (sideBySide) ...[
+                        const SizedBox(width: 24),
+                        _SummaryPanel(
+                          summary: _summaryTutorialStep(),
+                          saveButton: _saveButton(),
+                          rightInset: inset.right,
+                        ),
+                      ],
+                    ],
+                  );
+                }),
+              ),
+              // Pada telepon, dan di dalam panel samping, tombol simpan
+              // berlabuh di bawah isian alih-alih ikut tergulir. Dulu ia adalah
+              // bottomNavigationBar milik Scaffold; formulir ini tidak punya
+              // Scaffold, jadi ia memasangnya sendiri di dasar kolomnya. Sudah
+              // berada di dalam SafeArea di atas, jadi tidak perlu lagi.
+              if (!sideBySide)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _saveButton(),
+                ),
+            ],
+          )),
+        ),
+      );
+    });
+  }
+
+  Widget _buildItemsSection() {
+    final isEmpty = setoranItems.isEmpty;
+    final itemDetails = _tutorialStep(
+      key: _itemDetailsTutorialKey,
+      title: 'Atur item setoran',
+      description: isEmpty
+          ? 'Setelah menambah item, pilih jenis sampah dan isi berat (kg). '
+              'Harga/kg dan subtotal dihitung otomatis.'
+          : 'Pilih jenis sampah dan isi berat (kg). Harga/kg dan subtotal '
+              'otomatis; tekan × untuk menghapus item.',
+      child: isEmpty ? _buildEmptyItems() : _buildItemCard(0),
+    );
+    if (isEmpty) return itemDetails;
+    return Column(
+      children: [
+        itemDetails,
+        ...List.generate(
+          setoranItems.length - 1,
+          (index) => _buildItemCard(index + 1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyItems() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: _hasSubmitted ? AppColors.danger : AppColors.border,
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child:
+                    const Icon(Icons.add, color: AppColors.grey200, size: 24),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Belum Ada Item Setoran',
+                style: AppTextStyle.title1.copyWith(
+                  color: AppColors.grey100,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.lg,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap tombol di bawah untuk menambah item.',
+                style: AppTextStyle.small.copyWith(color: AppColors.grey200),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        if (_hasSubmitted) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              'Daftar setoran tidak boleh kosong',
+              style: AppTextStyle.small.copyWith(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Tells analytics when a card first holds a jenis and a weight.
+  void _reportItemFilled(Map<String, dynamic> item) {
+    final row = item['baris'];
+    if (row == null) return;
+    final filled = SetoranItemDraft(
+      jenisSampahId: item['jenis_sampah_id'] as String?,
+      berat: (item['berat'] as num?)?.toDouble() ?? 0,
+    ).isValid;
+    if (filled) _analytics.itemFilled(row as Object);
+  }
+
+  Widget _buildItemCard(int index) {
+    return ItemSetoranCard(
+      index: index,
+      itemData: setoranItems[index],
+      hasError: _flaggedItemIndexes.contains(index),
+      errorText: _problems.messageFor(index),
+      onChanged: (updatedItem) {
+        final newId = updatedItem['jenis_sampah_id'] as String?;
+        if (jenisSampahSudahAda(setoranItems, index, newId)) {
+          AppNotification.showWarning(
+            context,
+            title: 'Jenis Sudah Dipilih',
+            message:
+                'Jenis sampah ini sudah ada di daftar item. Ubah berat pada item yang sudah ada.',
+          );
+          return;
+        }
+        setState(() => setoranItems[index] = updatedItem);
+        _reportItemFilled(updatedItem);
+      },
+      onSubmitted: _handleSubmit,
+      onDelete: () {
+        setState(() => setoranItems.removeAt(index));
+        AppNotification.showSuccess(
+          context,
+          title: 'Item Dihapus',
+          message: 'Item setoran berhasil dihapus.',
+        );
+      },
+    );
+  }
+}
+
+/// Panel kanan pada layar lebar: ringkasan dan tombol simpan tetap terlihat
+/// sementara daftar item di kiri digulir.
+class _SummaryPanel extends StatelessWidget {
+  const _SummaryPanel({
+    required this.summary,
+    required this.saveButton,
+    this.rightInset = 0,
+  });
+
+  final Widget summary;
+  final Widget saveButton;
+
+  /// Room a wide window leaves right of the content column; the panel grows
+  /// into it so its scrollbar is at the window edge.
+  final double rightInset;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: LayoutBreakpoint.sidePanelWidth + rightInset,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(0, 8, 16 + rightInset, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            summary,
+            const SizedBox(height: 16),
+            saveButton,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Laporan masalah kartu untuk Transaksi Baru.
+///
+/// Jenis yang belum dipilih baru dikeluhkan setelah simpan ditekan, karena
+/// kartu baru memang lahir tanpa jenis dan menandainya lebih awal berarti
+/// mengomeli pengelola yang belum melakukan apa pun.
+class _DraftItemProblems extends ItemSetoranProblemReporter {
+  const _DraftItemProblems({required this.draft, required this.hasSubmitted});
+
+  final SetoranDraft draft;
+  final bool hasSubmitted;
+
+  @override
+  int get itemCount => draft.items.length;
+
+  @override
+  bool hasJenis(int index) => draft.items[index].hasJenis;
+
+  @override
+  bool hasPositiveBerat(int index) => draft.items[index].hasPositiveBerat;
+
+  @override
+  bool reportsMissingJenis(int index) => hasSubmitted;
+}

@@ -1,20 +1,27 @@
+import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/legal_information.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
-import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const List<String> _monthsId = [
   'Jan',
@@ -30,6 +37,8 @@ const List<String> _monthsId = [
   'Nov',
   'Des'
 ];
+
+enum _DashboardMenuAction { legalInformation, logout }
 
 String _formatDate(DateTime? date, {String prefix = ''}) {
   if (date == null) return '$prefix-';
@@ -74,7 +83,8 @@ class _LocationLine extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+        style:
+            const TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey100),
       ),
     );
   }
@@ -88,17 +98,18 @@ int _waitingDays(DateTime? date) {
   return today.difference(submission).inDays;
 }
 
-class SuperAdminDashboardScreen extends StatefulWidget {
+class SuperAdminDashboardScreen extends ConsumerStatefulWidget {
   const SuperAdminDashboardScreen({super.key});
 
   static const route = '/superadmin-dashboard';
 
   @override
-  State<SuperAdminDashboardScreen> createState() =>
+  ConsumerState<SuperAdminDashboardScreen> createState() =>
       _SuperAdminDashboardScreenState();
 }
 
-class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
+class _SuperAdminDashboardScreenState
+    extends ConsumerState<SuperAdminDashboardScreen> {
   String _activeTab = 'Menunggu';
 
   static const Map<String, String> _tabStatus = {
@@ -108,36 +119,34 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(superadminProvider.notifier).loadBankSampah('pending');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<SuperadminCubit>()..loadBankSampah('pending'),
-      child: Builder(
-        builder: (context) =>
-            BlocListener<AuthenticationBloc, AuthenticationStates>(
-          listener: (context, state) {
-            if (state is Unauthenticated) {
-              context.go('/login');
-            }
-          },
-          child: Scaffold(
-            backgroundColor: AppColors.fill,
-            body: Column(
-              children: [
-                _buildHeader(context),
-                Expanded(
-                  child: AppRefreshIndicator(
-                    // Reloads the tab currently on screen, not whichever status
-                    // the cubit happens to have loaded last.
-                    onRefresh: () => context
-                        .read<SuperadminCubit>()
-                        .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
-                    child: _buildContentArea(),
-                  ),
-                ),
-              ],
+    ref.listen(authenticationProvider, (previous, state) {
+      if (state is Unauthenticated) context.go('/login');
+    });
+    return Scaffold(
+      backgroundColor: AppColors.fill,
+      body: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: AppRefreshIndicator(
+              onRefresh: () => ref
+                  .read(superadminProvider.notifier)
+                  .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
+              child: _buildContentArea(),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -149,8 +158,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       decoration: const BoxDecoration(
         color: AppColors.greenDark,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+          bottomLeft: Radius.circular(AppRadius.xl),
+          bottomRight: Radius.circular(AppRadius.xl),
         ),
       ),
       child: Column(
@@ -159,38 +168,73 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Expanded(
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'SuperAdmin PILAH',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 13),
+                        fontSize: AppFontSize.sm),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     'Manajemen Bank Sampah',
                     style: TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold),
+                        fontSize: AppFontSize.xxl,
+                        fontWeight: AppFontWeight.bold),
                   ),
                 ],
-              ),
-              InkWell(
-                onTap: () =>
-                    context.read<AuthenticationBloc>().add(LogoutRequested()),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child:
-                      const Icon(Icons.logout, color: Colors.white, size: 20),
+              )),
+              AppTapTarget(
+                label: 'Notifikasi',
+                onTap: () => NotificationsPage.open(context),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
                 ),
+              ),
+              PopupMenuButton<_DashboardMenuAction>(
+                tooltip: 'Menu akun',
+                iconColor: Colors.white,
+                onSelected: (action) {
+                  if (action == _DashboardMenuAction.legalInformation) {
+                    openLegalInformation(context);
+                  } else {
+                    ProviderScope.containerOf(context, listen: false)
+                        .read(authenticationProvider.notifier)
+                        .logout();
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: _DashboardMenuAction.legalInformation,
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Informasi & legal',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: _DashboardMenuAction.logout,
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout),
+                        SizedBox(width: 12),
+                        Expanded(child: Text('Keluar')),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -208,9 +252,6 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     );
   }
 
-  // Takes the context explicitly: the SuperadminCubit is provided by the
-  // BlocProvider inside build(), so the surrounding State's own context sits
-  // above it and cannot resolve the cubit.
   Widget _buildTab(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.only(right: 12),
@@ -220,60 +261,57 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         onTap: () {
           if (_activeTab == label) return;
           setState(() => _activeTab = label);
-          context.read<SuperadminCubit>().loadBankSampah(_tabStatus[label]!);
+          ref
+              .read(superadminProvider.notifier)
+              .loadBankSampah(_tabStatus[label]!);
         },
       ),
     );
   }
 
   Widget _buildContentArea() {
-    return BlocBuilder<SuperadminCubit, SuperadminState>(
-      builder: (context, state) {
-        if (state is SuperadminLoading || state is SuperadminInitial) {
-          return ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            itemCount: 3,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (_, __) => const SkeletonListItem(),
-          );
-        }
+    final state = ref.watch(superadminProvider);
+    if (state is SuperadminLoading || state is SuperadminInitial) {
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (_, __) => const SkeletonListItem(),
+      );
+    }
 
-        if (state is SuperadminError) {
-          return EmptyView(
-            title: 'Gagal Memuat Data',
-            subtitle: state.message,
-            icon: Icons.error_outline,
-          );
-        }
+    if (state is SuperadminError) {
+      return EmptyView(
+        title: 'Gagal Memuat Data',
+        subtitle: state.message,
+        icon: Icons.error_outline,
+      );
+    }
 
-        if (state is SuperadminLoaded) {
-          if (state.banks.isEmpty) {
-            return _buildEmptyState(state.status);
+    if (state is SuperadminLoaded) {
+      if (state.banks.isEmpty) return _buildEmptyState(state.status);
+      final actions = ref.read(superadminProvider.notifier);
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        itemCount: state.banks.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (_, index) {
+          final bank = state.banks[index];
+          switch (state.status) {
+            case 'active':
+              return ApprovedBankCard(bank: bank);
+            case 'rejected':
+              return RejectedBankCard(bank: bank);
+            default:
+              return PendingBankCard(bank: bank, actions: actions);
           }
-          final cubit = context.read<SuperadminCubit>();
-          return ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            itemCount: state.banks.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (_, index) {
-              final bank = state.banks[index];
-              switch (state.status) {
-                case 'active':
-                  return ApprovedBankCard(bank: bank);
-                case 'rejected':
-                  return RejectedBankCard(bank: bank);
-                default:
-                  return PendingBankCard(bank: bank, cubit: cubit);
-              }
-            },
-          );
-        }
+        },
+      );
+    }
 
-        return const SizedBox.shrink();
-      },
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildEmptyState(String status) {
@@ -303,9 +341,9 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
 
 class PendingBankCard extends StatefulWidget {
   final BankSampahEntity bank;
-  final SuperadminCubit cubit;
+  final SuperadminActions actions;
 
-  const PendingBankCard({super.key, required this.bank, required this.cubit});
+  const PendingBankCard({super.key, required this.bank, required this.actions});
 
   @override
   State<PendingBankCard> createState() => _PendingBankCardState();
@@ -320,31 +358,13 @@ class _PendingBankCardState extends State<PendingBankCard> {
     required String confirmLabel,
     required bool destructive,
   }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Text(message, style: const TextStyle(fontSize: 14)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: destructive ? Colors.red : AppColors.greenDark,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: Text(confirmLabel),
-          ),
-        ],
-      ),
+    return showAppConfirmDialog(
+      context,
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      destructive: destructive,
     );
-    return result ?? false;
   }
 
   Future<void> _runAction({required bool approve}) async {
@@ -365,26 +385,37 @@ class _PendingBankCardState extends State<PendingBankCard> {
 
     setState(() => _isProcessing = true);
     final error = approve
-        ? await widget.cubit.approve(bank.id)
-        : await widget.cubit.reject(bank.id);
+        ? await widget.actions.approve(bank.id)
+        : await widget.actions.reject(bank.id);
 
+    if (error != null && mounted) {
+      setState(() => _isProcessing = false);
+    }
+    if (!overlayContext.mounted) return;
+    _showActionResult(overlayContext, bank, approve, error);
+  }
+
+  void _showActionResult(
+    BuildContext context,
+    BankSampahEntity bank,
+    bool approve,
+    NetworkException? error,
+  ) {
     if (error != null) {
-      if (mounted) setState(() => _isProcessing = false);
-      if (overlayContext.mounted) {
-        AppNotification.showError(overlayContext,
-            title: 'Gagal', message: error.displayMessage);
-      }
+      AppNotification.showError(
+        context,
+        title: 'Gagal',
+        message: error.displayMessage,
+      );
       return;
     }
-    if (overlayContext.mounted) {
-      AppNotification.showSuccess(
-        overlayContext,
-        title: approve ? 'Disetujui' : 'Ditolak',
-        message: approve
-            ? '${bank.nama} berhasil disetujui.'
-            : 'Pendaftaran ${bank.nama} telah ditolak.',
-      );
-    }
+    AppNotification.showSuccess(
+      context,
+      title: approve ? 'Disetujui' : 'Ditolak',
+      message: approve
+          ? '${bank.nama} berhasil disetujui.'
+          : 'Pendaftaran ${bank.nama} telah ditolak.',
+    );
   }
 
   @override
@@ -432,63 +463,32 @@ class _PendingBankCardState extends State<PendingBankCard> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton(
+                    label: 'Lihat Bukti',
+                    variant: AppButtonVariant.tonal,
+                    size: AppButtonSize.compact,
+                    icon: Icons.image_outlined,
                     onPressed: () => showProofImageDialog(context,
                         imageUrl: bank.fotoKegiatan),
-                    icon: const Icon(Icons.image_outlined,
-                        size: 14, color: AppColors.greenDark),
-                    label: const Text('Lihat Bukti',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
-                      foregroundColor: AppColors.greenDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton(
+                    label: 'Setujui',
+                    size: AppButtonSize.compact,
+                    icon: Icons.check,
                     onPressed: () => _runAction(approve: true),
-                    icon:
-                        const Icon(Icons.check, size: 14, color: Colors.white),
-                    label: const Text('Setujui',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: AppButton(
+                    label: 'Tolak',
+                    variant: AppButtonVariant.destructiveOutlined,
+                    size: AppButtonSize.compact,
+                    icon: Icons.close,
                     onPressed: () => _runAction(approve: false),
-                    icon: const Icon(Icons.close, size: 14, color: Colors.red),
-                    label: const Text('Tolak',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red, width: 1),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
                   ),
                 ),
               ],
@@ -514,7 +514,7 @@ class ApprovedBankCard extends StatelessWidget {
           _CardHeader(
             title: bank.nama,
             badgeText: 'AKTIF',
-            badgeBg: Colors.green.shade100,
+            badgeBg: AppColors.greenLight,
             badgeFg: AppColors.greenDark,
             badgeIcon: Icons.check_box,
           ),
@@ -542,15 +542,15 @@ class RejectedBankCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CardShell(
-      accentColor: Colors.red.shade400,
+      accentColor: AppColors.danger,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CardHeader(
             title: bank.nama,
             badgeText: 'DITOLAK',
-            badgeBg: Colors.red.shade50,
-            badgeFg: Colors.red.shade600,
+            badgeBg: AppColors.dangerLight,
+            badgeFg: AppColors.danger,
           ),
           _LocationLine(bank),
           const SizedBox(height: 12),
@@ -576,10 +576,10 @@ class _CardShell extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4)),
         ],
@@ -593,8 +593,8 @@ class _CardShell extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accentColor,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
+                  topLeft: Radius.circular(AppRadius.lg),
+                  bottomLeft: Radius.circular(AppRadius.lg),
                 ),
               ),
             ),
@@ -633,16 +633,17 @@ class _CardHeader extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87),
+                fontSize: AppFontSize.lg,
+                fontWeight: AppFontWeight.bold,
+                color: AppColors.black),
           ),
         ),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-              color: badgeBg, borderRadius: BorderRadius.circular(12)),
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(AppRadius.md)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -653,7 +654,9 @@ class _CardHeader extends StatelessWidget {
               Text(
                 badgeText,
                 style: TextStyle(
-                    color: badgeFg, fontSize: 10, fontWeight: FontWeight.bold),
+                    color: badgeFg,
+                    fontSize: AppFontSize.xs,
+                    fontWeight: AppFontWeight.bold),
               ),
             ],
           ),
@@ -667,16 +670,15 @@ Widget _infoRow(IconData icon, String text, {bool isBold = false}) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon,
-          size: 16, color: isBold ? Colors.black87 : Colors.grey.shade500),
+      Icon(icon, size: 16, color: isBold ? AppColors.black : AppColors.grey100),
       const SizedBox(width: 8),
       Expanded(
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 13,
-            color: isBold ? Colors.black87 : Colors.grey.shade600,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            fontSize: AppFontSize.sm,
+            color: isBold ? AppColors.black : AppColors.grey100,
+            fontWeight: isBold ? AppFontWeight.bold : AppFontWeight.regular,
           ),
         ),
       ),

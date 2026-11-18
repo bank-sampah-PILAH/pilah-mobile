@@ -1,12 +1,15 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:printing/printing.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import '../widgets/draft_file_actions.dart';
-import '../widgets/pencairan_ui.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// The generated PDF, shown before anything is saved, so the pengurus can see
 /// what it looks like and then download or share it.
@@ -32,7 +35,7 @@ class DraftPdfPreviewPage extends StatelessWidget {
         maxPageWidth: 700,
         pdfFileName: 'draft-pencairan.pdf',
         loadingWidget: const CircularProgressIndicator(),
-        scrollViewDecoration: BoxDecoration(color: Colors.grey[200]),
+        scrollViewDecoration: const BoxDecoration(color: AppColors.border),
       );
   // coverage:ignore-end
 
@@ -44,44 +47,42 @@ class DraftPdfPreviewPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const PencairanHeader(title: 'Pratinjau PDF'),
+            const AppBackHeader(
+                backKey: Key('kembali'), title: 'Pratinjau PDF'),
             Expanded(child: view(context, file.bytes)),
           ],
         ),
       ),
+      // The page is at most 700 px wide; on a desktop window the buttons keep
+      // to a column under it instead of spanning the window.
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  key: const Key('bagikan'),
-                  onPressed: () => bagikanBerkasDraft(file),
-                  icon: const Icon(Icons.share_outlined),
-                  label: const Text('Bagikan'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.greenDark,
-                    side: const BorderSide(color: AppColors.greenDark),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+        child: ContentBounds(
+          maxWidth: LayoutBreakpoint.formMaxWidth,
+          heightFactor: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    key: const Key('bagikan'),
+                    label: 'Bagikan',
+                    icon: Icons.share_outlined,
+                    variant: AppButtonVariant.outlined,
+                    onPressed: () => bagikanBerkasDraft(file),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  key: const Key('unduh'),
-                  onPressed: () => simpanBerkasDraft(context, file),
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('Unduh'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.greenDark,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppButton(
+                    key: const Key('unduh'),
+                    label: 'Unduh',
+                    icon: Icons.download_outlined,
+                    onPressed: () => simpanBerkasDraft(context, file),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

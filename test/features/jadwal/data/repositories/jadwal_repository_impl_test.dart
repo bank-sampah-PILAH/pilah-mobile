@@ -46,6 +46,30 @@ void main() {
         'schedule-1');
   });
 
+  test('passes the end of a date range to the remote source', () async {
+    when(() => remote.getJadwal(
+          page: 1,
+          date: DateTime(2026, 10, 19),
+          dateTo: DateTime(2026, 10, 31),
+        )).thenAnswer(
+      (_) async =>
+          JadwalPageModel(items: [_schedule()], totalCount: 1, hasMore: false),
+    );
+
+    final result = await repository.getJadwal(
+      page: 1,
+      date: DateTime(2026, 10, 19),
+      dateTo: DateTime(2026, 10, 31),
+    );
+
+    expect(result.isRight(), isTrue);
+    verify(() => remote.getJadwal(
+          page: 1,
+          date: DateTime(2026, 10, 19),
+          dateTo: DateTime(2026, 10, 31),
+        )).called(1);
+  });
+
   test('converts schedule-load exceptions to NetworkException', () async {
     when(() => remote.getJadwal(page: 1, date: null))
         .thenThrow(Exception('offline'));

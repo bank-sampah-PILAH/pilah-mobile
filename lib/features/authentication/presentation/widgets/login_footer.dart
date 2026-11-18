@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 class LoginFooter extends StatelessWidget {
@@ -9,10 +10,10 @@ class LoginFooter extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
+        const Icon(
           Icons.lock_outline,
           size: 16,
-          color: Colors.grey.shade400,
+          color: AppColors.grey200,
         ),
         const SizedBox(width: 8),
         Flexible(
@@ -20,7 +21,7 @@ class LoginFooter extends StatelessWidget {
             'Hanya untuk Pengurus & Admin terdaftar • Aman & Terenkripsi',
             textAlign: TextAlign.center,
             style: AppTextStyle.extraSmall.copyWith(
-              color: Colors.grey.shade400,
+              color: AppColors.grey200,
             ),
           ),
         ),

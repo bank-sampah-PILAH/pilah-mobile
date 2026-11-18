@@ -4,7 +4,11 @@ import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 
 abstract class JadwalRemoteDataSource {
-  Future<JadwalPageModel> getJadwal({required int page, DateTime? date});
+  Future<JadwalPageModel> getJadwal({
+    required int page,
+    DateTime? date,
+    DateTime? dateTo,
+  });
   Future<Set<DateTime>> getCalendarDates(DateTime startDate, DateTime endDate);
   Future<JadwalModel> createJadwal(JadwalModel jadwal);
   Future<JadwalModel> updateJadwal(JadwalModel jadwal);
@@ -18,13 +22,23 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   JadwalRemoteDataSourceImpl(this.networkService);
 
   @override
-  Future<JadwalPageModel> getJadwal({required int page, DateTime? date}) async {
+  Future<JadwalPageModel> getJadwal({
+    required int page,
+    DateTime? date,
+    DateTime? dateTo,
+  }) async {
+    // Dengan [dateTo], [date] menjadi awal rentang (`date_from`); tanpa itu satu
+    // hari saja (`date`).
     final response = await networkService.get(
       '/api/v1/jadwal',
       queryParams: {
         'page_size': 20,
         'page': page,
-        if (date != null) 'date': _formatDate(date),
+        if (date != null && dateTo != null) ...{
+          'date_from': _formatDate(date),
+          'date_to': _formatDate(dateTo),
+        } else if (date != null)
+          'date': _formatDate(date),
       },
     );
     return JadwalPageModel.fromJson(response.data as Map<String, dynamic>);

@@ -1,17 +1,15 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -20,18 +18,25 @@ import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_reposito
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../support/auth_support.dart';
+import '../../../support/fake_image_download.dart';
+import '../../../support/stub_api.dart';
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
 /// A preview repository whose home carries the given balance and activities.
 class _HomeRepository extends PreviewNasabahRepository {
-  _HomeRepository(this.balanceUpdatedAt, this.activities);
+  _HomeRepository(this.balanceUpdatedAt, this.activities, {this.logoUrl});
 
   final DateTime? balanceUpdatedAt;
   final List<NasabahActivity> activities;
+  final String? logoUrl;
   final asked = <String?>[];
+
+  @override
+  Future<NasabahBank> bank(String membershipId) async =>
+      NasabahBank('Bank Sampah Melati', 'Jl. Melati', 'Depok', '08123456789',
+          logoUrl: logoUrl);
 
   @override
   Future<NasabahHome> home({String? membershipId}) async {
@@ -47,30 +52,25 @@ class _HomeRepository extends PreviewNasabahRepository {
 }
 
 void main() {
-  late _Auth auth;
+  late TestAuthenticationNotifier auth;
   late _JadwalRepository jadwal;
 
   setUp(() {
-    auth = _Auth();
+    auth = authNotifierIn(Authenticated(
+      authEntity: AuthEntity(
+        id: 'nasabah-1',
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'token',
+        role: 'nasabah',
+        nextStep: 'nasabah_dashboard',
+      ),
+    ));
     jadwal = _JadwalRepository();
     when(() => jadwal.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => const Right(
           JadwalPageResult(items: [], totalCount: 0, hasMore: false)),
-    );
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
-      initialState: Authenticated(
-        authEntity: AuthEntity(
-          id: 'nasabah-1',
-          name: 'Siti',
-          email: 'siti@example.test',
-          photoUrl: '',
-          token: 'token',
-          role: 'nasabah',
-          nextStep: 'nasabah_dashboard',
-        ),
-      ),
     );
     di.registerSingleton<JadwalRepository>(jadwal);
   });
@@ -80,11 +80,14 @@ void main() {
       await di.unregister<NasabahRepository>();
     }
     await di.unregister<JadwalRepository>();
-    await auth.close();
   });
 
   Future<void> pumpHome(
-      WidgetTester tester, NasabahRepository repository) async {
+    WidgetTester tester,
+    NasabahRepository repository, {
+    Map<String, Widget Function(BuildContext, GoRouterState)> extraRoutes =
+        const {},
+  }) async {
     di.registerSingleton<NasabahRepository>(repository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
       GoRoute(path: '/beranda', builder: (_, __) => const BerandaNasabahPage()),
@@ -98,11 +101,13 @@ void main() {
             body:
                 Text('riwayat ${state.uri.queryParameters['keanggotaan_id']}')),
       ),
+      for (final entry in extraRoutes.entries)
+        GoRoute(path: entry.key, builder: entry.value),
     ]);
     addTearDown(router.dispose);
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-      value: auth,
-      child: MaterialApp.router(routerConfig: router),
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
+      MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
   }
@@ -186,6 +191,31 @@ void main() {
     expect(repository.asked, [null, null]);
   });
 
+  testWidgets('a stored bank logo is drawn from its URL', (tester) async {
+    final debugImage = FakeImageDownload.install();
+    await pumpHome(
+        tester, _HomeRepository(null, const [], logoUrl: '/media/logo.png'));
+
+    // Let the avatar start its download without racing it.
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    debugImage.finish();
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump();
+
+    final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar).first);
+    expect(avatar.foregroundImage, isA<NetworkImage>());
+    expect((avatar.foregroundImage! as NetworkImage).url, isNotEmpty);
+    FakeImageDownload.uninstall();
+  });
+
+  testWidgets('without a logo the membership card keeps its BS initial',
+      (tester) async {
+    await pumpHome(tester, _HomeRepository(null, const []));
+    expect(find.text('BS'), findsOneWidget);
+  });
+
   testWidgets('a failing schedule request is reported in its own card',
       (tester) async {
     when(() => jadwal.getJadwal(page: 1, date: null)).thenAnswer(
@@ -194,6 +224,15 @@ void main() {
     await pumpHome(tester, _HomeRepository(null, const []));
 
     expect(find.text('offline'), findsOneWidget);
+  });
+
+  testWidgets('the home draws no Pengumuman section', (tester) async {
+    await pumpHome(tester, _HomeRepository(null, const []));
+
+    expect(find.text('Pengumuman'), findsNothing);
+    expect(find.text('Belum ada pengumuman.'), findsNothing);
+    expect(find.byKey(const ValueKey('beranda-pengumuman-baru')), findsNothing);
+    expect(find.byIcon(Icons.campaign_outlined), findsNothing);
   });
 
   testWidgets('every activity type keeps its title in the shared list',
@@ -211,5 +250,32 @@ void main() {
     expect(find.text('Setoran'), findsOneWidget);
     expect(find.text('Pencairan'), findsOneWidget);
     expect(find.text('koreksi'), findsOneWidget);
+  });
+
+  testWidgets('opens notification history from the Nasabah home',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final api = StubApi();
+    api.on('GET', '/api/v1/notifications/', json: {
+      'count': 0,
+      'next': null,
+      'previous': null,
+      'results': [],
+    });
+    di.registerSingleton<NetworkService>(api.network);
+    addTearDown(() => di.unregister<NetworkService>());
+
+    await pumpHome(tester, _HomeRepository(null, const []));
+
+    expect(find.bySemanticsLabel('Notifikasi'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Notifikasi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada notifikasi.'), findsOneWidget);
+    expect(
+      api.requests.any((request) => request.path == '/api/v1/notifications/'),
+      isTrue,
+    );
+    handle.dispose();
   });
 }

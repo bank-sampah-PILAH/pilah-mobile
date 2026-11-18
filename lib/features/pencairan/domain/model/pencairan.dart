@@ -12,25 +12,6 @@ enum MetodePencairan {
       value == transfer.name ? transfer : tunai;
 }
 
-class PencairanRequest extends Equatable {
-  final String nasabahId;
-  final int nominal;
-  final MetodePencairan metode;
-  final DateTime tanggal;
-  final String? keterangan;
-
-  const PencairanRequest({
-    required this.nasabahId,
-    required this.nominal,
-    required this.metode,
-    required this.tanggal,
-    this.keterangan,
-  });
-
-  @override
-  List<Object?> get props => [nasabahId, nominal, metode, tanggal, keterangan];
-}
-
 /// A pengurus correction of a recorded pencairan (PIL-230). Every field is
 /// sent; the backend rejects an edit that changes nothing.
 class EditPencairanRequest extends Equatable {

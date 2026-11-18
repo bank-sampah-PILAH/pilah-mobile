@@ -1,26 +1,29 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
+import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
-import 'package:pilah_mobile/services/di.dart';
-
-class _MockAuth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _MockApproval extends MockCubit<NasabahApprovalState>
-    implements NasabahApprovalCubit {}
+import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
+import '../../support/auth_support.dart';
+import '../../support/fake_image_download.dart';
+import '../../support/fake_analytics_client.dart';
+import '../../support/fake_app_storage.dart';
+import '../../support/nasabah_approval_support.dart';
+import '../../support/profile_support.dart';
 
 const _approved = NasabahMembershipEntity(
   id: 'application-1',
@@ -41,30 +44,23 @@ const _approved = NasabahMembershipEntity(
 /// sideways is wider than 840 and lost its bottom bar; a browser window
 /// narrowed below 600 grew one.
 void main() {
-  Future<void> mountShell(
+  Future<GoRouter> mountShell(
     WidgetTester tester, {
     required String role,
     required Size window,
     required bool isWeb,
     String initialLocation = '/home',
+    ProfileNotifier? profile,
+    List<Override> extraOverrides = const [],
   }) async {
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final approval = _MockApproval();
-    when(() => approval.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
-    whenListen(approval, const Stream<NasabahApprovalState>.empty(),
+    final approval = TestNasabahApprovalNotifier(
         initialState: const NasabahApprovalLoaded([_approved]));
-    di.registerFactory<NasabahApprovalCubit>(() => approval);
-    addTearDown(() async {
-      await di.unregister<NasabahApprovalCubit>();
-      await approval.close();
-    });
 
-    final auth = _MockAuth();
     final state = Authenticated(
       authEntity: AuthEntity(
         name: 'Sari',
@@ -75,9 +71,7 @@ void main() {
         nextStep: 'dashboard',
       ),
     );
-    when(() => auth.state).thenReturn(state);
-    when(() => auth.stream).thenAnswer((_) => const Stream.empty());
-    addTearDown(auth.close);
+    final auth = authNotifierIn(state);
 
     final router = GoRouter(
       initialLocation: initialLocation,
@@ -107,12 +101,66 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-      value: auth,
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        nasabahApprovalProvider.overrideWith(() => approval),
+        authenticationProvider.overrideWith(() => auth),
+        // The shell watches the profile for its logo; mounts that do not care
+        // about it answer the silent load without a data source.
+        profileProvider.overrideWith(() => profile ?? SilentProfileNotifier()),
+        ...extraOverrides,
+      ],
       child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
+    return router;
   }
+
+  group('asking for consent to be recorded', () {
+    late FakeAppStorage storage;
+    late FakeAnalyticsClient client;
+
+    setUp(() {
+      storage = FakeAppStorage();
+      client = FakeAnalyticsClient();
+    });
+
+    List<Override> analytics() => [
+          analyticsClientProvider.overrideWithValue(client),
+          analyticsConsentStoreProvider
+              .overrideWithValue(AnalyticsConsentStore(storage)),
+        ];
+
+    testWidgets('a pengurus is asked once, and agreeing starts recording',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(390, 844),
+          isWeb: false,
+          extraOverrides: analytics());
+
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsOneWidget);
+      await tester.tap(find.text('Setuju'));
+      await tester.pumpAndSettle();
+
+      expect(client.calls, ['start']);
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsNothing);
+    });
+
+    testWidgets('a nasabah is never asked', (tester) async {
+      await mountShell(tester,
+          role: 'nasabah',
+          window: const Size(390, 844),
+          isWeb: false,
+          extraOverrides: analytics());
+
+      expect(
+          find.text('Bantu kami meningkatkan pengalaman Anda'), findsNothing);
+      expect(client.calls, isNot(contains('start')));
+    });
+  });
 
   group('the app always keeps its navigation at the bottom', () {
     testWidgets('a phone gets the bottom bar', (tester) async {
@@ -194,6 +242,29 @@ void main() {
       expect(find.text('body:/prices'), findsOneWidget);
     });
 
+    testWidgets('the mobile drawer matches the sidebar and opens the profile',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: true);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('PILAH'), findsOneWidget);
+      expect(find.text('MENU'), findsOneWidget);
+      expect(find.text('Sari'), findsOneWidget);
+      expect(find.text('sari@example.test'), findsOneWidget);
+
+      await tester.tap(find.text('Sari'));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/profile');
+      expect(find.text('body:/profile'), findsOneWidget);
+      expect(find.byIcon(Icons.menu), findsOneWidget,
+          reason: 'the narrow-browser navigation stays available on profile');
+    });
+
     testWidgets('widening the browser keeps the selected destination',
         (tester) async {
       await mountShell(tester,
@@ -224,6 +295,110 @@ void main() {
   ///
   /// The guard itself is older than this PR (`04994da`, PIL-228); what this PR
   /// changed is that there is now left-hand navigation to lose.
+  group('tapping the rail profile', () {
+    /// How many times the back button has to be pressed to leave the pages
+    /// that were pushed. Consumes the stack.
+    Future<int> backPresses(WidgetTester tester, GoRouter router) async {
+      var presses = 0;
+      while (router.canPop() && presses < 10) {
+        router.pop();
+        await tester.pumpAndSettle();
+        presses++;
+      }
+      return presses;
+    }
+
+    testWidgets('opens the profile from another page', (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/profile');
+    });
+
+    testWidgets('does not stack another profile page when already there',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+        await tester.pumpAndSettle();
+      }
+
+      expect(await backPresses(tester, router), 0,
+          reason: 'the profile is a destination of the shell, not a page '
+              'pushed over it, so there is nothing to pop');
+    });
+
+    testWidgets('opening it keeps the rail and marks no other item',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1280, 900),
+          isWeb: true,
+          initialLocation: '/customers');
+      expect(
+          tester
+              .widget<NavigationRail>(find.byType(NavigationRail))
+              .selectedIndex,
+          1);
+
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RoleNavigationRail), findsOneWidget);
+      expect(
+          tester
+              .widget<NavigationRail>(find.byType(NavigationRail))
+              .selectedIndex,
+          isNull,
+          reason: 'Nasabah must not stay highlighted behind the profile');
+    });
+
+    testWidgets('another rail item leads back out of the profile',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1280, 900),
+          isWeb: true,
+          initialLocation: '/profile');
+
+      await tester.tap(find.text('Nasabah'));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/customers');
+    });
+  });
+
+  testWidgets('the rail logo returns to the home branch', (tester) async {
+    final router = await mountShell(tester,
+        role: 'pengelola',
+        window: const Size(1280, 900),
+        isWeb: true,
+        initialLocation: '/customers');
+    expect(
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
+        1);
+
+    await tester.tap(find.byKey(RoleNavigationRail.logoKey));
+    await tester.pumpAndSettle();
+
+    expect(
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
+        0);
+    expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+        '/home');
+  });
+
   group('a route outside the destinations keeps its navigation on web', () {
     testWidgets('the staff profile keeps the rail on a desktop window',
         (tester) async {
@@ -277,6 +452,26 @@ void main() {
     });
   });
 
+  group('Pengumuman is not a destination on any form factor', () {
+    testWidgets('the rail draws no Pengumuman destination', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.text('Pengumuman'), findsNothing);
+    });
+
+    testWidgets('the app keeps five bottom tabs', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: false);
+
+      final bar =
+          tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
+      expect(bar.items.length, 5);
+      expect(find.text('Pengumuman'), findsNothing);
+    });
+  });
+
   /// Guards the shared-helper extraction asked for in the same review: the
   /// fallback was only covered on the rail side, so the drawer could have
   /// drifted silently.
@@ -293,4 +488,124 @@ void main() {
           reason: 'the session in this test carries no bankSampahNama');
     });
   });
+
+  group('the bank logo reaches the shell from the profile', () {
+    testWidgets('a loaded profile draws its logo in the rail header',
+        (tester) async {
+      final debugImage = FakeImageDownload.install();
+      final profile = _LoadedProfileNotifier(BankSampahProfile(
+        id: 'bank-1',
+        nama: 'Bank Sampah Melati',
+        alamat: 'Jl. Melati',
+        kota: 'Depok',
+        noHpPic: '+62812',
+        status: 'active',
+        fotoLogo: 'https://media.test/logo.png',
+      ));
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1440, 900),
+          isWeb: true,
+          profile: profile);
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      debugImage.finish();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+
+      final logos = tester
+          .widgetList<Image>(find.byType(Image))
+          .where((i) => i.image is NetworkImage)
+          .toList();
+      expect(logos, isNotEmpty,
+          reason: 'the rail header shows the stored bank logo');
+      expect((logos.first.image as NetworkImage).url,
+          'https://media.test/logo.png');
+      FakeImageDownload.uninstall();
+    });
+
+    testWidgets('a Pengurus whose profile never loaded is fetched silently',
+        (tester) async {
+      var loaded = 0;
+      final profile = _CountingProfileNotifier((_) => loaded++);
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1440, 900),
+          isWeb: true,
+          profile: profile);
+      await tester.pump();
+
+      expect(loaded, 1,
+          reason: 'the shell seeds the profile the session never opened');
+    });
+
+    testWidgets('a logo that arrives after the first frame still appears',
+        (tester) async {
+      final debugImage = FakeImageDownload.install();
+      final profile = _CountingProfileNotifier((_) {});
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1440, 900),
+          isWeb: true,
+          profile: profile);
+
+      profile.setStateForTest(const ProfileState(
+        status: ProfileStatus.loaded,
+        bankSampah: BankSampahProfile(
+          id: 'bank-1',
+          nama: 'Bank Sampah Melati',
+          alamat: 'Jl. Melati',
+          kota: 'Depok',
+          noHpPic: '+62812',
+          status: 'active',
+          fotoLogo: 'https://media.test/late-logo.png',
+        ),
+      ));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      debugImage.finish();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+
+      final logos = tester
+          .widgetList<Image>(find.byType(Image))
+          .where((i) => i.image is NetworkImage)
+          .map((i) => (i.image as NetworkImage).url)
+          .toList();
+      expect(logos, contains('https://media.test/late-logo.png'),
+          reason: 'the shell must watch the profile, not read it once');
+      FakeImageDownload.uninstall();
+    });
+  });
+}
+
+/// Counts silent loads so the shell's lazy profile seeding can be observed
+/// without stubbing the three HTTP endpoints a full load reads.
+class _CountingProfileNotifier extends TestProfileNotifier {
+  _CountingProfileNotifier(this.onLoad) : super.noDataSource();
+
+  final void Function(bool silent) onLoad;
+
+  @override
+  Future<void> load({bool silent = false}) => Future.sync(() => onLoad(silent));
+}
+
+/// Starts loaded with the stored logo, as though the session had opened the
+/// profile page before reaching the shell.
+class _LoadedProfileNotifier extends _CountingProfileNotifier {
+  _LoadedProfileNotifier(BankSampahProfile bank) : super((_) {}) {
+    _loadedBank = bank;
+    _loaded = true;
+  }
+
+  bool _loaded = false;
+  BankSampahProfile? _loadedBank;
+
+  @override
+  ProfileState build() => _loaded
+      ? ProfileState(status: ProfileStatus.loaded, bankSampah: _loadedBank)
+      : const ProfileState();
 }

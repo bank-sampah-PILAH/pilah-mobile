@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import '../../domain/model/draft_pencairan.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The labelled "Ekspor" pill in the header, opening a small white card with
 /// one row per file type. A bare three-dot icon was not read as export.
@@ -24,7 +26,7 @@ class ExportMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled ? Colors.grey[800] : Colors.grey[400];
+    final color = enabled ? AppColors.inkSoft : AppColors.grey200;
     return PopupMenuButton<ExportBerkas>(
       key: const Key('menu-ekspor'),
       enabled: enabled,
@@ -32,9 +34,10 @@ class ExportMenuButton extends StatelessWidget {
       color: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 8,
-      shadowColor: Colors.black38,
+      shadowColor: AppColors.grey200,
       offset: const Offset(0, 44),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       onSelected: onSelected,
       itemBuilder: (_) => [
         _ExportItem(
@@ -57,8 +60,8 @@ class ExportMenuButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.fill,
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -79,7 +82,7 @@ class ExportMenuButton extends StatelessWidget {
             Text(
               busy ? 'Menyiapkan...' : 'Ekspor',
               style: AppTextStyle.small
-                  .copyWith(fontWeight: FontWeight.w600, color: color),
+                  .copyWith(fontWeight: AppFontWeight.semibold, color: color),
             ),
           ],
         ),
@@ -104,14 +107,14 @@ class _ExportItem extends PopupMenuItem<ExportBerkas> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: tint,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(icon, size: 20, color: iconColor),
               ),
               const SizedBox(width: 12),
               Text(label,
-                  style:
-                      AppTextStyle.small.copyWith(fontWeight: FontWeight.w600)),
+                  style: AppTextStyle.small
+                      .copyWith(fontWeight: AppFontWeight.semibold)),
             ],
           ),
         );

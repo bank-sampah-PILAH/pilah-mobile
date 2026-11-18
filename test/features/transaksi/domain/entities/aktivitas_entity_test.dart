@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 
@@ -21,6 +22,11 @@ Pencairan _pencairan({
 
 void main() {
   group('ActivitasEntity.fromPencairan', () {
+    test('the amount is danger red, so money out differs from money in', () {
+      expect(ActivitasEntity.fromPencairan(_pencairan()).amountColor,
+          AppColors.danger);
+    });
+
     test('shows only the metode, matching setoran\'s single-line subtitle', () {
       final entity =
           ActivitasEntity.fromPencairan(_pencairan(keterangan: 'Diambil pagi'));
