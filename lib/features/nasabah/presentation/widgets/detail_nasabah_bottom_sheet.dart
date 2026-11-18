@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -160,12 +161,14 @@ class _DetailNasabahBottomSheetState
                   'Jenis Kelamin',
                   jenisKelamin,
                   isBold: true,
-                  icon: Icon(
-                    jenisKelamin.toLowerCase() == 'perempuan'
-                        ? Icons.female
-                        : Icons.male,
-                    size: 16,
-                    color: AppColors.grey100,
+                  icon: HideInReplay(
+                    child: Icon(
+                      jenisKelamin.toLowerCase() == 'perempuan'
+                          ? Icons.female
+                          : Icons.male,
+                      size: 16,
+                      color: AppColors.grey100,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -190,10 +193,12 @@ class _DetailNasabahBottomSheetState
                 const SizedBox(height: 16),
                 _buildRingkasanRow(),
                 const SizedBox(height: 20),
-                Text(
-                  'Alamat',
-                  style: AppTextStyle.small.copyWith(
-                    color: AppColors.grey100,
+                RevealInReplay(
+                  child: Text(
+                    'Alamat',
+                    style: AppTextStyle.small.copyWith(
+                      color: AppColors.grey100,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -451,10 +456,12 @@ class _DetailNasabahBottomSheetState
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyle.small.copyWith(
-            color: AppColors.grey100,
+        RevealInReplay(
+          child: Text(
+            label,
+            style: AppTextStyle.small.copyWith(
+              color: AppColors.grey100,
+            ),
           ),
         ),
         const SizedBox(width: 16),
