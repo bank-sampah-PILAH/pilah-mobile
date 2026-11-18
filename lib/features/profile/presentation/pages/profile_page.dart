@@ -861,7 +861,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   iconColor: AppColors.inkSoft,
                   validator: _validateNomorHpPic,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 _buildLokasiRow(state),
               ],
             ),
@@ -945,7 +945,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           'LOKASI DI PETA',
           style: AppTextStyle.extraSmall.copyWith(
             color: AppColors.grey100,
-            fontWeight: FontWeight.bold,
+            fontWeight: AppFontWeight.bold,
             letterSpacing: 0.5,
           ),
         ),
@@ -964,7 +964,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     height: 140,
                     decoration: BoxDecoration(
                       color: AppColors.grey100,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(color: AppColors.grey100),
                     ),
                     alignment: Alignment.center,
@@ -987,7 +987,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     ),
                   )
                 : ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     child: MiniLokasiMap(
                       titik: LatLng(lokasi.latitude, lokasi.longitude),
                     ),

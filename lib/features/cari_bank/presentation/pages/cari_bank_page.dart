@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -7,6 +9,7 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/core/utils/formatter/jarak_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
@@ -61,17 +64,12 @@ class _CariBankViewState extends State<CariBankView> {
       BlocBuilder<CariBankCubit, CariBankState>(
         builder: (context, state) => Scaffold(
           backgroundColor: Colors.white,
-          appBar: AppBar(
-            title: Text(
-              'Cari Bank Sampah',
-              style: AppTextStyle.appBar.copyWith(color: NasabahStyle.ink),
-            ),
-            centerTitle: true,
-            backgroundColor: Colors.white,
-            scrolledUnderElevation: 0,
-          ),
           body: Column(
             children: [
+              const AppBackHeader(
+                title: 'Cari Bank Sampah',
+                backKey: Key('cari_bank_kembali'),
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: CustomSearchField(
@@ -297,13 +295,13 @@ class PillTag extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.greenLight,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
         ),
         child: Text(
           text,
           style: AppTextStyle.extraSmall.copyWith(
             color: AppColors.greenDark,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeight.semibold,
           ),
         ),
       );
@@ -408,7 +406,7 @@ class _ModePill extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: dipilih ? AppColors.greenDark : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
               color: dipilih ? AppColors.greenDark : NasabahStyle.line,
             ),
@@ -427,7 +425,7 @@ class _ModePill extends StatelessWidget {
                 label,
                 style: AppTextStyle.small.copyWith(
                   color: dipilih ? Colors.white : NasabahStyle.muted,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
             ],
