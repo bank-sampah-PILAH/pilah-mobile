@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ignore: unnecessary_import
@@ -91,6 +92,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Lengkapi lokasi bank sampah'), findsNothing);
+  });
+
+  testWidgets('a failed coordinate save keeps the pick for retry',
+      (tester) async {
+    arrange();
+    api.on('PUT', '/api/v1/bank-sampah/me', status: 500, json: {});
+    await pumpPage(tester);
+
+    await tester.tap(find.byKey(const Key('prompt_pilih_peta')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('simpan_lokasi')));
+    await tester.pumpAndSettle();
+
+    // The failure is surfaced and the sheet stays, with the point kept.
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.text('Lengkapi lokasi bank sampah'), findsOneWidget);
+    expect(find.text('Simpan Lokasi'), findsOneWidget);
+    final firstSave = api.requests.last.body as FormData;
+    final lat = firstSave.fields.firstWhere((f) => f.key == 'latitude').value;
+
+    // Let the snackbar go so it cannot sit over the retry button.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    api.on('PUT', '/api/v1/bank-sampah/me',
+        json: bankJson(latitude: lat, longitude: '118.000000'));
+    await tester.tap(find.byKey(const Key('prompt_pilih_peta')));
+    await tester.pumpAndSettle();
+
+    // The picker was not reopened: the kept point was saved directly.
+    expect(find.byKey(const Key('peta_kembali')), findsNothing);
+    expect(find.text('Lengkapi lokasi bank sampah'), findsNothing);
+    final saves = api.requests
+        .where((r) => r.method == 'PUT' && r.path == '/api/v1/bank-sampah/me')
+        .toList();
+    expect(saves, hasLength(2));
+    expect(
+      (saves.last.body as FormData)
+          .fields
+          .firstWhere((f) => f.key == 'latitude')
+          .value,
+      lat,
+    );
   });
 
   testWidgets('a failed bank lookup means no prompt and no error surface',

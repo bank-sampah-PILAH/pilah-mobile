@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mocktail/mocktail.dart';
@@ -133,6 +134,8 @@ void main() {
     ('95.0', '106', 'lintang out of range'),
     ('-6.3', '999', 'bujur out of range'),
     ('abc', '106', 'not a number'),
+    ('NaN', '106', 'not finite'),
+    ('-6.3', 'Infinity', 'infinite bujur'),
   ]) {
     testWidgets('Simpan refuses $why with the server-matching message',
         (tester) async {
@@ -152,6 +155,28 @@ void main() {
       );
     });
   }
+
+  testWidgets('panning after focusing a field makes the fields follow the map',
+      (tester) async {
+    await openOverHost(tester, center: const LatLng(-6.895, 107.63));
+
+    final latField = find.byKey(const Key('latitude_field'));
+    await tester.tap(latField);
+    await tester.pump();
+    await tester.enterText(latField, '1.234');
+    await tester.pump();
+    final node = tester.widget<TextField>(latField).focusNode!;
+    expect(node.hasFocus, isTrue);
+
+    // A pan chooses the camera over the typed value: focus drops and the
+    // fields resync, so Simpan cannot return the abandoned entry.
+    await tester.drag(find.byType(FlutterMap), const Offset(0, -200));
+    await tester.pumpAndSettle();
+
+    final text = tester.widget<TextField>(latField).controller!.text;
+    expect(node.hasFocus, isFalse);
+    expect(double.parse(text), isNot(closeTo(1.234, 0.0001)));
+  });
 
   testWidgets('Gunakan Lokasi Saya writes the fix into the fields',
       (tester) async {
