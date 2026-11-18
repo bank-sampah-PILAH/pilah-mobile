@@ -18,6 +18,8 @@ import 'package:pilah_mobile/core/database/secure_database.dart'
 import 'package:pilah_mobile/core/router/invite_token_store.dart'
     show InviteTokenStore;
 import 'package:pilah_mobile/core/storage/app_storage.dart' show AppStorage;
+import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart'
+    show LocationService;
 import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_sources.dart'
     show AuthLocalDataSources;
 import 'package:pilah_mobile/features/authentication/data/remote/auth_remote_data_sources.dart'
@@ -160,6 +162,7 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('ImageCropper', null, () => di<ImageCropper>()),
   ('InviteTokenStore', null, () => di<InviteTokenStore>()),
   ('AppEnvironment', AppKey.devEnv, () => di<AppEnvironment>()),
+  ('LocationService', null, () => di<LocationService>()),
   (
     'AppStorage (flutter_secure_storage)',
     null,
