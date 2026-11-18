@@ -130,7 +130,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
   Widget build(BuildContext context) => Scaffold(
         body: Column(
           children: [
-            const AppBackHeader(title: 'Pilih Lokasi di Peta'),
+            const AppBackHeader(
+              title: 'Pilih Lokasi di Peta',
+              backKey: Key('peta_kembali'),
+            ),
             Expanded(
               child: FlutterMap(
                 mapController: _controller,
