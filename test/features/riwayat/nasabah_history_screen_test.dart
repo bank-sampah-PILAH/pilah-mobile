@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -189,5 +190,27 @@ void main() {
 
     expect(riwayatRepository.detailRequests, [('m1', 't1')]);
     expect(find.text('Plastik PET'), findsOneWidget);
+  });
+
+  testWidgets('a wide window keeps balance, tabs and both lists in one column',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpScreen(tester, _Repository());
+
+    expect(tester.getSize(find.byType(TabBar)).width,
+        lessThanOrEqualTo(NasabahStyle.maxWidth));
+    expect(tester.getSize(find.byType(TabBarView)).width,
+        lessThanOrEqualTo(NasabahStyle.maxWidth));
+    expect(
+        tester.getCenter(find.byType(TabBarView)).dx, closeTo(1400 / 2, 0.5));
+  });
+
+  testWidgets('a phone-width window still uses the full width', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpScreen(tester, _Repository());
+
+    expect(tester.getSize(find.byType(TabBarView)).width, 400);
   });
 }
