@@ -178,6 +178,7 @@ jobs:
         run: |
           flutter test --platform chrome \
             test/features/authentication/presentation/pages/role_selection_page_test.dart \
+            test/features/authentication/presentation/pages/role_selection_change_test.dart \
             test/core/router/auth_routing_test.dart
           flutter test --platform chrome \
             --name 'a nasabah banks a draft|a new pengelola banks the draft|a fresh registration exit' \
