@@ -45,6 +45,10 @@ class CariBankLoaded extends CariBankState {
   /// Radius aktif mode lokasi (PIL-314); null = mode kata kunci biasa.
   final double? dalamRadiusKm;
 
+  /// Halaman berikutnya gagal dimuat; daftar yang sudah ada tetap tampil dan
+  /// baris retry di ujung daftar memakai pesan ini.
+  final String? loadMoreError;
+
   const CariBankLoaded({
     required this.items,
     required this.hasMore,
@@ -53,6 +57,7 @@ class CariBankLoaded extends CariBankState {
     required this.searchQuery,
     required this.kotaFilter,
     this.dalamRadiusKm,
+    this.loadMoreError,
   });
 
   @override
@@ -64,5 +69,6 @@ class CariBankLoaded extends CariBankState {
         searchQuery,
         kotaFilter,
         dalamRadiusKm,
+        loadMoreError,
       ];
 }
