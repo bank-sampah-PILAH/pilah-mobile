@@ -3,8 +3,10 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:pilah_mobile/core/utils/report_file_action.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';
 
 /// In-app PDF preview for the nasabah activity statement (PIL-315).
@@ -32,17 +34,9 @@ class NasabahPdfPreviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: NasabahStyle.background,
-        appBar: AppBar(
-          backgroundColor: NasabahStyle.emerald,
-          foregroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          title: Text(
-            export.filename,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
+        appBar: NasabahPageAppBar(
+          title: export.filename,
+          showBack: true,
           actions: [
             IconButton(
               tooltip: 'Unduh',
@@ -52,8 +46,10 @@ class NasabahPdfPreviewPage extends StatelessWidget {
           ],
         ),
         // The PDF itself is rendered by the pdfrx viewer (body below) — this
-        // page only wraps it with the preview chrome and the download flow.
-        body: viewer ?? _Viewer(export: export),
+        // page only wraps it with the preview chrome and the download flow. It
+        // draws names and amounts on a canvas that the recording's text masks
+        // do not reach, so it is hidden from the screen recording.
+        body: HideInReplay(child: viewer ?? _Viewer(export: export)),
       );
 }
 

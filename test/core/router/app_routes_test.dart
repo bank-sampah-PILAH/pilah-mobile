@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
@@ -12,6 +11,10 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
@@ -20,19 +23,19 @@ import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_approval_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
@@ -56,12 +59,13 @@ void main() {
 
   tearDown(() => shell.unregisterDi());
 
-  Future<GoRouter> boot(WidgetTester tester) async {
+  Future<GoRouter> boot(WidgetTester tester, {String? initialLocation}) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final router = AppRouterConfig.getRouter();
+    if (initialLocation != null) router.go(initialLocation);
     await tester
         .pumpWidget(shell.wrap(MaterialApp.router(routerConfig: router)));
     await tester.pump();
@@ -97,15 +101,42 @@ void main() {
         '/register-nasabah': RegisterNasabahScreen,
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
-        '/catat-pencairan': CatatPencairanPage,
-        '/pengelola-induk-dashboard': RoleHandoffPage,
-        '/register-bank-sampah-induk': RoleHandoffPage,
       };
 
       for (final entry in pages.entries) {
-        await visit(tester, router, entry.key,
-            settle: !entry.key.contains('induk'));
+        await visit(tester, router, entry.key);
         expect(find.byType(entry.value), findsOneWidget, reason: entry.key);
+      }
+    });
+
+    testWidgets('every pengumuman URL lands on the dashboard, not an error',
+        (tester) async {
+      // The redirect lands on the dashboard, so its own fetches need quiet
+      // stubs.
+      api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
+      api.on('GET', '/api/v1/transaksi', json: {'results': []});
+      api.on('GET', '/api/v1/pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
+      final router = await boot(tester);
+
+      for (final path in const [
+        '/pengumuman',
+        '/pengumuman/detail',
+        '/pengumuman/kelola',
+        '/pengumuman/kelola/ubah',
+      ]) {
+        await visit(tester, router, path);
+
+        expect(find.byType(PengumumanPage), findsNothing, reason: path);
+        expect(find.byType(PengumumanDetailPage), findsNothing, reason: path);
+        expect(find.byType(PengumumanKelolaPage), findsNothing, reason: path);
+        expect(find.byType(PengumumanFormPage), findsNothing, reason: path);
+        // A deleted route would show go_router's "page not found" screen,
+        // which PIL-392 forbids as much as it forbids the page itself.
+        expect(find.byType(DashboardPage), findsOneWidget, reason: path);
+        expect(router.routerDelegate.currentConfiguration.uri.path,
+            isNot(startsWith('/pengumuman')),
+            reason: path);
       }
     });
 
@@ -135,14 +166,132 @@ void main() {
       expect(find.byType(RevisiPencairanPage), findsOneWidget);
     });
 
-    testWidgets('can open the draft pencairan pages', (tester) async {
+    testWidgets(
+        'the pencairan edit and revision pages without their pencairan '
+        '(a refreshed web tab) fall back to the laporan', (tester) async {
       final router = await boot(tester);
 
-      await visit(tester, router, '/draft-pencairan');
-      expect(find.byType(DraftListPage), findsOneWidget);
+      await visit(tester, router, '/edit-pencairan');
+      expect(find.byType(EditPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
 
-      await visit(tester, router, '/draft-pencairan/pilih');
-      expect(find.byType(PilihNasabahPencairanPage), findsOneWidget);
+      await visit(tester, router, '/riwayat-perubahan-pencairan');
+      expect(find.byType(RevisiPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
+    });
+
+    testWidgets('can open the price history of a jenis sampah', (tester) async {
+      final router = await boot(tester);
+
+      router.go(
+        '/riwayat-harga',
+        extra: HargaEntity(
+          id: 'j-1',
+          kodeSampah: 'PLS-001',
+          name: 'Botol PET',
+          price: 3500,
+          priceFormatted: 'Rp 3500',
+          category: 'plastik',
+          subtitle: '',
+          badgeText: 'Anorganik',
+          icon: Icons.recycling,
+          iconColor: Colors.green,
+          isActive: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RiwayatHargaPage), findsOneWidget);
+      expect(find.text('Botol PET'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the price history without a jenis (a refreshed web tab) '
+        'falls back to the harga list', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/riwayat-harga');
+
+      expect(find.byType(RiwayatHargaPage), findsNothing);
+      expect(find.byType(HargaPage), findsOneWidget);
+    });
+
+    /// The dashboard every locked path falls back to does its own fetching.
+    void stubDashboard() {
+      api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
+      api.on('GET', '/api/v1/transaksi', json: {'results': []});
+      api.on('GET', '/api/v1/pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
+    }
+
+    testWidgets(
+        'every draft pencairan URL lands on the dashboard, not an '
+        'error', (tester) async {
+      stubDashboard();
+      final router = await boot(tester);
+
+      for (final path in const [
+        '/draft-pencairan',
+        '/draft-pencairan/pilih',
+        '/draft-pencairan/editor',
+      ]) {
+        await visit(tester, router, path);
+
+        expect(find.byType(DraftListPage), findsNothing, reason: path);
+        expect(find.byType(PilihNasabahPencairanPage), findsNothing,
+            reason: path);
+        expect(find.byType(DraftEditorPage), findsNothing, reason: path);
+        // A deleted route would show go_router's "page not found" screen,
+        // which PIL-392 forbids as much as it forbids the page itself.
+        expect(find.byType(DashboardPage), findsOneWidget, reason: path);
+        expect(router.routerDelegate.currentConfiguration.uri.path,
+            isNot(startsWith('/draft-pencairan')),
+            reason: path);
+      }
+    });
+
+    testWidgets('a locked path redirects by name as well as by URL',
+        (tester) async {
+      // The lock keeps the real route's name, so navigation that asks for a
+      // route by name lands on the dashboard too. Without the name,
+      // `goNamed` throws `GoError: no route with name` - a crash where the
+      // lock promises a redirect. Nothing in lib/ navigates by name today;
+      // this holds the stub to the promise for whatever does later.
+      stubDashboard();
+      final router = await boot(tester);
+
+      router.goNamed(DraftListPage.route);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftListPage), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/dashboard');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a saved draft cannot be continued from its id either',
+        (tester) async {
+      // The lock sits in front of the guard: args that used to open the
+      // editor - a ?id= a refreshed tab carries, or a draft in extra - do
+      // not get past it, and nothing is fetched for them.
+      stubDashboard();
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      router.go(
+        '/draft-pencairan/editor?id=d-1',
+        extra: const DraftEditorArgs.lanjutkan('d-1'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftEditorPage), findsNothing);
+      expect(find.text('Cair Oktober'), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+    });
+
+    testWidgets('a new draft in extra cannot open the editor', (tester) async {
+      stubDashboard();
+      final router = await boot(tester);
 
       router.go(
         '/draft-pencairan/editor',
@@ -151,32 +300,26 @@ void main() {
         ]),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(DraftEditorPage), findsOneWidget);
-      expect(find.text('Ahmad'), findsOneWidget);
+
+      expect(find.byType(DraftEditorPage), findsNothing);
+      expect(find.text('Ahmad'), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
     });
 
-    testWidgets('can continue a saved draft from its id', (tester) async {
-      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
-      final router = await boot(tester);
-
-      router.go(
-        '/draft-pencairan/editor',
-        extra: const DraftEditorArgs.lanjutkan('d-1'),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DraftEditorPage), findsOneWidget);
-      expect(find.text('Cair Oktober'), findsOneWidget);
-    });
-
-    testWidgets('opening the draft editor without a draft goes to the list',
+    testWidgets('the editor without a draft does not bounce through the list',
         (tester) async {
+      // Its own guard sends it to the draft list, which is locked too. The
+      // lock replaces that guard rather than running before it, so there is
+      // one redirect to the dashboard, not a chain through a locked path.
+      stubDashboard();
       final router = await boot(tester);
 
       await visit(tester, router, '/draft-pencairan/editor');
 
-      expect(find.byType(DraftListPage), findsOneWidget);
+      expect(find.byType(DraftListPage), findsNothing);
       expect(find.byType(DraftEditorPage), findsNothing);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/dashboard');
     });
 
     testWidgets('opens the jadwal page, honouring a date in the link',
@@ -216,11 +359,11 @@ void main() {
     });
 
     testWidgets(
-        'a pending invite link banks its token and goes through the gate',
+        'a browser hash-path invite banks its token and goes through the gate',
         (tester) async {
       final router = await boot(tester);
 
-      await visit(tester, router, '/invite?token=tok-9');
+      await visit(tester, router, '/invite/web-token-9');
 
       expect(shell.invites.token, isNull,
           reason: 'the gate spends the token on its first attempt');
@@ -285,9 +428,8 @@ void main() {
       await visit(tester, router, '/approval-bank-sampah');
       expect(find.byType(ApprovalBankSampahListPage), findsOneWidget);
 
-      di.registerFactory<NasabahAppealCubit>(
-          () => NasabahAppealCubit(_MockAppeal()));
-      addTearDown(() => di.unregister<NasabahAppealCubit>());
+      di.registerFactory<AppealMembershipUseCase>(() => _MockAppeal());
+      addTearDown(() => di.unregister<AppealMembershipUseCase>());
       router.go(
         '/approval-bank-sampah/detail',
         extra: const NasabahMembershipEntity(
@@ -314,6 +456,24 @@ void main() {
 
       expect(tester.widget<JadwalPage>(find.byType(JadwalPage)).customerMode,
           isTrue);
+    });
+
+    testWidgets('pengumuman URLs no longer open a page for a nasabah',
+        (tester) async {
+      final router = await boot(tester);
+
+      for (final path in const [
+        '/pengumuman?keanggotaan_id=m1',
+        '/pengumuman/detail'
+      ]) {
+        await visit(tester, router, path);
+
+        expect(find.byType(PengumumanPage), findsNothing, reason: path);
+        expect(find.byType(PengumumanDetailPage), findsNothing, reason: path);
+        expect(router.routerDelegate.currentConfiguration.uri.path,
+            isNot(startsWith('/pengumuman')),
+            reason: path);
+      }
     });
 
     testWidgets('/nasabah-dashboard is an alias of the home', (tester) async {
@@ -363,10 +523,30 @@ void main() {
 
       expect(shell.invites.token, 'abc');
     });
+
+    testWidgets('a browser hash-path invite token with no session is banked',
+        (tester) async {
+      shell.signedInAs(Unauthenticated());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/invite/web-token-abc');
+
+      expect(shell.invites.token, 'web-token-abc');
+    });
+
+    testWidgets('a cold-start browser hash-path invite banks its token',
+        (tester) async {
+      shell.signedInAs(AuthenticationInitial());
+
+      await boot(tester, initialLocation: '/invite/cold-start-token');
+      await tester.pumpAndSettle();
+
+      expect(shell.invites.token, 'cold-start-token');
+    });
   });
 
   group('invites for other roles', () {
-    for (final role in ['nasabah', 'pengelola_induk']) {
+    for (final role in ['nasabah', 'superadmin']) {
       testWidgets('are discarded for a $role', (tester) async {
         shell.signedInAsRole(role);
         final router = await boot(tester);

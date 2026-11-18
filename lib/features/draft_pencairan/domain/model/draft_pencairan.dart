@@ -126,6 +126,11 @@ class JumlahUmum extends Equatable {
     }
   }
 
+  /// Whether a nasabah with [saldo] gets less than this asks for: a fixed
+  /// rupiah above their saldo, so [hitung] pays them their whole saldo.
+  bool melebihiSaldo(int saldo) =>
+      jenis == JumlahJenis.rupiah && valid && nilai.floor() > saldo;
+
   @override
   List<Object?> get props => [jenis, nilai];
 }

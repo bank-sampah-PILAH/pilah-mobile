@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 class TransaksiBerhasilPanel extends StatefulWidget {
   final String customerName;
   final int totalSetoran;
   final int newBalance;
   final int itemCount;
-  final Future<void> Function() onKirimWaSelesai;
+
+  /// Opens the WhatsApp message for the nasabah, then closes the form.
+  final Future<void> Function() onKirimWa;
+
+  /// Closes the form without sending anything.
+  final VoidCallback onSelesai;
 
   const TransaksiBerhasilPanel({
     super.key,
@@ -16,7 +25,8 @@ class TransaksiBerhasilPanel extends StatefulWidget {
     required this.totalSetoran,
     required this.newBalance,
     required this.itemCount,
-    required this.onKirimWaSelesai,
+    required this.onKirimWa,
+    required this.onSelesai,
   });
 
   @override
@@ -38,8 +48,8 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Container(
           width: 64,
           height: 64,
-          decoration: BoxDecoration(
-            color: Colors.green[50],
+          decoration: const BoxDecoration(
+            color: AppColors.greenLight,
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.check_circle,
@@ -51,16 +61,16 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Text(
           'Transaksi Berhasil!',
           style: AppTextStyle.headline1.copyWith(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+            color: AppColors.black,
+            fontWeight: AppFontWeight.bold,
+            fontSize: AppFontSize.xxl,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           '${widget.itemCount} jenis sampah berhasil dicatat.',
           style: AppTextStyle.small.copyWith(
-            color: Colors.grey[500],
+            color: AppColors.grey100,
           ),
         ),
         const SizedBox(height: 24),
@@ -69,9 +79,9 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[200]!),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             children: [
@@ -95,40 +105,31 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         ),
         const SizedBox(height: 32),
 
-        // Action Buttons
-        ElevatedButton(
+        // Action Buttons. Sending the message is the main choice; finishing is
+        // the quieter one. The first choice locks both: while the message is
+        // prepared, and while the sheet plays its exit animation after Selesai
+        // (it stays hit-testable then, so a second tap would pop again).
+        AppButton(
+          label: 'Kirim WhatsApp',
+          isLoading: _isSending,
+          onPressed: () async {
+            setState(() => _isSending = true);
+            await widget.onKirimWa();
+            if (!mounted) return;
+            setState(() => _isSending = false);
+          },
+        ),
+        const SizedBox(height: 12),
+        AppButton(
+          label: 'Selesai',
+          variant: AppButtonVariant.outlined,
           onPressed: _isSending
               ? null
-              : () async {
+              : () {
+                  // Never reset: the panel is leaving, nothing to re-enable.
                   setState(() => _isSending = true);
-                  await widget.onKirimWaSelesai();
-                  if (!mounted) return;
-                  setState(() => _isSending = false);
+                  widget.onSelesai();
                 },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.greenDark,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            minimumSize: const Size(double.infinity, 0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-          ),
-          child: _isSending
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
-                )
-              : Text(
-                  'Kirim Notif WhatsApp & Selesai',
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
         ),
       ],
     );
@@ -142,14 +143,16 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Text(
           label,
           style: AppTextStyle.small.copyWith(
-            color: Colors.grey[600],
+            color: AppColors.grey100,
           ),
         ),
         Text(
           value,
           style: AppTextStyle.title1.copyWith(
-            color: isPrimary ? AppColors.greenDark : Colors.black87,
-            fontWeight: isBold || isPrimary ? FontWeight.bold : FontWeight.w600,
+            color: isPrimary ? AppColors.greenDark : AppColors.black,
+            fontWeight: isBold || isPrimary
+                ? AppFontWeight.bold
+                : AppFontWeight.semibold,
             fontSize: isPrimary ? 16 : 14,
           ),
         ),

@@ -10,8 +10,6 @@ abstract class AppEnvironment {
 
   String get demoPengurusEmail;
 
-  String get demoPengelolaIndukEmail;
-
   String get demoCustomerEmail;
 
   /// Always unregistered, unlike [demoCustomerEmail] — for trying the
@@ -33,9 +31,6 @@ class DevEnvironment implements AppEnvironment {
   String get demoPengurusEmail => Secret.demoPengurusEmail;
 
   @override
-  String get demoPengelolaIndukEmail => Secret.demoPengelolaIndukEmail;
-
-  @override
   String get demoCustomerEmail => Secret.demoCustomerEmail;
 
   @override
@@ -55,9 +50,6 @@ class ProdEnvironment implements AppEnvironment {
 
   @override
   String get demoPengurusEmail => '';
-
-  @override
-  String get demoPengelolaIndukEmail => '';
 
   @override
   String get demoCustomerEmail => '';

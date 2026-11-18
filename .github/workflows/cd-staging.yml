@@ -35,12 +35,17 @@ jobs:
       - name: Prepare application environment
         env:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+          ENABLE_POSTHOG: ${{ secrets.ENABLE_POSTHOG }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          POSTHOG_ENVIRONMENT: ${{ secrets.POSTHOG_ENVIRONMENT }}
         run: |
           if [ -z "$APP_ENV_FILE" ]; then
             echo "::error::The staging environment secret APP_ENV_FILE is required."
             exit 1
           fi
           printf '%s' "$APP_ENV_FILE" > .env
+          python3 scripts/append_posthog_env.py staging .env
 
       - name: Prepare Android signing
         env:

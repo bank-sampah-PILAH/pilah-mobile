@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_bottom_sheet.dart';
 
 import '../../../../support/onboarding_support.dart';
@@ -16,12 +14,10 @@ Map<String, dynamic> _bank(String id, String nama, {String kota = 'Depok'}) =>
 
 void main() {
   late StubApi api;
-  late OnboardingCubit cubit;
   BankSampahDirectoryEntity? picked;
 
   setUp(() {
     api = StubApi();
-    cubit = buildOnboardingCubit(api);
     picked = null;
     api.on('GET', _path, json: [
       _bank('b1', 'Bank Melati'),
@@ -29,33 +25,26 @@ void main() {
     ]);
   });
 
-  tearDown(() => cubit.close());
-
   Future<void> openSheet(WidgetTester tester,
       {Set<String> excluded = const {}}) async {
     await pumpRouted(
       tester,
-      BlocProvider<OnboardingCubit>.value(
-        value: cubit,
-        child: Builder(
-          builder: (context) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () async {
-                picked = await showModalBottomSheet<BankSampahDirectoryEntity>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => BlocProvider<OnboardingCubit>.value(
-                    value: cubit,
-                    child:
-                        PilihBankSampahBottomSheet(excludedBankIds: excluded),
-                  ),
-                );
-              },
-              child: const Text('open'),
-            ),
+      Builder(
+        builder: (context) => Scaffold(
+          body: ElevatedButton(
+            onPressed: () async {
+              picked = await showModalBottomSheet<BankSampahDirectoryEntity>(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) =>
+                    PilihBankSampahBottomSheet(excludedBankIds: excluded),
+              );
+            },
+            child: const Text('open'),
           ),
         ),
       ),
+      wrap: (app) => withOnboarding(app, buildOnboardingDataSource(api)),
       size: const Size(800, 1800),
     );
     await tester.tap(find.text('open'));

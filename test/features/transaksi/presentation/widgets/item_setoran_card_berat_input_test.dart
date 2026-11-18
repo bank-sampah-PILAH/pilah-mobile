@@ -1,27 +1,15 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
-
-class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
+import '../../../../support/harga_support.dart';
+import '../../../../support/stub_api.dart';
 
 void main() {
-  late _MockHargaCubit hargaCubit;
+  late TestHargaNotifier hargaNotifier;
 
   setUp(() {
-    hargaCubit = _MockHargaCubit();
-    when(() => hargaCubit.state).thenReturn(HargaInitial());
-    // The dropdown reads this getter directly; the berat field under test does
-    // not care about it, so an empty list keeps the card renderable.
-    when(() => hargaCubit.activeJenisSampah).thenReturn(const <HargaEntity>[]);
+    hargaNotifier = TestHargaNotifier(buildHargaNotifier(StubApi()));
   });
-
-  tearDown(() => hargaCubit.close());
 
   /// Pumps a card seeded with [berat] and captures every value its `onChanged`
   /// reports, so a test can read back the parsed weight.
@@ -31,9 +19,9 @@ void main() {
   }) async {
     final changes = <Map<String, dynamic>>[];
     await tester.pumpWidget(
-      BlocProvider<HargaCubit>.value(
-        value: hargaCubit,
-        child: MaterialApp(
+      withHargaProvider(
+        hargaNotifier,
+        MaterialApp(
           home: Scaffold(
             body: ItemSetoranCard(
               index: 0,

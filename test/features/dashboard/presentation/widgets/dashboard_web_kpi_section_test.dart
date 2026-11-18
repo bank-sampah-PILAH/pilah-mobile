@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_web_kpi_section.dart';
 
 import '../../../../support/dashboard_support.dart';
 import '../../../../support/stub_api.dart';
 
 void main() {
-  testWidgets('shows the four existing metrics from DashboardCubit',
+  testWidgets('shows the four existing metrics from Riverpod state',
       (tester) async {
     final api = StubApi();
     api.on('GET', '/api/v1/dashboard/stats', json: {
@@ -16,11 +17,10 @@ void main() {
       'total_sampah_kg_bulan_ini': '3.5',
       'transaksi_bulan_ini': 9,
     });
-    final dashboard = buildDashboardCubit(api);
-    addTearDown(dashboard.close);
+    final dashboard = buildDashboardNotifier(api);
 
-    await tester.pumpWidget(BlocProvider.value(
-      value: dashboard,
+    await tester.pumpWidget(ProviderScope(
+      overrides: [dashboardProvider.overrideWith(() => dashboard)],
       child: const MaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(child: DashboardWebKpiSection()),

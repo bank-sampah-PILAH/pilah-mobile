@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_konfirmasi_sheet.dart';
 
 void main() {
@@ -10,9 +11,15 @@ void main() {
     WidgetTester tester, {
     KonfirmasiNada nada = KonfirmasiNada.normal,
     Widget? isi,
+    // A phone unless a test says otherwise: the container follows the width.
+    Size size = const Size(390, 844),
   }) async {
     answer = null;
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
       home: Builder(
         builder: (context) => Scaffold(
           body: TextButton(
@@ -35,15 +42,34 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('is a white, rounded bottom sheet, not a plain dialog',
+  testWidgets('on a phone it is a white, rounded bottom sheet, not a dialog',
       (tester) async {
     await open(tester);
 
-    expect(find.byType(AlertDialog), findsNothing);
-    final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
-    expect(sheet.backgroundColor, Colors.white);
-    expect((sheet.shape! as RoundedRectangleBorder).borderRadius,
+    expect(find.byType(Dialog), findsNothing);
+    final box = tester.widget<Container>(find
+        .descendant(
+            of: find.byType(BottomSheet), matching: find.byType(Container))
+        .first);
+    final decoration = box.decoration! as BoxDecoration;
+    expect(decoration.color, Colors.white);
+    expect(decoration.borderRadius,
         const BorderRadius.vertical(top: Radius.circular(24)));
+  });
+
+  testWidgets('in a browser window it is a centred dialog that still answers',
+      (tester) async {
+    await open(tester, size: const Size(1440, 900));
+
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.text('Konfirmasi pembayaran'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('konfirmasi-ya')));
+    await tester.pumpAndSettle();
+
+    expect(answer, isTrue);
+    expect(find.byType(Dialog), findsNothing);
   });
 
   testWidgets('says what is asked: an icon, a title and a line of explanation',
@@ -99,11 +125,15 @@ void main() {
   });
 
   testWidgets('a harmful action reads red, a plain one green', (tester) async {
+    // The colour the button is painted with, which is what a user sees.
     Color? yaColor() => tester
-        .widget<ElevatedButton>(find.byKey(const Key('konfirmasi-ya')))
-        .style
-        ?.backgroundColor
-        ?.resolve({});
+        .widget<Material>(find
+            .descendant(
+              of: find.byKey(const Key('konfirmasi-ya')),
+              matching: find.byType(Material),
+            )
+            .first)
+        .color;
 
     await open(tester);
     expect(yaColor(), AppColors.greenDark);

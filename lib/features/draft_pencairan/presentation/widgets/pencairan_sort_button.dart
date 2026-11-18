@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The sort button beside a search field: a grey square with a swap icon that
 /// opens a white, rounded menu of the fields to order by. The menu stays open
@@ -54,9 +57,10 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
         backgroundColor: const WidgetStatePropertyAll(Colors.white),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         elevation: const WidgetStatePropertyAll(8),
-        shadowColor: const WidgetStatePropertyAll(Colors.black38),
+        shadowColor: const WidgetStatePropertyAll(AppColors.grey200),
         shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg)),
         ),
         padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(vertical: 8),
@@ -78,8 +82,8 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
                       labelOf(field),
                       style: AppTextStyle.small.copyWith(
                         fontWeight: current == field
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                            ? AppFontWeight.bold
+                            : AppFontWeight.medium,
                       ),
                     ),
                   ),
@@ -103,16 +107,16 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
         message: 'Urutkan',
         child: InkWell(
           key: buttonKey,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap: () =>
               controller.isOpen ? controller.close() : controller.open(),
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: Icon(Icons.swap_vert, color: Colors.grey[800]),
+            child: const Icon(Icons.swap_vert, color: AppColors.inkSoft),
           ),
         ),
       ),

@@ -1,7 +1,7 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
@@ -9,25 +9,22 @@ import 'package:google_sign_in_platform_interface/google_sign_in_platform_interf
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
+import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+
+import '../../../../support/auth_support.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
-
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 
 class _MockGoogleSignInPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements google_sign_in.GoogleSignInPlatform {}
 
 void main() {
-  late _MockAuthBloc auth;
-  late google_sign_in.GoogleSignInPlatform originalGoogleSignInPlatform;
+  late TestAuthenticationNotifier auth;
+  late google_sign_in.GoogleSignInPlatform originalPlatform;
   late _MockGoogleSignInPlatform googleSignInPlatform;
   final registration = GoogleRegistrationRequired(
     registrationToken: 'signed-token',
@@ -37,27 +34,66 @@ void main() {
     photoUrl: 'https://example.com/ayu.png',
   );
 
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
-
   setUp(() {
-    originalGoogleSignInPlatform = google_sign_in.GoogleSignInPlatform.instance;
+    originalPlatform = google_sign_in.GoogleSignInPlatform.instance;
     googleSignInPlatform = _MockGoogleSignInPlatform();
     google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
     when(() =>
             googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
         .thenAnswer((_) async {});
-    auth = _MockAuthBloc();
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
+    auth = TestAuthenticationNotifier(
       initialState: GoogleRegistrationPending(registration: registration),
     );
   });
 
-  tearDown(() async {
-    google_sign_in.GoogleSignInPlatform.instance = originalGoogleSignInPlatform;
-    await auth.close();
+  tearDown(() {
+    google_sign_in.GoogleSignInPlatform.instance = originalPlatform;
   });
+
+  for (final size in [
+    const Size(1440, 900),
+    const Size(768, 1024),
+    const Size(375, 812)
+  ]) {
+    testWidgets('adapts role choices at ${size.width}px', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(ProviderScope(
+        overrides: [authenticationProvider.overrideWith(() => auth)],
+        child: const MaterialApp(home: RoleSelectionPage()),
+      ));
+
+      expect(find.byKey(const ValueKey('onboarding-sidebar')),
+          size.width >= 840 ? findsOneWidget : findsNothing);
+      expect(find.byType(OnboardingFlowLayout), findsOneWidget);
+      final firstTitle = kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah';
+      final secondTitle = 'Pengurus Bank Sampah';
+      final first = tester.getRect(find.text(firstTitle));
+      if (!kIsWeb) {
+        final second = tester.getRect(find.text(secondTitle));
+        if (size.width >= 600) {
+          expect(second.left, greaterThan(first.right));
+          Finder cardFor(String title) => find
+              .ancestor(
+                of: find.text(title),
+                matching: find.byWidgetPredicate((widget) =>
+                    widget is Semantics &&
+                    widget.properties.inMutuallyExclusiveGroup == true),
+              )
+              .first;
+          expect(tester.getSize(cardFor(firstTitle)).height,
+              tester.getSize(cardFor(secondTitle)).height);
+        } else {
+          expect(second.top, greaterThan(first.bottom));
+        }
+      }
+      expect(find.text('Daftar Akun'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('offers roles supported by the platform and submits selection',
       (tester) async {
@@ -66,36 +102,154 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<AuthenticationBloc>.value(
-          value: auth,
-          child: const RoleSelectionPage(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authenticationProvider.overrideWith(() => auth)],
+      child: const MaterialApp(home: RoleSelectionPage()),
+    ));
 
     expect(find.text('Daftar Akun'), findsOneWidget);
-    expect(find.text('Langkah 1'), findsOneWidget);
+    expect(find.text('Peran Akun'), findsOneWidget);
     expect(find.text('ayu@example.com'), findsOneWidget);
     expect(find.text('Nasabah'), kIsWeb ? findsNothing : findsOneWidget);
     expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
-    expect(find.text('Pengelola Bank Sampah Induk'), findsOneWidget);
+    expect(find.text('Pengelola Bank Sampah Induk'), findsNothing);
     expect(find.text('Superadmin'), findsNothing);
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text(kIsWeb ? 'Pengelola Bank Sampah' : 'Nasabah'));
+    await tester
+        .ensureVisible(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
+    await tester.tap(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Saya menyetujui ').first);
+    await tester.tap(find.text('Saya menyetujui ').first);
+    await tester.pump();
+    await tester.ensureVisible(find.byType(Checkbox).last);
+    await tester.tap(find.byType(Checkbox).last);
     await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
 
-    final event = verify(() => auth.add(captureAny())).captured.single
-        as RegisterGoogleRoleRequested;
     expect(
-      event.role,
+      auth.lastRole,
       kIsWeb
           ? GoogleRegistrationRole.pengelola
           : GoogleRegistrationRole.nasabah,
     );
+  });
+
+  testWidgets('requires both legal documents before continuing',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authenticationProvider.overrideWith(() => auth)],
+      child: const MaterialApp(home: RoleSelectionPage()),
+    ));
+
+    await tester.tap(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
+    await tester.pump();
+    await tester.tap(find.text('Lanjutkan'));
+    await tester.pump();
+    expect(auth.calls, isEmpty);
+
+    await tester.ensureVisible(find.text('Saya menyetujui ').first);
+    await tester.tap(find.text('Saya menyetujui ').first);
+    await tester.pump();
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).first.value,
+      isTrue,
+    );
+    await tester.tap(find.text('Lanjutkan'));
+    await tester.pump();
+    expect(auth.calls, isEmpty);
+
+    await tester.ensureVisible(find.byType(Checkbox).last);
+    await tester.tap(find.byType(Checkbox).last);
+    await tester.pump();
+    await tester.tap(find.text('Lanjutkan'));
+
+    expect(auth.lastRole, isNotNull);
+    expect(auth.calls, ['registerGoogleRole']);
+  });
+
+  testWidgets('legal links open their pages and preserve consent on return',
+      (tester) async {
+    final router = GoRouter(
+      initialLocation: RoleSelectionPage.route,
+      routes: [
+        GoRoute(
+          path: RoleSelectionPage.route,
+          builder: (context, state) => ProviderScope(
+            overrides: [authenticationProvider.overrideWith(() => auth)],
+            child: const RoleSelectionPage(),
+          ),
+        ),
+        GoRoute(
+          path: LegalDocument.privacyPolicy.path,
+          builder: (context, state) =>
+              const Scaffold(body: Text('Privacy policy test page')),
+        ),
+        GoRoute(
+          path: LegalDocument.termsAndConditions.path,
+          builder: (context, state) =>
+              const Scaffold(body: Text('Terms test page')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).map((c) => c.value),
+      [false, false],
+    );
+
+    await tester.ensureVisible(find.text('Kebijakan Privasi'));
+    await tester.tap(find.text('Kebijakan Privasi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Privacy policy test page'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).map((c) => c.value),
+      [false, false],
+    );
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Syarat & Ketentuan'));
+    await tester.tap(find.text('Syarat & Ketentuan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Terms test page'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widgetList<Checkbox>(find.byType(Checkbox)).map((c) => c.value),
+      [true, false],
+    );
+  });
+
+  testWidgets('supports keyboard selection without a pointer', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authenticationProvider.overrideWith(() => auth)],
+      child: const MaterialApp(home: RoleSelectionPage()),
+    ));
+    // Exit, change account, then the first available role.
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    final option = tester.widget<Semantics>(find.byWidgetPredicate((widget) =>
+        widget is Semantics &&
+        widget.properties.label ==
+            (kIsWeb
+                ? 'Pengurus Bank Sampah. Mengelola transaksi dan anggota bank sampah.'
+                : 'Nasabah. Menabung sampah dan memantau saldo.')));
+    expect(option.properties.checked, isTrue);
+    expect(option.properties.inMutuallyExclusiveGroup, isTrue);
   });
 
   testWidgets('signs out of Google before changing accounts', (tester) async {
@@ -104,8 +258,8 @@ void main() {
       routes: [
         GoRoute(
           path: RoleSelectionPage.route,
-          builder: (context, state) => BlocProvider<AuthenticationBloc>.value(
-            value: auth,
+          builder: (context, state) => ProviderScope(
+            overrides: [authenticationProvider.overrideWith(() => auth)],
             child: const RoleSelectionPage(),
           ),
         ),
@@ -121,13 +275,10 @@ void main() {
     await tester.tap(find.text('Ganti akun'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Login page'), findsOneWidget);
+    expect(auth.calls, contains('changeGoogleAccount'));
     verify(() =>
             googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
         .called(1);
-    expect(find.text('Login page'), findsOneWidget);
-    expect(
-      verify(() => auth.add(captureAny())).captured.single,
-      isA<ChangeGoogleAccountRequested>(),
-    );
   });
 }

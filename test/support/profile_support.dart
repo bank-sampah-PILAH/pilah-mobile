@@ -2,7 +2,8 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 
 import 'stub_api.dart';
 
@@ -10,14 +11,50 @@ class MockImagePicker extends Mock implements ImagePicker {}
 
 class MockImageCropper extends Mock implements ImageCropper {}
 
-/// A real [ProfileCubit] over the real profile data source, with HTTP stubbed
-/// and the gallery/cropper platform plugins mocked.
-ProfileCubit buildProfileCubit(
+class TestProfileNotifier extends ProfileNotifier {
+  TestProfileNotifier(
+    super.dataSource,
+    super.picker,
+    super.cropper, {
+    super.isWeb,
+  });
+
+  /// A notifier whose data source is never reached: every meaningful call is
+  /// overridden by the caller's subclass or unstubbed. Useful for shells that
+  /// only read state or seed a silent load.
+  TestProfileNotifier.noDataSource()
+      : super(
+          _ThrowingProfileDataSource(),
+          MockImagePicker(),
+          MockImageCropper(),
+        );
+
+  void setStateForTest(ProfileState value) => state = value;
+}
+
+class _ThrowingProfileDataSource implements ProfileRemoteDataSource {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('profile data source is stubbed away');
+}
+
+/// The shell watches [ProfileNotifier] and asks it to load when it has never
+/// loaded; a mount that does not care about the profile answers that request
+/// without touching a data source.
+class SilentProfileNotifier extends TestProfileNotifier {
+  SilentProfileNotifier() : super.noDataSource();
+
+  @override
+  Future<void> load({bool silent = false}) async {}
+}
+
+/// A real [ProfileNotifier] with HTTP stubbed and media plugins mocked.
+TestProfileNotifier buildProfileNotifier(
   StubApi api, {
   ImagePicker? picker,
   ImageCropper? cropper,
 }) =>
-    ProfileCubit(
+    TestProfileNotifier(
       ProfileRemoteDataSourceImpl(api.network),
       picker ?? MockImagePicker(),
       cropper ?? MockImageCropper(),
@@ -38,6 +75,11 @@ void stubProfile(
             'preview_contoh': 'Halo Budi',
             'variabel_tersedia': ['{Nama}', '{Total}'],
           });
+  api.on('GET', '/api/v1/team/invite', json: {
+    'token': null,
+    'invite_url': null,
+    'expires_at': null,
+  });
   api.on('GET', '/api/v1/team',
       json: team ??
           {

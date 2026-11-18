@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 
-import '../blocs/draft_editor_state.dart';
-import '../blocs/editor_item_view.dart';
+import '../states/draft_editor_state.dart';
+import '../widgets/editor_item_view.dart';
 import 'pencairan_sort_button.dart';
 import 'pencairan_ui.dart';
 

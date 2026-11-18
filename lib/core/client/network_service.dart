@@ -9,8 +9,12 @@ import 'package:logger/logger.dart';
 
 import 'network_utils.dart';
 
+const _deviceTokenPath = '/device-tokens/';
+const _redactedLogValue = '[REDACTED]';
+
 @LazySingleton()
 class NetworkService {
+  static const _jsonContentType = 'application/json';
   final AppEnvironment environment;
   final NetworkUtils networkUtils;
 
@@ -20,16 +24,16 @@ class NetworkService {
   }) {
     dio.interceptors.add(interceptors);
     // Added after the logger so a dropped GET is still logged, then quietly
-    // retried once before the failure ever reaches a cubit.
+    // retried once before the failure reaches state handling.
     dio.interceptors.add(RetryInterceptor(dio));
   }
 
   Map<String, String> headersRequest() {
     final userToken = networkUtils.accessToken;
     return {
-      'Content-Type': 'application/json',
+      'Content-Type': _jsonContentType,
       if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
-      'Accept': 'application/json'
+      'Accept': _jsonContentType
     };
   }
 
@@ -127,7 +131,7 @@ class NetworkService {
   }) async {
     final userToken = networkUtils.accessToken;
     final headers = <String, String>{
-      'Accept': 'application/json',
+      'Accept': _jsonContentType,
       if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
     };
 
@@ -149,7 +153,7 @@ class NetworkService {
   }) async {
     final userToken = networkUtils.accessToken;
     final headers = <String, String>{
-      'Accept': 'application/json',
+      'Accept': _jsonContentType,
       if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
     };
 
@@ -237,14 +241,13 @@ final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
   return handler.next(options);
 }, onResponse: (resp, handler) {
   if (kDebugMode) {
-    final isBytes = resp.requestOptions.responseType == ResponseType.bytes;
     Logger().i({
       'api': '''
 ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}''',
       'headers': resp.requestOptions.headers,
       'queryParams': resp.requestOptions.queryParameters,
-      'body': resp.requestOptions.data,
-      'response': isBytes ? 'bytes' : resp.data,
+      'body': _requestBodyForLog(resp.requestOptions),
+      'response': _responseBodyForLog(resp.requestOptions, resp.data),
     });
   }
   return handler.next(resp);
@@ -255,8 +258,10 @@ ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}'''
 ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOptions.path}''',
       'headers': err.requestOptions.headers,
       'queryParams': err.requestOptions.queryParameters,
-      'body': err.requestOptions.data,
-      'response': err.response?.data,
+      'body': _requestBodyForLog(err.requestOptions),
+      'response': err.requestOptions.path.contains(_deviceTokenPath)
+          ? _redactedLogValue
+          : err.response?.data,
       'type': err.type,
       // `type` alone can't tell a dropped connection from a parse failure —
       // both arrive as DioExceptionType.unknown. The wrapped error is the only
@@ -274,6 +279,28 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
   }
   return handler.next(err);
 });
+
+Object? _responseBodyForLog(RequestOptions options, Object? data) {
+  if (options.path.contains(_deviceTokenPath)) return _redactedLogValue;
+  if (options.responseType == ResponseType.bytes) return 'bytes';
+  return data;
+}
+
+Object? _requestBodyForLog(RequestOptions options) {
+  final data = options.data;
+  try {
+    final body = data is String ? jsonDecode(data) : data;
+    if (body is Map && options.path.contains(_deviceTokenPath)) {
+      return {...body, 'token': _redactedLogValue};
+    }
+    if (body is Map && body.containsKey('password')) {
+      return {...body, 'password': _redactedLogValue};
+    }
+  } on FormatException {
+    if (data is String && data.contains('password')) return '[REDACTED]';
+  }
+  return data;
+}
 
 final options = Options(
   receiveTimeout: const Duration(milliseconds: 120000),

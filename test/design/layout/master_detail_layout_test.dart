@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 
 import '../../support/pump_app.dart';
@@ -58,12 +59,23 @@ void main() {
       expect(find.byKey(detail), findsOneWidget);
     });
 
-    testWidgets('nothing selected leaves the list at full width',
+    testWidgets('nothing selected leaves the list at the content width',
         (tester) async {
       await mount(tester, window: const Size(1440, 900), withDetail: false);
       expect(find.byKey(detail), findsNothing);
-      expect(tester.getSize(find.byKey(master)).width, 1440,
-          reason: 'an empty panel must not steal width from the list');
+      expect(tester.getSize(find.byKey(master)).width,
+          LayoutBreakpoint.contentMaxWidth,
+          reason: 'an empty panel must not steal width from the list, and the '
+              'list alone keeps the readable content width');
+    });
+
+    testWidgets('with a detail the pair fills the window to its right edge',
+        (tester) async {
+      await mount(tester, window: const Size(1440, 900));
+
+      expect(tester.getTopLeft(find.byKey(master)).dx, 0);
+      expect(tester.getTopRight(find.byKey(detail)).dx, 1440,
+          reason: 'no blank margin to the right of the panel');
     });
 
     testWidgets('the detail panel is narrower than the list', (tester) async {
