@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -179,25 +180,13 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
           style: NasabahStyle.text(13, color: NasabahStyle.muted),
         ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
+        AppButton(
           key: const Key('perbandingan_tambah_bank'),
+          label: 'Tambah bank pembanding',
+          variant: AppButtonVariant.outlined,
+          size: AppButtonSize.compact,
+          trailingIcon: Icons.add_business_outlined,
           onPressed: _tambahBank,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.greenDark,
-            side: const BorderSide(color: AppColors.greenDark),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-          ),
-          icon: const Icon(Icons.add_business_outlined, size: 18),
-          label: Text(
-            'Tambah bank pembanding',
-            style: AppTextStyle.small.copyWith(
-              color: AppColors.greenDark,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ),
         const SizedBox(height: 12),
         ...loaded.data.perbandingan.map(_barisBank),
@@ -226,7 +215,7 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.grey100.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -238,14 +227,14 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: tersedia ? AppColors.greenLight : Colors.grey[200],
+              color: tersedia ? AppColors.greenLight : AppColors.grey100,
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
             child: Icon(
               Icons.storefront_outlined,
               size: 22,
-              color: tersedia ? AppColors.greenDark : Colors.grey[600],
+              color: tersedia ? AppColors.greenDark : AppColors.grey100,
             ),
           ),
           const SizedBox(width: 14),
@@ -269,7 +258,7 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
                     if (berlaku != null) berlaku,
                   ].join(' · '),
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[400],
+                    color: AppColors.grey100,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -283,7 +272,7 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
             style: AppTextStyle.title1.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: tersedia ? AppColors.greenDark : Colors.grey[500],
+              color: tersedia ? AppColors.greenDark : AppColors.grey100,
             ),
           ),
         ],

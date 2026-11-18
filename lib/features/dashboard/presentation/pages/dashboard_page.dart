@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 
@@ -125,8 +126,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               style: Theme.of(sheetContext).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
-            FilledButton(
+            AppButton(
               key: const Key('prompt_pilih_peta'),
+              label: 'Pilih di Peta',
+              expand: false,
               onPressed: () async {
                 // Everything the save needs is captured before the await so
                 // no BuildContext is used across the picker gap.
@@ -163,12 +166,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ), // radiusKm belongs to cari, not the stored point.
                 );
               },
-              child: const Text('Pilih di Peta'),
             ),
             const SizedBox(height: 8),
-            TextButton(
+            AppButton(
+              label: 'Nanti',
+              variant: AppButtonVariant.text,
+              expand: false,
               onPressed: () => Navigator.of(sheetContext).pop(),
-              child: const Text('Nanti'),
             ),
           ],
         ),

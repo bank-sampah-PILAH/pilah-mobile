@@ -36,7 +36,7 @@ class BankItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.grey100.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -77,7 +77,7 @@ class BankItemCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[400],
+                    color: AppColors.grey100,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
