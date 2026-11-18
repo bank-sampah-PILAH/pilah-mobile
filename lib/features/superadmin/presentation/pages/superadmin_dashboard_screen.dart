@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/core/notifications/notifications_page.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -648,7 +649,7 @@ class _CardHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (badgeIcon != null) ...[
-                Icon(badgeIcon, color: badgeFg, size: 12),
+                HideInReplay(child: Icon(badgeIcon, color: badgeFg, size: 12)),
                 const SizedBox(width: 4),
               ],
               Text(
