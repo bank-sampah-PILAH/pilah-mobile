@@ -140,4 +140,15 @@ void main() {
     // The denial never re-queries; the page's own initial load() has run.
     expect(api.requests, isEmpty);
   });
+
+  test('a saved pick switches the cubit into location mode', () async {
+    api.on('GET', _directory, json: bankSampahPage(const [], count: 0));
+    expect(cubit.modeLokasi, isFalse);
+
+    await cubit.pilihDariPeta((latitude: -6.3, longitude: 106.8));
+    await Future<void>.delayed(CariBankCubit.jedaPencarian * 2);
+
+    expect(cubit.modeLokasi, isTrue);
+    expect(api.last.query['sort'], 'distance');
+  });
 }

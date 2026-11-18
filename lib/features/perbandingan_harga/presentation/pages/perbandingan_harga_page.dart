@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
@@ -99,10 +104,8 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
       );
       return;
     }
-    final terpilih = await showModalBottomSheet<BankSampahDirectoryEntity>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final terpilih = await showAdaptiveSurface<BankSampahDirectoryEntity>(
+      context,
       builder: (_) => _PilihBankSheet(
         bankTerpilih: _bankIds.toSet(),
       ),
@@ -118,16 +121,15 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
         child: BlocBuilder<PerbandinganHargaCubit, PerbandinganHargaState>(
           builder: (context, state) => Scaffold(
             backgroundColor: Colors.white,
-            appBar: AppBar(
-              title: Text(
-                'Bandingkan Harga',
-                style: AppTextStyle.appBar.copyWith(color: NasabahStyle.ink),
-              ),
-              centerTitle: true,
-              backgroundColor: Colors.white,
-              scrolledUnderElevation: 0,
+            body: Column(
+              children: [
+                const AppBackHeader(
+                  title: 'Bandingkan Harga',
+                  backKey: Key('perbandingan_kembali'),
+                ),
+                Expanded(child: _body(state)),
+              ],
             ),
-            body: _body(state),
           ),
         ),
       );
@@ -212,7 +214,7 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
             color: AppColors.grey100.withValues(alpha: 0.3),
@@ -228,7 +230,7 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
             height: 44,
             decoration: BoxDecoration(
               color: tersedia ? AppColors.greenLight : AppColors.grey100,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             alignment: Alignment.center,
             child: Icon(
@@ -245,8 +247,8 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
                 Text(
                   nama,
                   style: AppTextStyle.title1.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.md + 1,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -270,8 +272,8 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
           Text(
             hargaTampil,
             style: AppTextStyle.title1.copyWith(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontSize: AppFontSize.md,
+              fontWeight: AppFontWeight.bold,
               color: tersedia ? AppColors.greenDark : AppColors.grey100,
             ),
           ),
@@ -331,7 +333,8 @@ class _PilihBankSheetState extends State<_PilihBankSheet> {
         margin: const EdgeInsets.only(top: 48),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         child: SafeArea(
           child: SizedBox(
