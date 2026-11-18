@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 import 'layout_breakpoint.dart';
 
@@ -10,10 +11,10 @@ import 'layout_breakpoint.dart';
 /// membangun tree, dan supaya picker yang memakainya menjawab sama alih-alih
 /// masing-masing memeriksa MediaQuery.
 ///
-/// Dipakai dua tempat: picker nasabah (`pilih_nasabah_section.dart`) dan
-/// konfirmasi berhasil (`transaksi_baru_page.dart`). `aktivitas_list_view.dart`
-/// dan `time_filter_chips.dart` masih memanggil `showModalBottomSheet`
-/// langsung; keduanya di luar lingkup PIL-340 dan belum disentuh.
+/// Dipakai picker nasabah (`pilih_nasabah_section.dart`), konfirmasi berhasil
+/// (`transaksi_baru_page.dart`) dan beberapa sheet kecil di layar Pengurus.
+/// Tidak ada layar yang memanggil `showModalBottomSheet` sendiri; sebuah test
+/// penjaga (`test/design/raw_bottom_sheets_test.dart`) menjaganya.
 ///
 /// Perhatikan bahwa pembedanya di sini adalah **lebar**, bukan platform seperti
 /// pada [NavigationForm]. Aturan lead dev — bottom bar di aplikasi, navigasi
@@ -99,7 +100,8 @@ Future<T?> showAdaptivePicker<T>({
             height: size.height * PickerPresentation.heightFactor,
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
             ),
             padding: padding,
             child: builder(sheetContext, presentation),
@@ -114,7 +116,7 @@ Future<T?> showAdaptivePicker<T>({
         builder: (dialogContext) => Dialog(
           backgroundColor: Colors.white,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(24)),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
           ),
           // Ukuran eksplisit, bukan sekadar batas: Dialog memberi anaknya
           // constraint longgar, dan isi picker memakai Expanded yang menuntut
@@ -170,10 +172,24 @@ Future<T?> showAdaptiveConfirmation<T>({
         builder: (sheetContext) => Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
           ),
           padding: padding,
-          child: builder(sheetContext, presentation),
+          // Di bawah bilah sistem pada ponsel bernavigasi gestur.
+          //
+          // PopScope selain isDismissible dan enableDrag: keduanya hanya
+          // mencegah tekan di luar dan geser. Tombol kembali Android
+          // mem-pop route sheet tanpa melewatinya, jadi konfirmasi yang
+          // menuntut sebuah pilihan tertutup diam-diam, persis seperti jalur
+          // dialog yang sudah dijaga di bawah.
+          child: PopScope(
+            canPop: dismissible,
+            child: SafeArea(
+              top: false,
+              child: builder(sheetContext, presentation),
+            ),
+          ),
         ),
       );
 
@@ -187,7 +203,7 @@ Future<T?> showAdaptiveConfirmation<T>({
           child: Dialog(
             backgroundColor: Colors.white,
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(24)),
+              borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
             ),
             // Lebar tetap, tinggi mengikuti isi: tidak ada daftar yang bergulir
             // di sini, jadi memaksakan tinggi hanya menambah ruang kosong.

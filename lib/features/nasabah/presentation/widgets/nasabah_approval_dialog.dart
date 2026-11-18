@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 
 /// Approve/reject confirmation for a pending nasabah membership (PIL-188).
 /// Pops with the trimmed catatan (alasan) the pengurus typed, or `null` when
@@ -29,12 +32,8 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(
-        widget.isApproving ? 'Setujui Nasabah?' : 'Tolak Pengajuan?',
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
+    return AppDialog(
+      title: widget.isApproving ? 'Setujui Nasabah?' : 'Tolak Pengajuan?',
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,46 +42,26 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
             widget.isApproving
                 ? 'Setujui keanggotaan ${widget.customerName}? Nasabah dapat mulai menabung.'
                 : 'Tuliskan alasan penolakan untuk ${widget.customerName}.',
-            style: const TextStyle(fontSize: 14),
+            style: AppTextStyle.small,
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _catatanController,
             maxLines: 2,
-            decoration: InputDecoration(
+            decoration: appInputDecoration(
               hintText: widget.isApproving
                   ? 'Catatan (opsional)'
                   : 'Alasan penolakan',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: widget.isApproving ? AppColors.greenDark : Colors.red,
-                ),
-              ),
+              focusColor: widget.isApproving ? null : AppColors.danger,
             ),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(null),
-          child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-        ),
-        ElevatedButton(
-          onPressed: () =>
-              Navigator.of(context).pop(_catatanController.text.trim()),
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                widget.isApproving ? AppColors.greenDark : Colors.red,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          child: Text(widget.isApproving ? 'Setujui' : 'Tolak'),
-        ),
-      ],
+      confirmLabel: widget.isApproving ? 'Setujui' : 'Tolak',
+      destructive: !widget.isApproving,
+      onConfirm: () =>
+          Navigator.of(context).pop(_catatanController.text.trim()),
+      onCancel: () => Navigator.of(context).pop(null),
     );
   }
 }

@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -524,7 +525,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                             ),
                             style: NasabahStyle.text(14),
                             decoration:
-                                NasabahStyle.input(hint: 'Lintang').copyWith(
+                                appInputDecoration(hintText: 'Lintang').copyWith(
                               labelText: 'Lintang',
                               labelStyle: NasabahStyle.text(
                                 13,
@@ -550,7 +551,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                             ),
                             style: NasabahStyle.text(14),
                             decoration:
-                                NasabahStyle.input(hint: 'Bujur').copyWith(
+                                appInputDecoration(hintText: 'Bujur').copyWith(
                               labelText: 'Bujur',
                               labelStyle: NasabahStyle.text(
                                 13,
@@ -567,9 +568,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    CustomPrimaryButton(
+                    AppButton(
                       key: const Key('simpan_lokasi'),
-                      title: 'Simpan Lokasi',
+                      label: 'Simpan Lokasi',
                       onPressed: _simpan,
                     ),
                   ],

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 class SkeletonListItem extends StatefulWidget {
   final double height;
@@ -53,16 +55,17 @@ class _SkeletonListItemState extends State<SkeletonListItem> {
         margin: widget.margin,
         padding: widget.padding,
         decoration: BoxDecoration(
-          color: Colors.grey[300],
-          borderRadius: widget.borderRadius ?? BorderRadius.circular(16),
+          color: AppColors.border,
+          borderRadius:
+              widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
         ),
         child: Row(
           children: [
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
+              decoration: const BoxDecoration(
+                color: AppColors.grey200,
                 shape: BoxShape.circle,
               ),
             ),
@@ -76,8 +79,8 @@ class _SkeletonListItemState extends State<SkeletonListItem> {
                     height: 16,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.grey200,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -85,8 +88,8 @@ class _SkeletonListItemState extends State<SkeletonListItem> {
                     height: 12,
                     width: 100,
                     decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.grey200,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                 ],

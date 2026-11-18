@@ -14,9 +14,9 @@ abstract class ProfileRemoteDataSource {
   /// Updates the editable bank sampah fields, optionally replacing the logo
   /// or moving the saved map location (PIL-326).
   ///
-  /// [fotoLogoPath] is the absolute path of a freshly picked image. Omitting it
-  /// leaves the stored logo alone — the endpoint patches partially, so a key
-  /// that is not sent is not touched. Sending an empty one would clear it.
+  /// [fotoLogoBytes] is the image to send. Omitting it leaves the stored logo
+  /// alone — the endpoint patches partially, so a key that is not sent is not
+  /// touched. Sending an empty one would clear it.
   ///
   /// [lokasi] works the same way but can never clear: a coordinate-less save
   /// sends nothing, and a null pair is not distinctly expressible here, which
@@ -26,7 +26,6 @@ abstract class ProfileRemoteDataSource {
     required String alamat,
     String? kota,
     required String noHpPic,
-    String? fotoLogoPath,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
     ({double latitude, double longitude})? lokasi,
@@ -34,7 +33,8 @@ abstract class ProfileRemoteDataSource {
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
   Future<List<TeamMember>> getTeam();
-  Future<String> generateInviteUrl();
+  Future<TeamInvite?> getTeamInvite();
+  Future<TeamInvite> createTeamInvite();
 }
 
 @LazySingleton(as: ProfileRemoteDataSource)
@@ -62,7 +62,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     required String alamat,
     String? kota,
     required String noHpPic,
-    String? fotoLogoPath,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
     ({double latitude, double longitude})? lokasi,
@@ -80,11 +79,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         'foto_logo': MultipartFile.fromBytes(
           fotoLogoBytes,
           filename: fotoLogoFilename ?? 'logo.jpg',
-        )
-      else if (fotoLogoPath != null && fotoLogoPath.isNotEmpty)
-        'foto_logo': await MultipartFile.fromFile(
-          fotoLogoPath,
-          filename: fotoLogoPath.split(RegExp(r'[\\/]')).last,
         ),
     });
 
@@ -159,10 +153,27 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   }
 
   @override
-  Future<String> generateInviteUrl() async {
+  Future<TeamInvite?> getTeamInvite() async {
+    final response = await networkService.get(Endpoints.teamInvite);
+    final json = response.data as Map<String, dynamic>;
+    final invite = _mapTeamInvite(json);
+    return invite.token == null &&
+            invite.url == null &&
+            invite.expiresAt == null
+        ? null
+        : invite;
+  }
+
+  @override
+  Future<TeamInvite> createTeamInvite() async {
     final response =
         await networkService.post(Endpoints.teamInvite, data: const {});
-    final json = response.data as Map<String, dynamic>;
-    return json['invite_url']?.toString() ?? '';
+    return _mapTeamInvite(response.data as Map<String, dynamic>);
   }
+
+  TeamInvite _mapTeamInvite(Map<String, dynamic> json) => TeamInvite(
+        token: json['token']?.toString(),
+        url: json['invite_url']?.toString(),
+        expiresAt: DateTime.tryParse(json['expires_at']?.toString() ?? ''),
+      );
 }

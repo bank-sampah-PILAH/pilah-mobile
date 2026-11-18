@@ -143,17 +143,68 @@ void main() {
               'a': ['pertama', 'kedua']
             },
           })),
-          'pertama');
+          'pertama • kedua');
       expect(
           NetworkException.extractMessage(_response(422, {
             'errors': {'a': 'tunggal'},
           })),
           'tunggal');
+      // Empty values yield no leaves, falling through to the fallback.
       expect(
           NetworkException.extractMessage(_response(422, {
             'errors': {'a': <String>[]},
           })),
-          '[]');
+          isNull);
+    });
+
+    test('walks nested DRF validation (items[*].berat) and reads the leaf', () {
+      expect(
+          NetworkException.extractMessage(_response(422, {
+            'errors': {
+              'items': [
+                {
+                  'berat': [
+                    'Panjang angka di belakang koma tidak boleh lebih dari 3.'
+                  ]
+                }
+              ],
+            },
+          })),
+          'Panjang angka di belakang koma tidak boleh lebih dari 3.');
+      // Two items, identical message: shown once, not duplicated.
+      expect(
+          NetworkException.extractMessage(_response(422, {
+            'errors': {
+              'items': [
+                {
+                  'berat': [
+                    'Panjang angka di belakang koma tidak boleh lebih dari 3.'
+                  ]
+                },
+                {
+                  'berat': [
+                    'Panjang angka di belakang koma tidak boleh lebih dari 3.'
+                  ]
+                },
+              ],
+            },
+          })),
+          'Panjang angka di belakang koma tidak boleh lebih dari 3.');
+      // Different messages are joined and still readable.
+      expect(
+          NetworkException.extractMessage(_response(422, {
+            'errors': {
+              'items': [
+                {
+                  'berat': ['terlalu banyak desimal']
+                },
+                {
+                  'jenis_sampah_id': ['wajib diisi']
+                },
+              ],
+            },
+          })),
+          'terlalu banyak desimal • wajib diisi');
     });
 
     test('falls back to error, message or detail', () {

@@ -1,20 +1,19 @@
 import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/riwayat_nasabah_page.dart';
 
 class TestRiwayatRepository extends Mock implements RiwayatRepository {}
 
-/// Hosts the page under a cubit backed by a mocked repository — one layer
-/// down from the old function-loader style, matching the pencairan tests.
+/// Hosts the page under a notifier backed by a mocked repository.
 Future<void> host(
   WidgetTester tester,
   TestRiwayatRepository repo, {
@@ -22,12 +21,18 @@ Future<void> host(
   bool hasNext = false,
 }) async {
   await tester.pumpWidget(
-    BlocProvider<RiwayatHistoryCubit>(
-      create: (_) => RiwayatHistoryCubit(
-        GetRiwayatHistoryUseCase(repo),
-        GetRiwayatSetoranDetailUseCase(repo),
-      )..loadHistory('member-b', reset: true),
-      child: const MaterialApp(home: Scaffold(body: RiwayatNasabahPage())),
+    ProviderScope(
+      overrides: [
+        riwayatHistoryProvider.overrideWith(
+          () => RiwayatHistoryNotifier(
+            GetRiwayatHistoryUseCase(repo),
+            GetRiwayatSetoranDetailUseCase(repo),
+          ),
+        ),
+      ],
+      child: const MaterialApp(
+        home: Scaffold(body: RiwayatNasabahPage(membershipId: 'member-b')),
+      ),
     ),
   );
 }

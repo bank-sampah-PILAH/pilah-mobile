@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
@@ -175,9 +175,9 @@ class _IsiDetail extends StatelessWidget {
         if (detail.layanan.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 12),
-            child: CustomPrimaryButton(
+            child: AppButton(
               key: const Key('detail_bank_bandingkan_harga'),
-              title: 'Bandingkan Harga',
+              label: 'Bandingkan Harga',
               onPressed: () {
                 final layanan = detail.layanan.first;
                 // Route through the router (registered for this page); the

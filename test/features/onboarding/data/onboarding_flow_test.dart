@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/states/onboarding_state.dart';
 
 import '../../../support/onboarding_support.dart';
 import '../../../support/stub_api.dart';
@@ -23,19 +24,22 @@ const _draft = CompleteProfileRequest(
 
 void main() {
   late StubApi api;
-  late OnboardingCubit cubit;
-  late File photo;
+  late ProviderContainer container;
+  late OnboardingNotifier cubit;
+  final photo = Uint8List.fromList([1, 2, 3]);
 
   setUp(() {
     api = StubApi();
-    cubit = buildOnboardingCubit(api);
-    photo = File('${Directory.systemTemp.path}/onboarding_foto.jpg')
-      ..writeAsBytesSync([1, 2, 3]);
+    container = ProviderContainer(overrides: [
+      onboardingProvider.overrideWith(
+        () => OnboardingNotifier(buildOnboardingDataSource(api)),
+      ),
+    ]);
+    cubit = container.read(onboardingProvider.notifier);
   });
 
-  tearDown(() async {
-    await cubit.close();
-    if (photo.existsSync()) photo.deleteSync();
+  tearDown(() {
+    container.dispose();
   });
 
   RegisterBankSampahRequest bankRequest({String? kota = ' Depok '}) =>
@@ -44,7 +48,8 @@ void main() {
         alamat: 'Jl. Melati 1',
         kota: kota,
         noHpPic: '0812',
-        fotoKegiatanPath: photo.path,
+        fotoKegiatanBytes: photo,
+        fotoKegiatanFilename: 'onboarding_foto.jpg',
       );
 
   test('complete profile puts the JSON and returns the next step', () async {
@@ -55,7 +60,7 @@ void main() {
     expect(outcome.result!.nextStep, 'dashboard');
     expect(outcome.error, isNull);
     expect(api.last.json['alamat'], 'Jl. Melati');
-    expect(cubit.state, isA<OnboardingInitial>());
+    expect(container.read(onboardingProvider), isA<OnboardingInitial>());
   });
 
   test('a profile without an address omits it from the payload', () {
@@ -67,6 +72,46 @@ void main() {
     );
 
     expect(request.toJson().containsKey('alamat'), isFalse);
+  });
+
+  group('tanggal lahir is optional (PIL-478)', () {
+    test('a profile without a birth date sends the key as null', () {
+      // Unlike `alamat`, the key stays: a nasabah who had given a date and
+      // then took it out is asking for it to be removed, and an omitted key
+      // would read as "leave it alone".
+      const request = CompleteProfileRequest(
+        nama: 'A',
+        jenisKelamin: 'laki-laki',
+        noHp: '8',
+      );
+
+      final json = request.toJson();
+
+      expect(json.containsKey('tanggal_lahir'), isTrue);
+      expect(json['tanggal_lahir'], isNull);
+    });
+
+    test('a blank birth date is the same as none at all', () {
+      const request = CompleteProfileRequest(
+        nama: 'A',
+        jenisKelamin: 'laki-laki',
+        tanggalLahir: '   ',
+        noHp: '8',
+      );
+
+      expect(request.toJson()['tanggal_lahir'], isNull);
+    });
+
+    test('a birth date that was given is still sent', () {
+      const request = CompleteProfileRequest(
+        nama: 'A',
+        jenisKelamin: 'laki-laki',
+        tanggalLahir: '2000-01-01',
+        noHp: '8',
+      );
+
+      expect(request.toJson()['tanggal_lahir'], '2000-01-01');
+    });
   });
 
   test('complete profile hands back a validation failure', () async {
