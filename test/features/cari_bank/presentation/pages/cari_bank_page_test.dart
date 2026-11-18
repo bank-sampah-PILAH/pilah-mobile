@@ -204,7 +204,10 @@ void main() {
           bankRow('b1', 'Bank A',
               latitude: -6.362829, longitude: 106.828655, jarakKm: '0.85'),
         ]));
-    cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
+    // The page builds its own cubit through DI; this test seeds the origin
+    // before the first frame, so it needs an instance of its own.
+    cubit = buildCariBankCubit(api);
+    await cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
     // Debounce (300 ms) then load: pumpAndSettle alone can stop before the
     // debounced reload chain fully lands.
     await tester.pump(CariBankCubit.jedaPencarian);
@@ -232,13 +235,17 @@ void main() {
             latitude: -6.4, longitude: 106.9, jarakKm: '5.02'),
       ]),
     );
-    cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
+    cubit = buildCariBankCubit(api);
+    await cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
 
     await pump(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('850 m'), findsOneWidget);
     expect(find.text('5.0 km'), findsOneWidget);
+    // Drain the seeding cubit's debounce so no timer outlives the tree.
+    await tester.pump(CariBankCubit.jedaPencarian);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('pilihDariPeta now awaits, but the trio still lands on reload',
