@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -56,11 +57,13 @@ class EmptyView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTextStyle.title1.copyWith(
-                color: AppColors.black,
+            RevealInReplay(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: AppTextStyle.title1.copyWith(
+                  color: AppColors.black,
+                ),
               ),
             ),
             if (subtitle != null) ...[
