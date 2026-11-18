@@ -40,7 +40,8 @@ void main() {
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(
-            () => _IdleActivityNotifier(_UnusedGetTransaksi(), _UnusedPencairan()),
+            () => _IdleActivityNotifier(
+                _UnusedGetTransaksi(), _UnusedPencairan()),
           ),
           profileProvider.overrideWith(() => profile),
           authenticationProvider.overrideWith(
@@ -101,8 +102,6 @@ void main() {
     expect(find.text('Lengkapi lokasi bank sampah'), findsNothing);
   });
 }
-
-
 
 class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
 

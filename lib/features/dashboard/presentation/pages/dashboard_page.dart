@@ -93,8 +93,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Future<void> _maybePromptLokasi() async {
     final container = ProviderScope.containerOf(context, listen: false);
     try {
-      final bank =
-          await container.read(profileProvider.notifier).ensureBank();
+      final bank = await container.read(profileProvider.notifier).ensureBank();
       if (!mounted || bank == null || bank.lokasi != null) return;
       await _showLokasiPrompt(bank.nama);
     } on Exception catch (_) {
