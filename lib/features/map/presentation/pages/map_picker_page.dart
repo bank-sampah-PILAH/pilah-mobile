@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Full-screen OpenStreetMap picker (PIL-326).
@@ -127,9 +128,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Pilih Lokasi di Peta')),
         body: Column(
           children: [
+            const AppBackHeader(title: 'Pilih Lokasi di Peta'),
             Expanded(
               child: FlutterMap(
                 mapController: _controller,

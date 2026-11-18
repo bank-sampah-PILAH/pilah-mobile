@@ -238,7 +238,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
       (bank) {
         // Cached for the next caller (ProfilePage itself uses [load] and a
         // fresh GET, so a stale window is possible but harmless for display).
-        emit(state.copyWith(bankSampah: bank));
+        state = state.copyWith(bankSampah: bank);
         return bank;
       },
     );
