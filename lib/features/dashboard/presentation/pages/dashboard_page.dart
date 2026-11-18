@@ -31,6 +31,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_acti
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
+import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -102,6 +103,31 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
   }
 
+  /// Opens the map picker and returns the picked coordinate trio, or null
+  /// when the user backs out.
+  Future<({double latitude, double longitude, double radiusKm})?>
+      _pilihTitikDiPeta(NavigatorState navigator) => navigator
+              .push<({double latitude, double longitude, double radiusKm})>(
+            MaterialPageRoute(builder: (_) => const MapPickerPage()),
+          );
+
+  /// Saves the picked point on the bank, leaving the rest of the record
+  /// untouched. Returns the error message, or null on success.
+  Future<String?> _simpanTitik(
+    ProfileNotifier notifier,
+    BankSampahProfile bank,
+    ({double latitude, double longitude, double radiusKm}) titik,
+  ) async {
+    // radiusKm belongs to cari, not the stored point.
+    final error = await notifier.updateBankSampah(
+      nama: bank.nama,
+      alamat: bank.alamat,
+      noHpPic: bank.noHpPic,
+      lokasi: (latitude: titik.latitude, longitude: titik.longitude),
+    );
+    return error?.displayMessage;
+  }
+
   Future<void> _showLokasiPrompt(String bankNama) {
     ({double latitude, double longitude, double radiusKm})? picked;
     return showAdaptiveSurface<void>(
@@ -142,44 +168,22 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   final container =
                       ProviderScope.containerOf(sheetContext, listen: false);
                   final notifier = container.read(profileProvider.notifier);
-                  // Seed the cache before the await so the save below finds the
-                  // full profile in state even on first open. ensureBank() is a
-                  // no-op when the profile is already cached.
+                  // ensureBank() is a no-op when the profile is already cached.
                   await notifier.ensureBank();
-                  if (picked == null) {
-                    final result = await navigator.push<
-                        ({double latitude, double longitude, double radiusKm})>(
-                      MaterialPageRoute(
-                        builder: (_) => const MapPickerPage(),
-                      ),
-                    );
-                    if (result == null) return;
-                    picked = result;
-                    if (sheetContext.mounted) setSheetState(() {});
-                  }
+                  if (!sheetContext.mounted) return;
+                  picked ??= await _pilihTitikDiPeta(navigator);
                   final titik = picked;
-                  // Save immediately with the rest of the record untouched —
-                  // ensureBank() has the full profile in state for the call.
-                  // The picker always returns the cari-bank trio; the stored
-                  // coordinate is just the pair.
+                  if (titik == null) return;
+                  if (sheetContext.mounted) setSheetState(() {});
                   final bank = container.read(profileProvider).bankSampah;
-                  if (titik == null || bank == null) return;
-                  final error = await notifier.updateBankSampah(
-                    nama: bank.nama,
-                    alamat: bank.alamat,
-                    noHpPic: bank.noHpPic,
-                    lokasi: (
-                      latitude: titik.latitude,
-                      longitude: titik.longitude
-                    ), // radiusKm belongs to cari, not the stored point.
-                  );
+                  if (bank == null) return;
+                  final error = await _simpanTitik(notifier, bank, titik);
                   if (!sheetContext.mounted) return;
                   if (error != null) {
                     // Keep the sheet and the picked point so the user can
                     // retry the save without hunting the spot again.
-                    ScaffoldMessenger.of(sheetContext).showSnackBar(
-                      SnackBar(content: Text(error.displayMessage)),
-                    );
+                    ScaffoldMessenger.of(sheetContext)
+                        .showSnackBar(SnackBar(content: Text(error)));
                     return;
                   }
                   navigator.pop();
