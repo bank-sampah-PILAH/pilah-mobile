@@ -231,7 +231,8 @@ class _DaftarBank extends StatelessWidget {
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             if (index == loaded.items.length) {
-              // Ujung daftar: pemuat halaman berikutnya, atau diam.
+              // Ujung daftar: pemuat halaman berikutnya, retry bila gagal,
+              // atau diam.
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Center(
@@ -241,7 +242,27 @@ class _DaftarBank extends StatelessWidget {
                           width: 24,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const SizedBox.shrink(),
+                      : loaded.loadMoreError == null
+                          ? const SizedBox.shrink()
+                          : Column(
+                              children: [
+                                Text(
+                                  loaded.loadMoreError!,
+                                  key: const Key('cari_bank_muat_error'),
+                                  textAlign: TextAlign.center,
+                                  style: NasabahStyle.text(
+                                    12,
+                                    color: NasabahStyle.muted,
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  key: const Key('cari_bank_muat_lagi'),
+                                  onPressed: cubit.muatBerikutnya,
+                                  icon: const Icon(Icons.refresh, size: 16),
+                                  label: const Text('Coba Lagi'),
+                                ),
+                              ],
+                            ),
                 ),
               );
             }

@@ -320,7 +320,7 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i260.SuperadminRepository>(() =>
         _i811.SuperadminRepositoryImpl(gh<_i309.SuperadminRemoteDataSource>()));
-    gh.lazySingleton<_i206.CariBankCubit>(() => _i206.CariBankCubit(
+    gh.factory<_i206.CariBankCubit>(() => _i206.CariBankCubit(
           gh<_i144.CariBankRemoteDataSource>(),
           storage: gh<_i812.AppStorage>(instanceName: 'shared_preferences'),
         ));

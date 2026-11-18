@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/constants/app_key.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -37,6 +38,15 @@ void main() {
         expect(
           di<NasabahPengumumanRepository>(),
           isA<NasabahPengumumanRepository>(),
+        );
+      });
+
+      test('the cari bank cubit is a factory, not a shared instance', () {
+        // BlocProvider closes the cubit on page pop; a singleton would hand
+        // the next page a closed cubit.
+        expect(
+          identical(di<CariBankCubit>(), di<CariBankCubit>()),
+          isFalse,
         );
       });
     });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_state.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/cari_bank_page.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
@@ -22,10 +23,10 @@ void main() {
 
   setUp(() {
     api = StubApi();
-    cubit = buildCariBankCubit(api);
-    // The page resolves its cubit through the DI container itself.
+    // The page resolves its cubit through the DI container itself; a factory
+    // mirrors production (one cubit per page, closed on pop).
     di.allowReassignment = true;
-    di.registerSingleton<CariBankCubit>(cubit);
+    di.registerFactory<CariBankCubit>(() => cubit = buildCariBankCubit(api));
     // PetaBankView asks for the user location as its camera start (PIL-330);
     // page tests don't care about it, so a silent null is fine.
     final location = _FakeLocationService();
@@ -321,6 +322,72 @@ void main() {
     expect(terakhir['longitude'], '106.82');
     expect(terakhir['radius_km'], '5.0');
     expect(terakhir['sort'], 'distance');
+  });
+
+  testWidgets('a failed next page keeps the rows and offers a retry footer',
+      (tester) async {
+    api.on('GET', _directory,
+        json: bankSampahPage(
+          [
+            for (final i in List<int>.generate(12, (n) => n + 1))
+              bankRow('b$i', 'Bank $i')
+          ],
+          count: 20,
+          hasNext: true,
+        ));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    api.on('GET', _directory, status: 500, json: {});
+    await tester.drag(find.byType(ListView).last, const Offset(0, -800));
+    await tester.pumpAndSettle();
+
+    // The loaded rows survive the page-2 failure; the footer carries it.
+    expect((cubit.state as CariBankLoaded).items, hasLength(12));
+    expect(find.byKey(const Key('cari_bank_muat_error')), findsOneWidget);
+
+    // Bring the footer (just below the old list end) into view. This scroll
+    // fires the retry itself, which also fails and leaves the footer in place.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -200));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('cari_bank_muat_lagi')), findsOneWidget);
+
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b20', 'Bank 20')], count: 20));
+    await tester.tap(find.byKey(const Key('cari_bank_muat_lagi')));
+    await tester.pumpAndSettle();
+
+    final retried = cubit.state as CariBankLoaded;
+    expect(retried.items, hasLength(13));
+    expect(retried.loadMoreError, isNull);
+    expect(find.byKey(const Key('cari_bank_muat_error')), findsNothing);
+  });
+
+  testWidgets('reopening after pop gets a fresh, usable cubit', (tester) async {
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b1', 'Bank Garis')]));
+
+    final router = await pumpRouted(
+      tester,
+      CariBankPage(
+        tileLayerBuilder: () => const SizedBox.shrink(),
+      ),
+      extraRoutes: ['/cari-bank-sampah/detail'],
+      size: const Size(600, 1200),
+      pushed: true,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bank Garis'), findsOneWidget);
+
+    // The page closes its cubit on pop; the next open must not reuse it.
+    await tester.tap(find.byKey(const Key('cari_bank_kembali')));
+    await tester.pumpAndSettle();
+    expect(find.byType(CariBankPage), findsNothing);
+
+    router.push('/page');
+    await tester.pumpAndSettle();
+    expect(find.text('Bank Garis'), findsOneWidget);
   });
 
   testWidgets('the Daftar pill returns from Peta to the list', (tester) async {
