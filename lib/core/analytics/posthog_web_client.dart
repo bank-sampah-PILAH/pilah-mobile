@@ -4,6 +4,7 @@ import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
+import 'package:pilah_mobile/core/errors/error_scrubber.dart';
 import 'package:web/web.dart' as web;
 
 /// Loads PostHog's browser library only when [start] is called, so nothing
@@ -187,6 +188,7 @@ class PosthogWebClient implements AnalyticsClient {
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     final options = _options().jsify() as JSObject;
+    options.setProperty('before_send'.toJS, _cleanExceptions.toJS);
     if (recordScreen) _addRecording(options);
     posthog.callMethod('init'.toJS, apiKey.toJS, options);
     _ready = true;
@@ -195,6 +197,34 @@ class PosthogWebClient implements AnalyticsClient {
     // has agreed, so switch capturing on.
     posthog.callMethod('opt_in_capturing'.toJS, _optInOptions.jsify());
     _registerContext(posthog);
+  }
+
+  /// What posthog-js is about to send, handed over just before. An exception
+  /// carries the message of the error, which can hold a name, an address or a
+  /// token, so the message of every `$exception` is cleaned here, whatever
+  /// put it there. Every other event passes untouched.
+  static JSAny? _cleanExceptions(JSAny? captureResult) {
+    if (captureResult == null) return null;
+    try {
+      final result = captureResult as JSObject;
+      if (result.getProperty<JSAny?>('event'.toJS).dartify() != r'$exception') {
+        return captureResult;
+      }
+      final properties = result.getProperty<JSObject?>('properties'.toJS);
+      final list =
+          properties?.getProperty<JSArray<JSObject>?>(r'$exception_list'.toJS);
+      for (final entry in list?.toDart ?? const <JSObject>[]) {
+        final value = entry.getProperty<JSAny?>('value'.toJS).dartify();
+        if (value is String) {
+          entry.setProperty('value'.toJS, ErrorScrubber.clean(value).toJS);
+        }
+      }
+      return captureResult;
+    } catch (_) {
+      // An exception event in a shape nobody planned for cannot be cleaned,
+      // and sending it as it is would defeat the point: drop it instead.
+      return null;
+    }
   }
 
   /// Where this runs, told to the library and carried by every event after. The
@@ -282,6 +312,11 @@ class PosthogWebClient implements AnalyticsClient {
         'save_referrer': false,
         'save_campaign_params': false,
         'capture_performance': true,
+        // Uncaught errors are reported through ErrorReporter, which cleans the
+        // message first. The library's own capture would send it as it is, and
+        // the project setting "exception autocapture" would switch that on for
+        // every client at once, so it is switched off here, at init.
+        'capture_exceptions': false,
         if (recordScreen)
           'session_recording': {
             'maskAllInputs': true,

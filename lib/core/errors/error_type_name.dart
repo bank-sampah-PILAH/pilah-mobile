@@ -35,8 +35,9 @@ abstract final class ErrorTypeName {
       FormatException() => 'FormatException',
       RangeError() => 'RangeError',
       ArgumentError() => 'ArgumentError',
-      UnsupportedError() => 'UnsupportedError',
+      // Before `UnsupportedError`, which it implements.
       UnimplementedError() => 'UnimplementedError',
+      UnsupportedError() => 'UnsupportedError',
       AssertionError() => 'AssertionError',
       TypeError() => 'TypeError',
       _ => kIsWeb ? 'Error' : error.runtimeType.toString(),
