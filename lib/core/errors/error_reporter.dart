@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
+import 'package:pilah_mobile/core/errors/error_filter.dart';
 
 /// Tells the team about an error nobody expected. Screens and cubits never
 /// call a monitoring service themselves: they go through this, so what leaves
@@ -25,6 +26,42 @@ class NoopErrorReporter implements ErrorReporter {
     StackTrace stack, {
     Map<String, Object?> context = const {},
   }) {}
+}
+
+/// Passes on only the errors worth telling the team about; see [ErrorFilter].
+class FilteredErrorReporter implements ErrorReporter {
+  FilteredErrorReporter({required this.inner});
+
+  final ErrorReporter inner;
+
+  @override
+  void report(
+    Object error,
+    StackTrace stack, {
+    Map<String, Object?> context = const {},
+  }) {
+    if (!ErrorFilter.shouldReport(error)) return;
+    inner.report(error, stack, context: context);
+  }
+}
+
+/// Stands in for a reporter that does not exist yet.
+///
+/// The error handlers have to be in place before the app has built its
+/// services, and the real reporter is one of them. Until [resolve] finds it, an
+/// error is dropped: nobody can have agreed to anything by then.
+class LateErrorReporter implements ErrorReporter {
+  LateErrorReporter(this.resolve);
+
+  final ErrorReporter? Function() resolve;
+
+  @override
+  void report(
+    Object error,
+    StackTrace stack, {
+    Map<String, Object?> context = const {},
+  }) =>
+      resolve()?.report(error, stack, context: context);
 }
 
 /// Passes an error on only while the pengurus has agreed to analytics.
