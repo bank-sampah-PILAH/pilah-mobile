@@ -100,4 +100,65 @@ void main() {
     final loaded = cubit.state as CariBankLoaded;
     expect(loaded.searchQuery, 'mawar');
   });
+  test('same-value ketik and radius calls are no-ops without a reload',
+      () async {
+    api.on('GET', _directory, json: bankSampahPage(const [], count: 0));
+
+    cubit.ketikKataKunci('mawar');
+    await Future<void>.delayed(CariBankCubit.jedaPencarian * 2);
+    final jumlah = api.requests.length;
+
+    // Guards: same value after trim, and radius while none is active.
+    cubit.ketikKataKunci('mawar');
+    cubit.ketikKota('');
+    cubit.pilihRadiusKm(5);
+    await Future<void>.delayed(CariBankCubit.jedaPencarian * 2);
+
+    expect(api.requests, hasLength(jumlah));
+  });
+
+  test('muatBerikutnya while a page fetch is already running fires once',
+      () async {
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b1', 'Bank Garis')],
+            count: 3, hasNext: true));
+    await cubit.load();
+
+    // A slow page-2 keeps the in-flight window open long enough for a second
+    // scroll event to land inside it; it must not queue a duplicate call.
+    api.on('GET', _directory,
+        json: bankSampahPage(
+          [bankRow('b2', 'Bank Mawar')],
+          count: 3,
+          hasNext: true,
+        ));
+    api.latency = const Duration(milliseconds: 200);
+    try {
+      final pertama = cubit.muatBerikutnya();
+      final kedua = cubit.muatBerikutnya();
+      await pertama;
+      await kedua;
+    } finally {
+      api.latency = null;
+    }
+
+    final halamanDua = api.requests.where((r) => r.query['page'] == '2');
+    expect(halamanDua, hasLength(1));
+  });
+
+  test('a failed muatBerikutnya surfaces the error state instead of appending',
+      () async {
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b1', 'Bank Garis')],
+            count: 2, hasNext: true));
+    await cubit.load();
+
+    api.on('GET', _directory, status: 500, json: {});
+    await cubit.muatBerikutnya();
+
+    // A failed append surfaces the error state (the user's retry door), not
+    // a silently truncated list.
+    expect(cubit.state, isA<CariBankError>());
+    expect((cubit.state as CariBankError).message, isNotEmpty);
+  });
 }

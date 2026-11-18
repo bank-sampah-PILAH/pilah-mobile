@@ -154,6 +154,14 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_u
     show GetTransaksiUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_usecase.dart'
     show ResendWaUseCase;
+import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart'
+    show CariBankRemoteDataSource;
+import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart'
+    show CariBankCubit;
+import 'package:pilah_mobile/features/perbandingan_harga/data/datasources/perbandingan_harga_remote_data_source.dart'
+    show PerbandinganHargaRemoteDataSource;
+import 'package:pilah_mobile/features/perbandingan_harga/presentation/cubit/perbandingan_harga_cubit.dart'
+    show PerbandinganHargaCubit;
 
 /// Every registration in the generated `di.config.dart`: a label, the only
 /// environment it is registered for (`null` for all), and how to resolve it.
@@ -163,6 +171,8 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('InviteTokenStore', null, () => di<InviteTokenStore>()),
   ('AppEnvironment', AppKey.devEnv, () => di<AppEnvironment>()),
   ('LocationService', null, () => di<LocationService>()),
+  ('CariBankRemoteDataSource', null, () => di<CariBankRemoteDataSource>()),
+  ('CariBankCubit', null, () => di<CariBankCubit>()),
   (
     'AppStorage (flutter_secure_storage)',
     null,
@@ -275,4 +285,10 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('UbahHargaUseCase', null, () => di<UbahHargaUseCase>()),
   ('GetRiwayatHargaUseCase', null, () => di<GetRiwayatHargaUseCase>()),
   ('GetDashboardStatsUseCase', null, () => di<GetDashboardStatsUseCase>()),
+  (
+    'PerbandinganHargaRemoteDataSource',
+    null,
+    () => di<PerbandinganHargaRemoteDataSource>()
+  ),
+  ('PerbandinganHargaCubit', null, () => di<PerbandinganHargaCubit>()),
 ];

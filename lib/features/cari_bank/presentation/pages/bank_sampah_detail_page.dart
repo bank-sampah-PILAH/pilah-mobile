@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -6,6 +9,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
@@ -67,17 +71,15 @@ class _BankSampahDetailPageState extends State<BankSampahDetailPage> {
     final detail = _detail;
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(detail?.nama ?? 'Bank Sampah',
-            style: AppTextStyle.small.copyWith(
-              fontWeight: FontWeight.w600,
-              color: NasabahStyle.ink,
-            )),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        scrolledUnderElevation: 0,
+      body: Column(
+        children: [
+          AppBackHeader(
+            title: detail?.nama ?? 'Bank Sampah',
+            backKey: const Key('detail_bank_kembali'),
+          ),
+          Expanded(child: _body()),
+        ],
       ),
-      body: _body(),
     );
   }
 
@@ -148,7 +150,7 @@ class _IsiDetail extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'Layanan',
-          style: NasabahStyle.text(15, weight: FontWeight.w600),
+          style: NasabahStyle.text(15, weight: AppFontWeight.semibold),
         ),
         if (detail.layanan.isEmpty)
           Padding(
@@ -230,14 +232,14 @@ class _Header extends StatelessWidget {
           height: 56,
           decoration: BoxDecoration(
             color: AppColors.greenLight,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           alignment: Alignment.center,
           child: Text(
             _initials,
             style: AppTextStyle.title1.copyWith(
               color: AppColors.greenDark,
-              fontWeight: FontWeight.bold,
+              fontWeight: AppFontWeight.bold,
             ),
           ),
         ),
@@ -249,8 +251,8 @@ class _Header extends StatelessWidget {
               Text(
                 detail.nama,
                 style: AppTextStyle.title1.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.lg,
                 ),
               ),
               const SizedBox(height: 4),
@@ -285,7 +287,7 @@ class _LayananBaris extends StatelessWidget {
               children: [
                 Text(
                   '${layanan.kode} · ${layanan.namaSampah}',
-                  style: NasabahStyle.text(14, weight: FontWeight.w500),
+                  style: NasabahStyle.text(14, weight: AppFontWeight.medium),
                 ),
                 if (layanan.deskripsi.isNotEmpty)
                   Text(
@@ -298,7 +300,11 @@ class _LayananBaris extends StatelessWidget {
           ),
           Text(
             '${CurrencyFormatter.formatRupiah(harga.round())}/kg',
-            style: AppTextStyle.small,
+            style: NasabahStyle.text(
+              14,
+              weight: AppFontWeight.semibold,
+              color: AppColors.greenDark,
+            ),
           ),
         ],
       ),

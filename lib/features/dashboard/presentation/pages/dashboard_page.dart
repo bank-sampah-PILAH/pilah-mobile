@@ -2,6 +2,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surf
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
@@ -115,7 +116,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             Text(
               'Lengkapi lokasi bank sampah',
               style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),

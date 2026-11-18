@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -318,7 +320,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.black.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: Text(
                             'Geser peta untuk memilih lokasi',
@@ -341,10 +343,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(28),
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x29000000),
+                                color: AppColors.shadow,
                                 blurRadius: 8,
                                 offset: Offset(0, 2),
                               ),
@@ -356,15 +358,13 @@ class _MapPickerPageState extends State<MapPickerPage> {
                             focusNode: _cariFocus,
                             style: NasabahStyle.text(14),
                             onChanged: _cariTempat,
-                            decoration: InputDecoration(
+                            decoration: appSearchDecoration(
                               hintText:
                                   'Cari tempat (mis. Universitas Indonesia)',
+                            ).copyWith(
                               hintStyle: NasabahStyle.text(13,
                                   color: NasabahStyle.muted),
-                              prefixIcon: const Icon(
-                                Icons.search,
-                                color: AppColors.greenDark,
-                              ),
+                              prefixIconColor: AppColors.greenDark,
                               suffixIcon: _mencari
                                   ? const Padding(
                                       padding: EdgeInsets.all(12),
@@ -392,7 +392,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
                               contentPadding:
                                   const EdgeInsets.symmetric(vertical: 14),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(28),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.xl),
                                 borderSide: BorderSide.none,
                               ),
                             ),
@@ -405,10 +406,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
                             constraints: const BoxConstraints(maxHeight: 240),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
                               boxShadow: const [
                                 BoxShadow(
-                                  color: Color(0x29000000),
+                                  color: AppColors.shadow,
                                   blurRadius: 8,
                                   offset: Offset(0, 2),
                                 ),
@@ -450,10 +451,11 @@ class _MapPickerPageState extends State<MapPickerPage> {
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0x14000000),
+                    color: AppColors.shadowSoft,
                     blurRadius: 16,
                     offset: Offset(0, -4),
                   ),
@@ -498,7 +500,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                             key: const Key('peta_radius_label'),
                             style: NasabahStyle.text(
                               14,
-                              weight: FontWeight.w600,
+                              weight: AppFontWeight.semibold,
                               color: AppColors.greenDark,
                             ),
                           ),
@@ -632,7 +634,7 @@ class _MapFab extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Color(0x29000000),
+                color: AppColors.shadow,
                 blurRadius: 8,
                 offset: Offset(0, 2),
               ),

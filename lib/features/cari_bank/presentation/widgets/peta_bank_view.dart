@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
@@ -115,15 +119,15 @@ class _PetaBankViewState extends State<PetaBankView> {
 
   void _bukaRingkasan(BankSampahDirectoryEntity bank) {
     final lokasi = bank.lokasi!;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
+    showAdaptiveSurface<void>(
+      context,
       builder: (sheetContext) => Container(
         // Sheet mengambang dengan radius atas — pola Google Maps place card.
         margin: const EdgeInsets.only(top: 48),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         child: SafeArea(
           child: Padding(
@@ -137,8 +141,8 @@ class _PetaBankViewState extends State<PetaBankView> {
                 Text(
                   bank.nama,
                   style: AppTextStyle.title1.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.lg + 1,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -319,7 +323,7 @@ class _BadgeKelompok extends StatelessWidget {
           '$count',
           style: AppTextStyle.small.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.w700,
+            fontWeight: AppFontWeight.bold,
           ),
         ),
       );
