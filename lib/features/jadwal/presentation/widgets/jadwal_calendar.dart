@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -91,7 +92,9 @@ class JadwalCalendar extends StatelessWidget {
     final monthLabel =
         '${_monthNames[selectedDate.month - 1]} ${selectedDate.year}';
 
-    return Container(
+    // Month name, weekday names and day numbers: no one's data.
+    return RevealInReplay(
+        child: Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
@@ -169,7 +172,7 @@ class JadwalCalendar extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildWeekStrip() {

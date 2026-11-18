@@ -44,9 +44,11 @@ class DashboardKpiCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(label,
-                      style: AppTextStyle.small
-                          .copyWith(color: AppColors.grey100)),
+                  child: RevealInReplay(
+                    child: Text(label,
+                        style: AppTextStyle.small
+                            .copyWith(color: AppColors.grey100)),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Container(
@@ -543,7 +545,9 @@ class _DashboardReportsSectionState extends State<DashboardReportsSection> {
             runSpacing: 12,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('Periode laporan', style: AppTextStyle.title1),
+              RevealInReplay(
+                child: Text('Periode laporan', style: AppTextStyle.title1),
+              ),
               DashboardReportRangeFilter(
                 range: _range,
                 onChanged: (value) => setState(() => _range = value),
@@ -596,7 +600,9 @@ class _ReportCard extends StatelessWidget {
                 runSpacing: 12,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(title, style: AppTextStyle.title1),
+                  RevealInReplay(
+                    child: Text(title, style: AppTextStyle.title1),
+                  ),
                   ...controls,
                 ],
               )
@@ -608,7 +614,9 @@ class _ReportCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: AppTextStyle.title1),
+                        RevealInReplay(
+                          child: Text(title, style: AppTextStyle.title1),
+                        ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 4),
                           Text(subtitle!,

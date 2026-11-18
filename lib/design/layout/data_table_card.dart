@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -55,7 +56,8 @@ class DataTableCard extends StatelessWidget {
           horizontal: AppSpacing.xl,
           vertical: 14,
         ),
-        child: Row(children: cells),
+        // Column names are fixed wording, so the recording shows them.
+        child: RevealInReplay(child: Row(children: cells)),
       );
 
   @override

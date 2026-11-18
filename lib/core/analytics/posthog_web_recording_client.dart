@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/posthog_web_client.dart';
 import 'package:pilah_mobile/core/analytics/screen_recorder.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 /// [PosthogWebClient] that also records the screen, with every text and image
@@ -54,7 +55,8 @@ class PosthogWebRecordingClient extends PosthogWebClient
           ..sessionReplay = true
           ..sessionReplayConfig = (PostHogSessionReplayConfig()
             ..maskAllTexts = true
-            ..maskAllImages = true)
+            ..maskAllImages = true
+            ..textMaskPolicy = replayTextMask)
           ..surveys = false
           ..preloadFeatureFlags = false,
       );

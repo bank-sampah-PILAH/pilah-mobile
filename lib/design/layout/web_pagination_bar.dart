@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -36,7 +37,8 @@ class WebPaginationBar extends StatelessWidget {
     final range =
         'Menampilkan ${format.format(start)}–${format.format(end)} dari ${format.format(totalItems)} $itemLabel';
 
-    return LayoutBuilder(
+    // Only counts and page numbers: nothing a pengurus typed.
+    return RevealInReplay(child: LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 700;
         final controls = _controls(page, pageCount, compact: compact);
@@ -62,7 +64,7 @@ class WebPaginationBar extends StatelessWidget {
           ],
         );
       },
-    );
+    ));
   }
 
   Widget _controls(int page, int pageCount, {required bool compact}) {

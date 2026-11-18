@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
@@ -168,6 +169,36 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Budi Santoso'), findsWidgets);
+    });
+  });
+
+  group('Detail nasabah di rekaman layar', () {
+    Finder revealed(Finder of) => find.ancestor(
+          of: of,
+          matching: find.byType(RevealInReplay),
+        );
+
+    testWidgets('label baris terlihat, nilainya tersembunyi', (tester) async {
+      await tester.pumpWidget(host(_nasabah()));
+
+      for (final label in ['Email', 'Alamat']) {
+        expect(revealed(find.text(label)), findsOneWidget, reason: label);
+      }
+      expect(revealed(find.text('budi@example.com')), findsNothing);
+      expect(revealed(find.text('Jl. Mawar No. 12')), findsNothing);
+    });
+
+    testWidgets('ikon jenis kelamin tersembunyi karena bergantung pada data',
+        (tester) async {
+      await tester.pumpWidget(host(_nasabah()));
+
+      expect(
+        find.ancestor(
+          of: find.byIcon(Icons.male),
+          matching: find.byType(HideInReplay),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

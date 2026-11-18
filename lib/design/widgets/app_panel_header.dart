@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -20,6 +21,7 @@ class AppPanelHeader extends StatelessWidget {
     this.onClose,
     this.onHelp,
     this.helpTooltip = 'Bantuan',
+    this.revealTitle = false,
   });
 
   /// Tinggi tetap supaya isi di bawahnya tidak bergeser antar tampilan.
@@ -33,6 +35,13 @@ class AppPanelHeader extends StatelessWidget {
   /// Membuka panduan tampilan ini. Tombolnya duduk di kiri tombol tutup.
   final VoidCallback? onHelp;
   final String helpTooltip;
+
+  /// Shows [title] in the screen recording. Only for a title that is fixed
+  /// wording of the app, never one that carries a name.
+  final bool revealTitle;
+
+  Widget _maybeReveal(Widget child) =>
+      revealTitle ? RevealInReplay(child: child) : child;
 
   @override
   Widget build(BuildContext context) {
@@ -53,11 +62,13 @@ class AppPanelHeader extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyle.title1.copyWith(color: AppColors.black),
+                _maybeReveal(
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle.title1.copyWith(color: AppColors.black),
+                  ),
                 ),
                 if (subtitle != null)
                   Text(

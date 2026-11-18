@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -36,7 +37,9 @@ class RoleNavigationBar extends StatelessWidget {
         color: AppColors.cardOffWhite,
         border: Border(top: BorderSide(color: AppColors.grey200)),
       ),
-      child: BottomNavigationBar(
+      // Fixed destination names and icons: nothing a pengurus typed.
+      child: RevealInReplay(
+          child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.cardOffWhite,
         selectedItemColor: AppColors.greenDark,
@@ -56,7 +59,7 @@ class RoleNavigationBar extends StatelessWidget {
               label: destination.label,
             ),
         ],
-      ),
+      )),
     );
   }
 }

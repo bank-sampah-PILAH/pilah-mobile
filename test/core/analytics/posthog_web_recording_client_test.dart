@@ -7,6 +7,7 @@ import 'dart:js_interop_unsafe';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:pilah_mobile/core/analytics/posthog_web_recording_client.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
@@ -90,6 +91,8 @@ void main() {
     expect(config.sessionReplay, isTrue);
     expect(config.sessionReplayConfig.maskAllTexts, isTrue);
     expect(config.sessionReplayConfig.maskAllImages, isTrue);
+    // Icons are shown; every other text stays hidden.
+    expect(config.sessionReplayConfig.textMaskPolicy, same(replayTextMask));
   });
 
   test('is not a recorder around the app when the library cannot load',

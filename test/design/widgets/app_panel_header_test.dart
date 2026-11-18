@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
@@ -94,5 +95,29 @@ void main() {
     expect(help, 1);
     expect(tester.getCenter(find.byTooltip('Panduan setoran')).dx,
         lessThan(tester.getCenter(find.byTooltip('Tutup')).dx));
+  });
+
+  testWidgets('hides its title in the screen recording unless told it is fixed',
+      (tester) async {
+    await _pump(tester, const AppPanelHeader(title: 'Plastik PET'));
+    expect(
+      find.ancestor(
+        of: find.text('Plastik PET'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsNothing,
+    );
+
+    await _pump(
+      tester,
+      const AppPanelHeader(title: 'Transaksi Baru', revealTitle: true),
+    );
+    expect(
+      find.ancestor(
+        of: find.text('Transaksi Baru'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
   });
 }
