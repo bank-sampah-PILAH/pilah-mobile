@@ -256,7 +256,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
         backgroundColor: Colors.white,
         body: Column(
           children: [
-            const AppBackHeader(title: 'Pilih Lokasi di Peta'),
+            const AppBackHeader(
+              title: 'Pilih Lokasi di Peta',
+              backKey: Key('peta_kembali'),
+            ),
             Expanded(
               child: Stack(
                 children: [
