@@ -25,7 +25,6 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/login_
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
-import 'package:pilah_mobile/features/authentication/presentation/widgets/login_footer.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_header.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
@@ -194,8 +193,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 profiles: demoProfiles,
               ),
             ],
-            const SizedBox(height: 48),
-            const LoginFooter(),
           ],
         ),
       ),
@@ -284,8 +281,6 @@ class _DesktopLoginLayout extends StatelessWidget {
                                 profiles: demoProfiles,
                               ),
                             ],
-                            const SizedBox(height: 32),
-                            const LoginFooter(),
                           ],
                         ),
                       ),
