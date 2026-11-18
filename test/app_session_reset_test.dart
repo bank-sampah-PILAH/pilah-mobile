@@ -195,9 +195,10 @@ void main() {
     for (var i = 0;
         i < 10 &&
             find
-                .text('Akun ini tidak memiliki peran Pengurus, sehingga tidak '
-                    'dapat mengakses aplikasi web. Silakan masuk dengan akun '
-                    'Pengurus.')
+                .text(
+                    'Akun ini tidak memiliki peran Nasabah atau Pengurus, sehingga '
+                    'tidak dapat mengakses aplikasi web. Silakan masuk dengan '
+                    'akun Nasabah atau Pengurus.')
                 .evaluate()
                 .isEmpty;
         i++) {
@@ -207,8 +208,9 @@ void main() {
     expect(auth.calls.where((call) => call == 'logout'), hasLength(1));
     expect(
         find.text(
-            'Akun ini tidak memiliki peran Pengurus, sehingga tidak dapat '
-            'mengakses aplikasi web. Silakan masuk dengan akun Pengurus.'),
+            'Akun ini tidak memiliki peran Nasabah atau Pengurus, sehingga '
+            'tidak dapat mengakses aplikasi web. Silakan masuk dengan akun '
+            'Nasabah atau Pengurus.'),
         findsOneWidget);
     expect(tester.takeException(), isNull);
 
