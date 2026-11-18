@@ -43,8 +43,14 @@ void main() {
           ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal']);
       expect(RoleDestinations.branchIndicesFor('pengelola', bottomBar: true),
           [0, 1, 2, 3, 4]);
-      expect(RoleDestinations.forRole('nasabah', bottomBar: true).length, 4,
-          reason: 'nasabah destinations are all in the bottom bar');
+      // PIL-308 made Bank Sampah a nav tab, so the nasabah bar holds the
+      // full menu: Beranda, Tabungan, Jadwal, Bank Sampah, Profil.
+      expect(
+        RoleDestinations.forRole('nasabah', bottomBar: true)
+            .map((d) => d.label),
+        ['Beranda', 'Tabungan', 'Jadwal', 'Bank Sampah', 'Profil'],
+        reason: 'nasabah destinations are all in the bottom bar',
+      );
     });
 
     test('an approved nasabah gets five destinations', () {
