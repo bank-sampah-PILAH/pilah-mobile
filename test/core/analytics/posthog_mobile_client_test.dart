@@ -8,6 +8,7 @@ import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
 import 'package:pilah_mobile/core/analytics/analytics_config.dart';
 import 'package:pilah_mobile/core/analytics/posthog_mobile_client.dart';
+import 'package:pilah_mobile/core/errors/exception_event_scrubber.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:posthog_flutter/src/posthog_flutter_platform_interface.dart';
@@ -128,8 +129,16 @@ void main() {
     expect(config.capturePushNotificationSubscriptions, isFalse);
     expect(config.capturePushNotificationOpened, isFalse);
     expect(config.debug, isFalse);
+    // Dart errors reach PostHog through ErrorReporter only, which cleans the
+    // message; the SDK's own capture of them stays off.
     expect(config.errorTrackingConfig.captureFlutterErrors, isFalse);
-    expect(config.errorTrackingConfig.captureNativeExceptions, isFalse);
+    expect(config.errorTrackingConfig.capturePlatformDispatcherErrors, isFalse);
+    expect(config.errorTrackingConfig.captureIsolateErrors, isFalse);
+    // A crash in Java or Kotlin code (a plugin) is only seen by the native SDK.
+    expect(config.errorTrackingConfig.captureNativeExceptions, isTrue);
+    expect(config.errorTrackingConfig.captureNativeCrashes, isFalse);
+    // The message of an exception is cleaned before the SDK sends it.
+    expect(config.beforeSend, [scrubExceptionEvent]);
     // Opted out until start() has agreed, then switched on.
     expect(config.optOut, isTrue);
     expect(platform.calls.first, 'setup');
