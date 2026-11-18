@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/request_id_interceptor.dart';
 import 'package:pilah_mobile/core/client/retry_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -22,6 +23,8 @@ class NetworkService {
     required this.environment,
     required this.networkUtils,
   }) {
+    // First, so the id is already on the request when the logger prints it.
+    dio.interceptors.add(RequestIdInterceptor());
     dio.interceptors.add(interceptors);
     // Added after the logger so a dropped GET is still logged, then quietly
     // retried once before the failure reaches state handling.

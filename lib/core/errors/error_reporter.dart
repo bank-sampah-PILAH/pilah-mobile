@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/errors/error_filter.dart';
 import 'package:pilah_mobile/core/errors/error_flows.dart';
+import 'package:pilah_mobile/core/errors/error_request_id.dart';
 
 /// Tells the team about an error nobody expected. Screens and cubits never
 /// call a monitoring service themselves: they go through this, so what leaves
@@ -29,8 +30,9 @@ class NoopErrorReporter implements ErrorReporter {
   }) {}
 }
 
-/// Adds the screen, and the core flow if there is one, to every error, so the
-/// team knows where it happened without anyone listing the screens by hand.
+/// Adds the screen, the core flow if there is one, and the id of the request
+/// that failed to every error, so the team knows where it happened without
+/// anyone listing the screens by hand, and can find it in the server's log.
 class ContextualErrorReporter implements ErrorReporter {
   ContextualErrorReporter({required this.inner, required this.currentScreen});
 
@@ -48,12 +50,14 @@ class ContextualErrorReporter implements ErrorReporter {
   }) {
     final screen = currentScreen();
     final flow = screen == null ? null : ErrorFlows.nameFor(screen);
+    final requestId = ErrorRequestId.of(error);
     inner.report(
       error,
       stack,
       context: {
         if (screen != null) 'layar': screen,
         if (flow != null) 'alur': flow,
+        if (requestId != null) 'id_permintaan': requestId,
         ...context,
       },
     );

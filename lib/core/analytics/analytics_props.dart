@@ -42,6 +42,7 @@ abstract final class AnalyticsProps {
     'harga_berubah',
     'hasil_terakhir_kelas',
     'http_status',
+    'id_permintaan',
     'item_ke',
     'jenis',
     'jenis_aktivitas',
