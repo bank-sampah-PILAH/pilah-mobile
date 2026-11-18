@@ -17,7 +17,7 @@ const inviteProcessingLocation = '/invite-processing';
 
 const superadminDashboardLocation = '/superadmin-dashboard';
 
-const _webSupportedRoles = {'superadmin', 'pengelola'};
+const _webSupportedRoles = {'superadmin', 'pengelola', 'nasabah'};
 
 /// Query flag the web router appends when a signed-in session's role has no
 /// web shell: the login page reads it to raise a visible toast explaining the
