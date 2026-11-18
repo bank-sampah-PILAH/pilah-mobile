@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
@@ -1037,5 +1038,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.requests.length, greaterThan(before));
+  });
+
+  testWidgets(
+      'the tabs, section titles and field labels are shown in the screen '
+      'recording, the identity is not', (tester) async {
+    await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+    for (final label in [
+      'Pengaturan Umum',
+      'Manajemen Tim',
+      'PROFIL BANK SAMPAH',
+      'NAMA BANK SAMPAH',
+      'ALAMAT BANK SAMPAH',
+    ]) {
+      expect(
+        find.ancestor(
+          of: find.text(label),
+          matching: find.byType(RevealInReplay),
+        ),
+        findsOneWidget,
+        reason: label,
+      );
+    }
+    expect(
+      find.ancestor(
+        of: find.text('siti@example.test'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsNothing,
+    );
   });
 }
