@@ -182,11 +182,11 @@ void main() {
     await tester.pump();
     auth.setStateForTest(Authenticated(
       authEntity: const AuthEntity(
-        name: 'Nasabah',
-        email: 'nasabah@example.com',
+        name: 'Tamu',
+        email: 'tamu@example.com',
         photoUrl: '',
         token: 'token',
-        role: 'nasabah',
+        role: 'unknown',
       ),
     ));
     // UAT 2026-11: the warning no longer floats over the page being torn

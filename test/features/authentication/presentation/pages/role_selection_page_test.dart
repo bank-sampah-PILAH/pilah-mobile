@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,26 +68,24 @@ void main() {
       expect(find.byKey(const ValueKey('onboarding-sidebar')),
           size.width >= 840 ? findsOneWidget : findsNothing);
       expect(find.byType(OnboardingFlowLayout), findsOneWidget);
-      final firstTitle = kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah';
-      final secondTitle = 'Pengurus Bank Sampah';
+      const firstTitle = 'Nasabah';
+      const secondTitle = 'Pengurus Bank Sampah';
       final first = tester.getRect(find.text(firstTitle));
-      if (!kIsWeb) {
-        final second = tester.getRect(find.text(secondTitle));
-        if (size.width >= 600) {
-          expect(second.left, greaterThan(first.right));
-          Finder cardFor(String title) => find
-              .ancestor(
-                of: find.text(title),
-                matching: find.byWidgetPredicate((widget) =>
-                    widget is Semantics &&
-                    widget.properties.inMutuallyExclusiveGroup == true),
-              )
-              .first;
-          expect(tester.getSize(cardFor(firstTitle)).height,
-              tester.getSize(cardFor(secondTitle)).height);
-        } else {
-          expect(second.top, greaterThan(first.bottom));
-        }
+      final second = tester.getRect(find.text(secondTitle));
+      if (size.width >= 600) {
+        expect(second.left, greaterThan(first.right));
+        Finder cardFor(String title) => find
+            .ancestor(
+              of: find.text(title),
+              matching: find.byWidgetPredicate((widget) =>
+                  widget is Semantics &&
+                  widget.properties.inMutuallyExclusiveGroup == true),
+            )
+            .first;
+        expect(tester.getSize(cardFor(firstTitle)).height,
+            tester.getSize(cardFor(secondTitle)).height);
+      } else {
+        expect(second.top, greaterThan(first.bottom));
       }
       expect(find.text('Daftar Akun'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -110,15 +107,14 @@ void main() {
     expect(find.text('Daftar Akun'), findsOneWidget);
     expect(find.text('Peran Akun'), findsOneWidget);
     expect(find.text('ayu@example.com'), findsOneWidget);
-    expect(find.text('Nasabah'), kIsWeb ? findsNothing : findsOneWidget);
+    expect(find.text('Nasabah'), findsOneWidget);
     expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
     expect(find.text('Pengelola Bank Sampah Induk'), findsNothing);
     expect(find.text('Superadmin'), findsNothing);
     expect(tester.takeException(), isNull);
 
-    await tester
-        .ensureVisible(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
-    await tester.tap(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
+    await tester.ensureVisible(find.text('Nasabah'));
+    await tester.tap(find.text('Nasabah'));
     await tester.pump();
     await tester.ensureVisible(find.text('Saya menyetujui ').first);
     await tester.tap(find.text('Saya menyetujui ').first);
@@ -128,12 +124,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
 
-    expect(
-      auth.lastRole,
-      kIsWeb
-          ? GoogleRegistrationRole.pengelola
-          : GoogleRegistrationRole.nasabah,
-    );
+    expect(auth.lastRole, GoogleRegistrationRole.nasabah);
   });
 
   testWidgets('requires both legal documents before continuing',
@@ -143,7 +134,7 @@ void main() {
       child: const MaterialApp(home: RoleSelectionPage()),
     ));
 
-    await tester.tap(find.text(kIsWeb ? 'Pengurus Bank Sampah' : 'Nasabah'));
+    await tester.tap(find.text('Nasabah'));
     await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
     await tester.pump();
@@ -245,9 +236,7 @@ void main() {
     final option = tester.widget<Semantics>(find.byWidgetPredicate((widget) =>
         widget is Semantics &&
         widget.properties.label ==
-            (kIsWeb
-                ? 'Pengurus Bank Sampah. Mengelola transaksi dan anggota bank sampah.'
-                : 'Nasabah. Menabung sampah dan memantau saldo.')));
+            'Nasabah. Menabung sampah dan memantau saldo.'));
     expect(option.properties.checked, isTrue);
     expect(option.properties.inMutuallyExclusiveGroup, isTrue);
   });
