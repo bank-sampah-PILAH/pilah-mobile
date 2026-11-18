@@ -292,7 +292,8 @@ void main() {
     await tester.tap(find.byKey(const Key('cari_bank_pilih_di_peta')));
     await tester.pumpAndSettle();
     expect(find.byType(MapPickerPage), findsOneWidget);
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('peta_kembali')));
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
 
     expect(find.byType(MapPickerPage), findsNothing);
