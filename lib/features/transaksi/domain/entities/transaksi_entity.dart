@@ -6,11 +6,20 @@ class ItemSetoranEntity {
   final String harga;
   final String subtotal;
 
+  /// Raw values kept beside the display strings so the edit form can start
+  /// from what was recorded. Empty / zero for rows that only feed a list.
+  final String jenisSampahId;
+  final num beratKg;
+  final int hargaPerKg;
+
   ItemSetoranEntity({
     required this.jenis,
     required this.berat,
     required this.harga,
     required this.subtotal,
+    this.jenisSampahId = '',
+    this.beratKg = 0,
+    this.hargaPerKg = 0,
   });
 }
 
@@ -32,6 +41,10 @@ class TransaksiEntity {
   /// Aktivitas, PIL-282) aren't stuck re-parsing a display string.
   final DateTime? tanggal;
 
+  /// Setoran yang dibatalkan (PIL-428) tidak lagi dihitung ke saldo maupun
+  /// laporan. Sejak PIL-481 daftar riwayat tidak memuatnya; hanya detailnya.
+  final bool isDibatalkan;
+
   TransaksiEntity({
     this.id = '',
     required this.initials,
@@ -45,6 +58,7 @@ class TransaksiEntity {
     required this.balance,
     required this.items,
     this.tanggal,
+    this.isDibatalkan = false,
   });
 
   TransaksiEntity copyWith({bool? isWaSuccess}) {
@@ -61,6 +75,7 @@ class TransaksiEntity {
       balance: balance,
       items: items,
       tanggal: tanggal,
+      isDibatalkan: isDibatalkan,
     );
   }
 }
@@ -112,6 +127,53 @@ class TransaksiCreated {
   });
 }
 
+/// Write model for PATCH /transaksi/{id}. [items] and [catatan] are only sent
+/// when they were changed; [alasan] is always required.
+class TransaksiEditRequest {
+  final String id;
+  final List<ItemSetoranRequest>? items;
+  final String? catatan;
+  final String alasan;
+
+  TransaksiEditRequest({
+    required this.id,
+    this.items,
+    this.catatan,
+    required this.alasan,
+  });
+}
+
+/// Write model for POST /transaksi/{id}/batalkan (PIL-428). "Hapus" is a void:
+/// the setoran is hidden from the riwayat (PIL-481) but kept, with who, when and
+/// why, for the detail; [alasan] is required.
+class TransaksiBatalRequest {
+  final String id;
+  final String alasan;
+
+  TransaksiBatalRequest({required this.id, required this.alasan});
+}
+
+/// A replaced version of a setoran, shown as "Riwayat perubahan" in the detail.
+class TransaksiRevisiEntity {
+  final int versi;
+  final String totalFormatted;
+  final String catatan;
+  final List<ItemSetoranEntity> items;
+  final String alasan;
+  final String diubahOlehNama;
+  final DateTime? diubahPada;
+
+  TransaksiRevisiEntity({
+    required this.versi,
+    required this.totalFormatted,
+    required this.catatan,
+    required this.items,
+    required this.alasan,
+    required this.diubahOlehNama,
+    this.diubahPada,
+  });
+}
+
 /// Full transaction detail (from GET /transaksi/{id}) for the detail sheet.
 class TransaksiDetailEntity {
   final String name;
@@ -119,6 +181,21 @@ class TransaksiDetailEntity {
   final String balanceFormatted;
   final String waStatus; // 'sent' | 'failed' | 'pending'
   final List<ItemSetoranEntity> items;
+  final String catatan;
+  final List<TransaksiRevisiEntity> revisi;
+
+  /// Harga per kg tiap jenis pada tanggal setoran (kunci: id jenis). Edit
+  /// menghitung dengan harga ini, bukan harga hari ini.
+  final Map<String, int> hargaPadaTanggal;
+
+  /// Waktu setoran dicatat.
+  final DateTime? tanggal;
+
+  /// Pembatalan (PIL-428): siapa, kapan, dan alasannya. Kosong bila tercatat.
+  final bool isDibatalkan;
+  final String alasanBatal;
+  final String dibatalkanOlehNama;
+  final DateTime? dibatalkanPada;
 
   TransaksiDetailEntity({
     required this.name,
@@ -126,5 +203,13 @@ class TransaksiDetailEntity {
     required this.balanceFormatted,
     required this.waStatus,
     required this.items,
+    this.catatan = '',
+    this.revisi = const [],
+    this.hargaPadaTanggal = const {},
+    this.tanggal,
+    this.isDibatalkan = false,
+    this.alasanBatal = '',
+    this.dibatalkanOlehNama = '',
+    this.dibatalkanPada,
   });
 }

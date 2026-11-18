@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import '../../support/contrast.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
@@ -11,6 +12,23 @@ Widget _host(Widget chip) => MaterialApp(
     );
 
 void main() {
+  testWidgets('is a pill, both for its fill and for its ripple',
+      (tester) async {
+    await tester.pumpWidget(
+      _host(AppChip(label: 'Aktif', selected: true, onTap: () {})),
+    );
+
+    final pill = BorderRadius.circular(AppRadius.pill);
+    final material = tester.widget<Material>(
+      find.descendant(
+        of: find.byType(AppChip),
+        matching: find.byType(Material),
+      ),
+    );
+    final ink = tester.widget<InkWell>(find.byType(InkWell));
+    expect([material.borderRadius, ink.borderRadius], [pill, pill]);
+  });
+
   testWidgets('a selected chip tells screen readers it is a selected button',
       (tester) async {
     final handle = tester.ensureSemantics();

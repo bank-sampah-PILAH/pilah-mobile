@@ -25,7 +25,6 @@ button with these `.env` values:
 ```env
 ENABLE_DEMO_LOGIN=true
 DEMO_PENGURUS_EMAIL=pengurus.demo@example.com
-DEMO_PENGELOLA_INDUK_EMAIL=induk.demo@example.com
 DEMO_CUSTOMER_EMAIL=nasabah.demo@example.com
 DEMO_NEW_NASABAH_EMAIL=nasabah.baru.demo@example.com
 DEMO_SUPERADMIN_EMAIL=superadmin.demo@example.com
@@ -35,10 +34,9 @@ DEMO_SUPERADMIN_EMAIL=superadmin.demo@example.com
 to try the nasabah self-registration flow from a blank account without
 editing the seed script.
 
-The button submits the backend's local-only `dev:`, `dev-pengelola-induk:`,
-`dev-nasabah:`, and `dev-superadmin:` test tokens for the seeded roles. Keep
-these five email values in sync with the corresponding pilah-be seed variables
-before running E2E. It is hidden whenever the
+The button submits the backend's local-only `dev:`, `dev-nasabah:`, and
+`dev-superadmin:` test tokens for the seeded roles. Keep these four email values
+in sync with the corresponding pilah-be seed variables before running E2E. It is hidden whenever the
 app is built in release mode, and the staging/production entry point keeps
 only the real Google Sign-In button. Never enable fake tokens or the demo
 button for production-facing builds.
@@ -56,7 +54,7 @@ flutter build apk -t lib/main_production.dart
 
 See [dashboard deployment guide](docs/DASHBOARD_DEPLOYMENT.md) for Fly staging,
 Cloud Run production, CI gates, exact backend/Google origins, and the shared
-Web OAuth client ID. Web supports Super Admin, Pengurus and Pengurus Induk only.
+Web OAuth client ID. Web supports Super Admin and Pengurus only.
 
 ### ⚙️ Supported Flavor
 
@@ -71,13 +69,11 @@ Reso coder's flutter clean architecture
 
 ### 🧬️ State Management
 
-Since we use clean architecture, it doesn't matter what state management you prefer to use
-
-But for this project example, we use [Bloc](https://pub.dev/packages/flutter_bloc)
+Production and generated-feature state management use [Riverpod](https://pub.dev/packages/flutter_riverpod). The SPL CLI and Mason feature brick generate Riverpod-only code.
 
 ### 🧩 Software Product Line (SPL)
 
-This template includes an SPL layer for managing variability — swappable storage backends and state management solutions, plus a CLI to add/remove/toggle features.
+This template includes an SPL layer for managing swappable storage backends and adding/removing features; state management is fixed to Riverpod.
 
 See [SPL.md](SPL.md) for the full guide.
 
@@ -86,8 +82,8 @@ dart run codegen/spl_manager.dart list
 dart run codegen/spl_manager.dart add <feature>
 dart run codegen/spl_manager.dart disable <feature>
 dart run codegen/spl_manager.dart enable <feature>
-dart run codegen/spl_manager.dart storage set hive
-dart run codegen/spl_manager.dart state set cubit
+dart run codegen/spl_manager.dart storage add hive
+dart run codegen/spl_manager.dart storage default hive
 ```
 
 ### 🧱 Mason (Code Generation)
@@ -109,7 +105,7 @@ mason get
 The SPL CLI (`spl_manager.dart`) uses Mason automatically when available. You can also invoke bricks directly:
 
 ```
-mason make feature --name <name>mason make feature --name <name> --with_storage true --state cubit
+mason make feature --name <name> --with_storage true
 ```
 
 Bricks are excluded from Dart analysis (`analysis_options.yaml`) because they contain Mustache syntax (`{{name.pascalCase()}}`), not valid Dart.

@@ -1,0 +1,48 @@
+{
+  "source": "Authenticated Linear MCP and goal/git history; selected fields only",
+  "collectedOn": "2026-10-22",
+  "issue": {
+    "id": "PIL-378",
+    "uuid": "3150f0d1-c151-44ec-9898-72a52185730a",
+    "title": "Perbaiki layout form authoring announcement di web",
+    "url": "https://linear.app/pilah-2/issue/PIL-378/perbaiki-layout-form-authoring-announcement-di-web",
+    "createdAt": "2026-10-22T06:49:37.354Z",
+    "team": "PILAH 2.0",
+    "teamId": "e4de3201-8bbc-4660-9e89-23a7dff19066",
+    "parentId": "PIL-143",
+    "cycleId": "42eed940-98b2-455b-b1f3-9186141719a2",
+    "project": "EPIC07 — Communication & Notifications",
+    "projectId": "f701f421-435f-45d0-bb9f-2f478534a290",
+    "assigneeId": null
+  },
+  "parent": {
+    "id": "PIL-143",
+    "uuid": "a77125d4-5665-41fd-85af-f6edbe5a2072",
+    "title": "CPBI-15 — Siklus announcement: authoring, publikasi, dan pembacaan",
+    "url": "https://linear.app/pilah-2/issue/PIL-143/cpbi-15-siklus-announcement-authoring-publikasi-dan-pembacaan"
+  },
+  "cycle": {
+    "id": "42eed940-98b2-455b-b1f3-9186141719a2",
+    "title": "Sprint 2",
+    "number": 2,
+    "isCurrent": true
+  },
+  "creationOrderEvidence": {
+    "issueCreatedAt": "2026-10-22T06:49:37.354Z",
+    "implementationTaskStartedAt": "2026-10-22T06:49:47.418Z",
+    "implementationTaskStartedAtSource": "goal history: implement-ui task_started",
+    "firstBranchCommit": {
+      "sha": "97696a9ec1cd1a941ab086ea0d8a4a212bf1f2b1",
+      "subject": "test(pengumuman): cover web form panel",
+      "committedAt": "2026-10-22T13:58:18+07:00",
+      "url": "https://github.com/bank-sampah-PILAH/pilah-mobile/commit/97696a9ec1cd1a941ab086ea0d8a4a212bf1f2b1"
+    },
+    "ordering": "issueCreatedAt < implementationTaskStartedAt < firstBranchCommit.committedAt"
+  },
+  "sourceQueries": [
+    "linear_save_issue(id=PIL-378, assignee=null) response.createdAt",
+    "linear_get_issue(PIL-378, selected metadata fields)",
+    "linear_get_issue(PIL-143, id/title/url)",
+    "linear_list_cycles(teamId=e4de3201-8bbc-4660-9e89-23a7dff19066, type=current)"
+  ]
+}

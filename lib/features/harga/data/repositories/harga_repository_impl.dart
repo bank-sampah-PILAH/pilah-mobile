@@ -4,6 +4,8 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source.dart';
 import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/versi_harga.dart';
 import 'package:pilah_mobile/features/harga/domain/repositories/harga_repository.dart';
 
 @LazySingleton(as: HargaRepository)
@@ -83,6 +85,26 @@ class HargaRepositoryImpl implements HargaRepository {
     try {
       await remoteDataSource.activateHarga(id);
       return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkException, void>> ubahHarga(UbahHarga perubahan) async {
+    try {
+      await remoteDataSource.ubahHarga(perubahan);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkException, List<VersiHarga>>> getRiwayatHarga(
+      String id) async {
+    try {
+      return Right(await remoteDataSource.getRiwayatHarga(id));
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
     }

@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
@@ -30,18 +30,20 @@ void main() {
     when(
       () => repository.createJadwal(any()),
     ).thenAnswer((_) => pending.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
-    final submit = find.byType(ElevatedButton);
+    // The form is the top route, so its button is the last one in the tree.
+    final submit = find.byType(ElevatedButton).last;
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pump();
@@ -60,11 +62,12 @@ void main() {
     when(
       () => repository.createJadwal(any()),
     ).thenAnswer((_) async => Right(_schedule()));
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -85,11 +88,12 @@ void main() {
     final handle = tester.ensureSemantics();
     final repository = _MockJadwalRepository();
     _stubJadwal(repository, const []);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -133,8 +137,7 @@ void main() {
         entry.value.minute,
       );
       await withClock(Clock.fixed(fakeNow), () async {
-        final cubit = await _pumpNewScheduleForm(tester);
-        addTearDown(cubit.close);
+        await _pumpNewScheduleForm(tester);
 
         expect(
           find.descendant(
@@ -152,8 +155,7 @@ void main() {
     final fakeNow = DateTime(today.year, today.month, today.day, 15);
     await withClock(Clock.fixed(fakeNow.add(const Duration(days: 3))),
         () async {
-      final cubit = await _pumpNewScheduleForm(tester);
-      addTearDown(cubit.close);
+      await _pumpNewScheduleForm(tester);
 
       expect(
         find.descendant(
@@ -180,11 +182,12 @@ void main() {
           ? Left(GeneralException(message: 'Koneksi gagal'))
           : Right(_page(const []));
     });
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -212,11 +215,12 @@ void main() {
           ? Right(_page(const []))
           : Right(_page([_schedule()]));
     });
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -245,11 +249,12 @@ void main() {
       loadCount++;
       return Right(_page([_schedule()]));
     });
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -274,11 +279,12 @@ void main() {
       _schedule(id: 'completed', location: 'Completed', status: 'selesai'),
     ];
     _stubJadwal(repository, schedules);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -292,16 +298,95 @@ void main() {
     }
   });
 
+  testWidgets('the tappable area covers the whole card, action row included',
+      (tester) async {
+    final repository = _MockJadwalRepository();
+    _stubJadwal(repository, [_schedule()]);
+    final cubit = JadwalNotifier(repository);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final card = find.byType(Card).first;
+    final tappable =
+        find.descendant(of: card, matching: find.byType(InkWell)).first;
+    // The card's own surface, inside its outer margin.
+    final surface =
+        find.descendant(of: card, matching: find.byType(Material)).first;
+
+    expect(find.text('Terbitkan'), findsOneWidget);
+    expect(tester.getRect(tappable), tester.getRect(surface));
+  });
+
+  testWidgets('the actions share a row with the status badge', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _MockJadwalRepository();
+    _stubJadwal(repository, [_schedule()]);
+    final cubit = JadwalNotifier(repository);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final badge = tester.getCenter(find.text('Draf'));
+    final publish = tester.getCenter(find.text('Terbitkan'));
+    expect((publish.dy - badge.dy).abs(), lessThan(12));
+    expect(publish.dx, greaterThan(badge.dx));
+    // Nothing is left under that row but the card's own padding.
+    final card = tester.getRect(find.byType(Card).first);
+    expect(
+      card.bottom - tester.getBottomLeft(find.text('Terbitkan')).dy,
+      lessThan(40),
+    );
+  });
+
+  testWidgets(
+      'on a phone the actions wrap under the badge instead of overflowing',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _MockJadwalRepository();
+    _stubJadwal(repository, [_schedule(status: 'diterbitkan')]);
+    final cubit = JadwalNotifier(repository);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Batalkan').hitTestable(), findsOneWidget);
+    expect(find.text('Tandai Selesai').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('shows the manager overlap warning when a schedule overlaps', (
     tester,
   ) async {
     final repository = _MockJadwalRepository();
     _stubJadwal(repository, [_schedule(isOverlapping: true)]);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -322,11 +407,12 @@ void main() {
       submitted = invocation.positionalArguments.single as JadwalEntity;
       return Right(submitted!);
     });
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -356,11 +442,12 @@ void main() {
   testWidgets('requires a location before creating a schedule', (tester) async {
     final repository = _MockJadwalRepository();
     _stubJadwal(repository, const []);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -385,11 +472,12 @@ void main() {
       end: start.subtract(const Duration(minutes: 1)),
     );
     _stubJadwal(repository, [schedule]);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -420,11 +508,12 @@ void main() {
     when(() => repository.createJadwal(any())).thenAnswer(
       (_) async => Left(GeneralException(message: 'Jadwal gagal disimpan')),
     );
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -463,11 +552,12 @@ void main() {
         submitted = invocation.positionalArguments.single as JadwalEntity;
         return Right(target);
       });
-      final cubit = JadwalCubit(repository);
-      addTearDown(cubit.close);
+      final cubit = JadwalNotifier(repository);
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+          home: ProviderScope(
+              overrides: [jadwalProvider.overrideWith(() => cubit)],
+              child: const JadwalPage()),
         ),
       );
       await tester.pumpAndSettle();
@@ -496,11 +586,12 @@ void main() {
   ) async {
     final repository = _MockJadwalRepository();
     _stubJadwal(repository, const []);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -520,11 +611,12 @@ void main() {
   ) async {
     final repository = _MockJadwalRepository();
     _stubJadwal(repository, const []);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -559,12 +651,13 @@ void main() {
       end: start.add(const Duration(hours: 2)),
     );
     _stubJadwal(repository, [schedule]);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
 
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        home: ProviderScope(
+            overrides: [jadwalProvider.overrideWith(() => cubit)],
+            child: const JadwalPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -631,13 +724,15 @@ JadwalEntity _schedule({
   );
 }
 
-Future<JadwalCubit> _pumpNewScheduleForm(WidgetTester tester) async {
+Future<JadwalNotifier> _pumpNewScheduleForm(WidgetTester tester) async {
   final repository = _MockJadwalRepository();
   _stubJadwal(repository, const []);
-  final cubit = JadwalCubit(repository);
+  final cubit = JadwalNotifier(repository);
   await tester.pumpWidget(
     MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      home: ProviderScope(
+          overrides: [jadwalProvider.overrideWith(() => cubit)],
+          child: const JadwalPage()),
     ),
   );
   await tester.pumpAndSettle();

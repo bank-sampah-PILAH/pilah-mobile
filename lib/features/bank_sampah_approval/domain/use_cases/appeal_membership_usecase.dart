@@ -10,7 +10,7 @@ class AppealMembershipParams {
 
   const AppealMembershipParams({required this.bankSampahId, this.pesan = ''});
 
-  // Value equality so a mocktail `verify` can match params the cubit built
+  // Value equality so a mocktail `verify` can match params built by a caller
   // against a fresh instance, instead of requiring the exact same object.
   @override
   bool operator ==(Object other) =>

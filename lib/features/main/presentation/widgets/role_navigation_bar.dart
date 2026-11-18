@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Bentuk navigasi untuk layar sempit.
 ///
@@ -25,14 +26,10 @@ class RoleNavigationBar extends StatelessWidget {
   static bool isStaff(String? role) => RoleDestinations.isStaff(role);
   static bool supports(String? role) => RoleDestinations.supports(role);
 
-  static List<int> branchIndicesFor(String? role,
-          {bool limitedNasabah = false}) =>
-      RoleDestinations.branchIndicesFor(role, limitedNasabah: limitedNasabah);
-
   @override
   Widget build(BuildContext context) {
-    final destinations =
-        RoleDestinations.forRole(role, limitedNasabah: limitedNasabah);
+    final destinations = RoleDestinations.forRole(role,
+        limitedNasabah: limitedNasabah, bottomBar: true);
     if (destinations.isEmpty) return const SizedBox.shrink();
     return Container(
       decoration: const BoxDecoration(
@@ -47,7 +44,7 @@ class RoleNavigationBar extends StatelessWidget {
         showUnselectedLabels: true,
         selectedLabelStyle: AppTextStyle.extraSmall.copyWith(
           color: AppColors.greenDark,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
         unselectedLabelStyle: AppTextStyle.extraSmall,
         currentIndex: currentIndex,

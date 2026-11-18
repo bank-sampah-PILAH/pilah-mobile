@@ -34,7 +34,6 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
   @override
   Future<OnboardingResult> registerBankSampah(
       RegisterBankSampahRequest request) async {
-    final fileName = request.fotoKegiatanPath.split(RegExp(r'[\\/]')).last;
     final formData = FormData.fromMap({
       'nama': request.nama,
       'alamat': request.alamat,
@@ -45,9 +44,9 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
         'latitude': request.lokasi!.latitude.toStringAsFixed(6),
       if (request.lokasi != null)
         'longitude': request.lokasi!.longitude.toStringAsFixed(6),
-      'foto_kegiatan': await MultipartFile.fromFile(
-        request.fotoKegiatanPath,
-        filename: fileName,
+      'foto_kegiatan': MultipartFile.fromBytes(
+        request.fotoKegiatanBytes,
+        filename: request.fotoKegiatanFilename,
       ),
     });
 
@@ -89,12 +88,8 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
   @override
   Future<List<BankSampahDirectoryEntity>> listBankSampahDirectory() async {
     final response = await networkService.get(Endpoints.bankSampahDirectory);
-    // PIL-308 paginated the directory: the body is now the
-    // {count, next, previous, results} envelope. First page only — the picker
-    // is a short confirm step, so 20 entries is an accepted ceiling today.
-    final results = ((response.data as Map<String, dynamic>?)?['results']
-        as List<dynamic>?);
-    return (results ?? const [])
+    final list = response.data as List<dynamic>;
+    return list
         .map((item) =>
             BankSampahDirectoryEntity.fromJson(item as Map<String, dynamic>))
         .toList();
