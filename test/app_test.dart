@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
@@ -177,6 +178,44 @@ void main() {
     AppRouterConfig.getRouter().go('/login');
     await tester.pumpAndSettle();
     expect(labels.last, 'PILAH | Login');
+  });
+
+  group('web session roles', () {
+    const rejectionTitle = 'Peran Tidak Didukung';
+
+    setUp(WebRoleBounceNotice.reset);
+    tearDown(WebRoleBounceNotice.reset);
+
+    // The rejection toast is short-lived, so watch for it frame by frame
+    // instead of settling.
+    Future<bool> rejectionShown(WidgetTester tester) async {
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+        if (find.text(rejectionTitle).evaluate().isNotEmpty) return true;
+      }
+      return false;
+    }
+
+    testWidgets('a Nasabah session stays signed in on web', (tester) async {
+      shell.signedInAsRole('pengelola', bankStatus: 'active');
+      await boot(tester, isWeb: true);
+
+      shell.signedInAsRole('nasabah', step: 'nasabah_dashboard');
+
+      expect(await rejectionShown(tester), isFalse);
+      expect(shell.auth.calls, isNot(contains('logout')));
+    });
+
+    testWidgets('a session with an unsupported role is signed out on web',
+        (tester) async {
+      shell.signedInAsRole('pengelola', bankStatus: 'active');
+      await boot(tester, isWeb: true);
+
+      shell.signedInAsRole('unknown');
+
+      expect(await rejectionShown(tester), isTrue);
+      expect(shell.auth.calls, contains('logout'));
+    });
   });
 
   testWidgets('a rejected session clears the onboarding draft', (tester) async {
