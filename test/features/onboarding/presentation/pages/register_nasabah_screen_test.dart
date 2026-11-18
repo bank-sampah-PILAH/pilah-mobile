@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
@@ -13,6 +15,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nas
 import '../../../../support/onboarding_support.dart';
 import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
+import '../../../../support/nasabah_approval_support.dart';
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
@@ -58,11 +61,17 @@ void main() {
   late _MockOnboardingDataSource dataSource;
   late ProviderContainer container;
   late OnboardingNotifier onboarding;
+  late TestNasabahApprovalNotifier approval;
 
   setUp(() {
     auth = authNotifierIn(AuthenticationInitial());
     dataSource = _MockOnboardingDataSource();
-    container = buildOnboardingContainer(dataSource);
+    approval = TestNasabahApprovalNotifier(
+        initialState: const NasabahApprovalLoaded([]));
+    container = ProviderContainer(overrides: [
+      onboardingProvider.overrideWith(() => OnboardingNotifier(dataSource)),
+      nasabahApprovalProvider.overrideWith(() => approval),
+    ]);
     onboarding = container.read(onboardingProvider.notifier);
     when(() => dataSource.listBankSampahDirectory())
         .thenAnswer((_) async => [_bank]);
@@ -150,8 +159,35 @@ void main() {
     verify(() => dataSource.registerNasabah(
         const RegisterNasabahRequest(bankSampahId: 'bank-1'))).called(1);
     expect(auth.calls, contains('refreshUser'));
+    expect(approval.loadCalls, [false]);
     expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
   });
+
+  for (final size in [const Size(1440, 900), const Size(390, 844)]) {
+    testWidgets('keeps the bank picker and registration actions usable at $size',
+        (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      onboarding.saveProfileDraft(_draft);
+
+      await pump(tester, pushed: true);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tap untuk pilih bank sampah'), findsOneWidget);
+      expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+      expect(find.text('Kembali'), findsOneWidget);
+      if (size.width >= 1200) {
+        expect(find.byKey(const ValueKey('onboarding-sidebar')), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+      await tester.ensureVisible(find.text('Tap untuk pilih bank sampah'));
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cari nama bank sampah...'), findsOneWidget);
+    });
+  }
 
   testWidgets('blocks submit and shows an inline error with no bank picked',
       (tester) async {
