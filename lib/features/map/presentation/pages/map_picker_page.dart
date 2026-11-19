@@ -15,6 +15,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/osm_tiles.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/tile_health.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -291,6 +292,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
             title: 'Pilih Lokasi di Peta',
             backKey: Key('peta_kembali'),
           ),
+          _bannerGalat(),
           Expanded(
             child: Stack(
               children: [
@@ -321,6 +323,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                   title: 'Pilih Lokasi di Peta',
                   backKey: Key('peta_kembali'),
                 ),
+                _bannerGalat(),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppSpacing.lg),
@@ -350,6 +353,46 @@ class _MapPickerPageState extends State<MapPickerPage> {
             ),
           ),
         ],
+      );
+
+  /// PIL-326: the picker still works without tiles (GPS, search, manual
+  /// fields), so tell the pengurus why the grid is blank and what still works.
+  Widget _bannerGalat() => AnimatedBuilder(
+        animation: TileHealth.instance,
+        builder: (context, _) {
+          if (!TileHealth.instance.buruk) return const SizedBox.shrink();
+          return Container(
+            key: const Key('peta_galat_banner'),
+            margin: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.warningLight,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.map_outlined,
+                  size: 18,
+                  color: AppColors.warning,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Peta sedang tidak tersedia. Pakai "Lokasi saya" atau isi '
+                    'koordinat manual.',
+                    style: NasabahStyle.text(12, color: AppColors.warning),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       );
 
   Widget _peta(BuildContext context) => FlutterMap(

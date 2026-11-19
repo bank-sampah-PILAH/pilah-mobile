@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/cari_bank/presentation/pages/cari_bank_pag
 import 'package:flutter_map/flutter_map.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/tile_health.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/cari_bank_support.dart';
@@ -34,6 +35,10 @@ void main() {
     di.registerSingleton<LocationService>(location);
     addTearDown(() => di.unregister<CariBankCubit>());
     addTearDown(() => di.unregister<LocationService>());
+    // The tile-health signal is shared by every map in the app, so a degraded
+    // test must not leak into the next one.
+    TileHealth.instance.pulihkan();
+    addTearDown(TileHealth.instance.pulihkan);
   });
 
   Future<void> pump(WidgetTester tester) => pumpRouted(
@@ -430,5 +435,56 @@ void main() {
     // The rows are back on the plain scroll view.
     expect(find.text('Depok · Jl. Bank Garis'), findsOneWidget);
     expect(find.byType(FlutterMap), findsNothing);
+  });
+
+  /// Brings the shared signal to "every tile source failed".
+  void petaMati() {
+    for (var i = 0; i < TileHealth.instance.ambang; i++) {
+      TileHealth.instance.catatGalat();
+    }
+  }
+
+  group('peta tidak tersedia (PIL-326)', () {
+    testWidgets('the Peta tab leaves the screen and a notice explains it',
+        (tester) async {
+      api.on('GET', _directory,
+          json: bankSampahPage([
+            bankRow('b1', 'Bank Garis',
+                latitude: -6.362829, longitude: 106.828655),
+          ]));
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('Peta'), findsOneWidget);
+
+      petaMati();
+      await tester.pump();
+
+      expect(find.byKey(const Key('cari_bank_peta_galat')), findsOneWidget);
+      expect(find.text('Peta'), findsNothing);
+      // The list is untouched: losing the map costs no rows.
+      expect(find.text('Depok · Jl. Bank Garis'), findsOneWidget);
+    });
+
+    testWidgets('a page already showing the map falls back to the list',
+        (tester) async {
+      api.on('GET', _directory,
+          json: bankSampahPage([
+            bankRow('b1', 'Bank Garis',
+                latitude: -6.362829, longitude: 106.828655),
+          ]));
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      await keModePeta(tester);
+      await tester.pumpAndSettle();
+      expect(find.byType(FlutterMap), findsOneWidget);
+
+      petaMati();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FlutterMap), findsNothing);
+      expect(find.text('Depok · Jl. Bank Garis'), findsOneWidget);
+    });
   });
 }
