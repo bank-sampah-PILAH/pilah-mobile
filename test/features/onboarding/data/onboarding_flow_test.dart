@@ -360,16 +360,21 @@ void main() {
 
   group('directories', () {
     test('lists the bank sampah directory', () async {
-      api.on('GET', '/api/v1/bank-sampah', json: [
-        {
-          'id': 'b1',
-          'nama': 'Bank Melati',
-          'alamat': 'Jl. 1',
-          'kota': 'Depok',
-          'foto_logo': 'https://img.test/l.png',
-        },
-        <String, dynamic>{},
-      ]);
+      api.on('GET', '/api/v1/bank-sampah', json: {
+        'count': 2,
+        'previous': null,
+        'next': null,
+        'results': [
+          {
+            'id': 'b1',
+            'nama': 'Bank Melati',
+            'alamat': 'Jl. 1',
+            'kota': 'Depok',
+            'foto_logo': 'https://img.test/l.png',
+          },
+          <String, dynamic>{},
+        ],
+      });
 
       final outcome = await cubit.loadBankSampahDirectory();
 
@@ -377,6 +382,37 @@ void main() {
       expect(outcome.result!.first.fotoLogo, 'https://img.test/l.png');
       expect(outcome.result!.last.id, '');
       expect(outcome.result!.last.kota, '');
+    });
+
+    test('reads every page so a bank past page one is reachable', () async {
+      api.onRequest('GET', '/api/v1/bank-sampah', json: (options) {
+        if (options.uri.queryParameters['page'] == '2') {
+          return {
+            'count': 21,
+            'previous': 'http://api.test/api/v1/bank-sampah',
+            'next': null,
+            'results': [
+              {'id': 'b21', 'nama': 'Bank Kedua Puluh Satu'},
+            ],
+          };
+        }
+        return {
+          'count': 21,
+          'previous': null,
+          'next': 'http://api.test/api/v1/bank-sampah?page=2',
+          'results': [
+            {'id': 'b1', 'nama': 'Bank Pertama'},
+          ],
+        };
+      });
+
+      final outcome = await cubit.loadBankSampahDirectory();
+
+      expect(
+        outcome.result!.map((bank) => bank.nama),
+        ['Bank Pertama', 'Bank Kedua Puluh Satu'],
+      );
+      expect(api.requests.map((r) => r.query['page']), [null, '2']);
     });
 
     test('a directory failure is returned', () async {
