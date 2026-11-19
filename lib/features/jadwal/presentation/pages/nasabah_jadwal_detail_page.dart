@@ -46,8 +46,10 @@ class NasabahJadwalDetailPage extends ConsumerWidget {
                             load: () async =>
                                 (await di<JadwalRepository>().getDetail(id))
                                     .fold(
-                              (_) => throw const NasabahApiException(
-                                'Jadwal gagal dimuat. Silakan coba lagi.',
+                              (error) => throw NasabahApiException(
+                                {403, 404}.contains(error.response?.statusCode)
+                                    ? 'Jadwal tidak tersedia.'
+                                    : 'Jadwal gagal dimuat. Silakan coba lagi.',
                               ),
                               (schedule) => schedule,
                             ),

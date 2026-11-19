@@ -11,19 +11,26 @@ import '../../../../support/auth_support.dart';
 import '../../../../support/stub_api.dart';
 
 void main() {
-  testWidgets('an unavailable schedule link explains that access is unavailable',
+  testWidgets(
+      'an unavailable schedule link explains that access is unavailable',
       (tester) async {
     final api = StubApi();
-    api.on('GET', '/api/v1/jadwal/other-bank', status: 404,
-        json: {'detail': 'Not found.'});
+    api.on('GET', '/api/v1/jadwal/other-bank',
+        status: 404, json: {'detail': 'Not found.'});
     di.registerSingleton<JadwalRepository>(
         JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network)));
     addTearDown(di.reset);
-    final auth = authNotifierIn(Authenticated(authEntity: const AuthEntity(
-      id: 'customer', name: 'Siti', email: 'siti@example.test',
-      photoUrl: '', token: 'token', role: 'nasabah',
+    final auth = authNotifierIn(Authenticated(
+        authEntity: const AuthEntity(
+      id: 'customer',
+      name: 'Siti',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'token',
+      role: 'nasabah',
     )));
-    await tester.pumpWidget(withAuthenticationProvider(auth,
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
       const MaterialApp(home: NasabahJadwalDetailPage(id: 'other-bank')),
     ));
     await tester.pumpAndSettle();

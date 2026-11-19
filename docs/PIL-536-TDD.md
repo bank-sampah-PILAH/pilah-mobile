@@ -14,3 +14,5 @@ Baseline: `origin/staging` at `ed4004a5`; branch: `feature/pil-536`.
 
 - RED command: `flutter test --no-pub test/features/jadwal/presentation/pages/nasabah_jadwal_detail_page_test.dart --reporter expanded`
 - Actual RED: an HTTP 404 showed a generic load error; expected `Jadwal tidak tersedia.`, found zero. One test failed.
+- GREEN: HTTP 403/404 uses an unavailable message without exposing server details.
+- GREEN command: `flutter test --no-pub test/core/router/nasabah_schedule_detail_test.dart test/features/jadwal/presentation/pages/nasabah_jadwal_detail_page_test.dart --reporter expanded` — 2 passed.
