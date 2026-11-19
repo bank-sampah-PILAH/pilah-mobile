@@ -334,6 +334,72 @@ void main() {
       'save_referrer': false,
       'save_campaign_params': false,
       'capture_performance': true,
+      // posthog-js would send the message of any uncaught error as it is, and
+      // the project setting "exception autocapture" turns that on for every
+      // client at once. Errors go through ErrorReporter, which cleans them.
+      'capture_exceptions': false,
+      'before_send': isNotNull,
+    });
+  });
+
+  group('error messages in what posthog-js is about to send', () {
+    JSFunction beforeSend() {
+      final args = globalContext.getProperty<JSObject>('__initArgs'.toJS);
+      final options = args.getProperty<JSObject>(1.toJS);
+      return options.getProperty<JSFunction>('before_send'.toJS);
+    }
+
+    Map<Object?, Object?> run(Map<String, Object?> captureResult) {
+      final result = beforeSend().callAsFunction(
+        null,
+        captureResult.jsify(),
+      ) as JSObject;
+      return result.dartify()! as Map<Object?, Object?>;
+    }
+
+    test('are cleaned, whichever way the exception got there', () async {
+      await _client().start();
+
+      final out = run({
+        'event': r'$exception',
+        'properties': {
+          r'$exception_list': [
+            {
+              'type': 'Error',
+              'value': 'gagal untuk budi@example.com 0812345678'
+            },
+          ],
+        },
+      });
+
+      final list = (out['properties']! as Map)[r'$exception_list']! as List;
+      expect((list.single as Map)['value'], 'gagal untuk [email] [angka]');
+    });
+
+    test('are dropped rather than sent as they are when they cannot be read',
+        () async {
+      await _client().start();
+
+      final out = beforeSend().callAsFunction(
+        null,
+        {
+          'event': r'$exception',
+          'properties': {r'$exception_list': 'not a list'},
+        }.jsify(),
+      );
+
+      expect(out, isNull);
+    });
+
+    test('leave every other event alone', () async {
+      await _client().start();
+
+      final out = run({
+        'event': 'app_dibuka',
+        'properties': {'note': 'hubungi budi@example.com'},
+      });
+
+      expect((out['properties']! as Map)['note'], 'hubungi budi@example.com');
     });
   });
 
