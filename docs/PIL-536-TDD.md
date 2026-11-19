@@ -29,7 +29,12 @@ Baseline: `origin/staging` at `ed4004a5`; branch: `feature/pil-536`.
 - RED command: `flutter test --no-pub test/features/profile/presentation/pages/profil_nasabah_web_test.dart --reporter expanded`
 - Actual RED: `ProfilePage(isWeb: true)` still used the phone profile; expected one `AppPageHeader`, found zero. One test failed.
 - GREEN: web profile reuses `AppPageHeader` and `ContentFrame`, keeps the scroll area at the window edge, and retains the existing profile form and legal content.
-- GREEN command: `flutter test --no-pub <all test/features/profile/presentation/pages/profil_nasabah*_test.dart files> test/features/legal test/core/router/legal_routes_test.dart --reporter expanded` — 35 passed.
+- GREEN used all Nasabah profile test files plus legal tests — 35 passed. PowerShell command:
+
+  ```powershell
+  $nasabahTests = @(Get-ChildItem test/features/profile/presentation/pages/profil_nasabah*_test.dart | ForEach-Object FullName)
+  flutter --no-version-check test --no-pub @nasabahTests test/features/legal test/core/router/legal_routes_test.dart --reporter expanded
+  ```
 - The broader profile suite reported two staff-logo filename failures on Windows; these are tracked separately from this focused GREEN result.
 
 ## Cycle 5: overnight schedule date
@@ -38,3 +43,28 @@ Baseline: `origin/staging` at `ed4004a5`; branch: `feature/pil-536`.
 - Actual RED: an overnight schedule showed its start date and both times but omitted the end date; expected `21/11/2026`, found zero. One test failed.
 - GREEN: a separate end date appears only when the activity crosses a local calendar day.
 - GREEN command: `flutter test --no-pub test/core/router/nasabah_schedule_detail_test.dart test/features/jadwal/presentation/pages/nasabah_jadwal_detail_page_test.dart --reporter expanded` — 3 passed.
+
+## Regression checks after GREEN
+
+These checks cover reused behavior; they are not claimed as additional demonstrated RED cycles.
+
+- Web profile saves all five editable fields at 390 and 1440 logical pixels. The HTTP fixture receives the expected PATCH body without email, id, or role; reopening fetches the saved values.
+- Web validation errors retain the draft and allow correction and retry, using the same form and validation response handling as mobile.
+- The profile opens the existing legal page and returns correctly.
+- Direct schedule links fetch fresh detail data with the authenticated API client and require no router extras.
+- Existing schedule tests cover published-only customer presentation, empty days, paging, date navigation and read-only actions. Existing profile tests cover date selection, cancellation, failures and session changes.
+- `flutter test --no-pub test/features/profile/presentation/pages/profil_nasabah_web_test.dart --reporter expanded` — 4 passed.
+- `flutter test --no-pub test/features/profile/presentation/pages/profil_nasabah_edit_test.dart --reporter expanded` — 12 passed.
+
+## Full validation
+
+- `flutter --no-version-check analyze --no-pub` — no issues.
+- `flutter --no-version-check test --no-pub --reporter expanded` — 3703 passed, 1 skipped, 2 failed. Both failures are existing Windows staff-logo filename expectations:
+  - `profile_photo_upload_test.dart`: expected `logo.png`, actual `blob:http://localhost/logo.png`.
+  - `profile_page_test.dart`: expected `profile_page_logo.jpg`, actual `Temp/profile_page_logo.jpg`.
+  - Both failures were reproduced with staging's unchanged `ProfilePage` temporarily restored. The issue implementation was restored immediately afterward; no staff-logo code was changed.
+- `flutter --no-version-check build apk --debug --no-pub -t lib/main_development.dart` — passed with process-local `GRADLE_OPTS=-Dorg.gradle.java.home=C:/Users/Omen/.jdks/ms-21.0.10`. The default installed Java 25 failed Gradle plugin resolution; no global tooling settings were changed.
+- `flutter --no-version-check build web --release --no-pub --no-wasm-dry-run -t lib/main_development.dart` — passed (88.8 seconds). This validates the normal JavaScript release; Flutter's optional WebAssembly compatibility dry run was stopped and is not claimed as validated.
+- An additional `flutter test --platform chrome` run stalled at suite loading and was stopped; it is not reported as passing.
+- Playwright browser QA used production routes and synthetic HTTP fixtures at 1280×720 and 390×844: schedule list/detail, selected-day return, direct-detail refresh, unavailable and empty states, profile layout/editing, and legal navigation. Screenshots remain outside the repository.
+- Backend code was unchanged. The existing schedule list/retrieve queryset was reviewed: it restricts Nasabah reads to active, approved bank memberships, published schedules that have not ended, and eligible recipients. This frontend change reuses that server enforcement.

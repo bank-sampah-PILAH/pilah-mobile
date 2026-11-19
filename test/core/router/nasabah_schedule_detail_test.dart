@@ -41,7 +41,7 @@ void main() {
     api.on('GET', '/api/v1/jadwal/schedule-1', json: {
       ...JadwalModel.fromEntity(schedule).toJson(),
       'id': schedule.id,
-      'bank_sampah': schedule.bankSampahId,
+      'bank_sampah_id': schedule.bankSampahId,
       'status': schedule.status,
     });
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
@@ -100,5 +100,13 @@ void main() {
     expect(router.routeInformationProvider.value.uri.queryParameters['date'],
         date);
     expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
+
+    // A direct link reconstructs the page from its URL, with no router extra.
+    router.go('/jadwal/schedule-1?date=$date');
+    await tester.pumpAndSettle();
+    expect(find.text('Detail Jadwal'), findsOneWidget);
+    expect(find.text('Balai Warga'), findsOneWidget);
+    expect(api.requests, hasLength(2));
+    expect(api.last.headers['Authorization'], 'Bearer token-123');
   });
 }
