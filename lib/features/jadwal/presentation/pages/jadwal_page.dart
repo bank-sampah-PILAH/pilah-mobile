@@ -296,11 +296,9 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     await _changeStatus(item, JadwalAction.selesaikan);
   }
 
-  /// Pengurus di layar lebar memakai kepala halaman yang sama dengan tab web
+  /// Layar lebar memakai kepala halaman yang sama dengan tab web
   /// lain, di dalam daftar, bukan `AppBar`.
-  bool get _webHeader =>
-      !widget.customerMode &&
-      context.layoutBreakpoint != LayoutBreakpoint.compact;
+  bool get _webHeader => context.layoutBreakpoint != LayoutBreakpoint.compact;
 
   /// Di jendela expanded "Buat Jadwal" ada di kepala halaman seperti tab web
   /// lain, bukan tombol mengambang; di bawahnya tombol mengambang tetap.
@@ -313,11 +311,12 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     return Scaffold(
       backgroundColor:
           WebContentSurface.pageColor(context, phone: Colors.white),
-      appBar: widget.customerMode
-          ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
-          : _webHeader
-              ? null
-              : const NasabahPageAppBar(title: 'Jadwal Kegiatan'),
+      appBar: _webHeader
+          ? null
+          : NasabahPageAppBar(
+              title: widget.customerMode
+                  ? 'Jadwal Bank Sampah'
+                  : 'Jadwal Kegiatan'),
       floatingActionButton: widget.customerMode || _createInHeader
           ? null
           : Builder(
@@ -369,7 +368,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     return RefreshIndicator(
       onRefresh: _refreshAgenda,
       child: widget.customerMode
-          ? _buildCustomerAgenda(items, loadedState)
+          ? ContentFrame(child: _buildCustomerAgenda(items, loadedState))
           : MasterDetailLayout(
               masterScrolls: true,
               master: _buildPengurusAgenda(items, loadedState),
@@ -381,22 +380,36 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
   Widget _buildCustomerAgenda(
     List<JadwalEntity> items,
     JadwalLoaded loadedState,
-  ) {
-    return ListView(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: [
-        JadwalCalendar(
-          selectedDate: _selectedDate,
-          scheduledDates: loadedState.scheduledDates,
-          isMonthExpanded: _isMonthExpanded,
-          onSelectDate: _selectDate,
-          onNavigate: _navigateCalendar,
-          onToggleMonth: () =>
-              setState(() => _isMonthExpanded = !_isMonthExpanded),
-        ),
-        const SizedBox(height: 24),
+  ) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final sideBySide =
+            _webHeader && constraints.maxWidth >= _sideBySideMinWidth;
+        final sideInset = ContentFrame.insetOf(context) +
+            EdgeInsets.symmetric(
+              horizontal: _webHeader ? AppSpacing.webGutter : AppSpacing.lg,
+            );
+        final calendar = _agendaCalendar(loadedState, sideBySide: sideBySide);
+        final agenda = _customerAgendaChildren(items, loadedState);
+        final header = _agendaHeader(loadedState);
+        return sideBySide
+            ? _sideBySideAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda,
+                loadedState: loadedState)
+            : _stackedAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda);
+      });
+
+  List<Widget> _customerAgendaChildren(
+    List<JadwalEntity> items,
+    JadwalLoaded loadedState,
+  ) =>
+      [
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -455,9 +468,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
           ),
         if (!loadedState.isLoading && loadedState.hasMore)
           _buildLoadMoreFooter(loadedState),
-      ],
-    );
-  }
+      ];
 
   Widget _buildPengurusAgenda(
     List<JadwalEntity> items,
@@ -522,7 +533,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
 
   List<Widget> _agendaHeader(JadwalLoaded loadedState) => [
         AppPageHeader(
-          title: 'Jadwal Kegiatan',
+          title: widget.customerMode ? 'Jadwal Bank Sampah' : 'Jadwal Kegiatan',
           actions: [
             if (_createInHeader)
               AppButton(

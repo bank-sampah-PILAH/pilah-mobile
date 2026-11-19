@@ -21,3 +21,5 @@ Baseline: `origin/staging` at `ed4004a5`; branch: `feature/pil-536`.
 
 - RED command: `flutter test --no-pub test/features/jadwal/presentation/pages/jadwal_customer_view_test.dart --plain-name "wide customer agenda reuses the web header and side calendar" --reporter expanded`
 - Actual RED: the 1440-pixel customer schedule page had no `AppPageHeader`; expected one, found zero. One test failed.
+- GREEN: customer schedules reuse the existing header, calendar, stacked/side-by-side agenda and empty state; customer requests remain day-scoped and have no staff actions.
+- GREEN command: `flutter test --no-pub test/features/jadwal test/core/router/nasabah_schedule_detail_test.dart --reporter expanded` — 174 passed.
