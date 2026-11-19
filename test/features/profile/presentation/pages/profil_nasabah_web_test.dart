@@ -10,7 +10,8 @@ import 'package:pilah_mobile/services/di.dart';
 import '../../../../support/auth_support.dart';
 
 void main() {
-  testWidgets('desktop Nasabah profile uses the web header and full-width scroll',
+  testWidgets(
+      'desktop Nasabah profile uses the web header and full-width scroll',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -18,11 +19,17 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
     addTearDown(di.reset);
-    final auth = authNotifierIn(Authenticated(authEntity: const AuthEntity(
-      id: 'customer', name: 'Siti', email: 'siti@example.test',
-      photoUrl: '', token: 'token', role: 'nasabah',
+    final auth = authNotifierIn(Authenticated(
+        authEntity: const AuthEntity(
+      id: 'customer',
+      name: 'Siti',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'token',
+      role: 'nasabah',
     )));
-    await tester.pumpWidget(withAuthenticationProvider(auth,
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
       const MaterialApp(home: ProfilePage(isWeb: true)),
     ));
     await tester.pumpAndSettle();

@@ -28,3 +28,6 @@ Baseline: `origin/staging` at `ed4004a5`; branch: `feature/pil-536`.
 
 - RED command: `flutter test --no-pub test/features/profile/presentation/pages/profil_nasabah_web_test.dart --reporter expanded`
 - Actual RED: `ProfilePage(isWeb: true)` still used the phone profile; expected one `AppPageHeader`, found zero. One test failed.
+- GREEN: web profile reuses `AppPageHeader` and `ContentFrame`, keeps the scroll area at the window edge, and retains the existing profile form and legal content.
+- GREEN command: `flutter test --no-pub <all test/features/profile/presentation/pages/profil_nasabah*_test.dart files> test/features/legal test/core/router/legal_routes_test.dart --reporter expanded` — 35 passed.
+- The broader profile suite reported two staff-logo filename failures on Windows; these are tracked separately from this focused GREEN result.
