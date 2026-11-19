@@ -42,6 +42,29 @@ class CompleteProfileRequest {
       };
 }
 
+/// A bank coordinate and where it came from (PIL-326).
+///
+/// One value, not a point plus a separate optional source: a bare source with
+/// no point cannot be expressed, so the registration payload cannot contradict
+/// itself.
+class TitikLokasiBank {
+  const TitikLokasiBank({
+    required this.latitude,
+    required this.longitude,
+    required this.sumber,
+    this.alamat,
+  });
+
+  final double latitude;
+  final double longitude;
+
+  /// `gps`, `geocode`, `tautan` or `manual` (the backend's vocabulary).
+  final String sumber;
+
+  /// Address the geocoder matched, when there was one.
+  final String? alamat;
+}
+
 class RegisterBankSampahRequest {
   final String nama;
   final String alamat;
@@ -52,13 +75,10 @@ class RegisterBankSampahRequest {
   final Uint8List fotoKegiatanBytes;
   final String fotoKegiatanFilename;
 
-  /// Location the penguru picked on the map, optional (PIL-326). Absent
-  /// when the penguru skipped it; the backend stores both or neither.
-  final ({double latitude, double longitude})? lokasi;
-
-  /// Where the coordinate came from (PIL-326): `gps`, `geocode`, `tautan` or
-  /// `manual`. Stored so a wrong pin can be traced back to its source.
-  final String? sumberKoordinat;
+  /// Location the pengurus chose, optional (PIL-326). Absent when they
+  /// skipped it; the backend stores both coordinates or neither, together with
+  /// the point's source.
+  final TitikLokasiBank? lokasi;
 
   const RegisterBankSampahRequest({
     required this.nama,
@@ -68,7 +88,6 @@ class RegisterBankSampahRequest {
     required this.fotoKegiatanBytes,
     required this.fotoKegiatanFilename,
     this.lokasi,
-    this.sumberKoordinat,
   });
 }
 
