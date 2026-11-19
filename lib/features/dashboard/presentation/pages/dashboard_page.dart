@@ -2,8 +2,11 @@ import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surf
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 
@@ -27,6 +30,9 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_w
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
+import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
+import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -56,8 +62,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   /// Loads what the dashboard shows first, and tells analytics how long that
   /// took and how many of its two parts failed.
   Future<void> _loadFirst() async {
-    // Read before waiting, so the report still goes out if the page is left
-    // while loading: leaving early is part of how slow the dashboard felt.
     final container = ProviderScope.containerOf(context, listen: false);
     final analytics = container.read(analyticsClientProvider);
     final watch = Stopwatch()..start();
@@ -75,7 +79,34 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         container.read(recentActivityProvider) is RecentActivityError,
       ].where((failed) => failed).length,
     );
+    await _maybePromptLokasi();
   }
+
+  /// One session-scoped nudge for a bank that has no map coordinates yet
+  /// (PIL-326 legacy banks). Dismissal is per session — the bank whose
+  /// penguru skipped it is asked again next launch, which is the desired
+  /// backfill behaviour, needing no "don't ask again" storage.
+  ///
+  /// The check runs after the first frame because it opens a dialog, and
+  /// its bank fetch is best-effort about the session only: a failure returns
+  /// null and the dashboard simply shows no prompt rather than an error. A
+  /// container without the profile provider registered (shell tests) also
+  /// just means no prompt.
+  Future<void> _maybePromptLokasi() async {
+    final container = ProviderScope.containerOf(context, listen: false);
+    try {
+      final bank = await container.read(profileProvider.notifier).ensureBank();
+      if (!mounted || bank == null || bank.lokasi != null) return;
+      await _showLokasiPrompt(bank.nama);
+    } on Exception catch (_) {
+      // No profile provider in this scope: the prompt is untestable noise.
+    }
+  }
+
+  Future<void> _showLokasiPrompt(String bankNama) => showAdaptiveSurface<void>(
+        context,
+        builder: (_) => _LokasiPromptSheet(bankNama: bankNama),
+      );
 
   /// Refetches everything the dashboard renders. The header's bank sampah name
   /// comes from the cached session rather than provider state, so auth refresh
@@ -204,4 +235,116 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           );
         },
       );
+}
+
+/// The PIL-326 lokasi prompt: pick a point, save it, and keep the pick when
+/// the save fails so the same button retries instead of re-picking.
+class _LokasiPromptSheet extends StatefulWidget {
+  const _LokasiPromptSheet({required this.bankNama});
+
+  final String bankNama;
+
+  @override
+  State<_LokasiPromptSheet> createState() => _LokasiPromptSheetState();
+}
+
+class _LokasiPromptSheetState extends State<_LokasiPromptSheet> {
+  ({double latitude, double longitude, double radiusKm})? _picked;
+
+  Future<void> _onPressed() async {
+    // Everything the save needs is captured before the await so no
+    // BuildContext is used across the picker gap.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final container = ProviderScope.containerOf(context, listen: false);
+    final notifier = container.read(profileProvider.notifier);
+    // ensureBank() is a no-op when the profile is already cached.
+    await notifier.ensureBank();
+    if (!mounted) return;
+    _picked ??= await _pilihTitikDiPeta(navigator);
+    final titik = _picked;
+    if (titik == null) return;
+    setState(() {});
+    final bank = container.read(profileProvider).bankSampah;
+    if (bank == null) return;
+    final error = await _simpanTitik(notifier, bank, titik);
+    if (!mounted) return;
+    if (error != null) {
+      // Keep the sheet and the picked point so the user can retry the save
+      // without hunting the spot again.
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    navigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final picked = _picked;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.location_on_outlined, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            'Lengkapi lokasi bank sampah',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: AppFontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${widget.bankNama} belum memasang titik lokasi di peta. Nasabah '
+            'yang mencari bank sampah belum dapat menemukannya di peta.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          AppButton(
+            key: const Key('prompt_pilih_peta'),
+            // After a failed save the pick is kept, so the same button
+            // retries it instead of asking for the point again.
+            label: picked == null ? 'Pilih di Peta' : 'Simpan Lokasi',
+            expand: false,
+            onPressed: _onPressed,
+          ),
+          const SizedBox(height: 8),
+          AppButton(
+            label: 'Nanti',
+            variant: AppButtonVariant.text,
+            expand: false,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Opens the map picker and returns the picked coordinate trio, or null when
+/// the user backs out.
+Future<({double latitude, double longitude, double radiusKm})?>
+    _pilihTitikDiPeta(NavigatorState navigator) =>
+        navigator.push<({double latitude, double longitude, double radiusKm})>(
+          MaterialPageRoute(builder: (_) => const MapPickerPage()),
+        );
+
+/// Saves the picked point on the bank, leaving the rest of the record
+/// untouched. Returns the error message, or null on success.
+Future<String?> _simpanTitik(
+  ProfileNotifier notifier,
+  BankSampahProfile bank,
+  ({double latitude, double longitude, double radiusKm}) titik,
+) async {
+  // radiusKm belongs to cari, not the stored point.
+  final error = await notifier.updateBankSampah(
+    nama: bank.nama,
+    alamat: bank.alamat,
+    noHpPic: bank.noHpPic,
+    lokasi: (latitude: titik.latitude, longitude: titik.longitude),
+  );
+  return error?.displayMessage;
 }
