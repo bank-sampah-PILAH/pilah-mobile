@@ -5,6 +5,8 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -79,7 +81,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
   /// Marketplace circle radius in km; handle drag updates it live.
   late double _radiusKm = widget.initialRadiusKm ?? MapPickerPage.radiusDefault;
 
-  static const _defaultCenter = LatLng(-2.5, 118.0);
+  /// Fallback centre when the device fix is unavailable: the UI campus.
+  static const _defaultCenter = LatLng(-6.3703148, 106.8273785);
 
   /// Backend search cap (apps/bank_sampah/views.py JARAK_MAKSIMAL_KM) capped
   /// further for the picker (20 km covers city-scale bank hunting).
@@ -209,6 +212,23 @@ class _MapPickerPageState extends State<MapPickerPage> {
     if (pair != null) _controller.move(LatLng(pair.$1, pair.$2), 17);
   }
 
+  /// A picker opened without a saved point starts from the device location
+  /// (the fallback centre already seeded the fields); a failed fix simply
+  /// leaves the fallback in place.
+  Future<void> _mulaiDariLokasiSekarang() async {
+    if (widget.initialCenter != null) return;
+    try {
+      final lokasi = await di<LocationService>().currentLocation();
+      if (!mounted || lokasi == null) return;
+      final titik = LatLng(lokasi.latitude, lokasi.longitude);
+      _controller.move(titik, 16);
+      _syncFieldsTo(titik);
+    } catch (_) {
+      // Best effort: no fix, no service registered (widget tests, web) —
+      // the fallback centre stays.
+    }
+  }
+
   Future<void> _useMyLocation() async {
     final lokasi = await di<LocationService>().currentLocation();
     if (lokasi == null) {
@@ -255,331 +275,391 @@ class _MapPickerPageState extends State<MapPickerPage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
-        body: Column(
-          children: [
-            const AppBackHeader(
-              title: 'Pilih Lokasi di Peta',
-              backKey: Key('peta_kembali'),
+        body: context.layoutBreakpoint == LayoutBreakpoint.compact
+            ? _buildPhone(context)
+            : _buildWide(context),
+      );
+
+  /// Phone (and native) layout: the map fills the screen, the search floats
+  /// over it and the controls sit in the bottom card.
+  Widget _buildPhone(BuildContext context) => Column(
+        children: [
+          const AppBackHeader(
+            title: 'Pilih Lokasi di Peta',
+            backKey: Key('peta_kembali'),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                _peta(context),
+                _fabLokasi(),
+                if (widget.showRadius) _petunjukGeser(),
+                _posisiCari(),
+              ],
             ),
-            Expanded(
-              child: Stack(
-                children: [
-                  FlutterMap(
-                    mapController: _controller,
-                    options: MapOptions(
-                      initialCenter: widget.initialCenter ?? _defaultCenter,
-                      initialZoom: 16,
-                      onMapEvent: (event) {
-                        // A pan means the user chose the camera over a typed
-                        // value: drop focus so the fields follow it again.
-                        if (_latitudeFocus.hasFocus ||
-                            _longitudeFocus.hasFocus) {
-                          FocusScope.of(context).unfocus();
-                        }
-                        _syncFieldsTo(event.camera.center);
-                        // The circle is drawn anchored to the camera center;
-                        // every pan/zoom repaints it around the new center.
-                        if (mounted) setState(() {});
-                      },
-                    ),
-                    children: [
-                      widget.tileLayerBuilder(),
-                      osmAttribution(),
-                      if (widget.showRadius)
-                        _LingkaranRadius(
-                          controller: _controller,
-                          radiusKm: _radiusKm,
-                        ),
-                      // The fixed center dot: the map moves, the marker does
-                      // not. Marketplace-style: a solid dot with a white ring.
-                      const Center(
-                        child: _TitikPusat(key: Key('peta_titik_pusat')),
-                      ),
-                    ],
-                  ),
-                  // The fixed center pin now lives inside the FlutterMap
-                  // children so the radius circle tracks the same camera.
-                  // Floating locate-me button over the map (GM-chrome).
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: _MapFab(
-                      key: const Key('peta_lokasi_saya'),
-                      icon: Icons.my_location,
-                      onTap: _useMyLocation,
-                    ),
-                  ),
-                  // Marketplace hint pill above the bottom panel.
-                  if (widget.showRadius)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 12,
-                      child: Center(
-                        child: Container(
-                          key: const Key('peta_petunjuk_geser'),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.black.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                          ),
-                          child: Text(
-                            'Geser peta untuk memilih lokasi',
-                            style: NasabahStyle.text(
-                              13,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // GM-style place search over the map: type a place, tap a
-                  // result, camera moves there.
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    top: 12,
-                    child: Column(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.shadow,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            key: const Key('peta_cari_tempat'),
-                            controller: _cari,
-                            focusNode: _cariFocus,
-                            style: NasabahStyle.text(14),
-                            onChanged: _cariTempat,
-                            decoration: appSearchDecoration(
-                              hintText:
-                                  'Cari tempat (mis. Universitas Indonesia)',
-                            ).copyWith(
-                              hintStyle: NasabahStyle.text(13,
-                                  color: NasabahStyle.muted),
-                              prefixIconColor: AppColors.greenDark,
-                              suffixIcon: _mencari
-                                  ? const Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    )
-                                  : (_cari.text.isEmpty
-                                      ? null
-                                      : IconButton(
-                                          icon: const Icon(
-                                            Icons.close,
-                                            size: 18,
-                                          ),
-                                          onPressed: () {
-                                            _cari.clear();
-                                            _cariTempat('');
-                                          },
-                                        )),
-                              isDense: true,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              border: OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.xl),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_hasilCari.isNotEmpty)
-                          Container(
-                            key: const Key('peta_hasil_cari'),
-                            margin: const EdgeInsets.only(top: 4),
-                            constraints: const BoxConstraints(maxHeight: 240),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: AppColors.shadow,
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              itemCount: _hasilCari.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
-                              itemBuilder: (context, i) => ListTile(
-                                key: Key('peta_hasil_$i'),
-                                dense: true,
-                                leading: const Icon(
-                                  Icons.place_outlined,
-                                  color: AppColors.greenDark,
-                                  size: 20,
-                                ),
-                                title: Text(
-                                  _hasilCari[i].nama,
-                                  style: NasabahStyle.text(12),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                onTap: () => _pilihHasil(_hasilCari[i]),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          _panelBawah(),
+        ],
+      );
+
+  /// Wide window (web desktop): Google Maps' shape — the controls are a
+  /// panel on the left, the map takes the rest of the window.
+  Widget _buildWide(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: LayoutBreakpoint.sidePanelWidth,
+            decoration: const BoxDecoration(
+              border: Border(right: BorderSide(color: AppColors.border)),
             ),
-            // Bottom coordinate panel — rounded white card over the map.
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadowSoft,
-                    blurRadius: 16,
-                    offset: Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Marketplace radius row only in the cari-bank flow.
-                    if (widget.showRadius) ...[
-                      Row(
-                        children: [
-                          Text(
-                            'Radius:',
-                            style: NasabahStyle.text(
-                              14,
-                              color: NasabahStyle.muted,
-                            ),
-                          ),
-                          Expanded(
-                            child: Slider(
-                              key: const Key('peta_radius_slider'),
-                              // Log scale on 0.5–20: linear sliders crush the
-                              // sub-5 km range where real distances live.
-                              value:
-                                  _log(_radiusKm.clamp(0.5, _radiusMaksimalKm)),
-                              min: _log(0.5),
-                              max: _log(_radiusMaksimalKm),
-                              activeColor: AppColors.greenDark,
-                              onChanged: (t) {
-                                setState(() => _radiusKm = _exp(t));
-                                _pusatkanDenganRadius(
-                                    _controller.camera.center);
-                              },
-                            ),
-                          ),
-                          Text(
-                            '${_radiusKm.toStringAsFixed(_radiusKm == _radiusKm.roundToDouble() ? 0 : 1)} km',
-                            key: const Key('peta_radius_label'),
-                            style: NasabahStyle.text(
-                              14,
-                              weight: AppFontWeight.semibold,
-                              color: AppColors.greenDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            key: const Key('latitude_field'),
-                            controller: _latitudeField,
-                            focusNode: _latitudeFocus,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              signed: true,
-                              decimal: true,
-                            ),
-                            style: NasabahStyle.text(14),
-                            decoration: appInputDecoration(hintText: 'Lintang')
-                                .copyWith(
-                              labelText: 'Lintang',
-                              labelStyle: NasabahStyle.text(
-                                13,
-                                color: NasabahStyle.muted,
-                              ),
-                              floatingLabelStyle: NasabahStyle.text(
-                                13,
-                                color: AppColors.greenDark,
-                              ),
-                            ),
-                            onSubmitted: (_) => _moveCameraToFields(),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            key: const Key('longitude_field'),
-                            controller: _longitudeField,
-                            focusNode: _longitudeFocus,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              signed: true,
-                              decimal: true,
-                            ),
-                            style: NasabahStyle.text(14),
-                            decoration:
-                                appInputDecoration(hintText: 'Bujur').copyWith(
-                              labelText: 'Bujur',
-                              labelStyle: NasabahStyle.text(
-                                13,
-                                color: NasabahStyle.muted,
-                              ),
-                              floatingLabelStyle: NasabahStyle.text(
-                                13,
-                                color: AppColors.greenDark,
-                              ),
-                            ),
-                            onSubmitted: (_) => _moveCameraToFields(),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      key: const Key('simpan_lokasi'),
-                      label: 'Simpan Lokasi',
-                      onPressed: _simpan,
-                    ),
-                  ],
+            child: Column(
+              children: [
+                const AppBackHeader(
+                  title: 'Pilih Lokasi di Peta',
+                  backKey: Key('peta_kembali'),
                 ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _kotakCari(),
+                        if (_hasilCari.isNotEmpty) _daftarHasil(),
+                        const SizedBox(height: AppSpacing.xl),
+                        _kontrolLokasi(),
+                        const SizedBox(height: AppSpacing.md),
+                        _tombolSimpan(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                _peta(context),
+                _fabLokasi(),
+                if (widget.showRadius) _petunjukGeser(),
+              ],
+            ),
+          ),
+        ],
+      );
+
+  Widget _peta(BuildContext context) => FlutterMap(
+        mapController: _controller,
+        options: MapOptions(
+          initialCenter: widget.initialCenter ?? _defaultCenter,
+          initialZoom: 16,
+          onMapReady: _mulaiDariLokasiSekarang,
+          onMapEvent: (event) {
+            // A pan means the user chose the camera over a typed
+            // value: drop focus so the fields follow it again.
+            if (_latitudeFocus.hasFocus || _longitudeFocus.hasFocus) {
+              FocusScope.of(context).unfocus();
+            }
+            _syncFieldsTo(event.camera.center);
+            // The circle is drawn anchored to the camera center;
+            // every pan/zoom repaints it around the new center.
+            if (mounted) setState(() {});
+          },
+        ),
+        children: [
+          widget.tileLayerBuilder(),
+          osmAttribution(),
+          if (widget.showRadius)
+            _LingkaranRadius(
+              controller: _controller,
+              radiusKm: _radiusKm,
+            ),
+          // The fixed center dot: the map moves, the marker does
+          // not. Marketplace-style: a solid dot with a white ring.
+          const Center(
+            child: _TitikPusat(key: Key('peta_titik_pusat')),
+          ),
+        ],
+      );
+
+  Widget _fabLokasi() => Positioned(
+        right: 16,
+        bottom: 16,
+        child: _MapFab(
+          key: const Key('peta_lokasi_saya'),
+          icon: Icons.my_location,
+          onTap: _useMyLocation,
+        ),
+      );
+
+  Widget _petunjukGeser() => Positioned(
+        left: 0,
+        right: 0,
+        bottom: 12,
+        child: Center(
+          child: Container(
+            key: const Key('peta_petunjuk_geser'),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.black.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Text(
+              'Geser peta untuk memilih lokasi',
+              style: NasabahStyle.text(
+                13,
+                color: Colors.white,
               ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _posisiCari() => Positioned(
+        left: 16,
+        right: 16,
+        top: 12,
+        child: Column(
+          children: [
+            _kotakCari(),
+            if (_hasilCari.isNotEmpty) _daftarHasil(),
+          ],
+        ),
+      );
+
+  Widget _kotakCari() => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
           ],
+        ),
+        child: TextField(
+          key: const Key('peta_cari_tempat'),
+          controller: _cari,
+          focusNode: _cariFocus,
+          style: NasabahStyle.text(14),
+          onChanged: _cariTempat,
+          decoration: appSearchDecoration(
+            hintText: 'Cari tempat (mis. Universitas Indonesia)',
+          ).copyWith(
+            hintStyle: NasabahStyle.text(13, color: NasabahStyle.muted),
+            prefixIconColor: AppColors.greenDark,
+            suffixIcon: _mencari
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
+                : (_cari.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          _cari.clear();
+                          _cariTempat('');
+                        },
+                      )),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      );
+
+  Widget _daftarHasil() => Container(
+        key: const Key('peta_hasil_cari'),
+        margin: const EdgeInsets.only(top: 4),
+        constraints: const BoxConstraints(maxHeight: 240),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: _hasilCari.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, i) => ListTile(
+            key: Key('peta_hasil_$i'),
+            dense: true,
+            leading: const Icon(
+              Icons.place_outlined,
+              color: AppColors.greenDark,
+              size: 20,
+            ),
+            title: Text(
+              _hasilCari[i].nama,
+              style: NasabahStyle.text(12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => _pilihHasil(_hasilCari[i]),
+          ),
+        ),
+      );
+
+  Widget _kontrolLokasi() => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Marketplace radius row only in the cari-bank flow.
+          if (widget.showRadius) ...[
+            Row(
+              children: [
+                Text(
+                  'Radius:',
+                  style: NasabahStyle.text(
+                    14,
+                    color: NasabahStyle.muted,
+                  ),
+                ),
+                Expanded(
+                  child: Slider(
+                    key: const Key('peta_radius_slider'),
+                    // Log scale on 0.5–20: linear sliders crush the
+                    // sub-5 km range where real distances live.
+                    value: _log(_radiusKm.clamp(0.5, _radiusMaksimalKm)),
+                    min: _log(0.5),
+                    max: _log(_radiusMaksimalKm),
+                    activeColor: AppColors.greenDark,
+                    onChanged: (t) {
+                      setState(() => _radiusKm = _exp(t));
+                      _pusatkanDenganRadius(_controller.camera.center);
+                    },
+                  ),
+                ),
+                Text(
+                  '${_radiusKm.toStringAsFixed(_radiusKm == _radiusKm.roundToDouble() ? 0 : 1)} km',
+                  key: const Key('peta_radius_label'),
+                  style: NasabahStyle.text(
+                    14,
+                    weight: AppFontWeight.semibold,
+                    color: AppColors.greenDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('latitude_field'),
+                  controller: _latitudeField,
+                  focusNode: _latitudeFocus,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: true,
+                    decimal: true,
+                  ),
+                  style: NasabahStyle.text(14),
+                  decoration: appInputDecoration(hintText: 'Lintang').copyWith(
+                    labelText: 'Lintang',
+                    labelStyle: NasabahStyle.text(
+                      13,
+                      color: NasabahStyle.muted,
+                    ),
+                    floatingLabelStyle: NasabahStyle.text(
+                      13,
+                      color: AppColors.greenDark,
+                    ),
+                  ),
+                  onSubmitted: (_) => _moveCameraToFields(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  key: const Key('longitude_field'),
+                  controller: _longitudeField,
+                  focusNode: _longitudeFocus,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: true,
+                    decimal: true,
+                  ),
+                  style: NasabahStyle.text(14),
+                  decoration: appInputDecoration(hintText: 'Bujur').copyWith(
+                    labelText: 'Bujur',
+                    labelStyle: NasabahStyle.text(
+                      13,
+                      color: NasabahStyle.muted,
+                    ),
+                    floatingLabelStyle: NasabahStyle.text(
+                      13,
+                      color: AppColors.greenDark,
+                    ),
+                  ),
+                  onSubmitted: (_) => _moveCameraToFields(),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+
+  Widget _tombolSimpan() => AppButton(
+        key: const Key('simpan_lokasi'),
+        label: 'Simpan Lokasi',
+        onPressed: _simpan,
+      );
+
+  Widget _panelBawah() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowSoft,
+              blurRadius: 16,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _kontrolLokasi(),
+              const SizedBox(height: 12),
+              _tombolSimpan(),
+            ],
+          ),
         ),
       );
 }
