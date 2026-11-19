@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/errors/error_filter.dart';
 import 'package:pilah_mobile/core/errors/error_flows.dart';
+import 'package:pilah_mobile/core/errors/error_http.dart';
 import 'package:pilah_mobile/core/errors/error_request_id.dart';
 
 /// Tells the team about an error nobody expected. Screens and cubits never
@@ -30,13 +31,25 @@ class NoopErrorReporter implements ErrorReporter {
   }) {}
 }
 
-/// Adds the screen, the core flow if there is one, and the id of the request
-/// that failed to every error, so the team knows where it happened without
-/// anyone listing the screens by hand, and can find it in the server's log.
+/// The version the app was built as (`--dart-define=APP_VERSION=...`), empty
+/// for a build that was not given one.
+const builtAppVersion = String.fromEnvironment('APP_VERSION');
+
+/// Adds the screen, the core flow if there is one, the app version, and what
+/// is known of the request that failed (its id, the status and the endpoint)
+/// to every error, so the team knows where it happened without anyone listing
+/// the screens by hand, and can find the call in the server's log.
 class ContextualErrorReporter implements ErrorReporter {
-  ContextualErrorReporter({required this.inner, required this.currentScreen});
+  ContextualErrorReporter({
+    required this.inner,
+    required this.currentScreen,
+    this.appVersion = builtAppVersion,
+  });
 
   final ErrorReporter inner;
+
+  /// The version this build carries; empty when it has none.
+  final String appVersion;
 
   /// The name of the screen showing now (`AnalyticsScreenTracker.nameFor`), or
   /// null when there is none yet.
@@ -51,6 +64,8 @@ class ContextualErrorReporter implements ErrorReporter {
     final screen = currentScreen();
     final flow = screen == null ? null : ErrorFlows.nameFor(screen);
     final requestId = ErrorRequestId.of(error);
+    final status = ErrorHttp.statusOf(error);
+    final path = ErrorHttp.pathOf(error);
     inner.report(
       error,
       stack,
@@ -58,9 +73,42 @@ class ContextualErrorReporter implements ErrorReporter {
         if (screen != null) 'layar': screen,
         if (flow != null) 'alur': flow,
         if (requestId != null) 'id_permintaan': requestId,
+        if (status != null) 'http_status': status,
+        if (path != null) 'jalur_api': path,
+        if (appVersion.isNotEmpty) 'versi_app': appVersion,
         ...context,
       },
     );
+  }
+}
+
+/// Passes on a failed request once. The same failure is caught where it
+/// arrives (the network layer) and again where it ends up (a global handler);
+/// the team should see one error, not two. An error with no request id is
+/// always passed on.
+class DeduplicatingErrorReporter implements ErrorReporter {
+  DeduplicatingErrorReporter({required this.inner, this.remember = 50});
+
+  final ErrorReporter inner;
+
+  /// How many request ids are kept; the oldest is forgotten first.
+  final int remember;
+
+  final _seen = <String>[];
+
+  @override
+  void report(
+    Object error,
+    StackTrace stack, {
+    Map<String, Object?> context = const {},
+  }) {
+    final id = ErrorRequestId.of(error);
+    if (id != null) {
+      if (_seen.contains(id)) return;
+      _seen.add(id);
+      if (_seen.length > remember) _seen.removeAt(0);
+    }
+    inner.report(error, stack, context: context);
   }
 }
 

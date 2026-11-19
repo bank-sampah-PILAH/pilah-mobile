@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/request_id_interceptor.dart';
 import 'package:pilah_mobile/core/client/retry_interceptor.dart';
+import 'package:pilah_mobile/core/client/server_error_interceptor.dart';
+import 'package:pilah_mobile/core/errors/error_reporter.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -29,6 +32,13 @@ class NetworkService {
     // Added after the logger so a dropped GET is still logged, then quietly
     // retried once before the failure reaches state handling.
     dio.interceptors.add(RetryInterceptor(dio));
+    // Last, so it sees only the failures nobody retried away. A server failure
+    // is reported here because most screens catch it and show "Coba Lagi".
+    dio.interceptors.add(ServerErrorInterceptor(
+      () => di.isRegistered<ErrorReporter>()
+          ? di<ErrorReporter>()
+          : const NoopErrorReporter(),
+    ));
   }
 
   Map<String, String> headersRequest() {
