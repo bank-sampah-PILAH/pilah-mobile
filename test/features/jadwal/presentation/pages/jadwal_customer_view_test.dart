@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -55,7 +56,8 @@ void main() {
     );
 
     await tester.tap(find.text('Balai Warga'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('Detail Jadwal'), findsOneWidget);
     expect(find.text('Ubah Jadwal'), findsNothing);
   });
 
@@ -149,10 +151,21 @@ Future<TestJadwalNotifier> _pumpCustomer(
     onLoadJadwal: onLoadJadwal,
     onLoadCalendarDates: onLoadCalendarDates,
   );
+  final router = GoRouter(initialLocation: '/jadwal', routes: [
+    GoRoute(
+        path: '/jadwal',
+        builder: (_, __) => const JadwalPage(customerMode: true),
+        routes: [
+          GoRoute(
+              path: ':id',
+              builder: (_, __) => const Scaffold(body: Text('Detail Jadwal'))),
+        ]),
+  ]);
+  addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [jadwalProvider.overrideWith(() => notifier)],
-      child: const MaterialApp(home: JadwalPage(customerMode: true)),
+      child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pump();

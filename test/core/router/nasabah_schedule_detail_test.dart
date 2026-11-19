@@ -23,7 +23,8 @@ import '../../support/stub_api.dart';
 import '../../support/profile_support.dart';
 
 void main() {
-  testWidgets('Nasabah opens read-only schedule details and returns to the agenda',
+  testWidgets(
+      'Nasabah opens read-only schedule details and returns to the agenda',
       (tester) async {
     final day = DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 1));
     final schedule = JadwalEntity(
@@ -51,8 +52,13 @@ void main() {
     });
     final auth = authNotifierIn(Authenticated(
       authEntity: const AuthEntity(
-        id: 'customer', name: 'Siti', email: 'siti@example.test',
-        photoUrl: '', token: 'token', role: 'nasabah', nextStep: 'dashboard',
+        id: 'customer',
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'token',
+        role: 'nasabah',
+        nextStep: 'dashboard',
       ),
     ));
     final notifier = TestJadwalNotifier(
@@ -79,8 +85,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Detail Jadwal'), findsOneWidget);
-    expect(router.routeInformationProvider.value.uri.path,
-        '/jadwal/schedule-1');
+    expect(
+        router.routeInformationProvider.value.uri.path, '/jadwal/schedule-1');
     expect(find.text('Balai Warga'), findsOneWidget);
     expect(find.text('Bawa sampah yang sudah dipilah.'), findsOneWidget);
     expect(find.text('09:00'), findsOneWidget);
@@ -91,7 +97,8 @@ void main() {
 
     router.pop();
     await tester.pumpAndSettle();
-    expect(router.routeInformationProvider.value.uri.queryParameters['date'], date);
+    expect(router.routeInformationProvider.value.uri.queryParameters['date'],
+        date);
     expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
   });
 }

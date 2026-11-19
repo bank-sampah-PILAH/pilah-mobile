@@ -7,3 +7,5 @@ Baseline: `origin/staging` at `ed4004a5`; branch: `feature/pil-536`.
 - RED command: `flutter test --no-pub test/core/router/nasabah_schedule_detail_test.dart --reporter expanded`
 - Actual RED: tapping the schedule left the agenda open; expected one `Detail Jadwal` text, found zero. One test failed.
 - Setup failures (missing generated models and a missing shell provider fixture) were corrected before this demonstrated RED; they are not counted as RED evidence.
+- GREEN: the detail route fetches the schedule through the existing authenticated, membership-scoped endpoint, shows its information without management actions, and returns to the selected agenda date.
+- GREEN command: `flutter test --no-pub test/core/router/nasabah_schedule_detail_test.dart test/features/jadwal test/features/main/role_destinations_test.dart --reporter expanded` — 180 passed.

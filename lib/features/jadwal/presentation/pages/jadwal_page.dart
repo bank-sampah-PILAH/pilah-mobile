@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:clock/clock.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
@@ -437,7 +438,14 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: _ScheduleCard(
                 item: item,
-                onTap: null,
+                onTap: () => context.go(Uri(
+                  path: '${JadwalPage.route}/${Uri.encodeComponent(item.id)}',
+                  queryParameters: {
+                    'date': '${_selectedDate.year}-'
+                        '${_selectedDate.month.toString().padLeft(2, '0')}-'
+                        '${_selectedDate.day.toString().padLeft(2, '0')}'
+                  },
+                ).toString()),
                 onCancel: null,
                 onPublish: null,
                 onComplete: null,
