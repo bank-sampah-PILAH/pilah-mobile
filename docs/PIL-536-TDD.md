@@ -36,3 +36,5 @@ Baseline: `origin/staging` at `ed4004a5`; branch: `feature/pil-536`.
 
 - RED command: `flutter test --no-pub test/features/jadwal/presentation/pages/nasabah_jadwal_detail_page_test.dart --plain-name "a schedule spanning midnight shows its end date" --reporter expanded`
 - Actual RED: an overnight schedule showed its start date and both times but omitted the end date; expected `21/11/2026`, found zero. One test failed.
+- GREEN: a separate end date appears only when the activity crosses a local calendar day.
+- GREEN command: `flutter test --no-pub test/core/router/nasabah_schedule_detail_test.dart test/features/jadwal/presentation/pages/nasabah_jadwal_detail_page_test.dart --reporter expanded` — 3 passed.

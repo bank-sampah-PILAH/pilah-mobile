@@ -69,6 +69,14 @@ class NasabahJadwalDetailPage extends ConsumerWidget {
                                     label: 'Mulai',
                                     value: DateFormat('HH:mm')
                                         .format(schedule.mulaiPada.toLocal())),
+                                if (!DateUtils.isSameDay(
+                                  schedule.mulaiPada.toLocal(),
+                                  schedule.selesaiPada.toLocal(),
+                                ))
+                                  AppDetailRow(
+                                    label: 'Tanggal selesai',
+                                    value: nasabahDate(schedule.selesaiPada),
+                                  ),
                                 AppDetailRow(
                                     label: 'Selesai',
                                     value: DateFormat('HH:mm').format(
