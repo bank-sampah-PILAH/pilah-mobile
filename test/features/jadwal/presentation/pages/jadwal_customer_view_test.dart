@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -10,6 +11,23 @@ import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calenda
 import '../../../../support/jadwal_provider_support.dart';
 
 void main() {
+  testWidgets('wide customer agenda reuses the web header and side calendar',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _pumpCustomer(tester, const JadwalLoaded([]));
+
+    expect(find.byType(AppPageHeader), findsOneWidget);
+    final calendar = tester.getRect(find.byType(JadwalCalendar));
+    final agenda = tester.getRect(find.text('0 jadwal'));
+    expect(agenda.left, greaterThan(calendar.right));
+    expect(find.text('Belum ada jadwal kegiatan'), findsOneWidget);
+    expect(find.text('Buat Jadwal'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('customer sees only published schedules in a read-only view', (
     tester,
   ) async {
