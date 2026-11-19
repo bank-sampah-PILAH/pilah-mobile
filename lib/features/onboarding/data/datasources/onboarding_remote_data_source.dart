@@ -44,6 +44,8 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
         'latitude': request.lokasi!.latitude.toStringAsFixed(6),
       if (request.lokasi != null)
         'longitude': request.lokasi!.longitude.toStringAsFixed(6),
+      if (request.lokasi != null && request.sumberKoordinat != null)
+        'koordinat_sumber': request.sumberKoordinat!,
       'foto_kegiatan': MultipartFile.fromBytes(
         request.fotoKegiatanBytes,
         filename: request.fotoKegiatanFilename,

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -18,6 +20,15 @@ import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
+import 'package:pilah_mobile/features/map/data/datasources/koordinat_remote_data_source.dart';
+import 'package:pilah_mobile/features/map/domain/entities/hasil_koordinat.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/mini_lokasi_map.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/osm_tiles.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/tile_health.dart';
+import 'package:latlong2/latlong.dart' hide Path;
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
@@ -59,10 +70,26 @@ class _RegisterBankSampahScreenState
   // A point picked on the map. Optional (PIL-326): skipping leaves the bank
   // without coordinates, the same as a legacy bank.
   ({double latitude, double longitude})? _lokasi;
+
+  /// Where [_lokasi] came from (PIL-326): `gps`, `geocode`, `tautan`, `manual`.
+  /// The backend stores it so a wrong pin can be traced to its source later.
+  String? _sumberKoordinat;
+
+  /// Address the geocoder matched, shown as the human confirmation when the
+  /// map itself cannot be drawn.
+  String? _lokasiAlamat;
+
+  /// One of the fallback lookups is in flight.
+  bool _mencariLokasi = false;
   final ImagePicker _picker = ImagePicker();
+
+  /// Input of the "paste a Google Maps link" dialog, owned here so closing the
+  /// dialog never leaves a disposed controller behind.
+  final _tautanController = TextEditingController();
 
   @override
   void dispose() {
+    _tautanController.dispose();
     _namaController.dispose();
     _alamatController.dispose();
     _phoneController.dispose();
@@ -88,6 +115,7 @@ class _RegisterBankSampahScreenState
       fotoKegiatanBytes: bytes,
       fotoKegiatanFilename: image.name,
       lokasi: _lokasi,
+      sumberKoordinat: _lokasi == null ? null : _sumberKoordinat,
     );
 
     // Sends the banked profile first when the user came through step one, and
@@ -156,10 +184,111 @@ class _RegisterBankSampahScreenState
     if (picked != null && mounted) {
       // The picker always returns the cari-bank trio; registration stores
       // just the coordinate pair.
-      setState(
-        () =>
-            _lokasi = (latitude: picked.latitude, longitude: picked.longitude),
+      _terapkanLokasi(
+        titik: (latitude: picked.latitude, longitude: picked.longitude),
+        sumber: 'manual',
       );
+    }
+  }
+
+  /// The one place a coordinate lands, from every door (PIL-326).
+  void _terapkanLokasi({
+    required ({double latitude, double longitude}) titik,
+    required String sumber,
+    String? alamat,
+  }) {
+    setState(() {
+      _lokasi = titik;
+      _sumberKoordinat = sumber;
+      _lokasiAlamat = alamat;
+    });
+  }
+
+  /// Door 1: the phone's own fix. No tiles, no network beyond GPS.
+  Future<void> _pakaiLokasiSaya() async {
+    setState(() => _mencariLokasi = true);
+    try {
+      final lokasi = await di<LocationService>().currentLocation();
+      if (!mounted) return;
+      if (lokasi == null) {
+        _showError(
+          'Lokasi perangkat tidak tersedia. Izinkan akses lokasi atau isi '
+          'koordinat manual.',
+        );
+        return;
+      }
+      _terapkanLokasi(
+        titik: (latitude: lokasi.latitude, longitude: lokasi.longitude),
+        sumber: 'gps',
+      );
+    } catch (_) {
+      if (mounted) {
+        _showError('Lokasi perangkat tidak dapat dibaca. Coba lagi.');
+      }
+    } finally {
+      if (mounted) setState(() => _mencariLokasi = false);
+    }
+  }
+
+  /// Door 2: look the address already typed above up on the server.
+  Future<void> _dariAlamat() async {
+    final alamat = _alamatController.text.trim();
+    if (alamat.isEmpty) {
+      _showError('Isi alamat bank sampah dulu, lalu ambil titiknya.');
+      return;
+    }
+    await _resolusi(
+      () => di<KoordinatRemoteDataSource>().dariAlamat(alamat: alamat),
+    );
+  }
+
+  /// Door 3: paste an exact Google Maps link. Short links are expanded on the
+  /// server — a browser cannot follow their redirects.
+  Future<void> _dariTautan() async {
+    final controller = _tautanController..clear();
+    final tautan = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AppDialog(
+        title: 'Tempel tautan Google Maps',
+        content: TextField(
+          key: const Key('tautan_maps_field'),
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: appInputDecoration(
+            hintText: 'https://maps.app.goo.gl/...',
+          ),
+        ),
+        confirmLabel: 'Ambil koordinat',
+        onConfirm: () => Navigator.pop(dialogContext, controller.text),
+        onCancel: () => Navigator.pop(dialogContext),
+      ),
+    );
+    if (tautan == null || tautan.trim().isEmpty) return;
+    await _resolusi(
+      () => di<KoordinatRemoteDataSource>().dariTautan(tautan),
+    );
+  }
+
+  Future<void> _resolusi(Future<HasilKoordinat> Function() kerja) async {
+    setState(() => _mencariLokasi = true);
+    try {
+      final hasil = await kerja();
+      if (!mounted) return;
+      _terapkanLokasi(
+        titik: (latitude: hasil.latitude, longitude: hasil.longitude),
+        sumber: hasil.sumber,
+        alamat: hasil.alamatHasil,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showError(
+        e is Exception
+            ? NetworkException.handleException(e).displayMessage
+            : 'Koordinat tidak dapat diambil. Coba lagi atau isi manual.',
+      );
+    } finally {
+      if (mounted) setState(() => _mencariLokasi = false);
     }
   }
 
@@ -174,6 +303,27 @@ class _RegisterBankSampahScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_lokasi != null) ...[
+            // PIL-326 confirmation: the mini map while tiles answer, the
+            // geocoded address text when they do not. Both prove "we put this
+            // bank here" without opening another screen.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: MiniLokasiMap(
+                titik: LatLng(_lokasi!.latitude, _lokasi!.longitude),
+                tileLayerBuilder: widget.tileLayerBuilder ?? osmTileLayer,
+              ),
+            ),
+            if (_lokasiAlamat != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                _lokasiAlamat!,
+                key: const Key('lokasi_alamat_hasil'),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+              ),
+            ],
+            const SizedBox(height: 8),
+          ],
           InkWell(
             onTap: _pickLokasi,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -210,7 +360,11 @@ class _RegisterBankSampahScreenState
                     AppTapTarget(
                       label: 'Hapus titik',
                       borderRadius: BorderRadius.circular(AppRadius.xl),
-                      onTap: () => setState(() => _lokasi = null),
+                      onTap: () => setState(() {
+                        _lokasi = null;
+                        _sumberKoordinat = null;
+                        _lokasiAlamat = null;
+                      }),
                       child: const Icon(Icons.close,
                           color: AppColors.grey200, size: 16),
                     ),
@@ -218,6 +372,52 @@ class _RegisterBankSampahScreenState
               ),
             ),
           ),
+          // PIL-326 doors that still work while the tiles are down.
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              AppButton(
+                key: const Key('lokasi_pakai_gps'),
+                label: 'Lokasi saya',
+                icon: Icons.my_location,
+                size: AppButtonSize.compact,
+                variant: AppButtonVariant.outlined,
+                expand: false,
+                isLoading: _mencariLokasi,
+                onPressed: _pakaiLokasiSaya,
+              ),
+              AppButton(
+                key: const Key('lokasi_dari_alamat'),
+                label: 'Dari alamat',
+                icon: Icons.search,
+                size: AppButtonSize.compact,
+                variant: AppButtonVariant.outlined,
+                expand: false,
+                onPressed: _mencariLokasi ? null : _dariAlamat,
+              ),
+              AppButton(
+                key: const Key('lokasi_dari_tautan'),
+                label: 'Tempel tautan',
+                icon: Icons.link,
+                size: AppButtonSize.compact,
+                variant: AppButtonVariant.outlined,
+                expand: false,
+                onPressed: _mencariLokasi ? null : _dariTautan,
+              ),
+            ],
+          ),
+          // PIL-326: say why the map door above is not the answer right now.
+          if (TileHealth.instance.buruk) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Peta sedang tidak tersedia. Tiga tombol di atas tetap '
+              'menyimpan titik bank.',
+              key: const Key('lokasi_peta_galat'),
+              style: AppTextStyle.small.copyWith(color: AppColors.warning),
+            ),
+          ],
         ],
       ),
     );

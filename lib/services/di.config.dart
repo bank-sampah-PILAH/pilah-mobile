@@ -90,6 +90,8 @@ import '../features/jadwal/data/datasources/jadwal_remote_data_source.dart'
 import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
     as _i928;
 import '../features/jadwal/domain/repositories/jadwal_repository.dart' as _i73;
+import '../features/map/data/datasources/koordinat_remote_data_source.dart'
+    as _i375;
 import '../features/map/presentation/widgets/location_service.dart' as _i558;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     as _i307;
@@ -289,6 +291,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i928.JadwalRepositoryImpl(gh<_i915.JadwalRemoteDataSource>()));
     gh.lazySingleton<_i987.StatementRemoteDataSources>(
         () => _i987.StatementRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i375.KoordinatRemoteDataSource>(
+        () => _i375.KoordinatRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i960.HargaRemoteDataSource>(
         () => _i74.HargaRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i307.NasabahRemoteDataSource>(

@@ -56,6 +56,10 @@ class RegisterBankSampahRequest {
   /// when the penguru skipped it; the backend stores both or neither.
   final ({double latitude, double longitude})? lokasi;
 
+  /// Where the coordinate came from (PIL-326): `gps`, `geocode`, `tautan` or
+  /// `manual`. Stored so a wrong pin can be traced back to its source.
+  final String? sumberKoordinat;
+
   const RegisterBankSampahRequest({
     required this.nama,
     required this.alamat,
@@ -64,6 +68,7 @@ class RegisterBankSampahRequest {
     required this.fotoKegiatanBytes,
     required this.fotoKegiatanFilename,
     this.lokasi,
+    this.sumberKoordinat,
   });
 }
 
