@@ -20,6 +20,9 @@ void main() {
 
   setUp(() {
     location = _FakeLocationService();
+    // The picker asks for the device fix on open; default to "unavailable"
+    // so tests keep the fallback centre unless they stub a fix.
+    when(() => location.currentLocation()).thenAnswer((_) async => null);
     di.allowReassignment = true;
     di.registerSingleton<LocationService>(location);
     addTearDown(() => di.unregister<LocationService>());
@@ -176,6 +179,49 @@ void main() {
     final text = tester.widget<TextField>(latField).controller!.text;
     expect(node.hasFocus, isFalse);
     expect(double.parse(text), isNot(closeTo(1.234, 0.0001)));
+  });
+
+  testWidgets('opens on the device fix when no point was saved',
+      (tester) async {
+    when(() => location.currentLocation())
+        .thenAnswer((_) async => (latitude: -6.2, longitude: 106.8));
+    await openOverHost(tester);
+    await tester.pumpAndSettle();
+
+    final latField = tester
+        .widget<TextField>(find.byKey(const Key('latitude_field')))
+        .controller!;
+    expect(double.parse(latField.text), closeTo(-6.2, 0.0001));
+  });
+
+  testWidgets('without a fix the fields keep the UI-area fallback',
+      (tester) async {
+    await openOverHost(tester);
+    await tester.pumpAndSettle();
+
+    final latField = tester
+        .widget<TextField>(find.byKey(const Key('latitude_field')))
+        .controller!;
+    expect(double.parse(latField.text), closeTo(-6.3703148, 0.0001));
+  });
+
+  testWidgets('a wide window puts the controls in a left panel, map right',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(hostWithExtras(showRadius: true));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text('Pilih Lokasi di Peta'), findsOneWidget);
+    // Controls live in the left panel; the map starts after it.
+    final simpan = tester.getTopLeft(find.byKey(const Key('simpan_lokasi')));
+    expect(simpan.dx, lessThan(1280 / 2));
+    final peta = tester.getTopLeft(find.byType(FlutterMap));
+    expect(peta.dx, greaterThanOrEqualTo(300));
   });
 
   testWidgets('Gunakan Lokasi Saya writes the fix into the fields',
