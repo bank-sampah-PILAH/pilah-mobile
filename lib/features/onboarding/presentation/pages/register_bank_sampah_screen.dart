@@ -20,6 +20,7 @@ import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/titik_lokasi_field.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 
 class RegisterBankSampahScreen extends ConsumerStatefulWidget {
@@ -28,9 +29,14 @@ class RegisterBankSampahScreen extends ConsumerStatefulWidget {
   /// itself is identical to a first-time registration.
   final bool isRejectedReapplication;
 
+  /// Test seam threaded to the map picker (PIL-326); null = the real OSM
+  /// layer, so widget tests never fetch tiles.
+  final Widget Function()? tileLayerBuilder;
+
   const RegisterBankSampahScreen({
     super.key,
     this.isRejectedReapplication = false,
+    this.tileLayerBuilder,
   });
 
   static const route = '/register-bank-sampah';
@@ -50,6 +56,11 @@ class _RegisterBankSampahScreenState
   bool _isLoading = false;
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
+
+  /// The coordinate section's answer, optional (PIL-326): skipping it leaves
+  /// the bank without coordinates, the same as a legacy bank.
+  TitikLokasiBank? _lokasi;
+
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -78,6 +89,7 @@ class _RegisterBankSampahScreenState
       noHpPic: _phoneController.text.trim(),
       fotoKegiatanBytes: bytes,
       fotoKegiatanFilename: image.name,
+      lokasi: _lokasi,
     );
 
     // Sends the banked profile first when the user came through step one, and
@@ -132,9 +144,15 @@ class _RegisterBankSampahScreenState
     }
   }
 
-  /// The notice shown at the top of the form when re-applying after a rejection.
-  /// The backend does not surface a rejection reason to the pengelola, so the
-  /// copy is the fixed guidance text.
+  /// The coordinate section owns its own state and lookups (PIL-326); this
+  /// screen only keeps the answer for the submit.
+  Widget _buildLokasiField() => TitikLokasiField(
+        alamat: () => _alamatController.text,
+        initial: _lokasi,
+        tileLayerBuilder: widget.tileLayerBuilder,
+        onChanged: (titik) => setState(() => _lokasi = titik),
+      );
+
   Widget _buildRejectionBanner() {
     return Container(
       width: double.infinity,
@@ -339,6 +357,7 @@ class _RegisterBankSampahScreenState
             ),
           ),
         ),
+        _buildLokasiField(),
         Text('Pengajuan akan ditinjau oleh Admin PILAH.',
             style: AppTextStyle.small.copyWith(color: AppColors.grey200)),
       ],

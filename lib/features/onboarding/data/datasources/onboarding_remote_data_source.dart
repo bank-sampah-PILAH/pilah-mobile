@@ -40,6 +40,11 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
       if (request.kota != null && request.kota!.trim().isNotEmpty)
         'kota': request.kota!.trim(),
       'no_hp_pic': request.noHpPic,
+      if (request.lokasi != null)
+        'latitude': request.lokasi!.latitude.toStringAsFixed(6),
+      if (request.lokasi != null)
+        'longitude': request.lokasi!.longitude.toStringAsFixed(6),
+      if (request.lokasi != null) 'koordinat_sumber': request.lokasi!.sumber,
       'foto_kegiatan': MultipartFile.fromBytes(
         request.fotoKegiatanBytes,
         filename: request.fotoKegiatanFilename,
@@ -83,13 +88,33 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
 
   @override
   Future<List<BankSampahDirectoryEntity>> listBankSampahDirectory() async {
-    final response = await networkService.get(Endpoints.bankSampahDirectory);
-    final list = response.data as List<dynamic>;
-    return list
-        .map((item) =>
-            BankSampahDirectoryEntity.fromJson(item as Map<String, dynamic>))
-        .toList();
+    // The directory is paginated (PIL-308): {count, previous, next, results}.
+    // Every page is read, because the picker must offer the bank on page 2+
+    // too. A bare list is still accepted so tests can stub either shape.
+    final items = <BankSampahDirectoryEntity>[];
+    String? path = Endpoints.bankSampahDirectory;
+    Map<String, dynamic>? query;
+    while (path != null) {
+      final response = await networkService.get(path, queryParams: query);
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        items.addAll(_mapDirectoryRows(data));
+        break;
+      }
+      items.addAll(_mapDirectoryRows(data['results']));
+      final next = data['next'];
+      if (next is! String || next.isEmpty) break;
+      final uri = Uri.parse(next);
+      path = uri.path;
+      query = uri.queryParameters.isEmpty ? null : {...uri.queryParameters};
+    }
+    return items;
   }
+
+  List<BankSampahDirectoryEntity> _mapDirectoryRows(Object? rows) => [
+        for (final item in rows as List<dynamic>? ?? const [])
+          BankSampahDirectoryEntity.fromJson(item as Map<String, dynamic>),
+      ];
 
   @override
   Future<OnboardingResult> registerNasabah(

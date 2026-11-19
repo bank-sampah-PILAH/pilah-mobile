@@ -28,6 +28,11 @@ class AppColors {
   /// Dividers and outlines.
   static const Color border = Color(0xFFE5E7EB);
 
+  /// Card shadows on raised map cards and floating panels: the standard
+  /// elevation copy shared by the map screens, soft and strong steps.
+  static const Color shadow = Color(0x29000000);
+  static const Color shadowSoft = Color(0x14000000);
+
   /// Strong secondary text (10:1 on white). Muted text is [grey100].
   static const Color inkSoft = Color(0xFF374151);
 

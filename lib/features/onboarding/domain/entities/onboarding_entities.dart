@@ -3,6 +3,8 @@ import 'dart:typed_data';
 // Request/result models for the real onboarding endpoints
 // (PUT /onboarding/profile, POST /onboarding/bank-sampah).
 
+import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
+
 class CompleteProfileRequest {
   final String nama;
 
@@ -40,6 +42,29 @@ class CompleteProfileRequest {
       };
 }
 
+/// A bank coordinate and where it came from (PIL-326).
+///
+/// One value, not a point plus a separate optional source: a bare source with
+/// no point cannot be expressed, so the registration payload cannot contradict
+/// itself.
+class TitikLokasiBank {
+  const TitikLokasiBank({
+    required this.latitude,
+    required this.longitude,
+    required this.sumber,
+    this.alamat,
+  });
+
+  final double latitude;
+  final double longitude;
+
+  /// `gps`, `geocode`, `tautan` or `manual` (the backend's vocabulary).
+  final String sumber;
+
+  /// Address the geocoder matched, when there was one.
+  final String? alamat;
+}
+
 class RegisterBankSampahRequest {
   final String nama;
   final String alamat;
@@ -50,6 +75,11 @@ class RegisterBankSampahRequest {
   final Uint8List fotoKegiatanBytes;
   final String fotoKegiatanFilename;
 
+  /// Location the pengurus chose, optional (PIL-326). Absent when they
+  /// skipped it; the backend stores both coordinates or neither, together with
+  /// the point's source.
+  final TitikLokasiBank? lokasi;
+
   const RegisterBankSampahRequest({
     required this.nama,
     required this.alamat,
@@ -57,6 +87,7 @@ class RegisterBankSampahRequest {
     required this.noHpPic,
     required this.fotoKegiatanBytes,
     required this.fotoKegiatanFilename,
+    this.lokasi,
   });
 }
 
@@ -67,14 +98,24 @@ class BankSampahDirectoryEntity {
   final String nama;
   final String alamat;
   final String kota;
+
+  /// Parsed when the bank has coordinates (PIL-326); null otherwise. A bank
+  /// without a location always lists, it just cannot appear on the map.
+  final ({double latitude, double longitude})? lokasi;
   final String fotoLogo;
+
+  /// Distance from the search origin, as the backend's `jarak_km` string
+  /// (PIL-314); present only in coordinate+radius search mode.
+  final String? jarakKm;
 
   const BankSampahDirectoryEntity({
     required this.id,
     required this.nama,
     required this.alamat,
     required this.kota,
+    this.lokasi,
     required this.fotoLogo,
+    this.jarakKm,
   });
 
   factory BankSampahDirectoryEntity.fromJson(Map<String, dynamic> json) =>
@@ -83,7 +124,9 @@ class BankSampahDirectoryEntity {
         nama: json['nama']?.toString() ?? '',
         alamat: (json['alamat'] as String?) ?? '',
         kota: (json['kota'] as String?) ?? '',
+        lokasi: parseLokasi(json['latitude'], json['longitude']),
         fotoLogo: (json['foto_logo'] as String?) ?? '',
+        jarakKm: (json['jarak_km'] as String?),
       );
 }
 

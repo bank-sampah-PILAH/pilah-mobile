@@ -49,6 +49,9 @@ import '../features/bank_sampah_approval/domain/use_cases/appeal_membership_usec
     as _i782;
 import '../features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart'
     as _i753;
+import '../features/cari_bank/data/datasources/cari_bank_remote_data_source.dart'
+    as _i144;
+import '../features/cari_bank/presentation/cubit/cari_bank_cubit.dart' as _i206;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
 import '../features/dashboard/data/datasources/dashboard_reporting_data_source.dart'
@@ -87,6 +90,9 @@ import '../features/jadwal/data/datasources/jadwal_remote_data_source.dart'
 import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
     as _i928;
 import '../features/jadwal/domain/repositories/jadwal_repository.dart' as _i73;
+import '../features/map/data/datasources/koordinat_remote_data_source.dart'
+    as _i375;
+import '../features/map/presentation/widgets/location_service.dart' as _i558;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     as _i307;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart'
@@ -129,6 +135,10 @@ import '../features/pengumuman/data/repositories/pengumuman_repository_impl.dart
     as _i11;
 import '../features/pengumuman/domain/repositories/pengumuman_repository.dart'
     as _i159;
+import '../features/perbandingan_harga/data/datasources/perbandingan_harga_remote_data_source.dart'
+    as _i573;
+import '../features/perbandingan_harga/presentation/cubit/perbandingan_harga_cubit.dart'
+    as _i172;
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
     as _i1053;
 import '../features/riwayat/data/datasources/riwayat_remote_data_source.dart'
@@ -210,6 +220,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i183.ImagePicker>(() => imagePickerModule.imagePicker);
     gh.lazySingleton<_i183.ImageCropper>(() => imagePickerModule.imageCropper);
     gh.lazySingleton<_i901.InviteTokenStore>(() => _i901.InviteTokenStore());
+    gh.lazySingleton<_i558.LocationService>(() => _i558.LocationService());
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
       registerFor: {_dev},
@@ -250,6 +261,11 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i375.PengumumanRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i646.GetAktivitasUseCase>(
         () => _i646.GetAktivitasUseCase(gh<_i184.AktivitasRepository>()));
+    gh.lazySingleton<_i573.PerbandinganHargaRemoteDataSource>(() =>
+        _i573.PerbandinganHargaRemoteDataSourceImpl(
+            gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i144.CariBankRemoteDataSource>(
+        () => _i144.CariBankRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i247.OnboardingRemoteDataSource>(
         () => _i247.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1037.PencairanRemoteDataSources>(
@@ -275,6 +291,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i928.JadwalRepositoryImpl(gh<_i915.JadwalRemoteDataSource>()));
     gh.lazySingleton<_i987.StatementRemoteDataSources>(
         () => _i987.StatementRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i375.KoordinatRemoteDataSource>(
+        () => _i375.KoordinatRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i960.HargaRemoteDataSource>(
         () => _i74.HargaRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i307.NasabahRemoteDataSource>(
@@ -293,6 +311,9 @@ extension GetItInjectableX on _i174.GetIt {
             gh<_i142.DraftPencairanRemoteDataSource>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
+    gh.lazySingleton<_i172.PerbandinganHargaCubit>(() =>
+        _i172.PerbandinganHargaCubit(
+            gh<_i573.PerbandinganHargaRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
     gh.lazySingleton<_i664.StatementRepository>(() =>
@@ -303,6 +324,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i260.SuperadminRepository>(() =>
         _i811.SuperadminRepositoryImpl(gh<_i309.SuperadminRemoteDataSource>()));
+    gh.factory<_i206.CariBankCubit>(() => _i206.CariBankCubit(
+          gh<_i144.CariBankRemoteDataSource>(),
+          storage: gh<_i812.AppStorage>(instanceName: 'shared_preferences'),
+        ));
     gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
           gh<_i24.AuthRemoteDataSources>(),
           gh<_i981.AuthLocalDataSources>(),
