@@ -56,5 +56,9 @@ class ActiveMembershipSelection {
   }
 }
 
+/// Whether a membership can be made the active one. This defers to the
+/// backend's [NasabahMembershipEntity.dapatDibuka] rather than re-deriving it
+/// from status and isActive, because those two cannot see a deactivated bank
+/// and would offer a membership the API answers 403 for.
 bool isSelectableMembership(NasabahMembershipEntity membership) =>
-    membership.status == MembershipStatus.approved && membership.isActive;
+    membership.dapatDibuka;
