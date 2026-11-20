@@ -53,4 +53,13 @@ class ActiveMembershipNotifier extends AsyncNotifier<String?> {
     if (approval is! NasabahApprovalLoaded) return selection.read(userId);
     return selection.resolve(userId, approval.memberships);
   }
+
+  /// Makes [membershipId] the bank the nasabah is banking with.
+  Future<void> select(String membershipId) async {
+    final selection = ref.read(activeMembershipSelectionProvider);
+    final userId = ref.read(activeMembershipUserIdProvider);
+    if (selection == null || userId.isEmpty) return;
+    await selection.select(userId, membershipId);
+    state = AsyncData(membershipId);
+  }
 }
