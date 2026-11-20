@@ -42,6 +42,7 @@ NasabahMembershipEntity _membership(
   String id, {
   MembershipStatus status = MembershipStatus.approved,
   bool active = true,
+  bool? dibuka,
 }) =>
     NasabahMembershipEntity(
       id: id,
@@ -51,9 +52,17 @@ NasabahMembershipEntity _membership(
       bankSampahAlamat: '',
       status: status,
       isActive: active,
+      dapatDibuka: dibuka ?? (status == MembershipStatus.approved && active),
     );
 
 void main() {
+  test('a membership whose bank is closed is not selectable', () {
+    final membership = _membership('one', dibuka: false);
+
+    expect(membership.status, MembershipStatus.approved);
+    expect(membership.isActive, isTrue);
+    expect(isSelectableMembership(membership), isFalse);
+  });
   test('selection persists and is isolated by user while allowing switches',
       () async {
     final storage = _MemoryStorage();
