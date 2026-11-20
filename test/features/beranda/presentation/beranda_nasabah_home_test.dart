@@ -11,7 +11,10 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -21,6 +24,7 @@ import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../support/active_membership_support.dart';
+import '../../../support/nasabah_approval_support.dart';
 import '../../../support/auth_support.dart';
 import '../../../support/fake_image_download.dart';
 import '../../../support/stub_api.dart';
@@ -91,6 +95,7 @@ void main() {
     Map<String, Widget Function(BuildContext, GoRouterState)> extraRoutes =
         const {},
     MemoryAppStorage? storage,
+    List<NasabahMembershipEntity>? memberships,
   }) async {
     di.registerSingleton<NasabahRepository>(repository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
@@ -118,6 +123,12 @@ void main() {
         activeMembershipSelectionProvider.overrideWithValue(
           storage == null ? null : ActiveMembershipSelection(storage),
         ),
+        if (memberships != null)
+          nasabahApprovalProvider.overrideWith(
+            () => TestNasabahApprovalNotifier(
+              initialState: NasabahApprovalLoaded(memberships),
+            ),
+          ),
       ],
     ));
     await tester.pumpAndSettle();
@@ -129,7 +140,13 @@ void main() {
         .select('nasabah-1', 'membership-dipilih');
     final repository = _HomeRepository(null, const []);
 
-    await pumpHome(tester, repository, storage: storage);
+    await pumpHome(
+      tester,
+      repository,
+      storage: storage,
+      // The saved bank is still openable, so it survives reconciliation.
+      memberships: [membershipRow('membership-dipilih')],
+    );
 
     // Without the saved choice the first load asks for null, and the beranda
     // would call whichever bank the backend defaulted to "Aktif".

@@ -45,8 +45,10 @@ class ActiveMembershipNotifier extends AsyncNotifier<String?> {
   Future<String?> build() async {
     final selection = ref.watch(activeMembershipSelectionProvider);
     final userId = ref.watch(activeMembershipUserIdProvider);
-    final approval = ref.watch(nasabahApprovalProvider);
+    // Guarded before the membership list is watched: with nothing to remember
+    // the choice in, there is no reason to make the list load at all.
     if (selection == null || userId.isEmpty) return null;
+    final approval = ref.watch(nasabahApprovalProvider);
     // Only a loaded list can say which banks are openable. Until then the
     // saved choice is reported as-is, so the screen does not flicker from a
     // marked row to an unmarked one and back on every refresh.

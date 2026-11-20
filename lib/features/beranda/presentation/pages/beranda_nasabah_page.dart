@@ -14,6 +14,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
@@ -46,17 +47,22 @@ class BerandaNasabahPage extends ConsumerWidget {
   }
 }
 
-class _HomeSession extends StatefulWidget {
+class _HomeSession extends ConsumerStatefulWidget {
   const _HomeSession({super.key, required this.repository, required this.name});
   final NasabahRepository repository;
   final String name;
   @override
-  State<_HomeSession> createState() => _HomeSessionState();
+  ConsumerState<_HomeSession> createState() => _HomeSessionState();
 }
 
-class _HomeSessionState extends State<_HomeSession>
+class _HomeSessionState extends ConsumerState<_HomeSession>
     with WidgetsBindingObserver {
   String? _membershipId;
+
+  /// Whether the nasabah has picked a bank on this screen. Until they have,
+  /// the bank saved in "Bank sampah saya" decides; afterwards their pick
+  /// stands, including when they picked "none" to get the chooser back.
+  var _chosenHere = false;
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
   Future<void> Function()? _reloadSchedule;
@@ -72,6 +78,7 @@ class _HomeSessionState extends State<_HomeSession>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _reloadWhenActiveBankChanges();
   }
 
   @override
@@ -89,8 +96,33 @@ class _HomeSessionState extends State<_HomeSession>
 
   void _select(String? id) => setState(() {
         _membershipId = id;
+        _chosenHere = true;
         _selectionVersion++;
       });
+
+  /// The bank the beranda should load: the nasabah's pick on this screen, or
+  /// else the one saved in "Bank sampah saya", so it opens on the bank they
+  /// actually chose rather than whichever row the backend returned first.
+  ///
+  /// Awaiting the saved choice here, rather than reading it off the first
+  /// frame, is what keeps this to a single request. Read too early it is
+  /// still null, and the beranda would fetch the wrong bank and then fetch
+  /// again. The resource's own spinner covers the wait.
+  Future<String?> _seedMembershipId() async {
+    if (_chosenHere) return _membershipId;
+    return ref.read(activeMembershipProvider.future);
+  }
+
+  /// Reloads when the active bank is switched elsewhere, for instance on the
+  /// "Bank sampah saya" detail page. The first resolution is skipped, since
+  /// the load already in flight is awaiting that same value.
+  void _reloadWhenActiveBankChanges() {
+    ref.listenManual(activeMembershipProvider, (previous, next) {
+      if (_chosenHere || previous == null || previous.isLoading) return;
+      if (previous.value == next.value) return;
+      setState(() => _selectionVersion++);
+    });
+  }
 
   void _details(String title, Widget body) {
     final initial = ProviderScope.containerOf(context, listen: false)
@@ -181,8 +213,8 @@ class _HomeSessionState extends State<_HomeSession>
                         const SizedBox(height: 8),
                         NasabahResource<NasabahHome>(
                           key: ValueKey(_selectionVersion),
-                          load: () => widget.repository.home(
-                            membershipId: _membershipId,
+                          load: () async => widget.repository.home(
+                            membershipId: await _seedMembershipId(),
                           ),
                           onSelect: _select,
                           registerReload: (reload) => _reload = reload,
