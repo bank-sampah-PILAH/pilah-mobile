@@ -33,13 +33,23 @@ ProviderContainer _container(
 }
 
 void main() {
-  test('takes its storage from the container, or stays absent without it', () {
-    // Nothing registered: the screen degrades to remembering nothing rather
-    // than failing to build.
+  test('remembers nothing when no storage is registered', () async {
     final bare = ProviderContainer();
     addTearDown(bare.dispose);
-    expect(bare.read(activeMembershipSelectionProvider), isNull);
 
+    final selection = bare.read(activeMembershipSelectionProvider);
+
+    // It answers every question rather than being absent, and every answer
+    // says the choice was not kept.
+    expect(await selection.select('user-1', 'membership-1'), isFalse);
+    expect(await selection.read('user-1'), isNull);
+    expect(
+      await selection.resolve('user-1', [membershipRow('m-open')]),
+      isNull,
+    );
+  });
+
+  test('keeps the choice in the registered storage', () async {
     di.registerSingleton<AppStorage>(
       MemoryAppStorage(),
       instanceName: 'shared_preferences',
@@ -47,10 +57,13 @@ void main() {
     addTearDown(
       () => di.unregister<AppStorage>(instanceName: 'shared_preferences'),
     );
-    final registered = ProviderContainer();
-    addTearDown(registered.dispose);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
 
-    expect(registered.read(activeMembershipSelectionProvider), isNotNull);
+    final selection = container.read(activeMembershipSelectionProvider);
+
+    expect(await selection.select('user-1', 'membership-1'), isTrue);
+    expect(await selection.read('user-1'), 'membership-1');
   });
   test('settles on the first openable bank when nothing was chosen yet',
       () async {

@@ -122,7 +122,9 @@ void main() {
         // Without storage nothing is remembered, which is what every other
         // test here assumes.
         activeMembershipSelectionProvider.overrideWithValue(
-          storage == null ? null : ActiveMembershipSelection(storage),
+          storage == null
+              ? const ActiveMembershipSelection.none()
+              : ActiveMembershipSelection(storage),
         ),
         if (memberships != null)
           nasabahApprovalProvider.overrideWith(

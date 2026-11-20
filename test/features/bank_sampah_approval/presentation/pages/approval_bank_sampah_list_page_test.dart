@@ -46,7 +46,9 @@ Widget _wrap(
         // Without storage the screen marks nothing active, which is what the
         // list-only tests below expect.
         activeMembershipSelectionProvider.overrideWithValue(
-          storage == null ? null : ActiveMembershipSelection(storage),
+          storage == null
+              ? const ActiveMembershipSelection.none()
+              : ActiveMembershipSelection(storage),
         ),
         activeMembershipUserIdProvider.overrideWithValue('user-1'),
       ],
