@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appe
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -125,12 +126,18 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Lihat Status Approval Bank Sampah'), findsOneWidget);
+    expect(find.text('Bank sampah saya'), findsOneWidget);
 
-    await tester.tap(find.text('Lihat Status Approval Bank Sampah'));
+    await tester.tap(find.text('Bank sampah saya'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Daftar Approval Bank Sampah'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(NasabahPageAppBar),
+        matching: find.text('Bank sampah saya'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Bank Sampah Lestari'), findsOneWidget);
 
     await tester.tap(find.text('Bank Sampah Lestari'));

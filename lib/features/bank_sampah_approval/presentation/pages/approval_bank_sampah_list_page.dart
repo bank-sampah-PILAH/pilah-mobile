@@ -10,8 +10,9 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/n
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_list_item.dart';
 
-/// Nasabah-facing list of the caller's own bank sampah memberships and their
-/// approval status (PIL-232).
+/// Nasabah-facing "Bank sampah saya": the caller's own bank sampah
+/// memberships with their approval status (PIL-232) and which one is the
+/// active bank (PIL-236).
 ///
 /// Reachable from the stable nasabah dashboard, including sessions whose
 /// membership is pending or rejected and cannot load dashboard data.
@@ -36,7 +37,7 @@ class ApprovalBankSampahListView extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const NasabahPageAppBar(
-        title: 'Daftar Approval Bank Sampah',
+        title: 'Bank sampah saya',
         showBack: true,
       ),
       body: SafeArea(

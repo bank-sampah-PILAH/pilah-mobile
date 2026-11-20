@@ -170,7 +170,7 @@ class _HomeSessionState extends State<_HomeSession>
                         Align(
                           alignment: Alignment.centerLeft,
                           child: AppButton(
-                            label: 'Lihat Status Approval Bank Sampah',
+                            label: 'Bank sampah saya',
                             variant: AppButtonVariant.text,
                             icon: Icons.fact_check_outlined,
                             onPressed: () => context.push(
