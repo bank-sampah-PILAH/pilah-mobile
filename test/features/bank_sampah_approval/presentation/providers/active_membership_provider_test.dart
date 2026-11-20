@@ -61,4 +61,30 @@ void main() {
       'second-open',
     );
   });
+
+  test('a save that fails keeps the previous bank and reports the error',
+      () async {
+    final storage = MemoryAppStorage();
+    final container = _container(storage, [
+      membershipRow('first-open'),
+      membershipRow('second-open'),
+    ]);
+    expect(await container.read(activeMembershipProvider.future), 'first-open');
+
+    storage.putFailure = Exception('penyimpanan penuh');
+    // Choosing must not throw at the caller: the screen reads the error off
+    // the state instead, so a rejected write cannot escape as an unhandled
+    // async error.
+    await container
+        .read(activeMembershipProvider.notifier)
+        .select('second-open');
+
+    final state = container.read(activeMembershipProvider);
+    expect(state.hasError, isTrue);
+    expect(state.value, 'first-open');
+    expect(
+      await ActiveMembershipSelection(storage).read('user-1'),
+      'first-open',
+    );
+  });
 }
