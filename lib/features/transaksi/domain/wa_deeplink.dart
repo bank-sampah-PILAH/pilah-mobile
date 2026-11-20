@@ -1,4 +1,4 @@
-/// Builds the `wa.me` deep link opened by "Kirim Notif WhatsApp & Selesai" on
+/// Builds the `wa.me` deep link opened by "Kirim WhatsApp" on
 /// the transaction success sheet.
 ///
 /// TEMP (Twilio outage): the notification is normally rendered and dispatched

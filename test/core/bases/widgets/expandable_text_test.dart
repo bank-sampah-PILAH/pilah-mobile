@@ -69,4 +69,16 @@ void main() {
 
     expect(find.text('Lihat Selengkapnya'), findsOneWidget);
   });
+
+  testWidgets('the toggle is announced as a button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(_wrap(const ExpandableText(text: _longText)));
+    await tester.pump();
+
+    expect(
+      tester.getSemantics(find.text('Lihat Selengkapnya')),
+      isSemantics(label: 'Lihat Selengkapnya', isButton: true),
+    );
+    handle.dispose();
+  });
 }

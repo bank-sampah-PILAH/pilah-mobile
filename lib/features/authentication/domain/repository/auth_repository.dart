@@ -4,7 +4,7 @@ import 'package:dartz/dartz.dart';
 
 abstract class AuthRepository {
   Future<Either<NetworkException, AuthEntity>> postLogin(
-    String username,
+    String email,
     String password,
   );
 
@@ -15,6 +15,12 @@ abstract class AuthRepository {
     required String registrationToken,
     required GoogleRegistrationRole role,
   });
+
+  /// Switches a registering account's role while onboarding has not committed
+  /// anything for it, and keeps the session the backend issues for the new
+  /// role. A refusal leaves the stored session as it was.
+  Future<Either<NetworkException, AuthEntity>> changeRole(
+      GoogleRegistrationRole role);
 
   Future<Either<Exception, void>> saveToken(
     String accessToken,
@@ -27,6 +33,11 @@ abstract class AuthRepository {
   /// Revokes the refresh token server-side (best effort) and clears the local
   /// session. Always succeeds locally even if the network call fails.
   Future<Either<NetworkException, void>> logout();
+
+  /// Deletes the signed-in profile-incomplete account so registration can
+  /// restart with a different role. Fails (Left) when the account has
+  /// committed data the backend refuses to discard.
+  Future<Either<NetworkException, void>> discardRegistration();
 
   /// Whether a bearer token is currently persisted on the device.
   Future<bool> hasSession();

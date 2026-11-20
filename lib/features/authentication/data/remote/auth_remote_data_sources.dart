@@ -13,11 +13,18 @@ abstract class AuthRemoteDataSources {
   Future<Map<String, dynamic>> registerGoogleUser(
       String registrationToken, String role);
 
+  /// Switches a registering account to [role]; answers with a new session.
+  Future<Map<String, dynamic>> changeRole(String role);
+
   /// Restores the current session from the persisted bearer token.
   Future<AuthEntity> getMe();
 
   /// Revokes [refreshToken] server-side (blacklists it).
   Future<void> logout(String refreshToken);
+
+  /// Deletes the caller's own profile-incomplete account, so the same Google
+  /// identity can register again and pick another role (UAT 2026-11).
+  Future<void> discardRegistration();
 }
 
 @LazySingleton(as: AuthRemoteDataSources)
@@ -53,6 +60,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
   }
 
   @override
+  Future<Map<String, dynamic>> changeRole(String role) async {
+    final response = await networkService.patch(
+      Endpoints.onboardingRole,
+      data: {'role': role},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
   Future<AuthEntity> getMe() async {
     final response = await networkService.get(Endpoints.authMe);
     return AuthMapper.mapMeResponseToDomain(
@@ -66,5 +82,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
       Endpoints.logout,
       data: {'refresh_token': refreshToken},
     );
+  }
+
+  @override
+  Future<void> discardRegistration() async {
+    await networkService.delete(Endpoints.onboardingDiscardRegistration);
   }
 }

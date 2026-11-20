@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import 'transaksi_entity.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 enum ActivitasTipe { setoran, pencairan }
 
@@ -32,6 +34,16 @@ class ActivitasEntity {
   final TransaksiEntity? transaksi;
   final Pencairan? pencairan;
 
+  /// Selection eligibility only. PIL-428 still checks saldo and payout history
+  /// on submission; an active setoran is not guaranteed to be voidable.
+  bool get isSelectableSetoran {
+    final setoran = transaksi;
+    return tipe == ActivitasTipe.setoran &&
+        setoran != null &&
+        setoran.id.isNotEmpty &&
+        !setoran.isDibatalkan;
+  }
+
   const ActivitasEntity({
     required this.tipe,
     required this.tanggal,
@@ -59,7 +71,13 @@ class ActivitasEntity {
       title: t.name,
       subtitleLines: [t.subtitle],
       amount: t.amount,
-      trailingCaptions: [if (t.time != null) t.time!],
+      // Dibatalkan only reaches here through a detail opened by id (the feed
+      // omits voided rows); grey so it does not read as money in.
+      amountColor: t.isDibatalkan ? AppColors.grey100 : null,
+      badge: t.isDibatalkan ? 'Dibatalkan' : null,
+      trailingCaptions: t.tanggal != null
+          ? _timestamp(t.tanggal!)
+          : [if (t.time != null) t.time!],
       searchTerm: t.name,
       transaksi: t,
     );
@@ -83,24 +101,22 @@ class ActivitasEntity {
       // sheet, just not singled out here).
       subtitleLines: [p.metode.label],
       amount: '-Rp ${_rupiah(p.nominal)}',
-      // No amountColor override: falls through to ActivityItem's own
-      // default (AppColors.greenDark), the same accent setoran rows use.
-      trailingCaptions: [if (p.tanggal != null) _time(p.tanggal!)],
+      // Setoran rows keep ActivityItem's default green; money out is red.
+      amountColor: AppColors.danger,
+      trailingCaptions: [if (p.tanggal != null) ..._timestamp(p.tanggal!)],
       searchTerm: p.nasabahNama,
       pencairan: p,
     );
   }
 
-  static String _time(DateTime tanggal) =>
-      '${tanggal.hour.toString().padLeft(2, '0')}:${tanggal.minute.toString().padLeft(2, '0')}';
-
-  static String _rupiah(int value) {
-    final digits = value.abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(digits[i]);
-    }
-    return buffer.toString();
+  static List<String> _timestamp(DateTime tanggal) {
+    final local = tanggal.toLocal();
+    String pad(int value) => value.toString().padLeft(2, '0');
+    return [
+      '${pad(local.day)}/${pad(local.month)}/${local.year}',
+      '${pad(local.hour)}:${pad(local.minute)}',
+    ];
   }
+
+  static String _rupiah(int value) => CurrencyFormatter.formatNumber(value);
 }

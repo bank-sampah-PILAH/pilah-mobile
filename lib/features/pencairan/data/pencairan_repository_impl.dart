@@ -19,25 +19,6 @@ class PencairanRepositoryImpl implements PencairanRepository {
   const PencairanRepositoryImpl(this._remote);
 
   @override
-  Future<Either<NetworkException, int>> getSaldo(String nasabahId) {
-    return apiCall<int>(
-      func: _remote.getSaldo(nasabahId),
-      mapper: (value) => value as int,
-    );
-  }
-
-  @override
-  Future<Either<NetworkException, Pencairan>> createPencairan(
-    PencairanRequest request,
-  ) {
-    return apiCall<Pencairan>(
-      func: _remote.createPencairan(request),
-      mapper: (value) =>
-          PencairanMapper.mapResponseToDomain(value as PencairanResponse),
-    );
-  }
-
-  @override
   Future<Either<NetworkException, List<Pencairan>>> getRiwayat(
     RiwayatPencairanFilter filter,
   ) {

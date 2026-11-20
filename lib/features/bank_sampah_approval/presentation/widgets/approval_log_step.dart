@@ -3,6 +3,7 @@ import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 const _monthNames = [
   'Jan',
@@ -47,8 +48,8 @@ class ApprovalLogStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color) = switch (entry.status) {
       ApprovalLogStatus.approved => (Icons.check, AppColors.greenDark),
-      ApprovalLogStatus.rejected => (Icons.close, const Color(0xFFC62828)),
-      ApprovalLogStatus.appealed => (Icons.forward, const Color(0xFFB26A00)),
+      ApprovalLogStatus.rejected => (Icons.close, AppColors.danger),
+      ApprovalLogStatus.appealed => (Icons.forward, AppColors.warning),
     };
     final title = switch (entry.status) {
       ApprovalLogStatus.approved => 'Disetujui',
@@ -84,7 +85,8 @@ class ApprovalLogStep extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: NasabahStyle.text(14, weight: FontWeight.w600)),
+                      style: NasabahStyle.text(14,
+                          weight: AppFontWeight.semibold)),
                   const SizedBox(height: 4),
                   Text(formatApprovalLogDate(entry.createdAt),
                       style: NasabahStyle.text(12, color: NasabahStyle.muted)),

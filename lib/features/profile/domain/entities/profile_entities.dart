@@ -46,6 +46,19 @@ class WaTemplate {
       );
 }
 
+class TeamInvite {
+  final String? token;
+  final String? url;
+  final DateTime? expiresAt;
+
+  const TeamInvite({this.token, this.url, this.expiresAt});
+
+  bool get isValid =>
+      url != null &&
+      url!.isNotEmpty &&
+      expiresAt?.isAfter(DateTime.now()) == true;
+}
+
 class TeamMember {
   final String id;
   final String nama;

@@ -1,37 +1,79 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
-class _MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
+Finder _pickerText(String text) => find.descendant(
+      of: find.byType(ListView).last,
+      matching: find.text(text),
+    );
+
+void _servePagedRows(StubApi api, List<Map<String, dynamic>> rows) {
+  api.onRequest(
+    'GET',
+    '/api/v1/nasabah',
+    json: (options) {
+      final query = options.uri.queryParameters;
+      final page = int.parse(query['page'] ?? '1');
+      final pageSize = int.parse(query['page_size'] ?? '50');
+      final start = (page - 1) * pageSize;
+      final results = rows.skip(start).take(pageSize).toList();
+      return nasabahPage(
+        results,
+        count: rows.length,
+        hasNext: start + results.length < rows.length,
+      );
+    },
+  );
+}
+
+class _BrokenNasabahNotifier extends NasabahNotifier {
+  _BrokenNasabahNotifier(NasabahNotifier delegate)
+      : super(
+          delegate.getNasabahUseCase,
+          delegate.getActiveNasabahUseCase,
+          delegate.getNasabahRingkasanUseCase,
+          delegate.addNasabahUseCase,
+          delegate.updateNasabahUseCase,
+          delegate.activateNasabahUseCase,
+          delegate.deactivateNasabahUseCase,
+          delegate.approveNasabahUseCase,
+          delegate.rejectNasabahUseCase,
+          delegate.sinkronProfilNasabahUseCase,
+        );
+
+  @override
+  NasabahState build() => NasabahInitial();
+
+  @override
+  Future<HalamanNasabah> loadActiveNasabahPage({
+    int page = 1,
+    String? search,
+  }) async =>
+      throw StateError('rusak');
+}
 
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
   NasabahEntity? chosen;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    notifier = buildNasabahNotifier(api);
     chosen = null;
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester,
       {NasabahEntity? selected,
       bool hasError = true,
-      NasabahCubit? withCubit}) async {
+      NasabahNotifier? withNotifier}) async {
     await pumpRouted(
       tester,
       Scaffold(
@@ -42,8 +84,7 @@ void main() {
           errorText: 'Nasabah harus dipilih',
         ),
       ),
-      wrap: (app) => BlocProvider<NasabahCubit>.value(
-          value: withCubit ?? cubit, child: app),
+      wrap: (app) => withNasabahProvider(withNotifier ?? notifier, app),
       size: const Size(800, 1800),
     );
   }
@@ -61,32 +102,164 @@ void main() {
     expect(find.text('Nasabah harus dipilih'), findsOneWidget);
   });
 
-  testWidgets('the list can be searched, and picking reports the nasabah',
-      (tester) async {
-    api.on('GET', '/api/v1/nasabah',
-        json: nasabahPage([
-          nasabahRow('1', nama: 'Budi Santoso'),
-          nasabahRow('2', nama: 'Siti Aminah', saldo: '1500'),
-        ]));
+  testWidgets(
+    'server search finds first, middle and last nasabah and preserves selection',
+    (tester) async {
+      final rows = List.generate(1000, (index) {
+        final number = (index + 1).toString().padLeft(4, '0');
+        return nasabahRow(
+          number,
+          nama: 'Load Nasabah $number',
+          active: index != 1,
+          status: index == 2 ? 'pending' : 'approved',
+        );
+      });
+      api.onRequest(
+        'GET',
+        '/api/v1/nasabah',
+        json: (options) {
+          final query = options.uri.queryParameters;
+          final search = query['search']?.toLowerCase();
+          final matches = rows.where((row) {
+            return search == null ||
+                (row['nama'] as String).toLowerCase().contains(search);
+          }).toList();
+          final page = int.parse(query['page'] ?? '1');
+          final pageSize = int.parse(query['page_size'] ?? '50');
+          final start = (page - 1) * pageSize;
+          final results = matches.skip(start).take(pageSize).toList();
+          return nasabahPage(
+            results,
+            count: matches.length,
+            hasNext: start + results.length < matches.length,
+          );
+        },
+      );
+      await open(tester);
+      await openPicker(tester);
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+      expect(_pickerText('Load Nasabah 0002'), findsNothing);
+      expect(_pickerText('Load Nasabah 0003'), findsNothing);
+      expect(find.text('Load Nasabah 0500'), findsNothing);
+      expect(api.last.query['page_size'], '50');
+
+      await tester.enterText(find.byType(TextField), 'L');
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.text('Ketik minimal 2 karakter untuk mencari.'),
+        findsOneWidget,
+      );
+      expect(api.requests, hasLength(1));
+
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 0001');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+      expect(api.last.query['search'], 'Load Nasabah 0001');
+
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 05');
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 0500');
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(
+        api.requests,
+        hasLength(2),
+        reason: 'typing restarts the debounce instead of fetching each key',
+      );
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 0500'), findsOneWidget);
+      expect(api.last.query['search'], 'Load Nasabah 0500');
+
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 1000');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 1000'), findsOneWidget);
+      expect(api.last.query['search'], 'Load Nasabah 1000');
+      expect(find.text('Rp 25.000'), findsOneWidget);
+
+      await tester.tap(_pickerText('Load Nasabah 1000'));
+      await tester.pumpAndSettle();
+      expect(chosen?.id, '1000');
+      expect(chosen?.idNasabah, 'NAS-1000');
+      expect(chosen?.balance, 'Rp 25.000');
+    },
+  );
+
+  testWidgets(
+    'clearing search reloads the first page and shows no-match state',
+    (tester) async {
+      final row = nasabahRow('1', nama: 'Load Nasabah 0001');
+      api.onRequest(
+        'GET',
+        '/api/v1/nasabah',
+        json: (options) => options.uri.queryParameters['search'] == null
+            ? nasabahPage([row])
+            : nasabahPage([]),
+      );
+      await open(tester);
+      await openPicker(tester);
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'missing');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(find.text('Nasabah tidak ditemukan.'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+      expect(api.requests, hasLength(3));
+      expect(api.last.query['page'], '1');
+      expect(api.last.query['search'], isNull);
+    },
+  );
+
+  testWidgets('scrolling loads the next server page', (tester) async {
+    final rows = List.generate(100, (index) {
+      final number = (index + 1).toString().padLeft(4, '0');
+      return nasabahRow(number, nama: 'Load Nasabah $number');
+    });
+    _servePagedRows(api, rows);
     await open(tester);
     await openPicker(tester);
-    expect(find.text('Budi Santoso'), findsOneWidget);
-    expect(find.text('NAS-2 · 08122'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'siti');
-    await tester.pump();
-    expect(find.text('Budi Santoso'), findsNothing);
-
-    await tester.enterText(find.byType(TextField), 'zzz');
-    await tester.pump();
-    expect(find.text('Nasabah tidak ditemukan.'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'siti');
-    await tester.pump();
-    await tester.tap(find.text('Siti Aminah'));
+    await tester.drag(find.byType(ListView).last, const Offset(0, -5000));
     await tester.pumpAndSettle();
 
-    expect(chosen?.id, '2');
+    expect(api.requests, hasLength(2));
+    expect(api.last.query['page'], '2');
+    expect(find.text('Load Nasabah 0051'), findsOneWidget);
+  });
+
+  testWidgets('a failed next page shows progress and can be retried', (
+    tester,
+  ) async {
+    final rows = List.generate(100, (index) {
+      final number = (index + 1).toString().padLeft(4, '0');
+      return nasabahRow(number, nama: 'Load Nasabah $number');
+    });
+    _servePagedRows(api, rows);
+    await open(tester);
+    await openPicker(tester);
+
+    api.status('GET', '/api/v1/nasabah', 500);
+    api.latency = const Duration(seconds: 1);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -5000));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Gagal memuat. Coba lagi'), findsOneWidget);
+    expect(api.last.query['page'], '2');
+
+    api.status('GET', '/api/v1/nasabah', 200);
+    api.latency = null;
+    await tester.tap(find.text('Gagal memuat. Coba lagi'));
+    await tester.pumpAndSettle();
+    expect(api.last.query['page'], '2');
+    expect(find.text('Load Nasabah 0051'), findsOneWidget);
   });
 
   testWidgets('an empty list says there are no active nasabah', (tester) async {
@@ -118,12 +291,8 @@ void main() {
   });
 
   testWidgets('an unexpected error is shown as plain text', (tester) async {
-    final broken = _MockNasabahCubit();
-    whenListen(broken, const Stream<NasabahState>.empty(),
-        initialState: NasabahInitial());
-    when(() => broken.loadActiveNasabah())
-        .thenAnswer((_) async => throw StateError('rusak'));
-    await open(tester, withCubit: broken);
+    final broken = _BrokenNasabahNotifier(notifier);
+    await open(tester, withNotifier: broken);
     await openPicker(tester);
 
     expect(find.textContaining('rusak'), findsOneWidget);

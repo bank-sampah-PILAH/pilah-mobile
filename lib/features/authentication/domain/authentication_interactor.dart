@@ -13,10 +13,10 @@ class AuthenticationInteractor implements AuthenticationUseCases {
 
   @override
   Future<Either<NetworkException, AuthEntity>> postLogin(
-    String username,
+    String email,
     String password,
   ) {
-    return _repository.postLogin(username, password);
+    return _repository.postLogin(email, password);
   }
 
   @override
@@ -33,6 +33,10 @@ class AuthenticationInteractor implements AuthenticationUseCases {
 
   @override
   Future<Either<NetworkException, void>> logout() => _repository.logout();
+
+  @override
+  Future<Either<NetworkException, void>> discardRegistration() =>
+      _repository.discardRegistration();
 
   @override
   Future<bool> hasSession() => _repository.hasSession();

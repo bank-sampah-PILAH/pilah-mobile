@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 
 void main() {
@@ -56,7 +57,10 @@ void main() {
       final rejectButton = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, 'Tolak'),
       );
-      expect(rejectButton.style?.backgroundColor?.resolve({}), Colors.red);
+      expect(
+        rejectButton.style?.backgroundColor?.resolve({}),
+        AppColors.danger,
+      );
 
       await tester.enterText(find.byType(TextField), 'Alamat tidak valid');
       await tester.tap(find.text('Tolak'));

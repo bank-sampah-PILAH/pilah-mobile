@@ -1,8 +1,12 @@
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/selection_field_frame.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// The tappable field on [RegisterNasabahScreen] that opens
 /// [PilihBankSampahBottomSheet] and shows the picked bank sampah.
@@ -12,8 +16,8 @@ class PilihBankSampahSection extends StatelessWidget {
   final bool hasError;
   final String? errorText;
 
-  /// False only while finishing a saved profile with a pre-linked membership;
-  /// that flow must not create another bank application.
+  /// False when registration is locked (PIL-204: one membership per
+  /// nasabah for now) — the field renders but no longer opens the picker.
   final bool enabled;
 
   /// Bank sampah ids to hide from the picker, e.g. ones already joined.
@@ -31,122 +35,89 @@ class PilihBankSampahSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: !enabled
-              ? null
-              : () async {
-                  final result =
-                      await showModalBottomSheet<BankSampahDirectoryEntity>(
-                    context: context,
-                    useRootNavigator: true,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => PilihBankSampahBottomSheet(
-                      excludedBankIds: excludedBankIds,
+    return SelectionFieldFrame(
+      onTap: !enabled
+          ? null
+          : () async {
+              final result =
+                  await showAdaptiveSurface<BankSampahDirectoryEntity>(
+                context,
+                builder: (context) => PilihBankSampahBottomSheet(
+                  excludedBankIds: excludedBankIds,
+                ),
+              );
+              if (result != null) onBankSelected(result);
+            },
+      hasError: hasError,
+      hasSelection: selectedBank != null,
+      backgroundColor: enabled ? Colors.white : AppColors.fill,
+      defaultBorderColor: AppColors.border,
+      errorText: errorText,
+      child: selectedBank == null
+          ? Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AppColors.fill,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.recycling_outlined,
+                      color: AppColors.grey100, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Tap untuk pilih bank sampah',
+                    style: AppTextStyle.small.copyWith(
+                      color: AppColors.grey100,
                     ),
-                  );
-                  if (result != null) {
-                    onBankSelected(result);
-                  }
-                },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: enabled ? Colors.white : const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: hasError
-                    ? const Color(0xFFDC2626)
-                    : (selectedBank != null
-                        ? AppColors.greenDark
-                        : Colors.grey[300]!),
-                width: 1.5,
-              ),
-            ),
-            child: selectedBank == null
-                ? Row(
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
+              ],
+            )
+          : Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.greenDark.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  alignment: Alignment.center,
+                  child:
+                      const Icon(Icons.recycling, color: AppColors.greenDark),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF5F5F5),
-                          shape: BoxShape.circle,
+                      Text(
+                        selectedBank!.nama,
+                        style: AppTextStyle.title1.copyWith(
+                          color: AppColors.black,
+                          fontWeight: AppFontWeight.bold,
                         ),
-                        child: Icon(Icons.recycling_outlined,
-                            color: Colors.grey[500], size: 20),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Tap untuk pilih bank sampah',
+                      if (selectedBank!.kota.trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          selectedBank!.kota,
                           style: AppTextStyle.small.copyWith(
-                            color: Colors.grey[500],
+                            color: AppColors.grey100,
                           ),
                         ),
-                      ),
-                      Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.greenDark.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.recycling,
-                            color: AppColors.greenDark),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              selectedBank!.nama,
-                              style: AppTextStyle.title1.copyWith(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (selectedBank!.kota.trim().isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                selectedBank!.kota,
-                                style: AppTextStyle.small.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.edit_outlined, color: Colors.grey[400]),
+                      ],
                     ],
                   ),
-          ),
-        ),
-        if (hasError && errorText != null) ...[
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Text(
-              errorText!,
-              style: AppTextStyle.small.copyWith(
-                color: const Color(0xFFDC2626),
-              ),
+                ),
+                const Icon(Icons.edit_outlined, color: AppColors.grey200),
+              ],
             ),
-          ),
-        ],
-      ],
     );
   }
 }

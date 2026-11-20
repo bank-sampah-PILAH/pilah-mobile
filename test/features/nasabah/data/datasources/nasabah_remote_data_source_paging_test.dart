@@ -76,6 +76,20 @@ void main() {
     expect(params.containsKey('page_size'), isFalse);
   });
 
+  test('accepts an explicit page size for the web list', () async {
+    when(() => network.get(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => _halaman(results: []));
+
+    await dataSource.getNasabah(page: 2, pageSize: 10);
+
+    final params = verify(() => network.get(
+          '/api/v1/nasabah',
+          queryParams: captureAny(named: 'queryParams'),
+        )).captured.single as Map<String, dynamic>;
+    expect(params['page'], 2);
+    expect(params['page_size'], 10);
+  });
+
   test('picker path still fetches every active nasabah in one call', () async {
     when(() => network.get(any(), queryParams: any(named: 'queryParams')))
         .thenAnswer((_) async => _halaman(results: [_nasabahJson('NAS-0001')]));

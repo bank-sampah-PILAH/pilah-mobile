@@ -1,22 +1,17 @@
 import 'dart:async';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/auth_support.dart';
 
 class _Repository extends PreviewNasabahRepository {
   final requests = <Completer<NasabahIdentity>>[];
@@ -42,21 +37,16 @@ Authenticated _session({String id = 'a', String token = 'first'}) =>
     ));
 
 void main() {
-  late _Auth auth;
-  late StreamController<AuthenticationStates> sessions;
+  late TestAuthenticationNotifier auth;
   late _Repository repository;
 
   setUp(() {
-    auth = _Auth();
-    sessions = StreamController<AuthenticationStates>();
+    auth = authNotifierIn(_session());
     repository = _Repository();
-    whenListen(auth, sessions.stream, initialState: _session());
     di.registerSingleton<NasabahRepository>(repository);
   });
 
   tearDown(() async {
-    await sessions.close();
-    await auth.close();
     await di.unregister<NasabahRepository>();
   });
 
@@ -68,8 +58,8 @@ void main() {
           builder: (_, __) => const Scaffold(body: Text('LOGIN'))),
     ]);
     addTearDown(router.dispose);
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: MaterialApp.router(routerConfig: router)));
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, MaterialApp.router(routerConfig: router)));
   }
 
   testWidgets('token refresh retains profile and does not repeat the request',
@@ -78,7 +68,7 @@ void main() {
     repository.requests.single.complete(
         const NasabahIdentity('a', 'Alice', 'a@example.test', 'nasabah'));
     await tester.pumpAndSettle();
-    sessions.add(_session(token: 'refreshed'));
+    auth.setStateForTest(_session(token: 'refreshed'));
     await tester.pumpAndSettle();
     expect(repository.requests, hasLength(1));
     expect(find.text('Alice'), findsOneWidget);
@@ -99,7 +89,7 @@ void main() {
   testWidgets('account change discards the previous account pending response',
       (tester) async {
     await open(tester);
-    sessions.add(_session(id: 'b'));
+    auth.setStateForTest(_session(id: 'b'));
     await tester.pump();
     expect(repository.requests, hasLength(2));
     repository.requests.last.complete(
@@ -115,7 +105,7 @@ void main() {
     // (see lib/features/main/presentation/pages/main_page.dart); this page,
     // built standalone here with no shell above it, just falls back to its
     // own "please sign in" copy once the session drops.
-    sessions.add(Unauthenticated());
+    auth.setStateForTest(Unauthenticated());
     await tester.pumpAndSettle();
     expect(find.text('Bob'), findsNothing);
     expect(

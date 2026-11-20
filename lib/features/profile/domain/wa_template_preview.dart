@@ -15,7 +15,7 @@ library;
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 
 export 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart'
-    show buildDaftarItem, buildDaftarItemHarga, formatRupiahId;
+    show buildDaftarItem, buildDaftarItemHarga;
 
 /// The preview's deposit line. An alias rather than a separate type: the preview
 /// feeds the same renderer as the real message, so it needs the same shape.

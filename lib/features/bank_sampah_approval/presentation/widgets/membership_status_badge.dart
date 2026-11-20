@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Pill badge for a membership's [MembershipStatus], coloured distinctly per
 /// status — pending amber (matching [NasabahListItem]'s pending badge),
@@ -16,8 +18,8 @@ class MembershipStatusBadge extends StatelessWidget {
     final (label, background, foreground) = switch (status) {
       MembershipStatus.pending => (
           'Menunggu',
-          const Color(0xFFFFF8E1),
-          const Color(0xFFB26A00),
+          AppColors.warningLight,
+          AppColors.warning,
         ),
       MembershipStatus.approved => (
           'Disetujui',
@@ -26,8 +28,8 @@ class MembershipStatusBadge extends StatelessWidget {
         ),
       MembershipStatus.rejected => (
           'Ditolak',
-          const Color(0xFFFDECEA),
-          const Color(0xFFC62828),
+          AppColors.dangerLight,
+          AppColors.danger,
         ),
     };
 
@@ -35,13 +37,13 @@ class MembershipStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Text(
         label,
         style: AppTextStyle.extraSmall.copyWith(
           color: foreground,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFontWeight.semibold,
         ),
       ),
     );

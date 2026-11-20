@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Shared visual tokens for the nasabah screens.
 abstract final class NasabahStyle {
@@ -18,32 +19,9 @@ abstract final class NasabahStyle {
   // Matches the pill/segmented-control radius used elsewhere on this screen.
   static const inputRadius = 12.0;
 
-  /// A borderless-until-focused text field that reads as part of a
-  /// [NasabahCard] rather than a dropped-in Material form field. Uses the
-  /// screen's own emerald/line tokens instead of the app theme's primary.
-  static InputDecoration input({String? hint}) => InputDecoration(
-        isDense: true,
-        hintText: hint,
-        hintStyle: text(15, color: muted),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(inputRadius),
-          borderSide: const BorderSide(color: line),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(inputRadius),
-          borderSide: const BorderSide(color: line),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(inputRadius),
-          borderSide: const BorderSide(color: emerald, width: 1.5),
-        ),
-      );
-
   static TextStyle text(
     double size, {
-    FontWeight weight = FontWeight.w400,
+    FontWeight weight = AppFontWeight.regular,
     Color color = ink,
     double height = 1.45,
     bool tabularFigures = false,

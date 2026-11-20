@@ -1,37 +1,58 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfrx/pdfrx.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';
 
 import '../../support/platform_fakes.dart';
 import '../../support/pump_app.dart';
 
+/// Whether the former file-based viewer left [filename] in a temp directory.
+/// Parallel test files share /tmp, so the check is by this test's own name.
+bool _leftTempCopy(String filename) => Directory.systemTemp
+    .listSync()
+    .whereType<Directory>()
+    .where((d) => d.path.contains('riwayat_pdf'))
+    .any((d) => File('${d.path}/$filename').existsSync());
+
 void main() {
   // A minimal but structurally valid PDF, so the viewer's document load has
-  // something to open once its temp file is written.
-  const pdfBytes = <int>[
+  // something to open.
+  final pdfBytes = <int>[
     0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, // %PDF-1.4
+    ...utf8.encode("%test-${DateTime.now().microsecondsSinceEpoch}\n"),
   ];
-  const export =
+  final export =
       StatementExport(bytes: pdfBytes, filename: 'Riwayat_Aktivitas_NSB-1.pdf');
 
-  // Parallel test files also create riwayat_pdf temp dirs in /tmp; every
-  // assertion looks at THIS page's copy only, identified by content.
-  bool holdsThisPdf(File file) {
-    final data = file.readAsBytesSync();
-    return data.length == pdfBytes.length &&
-        data.toString() == pdfBytes.toString();
-  }
-
   Future<void> pumpPreview(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
-      const MaterialApp(home: NasabahPdfPreviewPage(export: export)),
+      MaterialApp(home: NasabahPdfPreviewPage(export: export)),
     );
-    // The viewer writes its temp copy and starts loading the document.
+    // The viewer starts loading the document.
     await tester.pump();
   }
+
+  testWidgets('the statement is hidden in the screen recording',
+      (tester) async {
+    await pumpPreview(tester);
+
+    // The viewer draws names and amounts on a canvas that the text masks do
+    // not reach, so the whole viewer sits under HideInReplay.
+    expect(
+      find.descendant(
+        of: find.byType(HideInReplay),
+        matching: find.byType(PdfViewer),
+      ),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('preview page shows the filename and the download action',
       (tester) async {
@@ -41,45 +62,41 @@ void main() {
     expect(find.byTooltip('Unduh'), findsOneWidget);
   });
 
-  testWidgets('the viewer writes the bytes to a temp file for pdfrx',
+  testWidgets('the viewer renders the bytes from memory, named by the file',
       (tester) async {
-    installFakePathProvider(downloads: 'Downloads', temporary: 'tmp');
     await pumpPreview(tester);
-    await pumpReal(tester);
 
-    final ours = Directory.systemTemp
-        .listSync()
-        .whereType<Directory>()
-        .where((d) =>
-            d.path.contains('riwayat_pdf') &&
-            d.listSync().whereType<File>().any(holdsThisPdf))
-        .toList();
-    expect(ours, isNotEmpty,
-        reason: 'the preview copy is a disposable temp file, not the download');
-    expect(ours.single.listSync().whereType<File>().first.readAsBytesSync(),
-        pdfBytes);
-    // Cleanup belongs to the widget: its dispose deletes the temp dir (the
-    // unmount test asserts that).
+    final ref = tester.widget<PdfViewer>(find.byType(PdfViewer)).documentRef;
+    expect(ref, isA<PdfDocumentRefData>());
+    expect((ref as PdfDocumentRefData).data, pdfBytes);
+    expect(ref.key.sourceName, 'Riwayat_Aktivitas_NSB-1.pdf');
   });
 
-  testWidgets('unmounting the preview deletes its temp copy', (tester) async {
+  testWidgets('previewing never writes the financial PDF to disk',
+      (tester) async {
     installFakePathProvider(downloads: 'Downloads', temporary: 'tmp');
-    await pumpPreview(tester);
+    final unique = 'no-disk-${DateTime.now().microsecondsSinceEpoch}.pdf';
+    await tester.binding.setSurfaceSize(const Size(900, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: NasabahPdfPreviewPage(
+          export: StatementExport(bytes: pdfBytes, filename: unique)),
+    ));
     await pumpReal(tester);
-    final ours = Directory.systemTemp
-        .listSync()
-        .whereType<Directory>()
-        .where((d) =>
-            d.path.contains('riwayat_pdf') &&
-            d.listSync().whereType<File>().any(holdsThisPdf))
-        .toList();
-    expect(ours.single.existsSync(), isTrue);
 
-    await tester.pumpWidget(const MaterialApp(home: Scaffold()));
-    await tester.pump();
+    expect(_leftTempCopy(unique), isFalse,
+        reason: 'no temp file: dart:io is unavailable on web and a copy '
+            'of the statement would outlive the preview on native');
+  });
 
-    expect(ours.single.existsSync(), isFalse,
-        reason: 'the financial PDF copy must not survive the preview session');
+  testWidgets('a supplied viewer replaces the pdfrx viewer', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: NasabahPdfPreviewPage(
+          export: export, viewer: const Text('fake viewer')),
+    ));
+
+    expect(find.text('fake viewer'), findsOneWidget);
+    expect(find.byType(PdfViewer), findsNothing);
   });
 
   testWidgets(

@@ -17,9 +17,6 @@ class _StubEnvironment implements AppEnvironment {
   String get demoPengurusEmail => 'configured.pengurus@example.com';
 
   @override
-  String get demoPengelolaIndukEmail => 'configured.induk@example.com';
-
-  @override
   String get demoCustomerEmail => 'configured.customer@example.com';
 
   @override
@@ -50,10 +47,6 @@ void main() {
         'dev:pengurus.demo@example.com:Pengurus PILAH E2E',
       );
       expect(
-        DemoLoginProfiles.pengelolaInduk.idToken,
-        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E',
-      );
-      expect(
         DemoLoginProfiles.customer.idToken,
         'dev-nasabah:nasabah.demo@example.com:Nasabah PILAH E2E',
       );
@@ -72,7 +65,6 @@ void main() {
         DemoLoginProfiles.all.map((profile) => profile.label),
         [
           'Pengurus',
-          'Pengelola Induk',
           'Nasabah',
           'Nasabah Baru (Pendaftaran)',
           'Superadmin',
@@ -83,23 +75,13 @@ void main() {
     test('keeps seeded email constants aligned with the env example', () {
       final env = _readExampleEnv();
 
-      expect(
-        DemoLoginProfiles.pengurus.email,
-        env['DEMO_PENGURUS_EMAIL'],
-      );
-      expect(
-        DemoLoginProfiles.pengelolaInduk.email,
-        env['DEMO_PENGELOLA_INDUK_EMAIL'],
-      );
+      expect(DemoLoginProfiles.pengurus.email, env['DEMO_PENGURUS_EMAIL']);
       expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
       expect(
         DemoLoginProfiles.newNasabah.email,
         env['DEMO_NEW_NASABAH_EMAIL'],
       );
-      expect(
-        DemoLoginProfiles.superadmin.email,
-        env['DEMO_SUPERADMIN_EMAIL'],
-      );
+      expect(DemoLoginProfiles.superadmin.email, env['DEMO_SUPERADMIN_EMAIL']);
     });
 
     test('maps environment-configured emails and token prefixes', () {
@@ -110,7 +92,6 @@ void main() {
         profiles.map((profile) => profile.email),
         [
           'configured.pengurus@example.com',
-          'configured.induk@example.com',
           'configured.customer@example.com',
           'configured.fresh@example.com',
           'configured.superadmin@example.com',
@@ -118,13 +99,7 @@ void main() {
       );
       expect(
         profiles.map((profile) => profile.tokenPrefix),
-        [
-          'dev',
-          'dev-pengelola-induk',
-          'dev-nasabah',
-          'dev-nasabah',
-          'dev-superadmin',
-        ],
+        ['dev', 'dev-nasabah', 'dev-nasabah', 'dev-superadmin'],
       );
     });
   });

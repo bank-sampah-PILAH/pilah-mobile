@@ -1,24 +1,28 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/onboarding_support.dart';
+import '../../../../support/auth_support.dart';
 
 class _MockDataSource extends Mock implements OnboardingRemoteDataSource {}
+
+ProviderContainer _containerWithDraft(OnboardingRemoteDataSource dataSource) {
+  final container = buildOnboardingContainer(dataSource);
+  container.read(onboardingProvider.notifier).saveProfileDraft(_draft);
+  return container;
+}
 
 const _draft = CompleteProfileRequest(
   nama: 'Sari Dewi',
@@ -44,26 +48,21 @@ AuthEntity _account({String? bankSampahStatus, String role = 'pengelola'}) =>
 
 Future<void> _pumpScreen(
   WidgetTester tester, {
-  required OnboardingCubit onboarding,
+  required ProviderContainer onboarding,
   String? bankSampahStatus,
   String role = 'pengelola',
 }) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: Authenticated(
-      authEntity: _account(bankSampahStatus: bankSampahStatus, role: role),
-    ),
-  );
+  final auth = authNotifierIn(Authenticated(
+    authEntity: _account(bankSampahStatus: bankSampahStatus, role: role),
+  ));
 
   await tester.pumpWidget(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthenticationBloc>.value(value: auth),
-        BlocProvider<OnboardingCubit>.value(value: onboarding),
-      ],
-      child: const MaterialApp(home: CompleteProfileScreen()),
+    UncontrolledProviderScope(
+      container: onboarding,
+      child: withAuthenticationProvider(
+        auth,
+        const MaterialApp(home: CompleteProfileScreen()),
+      ),
     ),
   );
   await tester.pump();
@@ -76,17 +75,12 @@ Future<void> _pumpScreen(
 /// not about the registration form.
 Future<GoRouter> _pumpRouter(
   WidgetTester tester, {
-  required OnboardingCubit onboarding,
+  required ProviderContainer onboarding,
   String? bankSampahStatus,
 }) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: Authenticated(
-      authEntity: _account(bankSampahStatus: bankSampahStatus),
-    ),
-  );
+  final auth = authNotifierIn(Authenticated(
+    authEntity: _account(bankSampahStatus: bankSampahStatus),
+  ));
 
   final router = GoRouter(
     initialLocation: CompleteProfileScreen.route,
@@ -104,12 +98,12 @@ Future<GoRouter> _pumpRouter(
   addTearDown(router.dispose);
 
   await tester.pumpWidget(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthenticationBloc>.value(value: auth),
-        BlocProvider<OnboardingCubit>.value(value: onboarding),
-      ],
-      child: MaterialApp.router(routerConfig: router),
+    UncontrolledProviderScope(
+      container: onboarding,
+      child: withAuthenticationProvider(
+        auth,
+        MaterialApp.router(routerConfig: router),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -146,11 +140,44 @@ void main() {
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
   });
 
+  for (final size in [
+    const Size(1440, 900),
+    const Size(768, 1024),
+    const Size(375, 812)
+  ]) {
+    testWidgets('adapts related profile fields at ${size.width}px',
+        (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final cubit = buildOnboardingContainer(_MockDataSource());
+      addTearDown(cubit.dispose);
+
+      await _pumpScreen(tester, onboarding: cubit);
+
+      expect(find.byKey(const ValueKey('onboarding-sidebar')),
+          size.width >= 840 ? findsOneWidget : findsNothing);
+      final pair =
+          tester.widget<OnboardingFieldPair>(find.byType(OnboardingFieldPair));
+      final first = tester.getRect(find.byWidget(pair.first));
+      final second = tester.getRect(find.byWidget(pair.second));
+      if (size.width >= 600) {
+        expect(second.left, greaterThan(first.right));
+      } else {
+        expect(second.top, greaterThanOrEqualTo(first.bottom));
+      }
+      expect(tester.getRect(find.text('Simpan Profil & Lanjut')).bottom,
+          lessThan(size.height));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   group('returning to step one', () {
     testWidgets('refills the form from the banked draft', (tester) async {
-      final cubit = OnboardingCubit(_MockDataSource())
-        ..saveProfileDraft(_draft);
-      addTearDown(cubit.close);
+      final cubit = buildOnboardingContainer(_MockDataSource());
+      cubit.read(onboardingProvider.notifier).saveProfileDraft(_draft);
+      addTearDown(cubit.dispose);
 
       await _pumpScreen(tester, onboarding: cubit);
 
@@ -168,8 +195,8 @@ void main() {
 
     testWidgets('leaves the form empty when nothing was banked',
         (tester) async {
-      final cubit = OnboardingCubit(_MockDataSource());
-      addTearDown(cubit.close);
+      final cubit = buildOnboardingContainer(_MockDataSource());
+      addTearDown(cubit.dispose);
 
       await _pumpScreen(tester, onboarding: cubit);
 
@@ -180,8 +207,8 @@ void main() {
   testWidgets(
       'shows the nasabah bank-picker stepper, not the pengelola wording, '
       'for Nasabah', (tester) async {
-    final cubit = OnboardingCubit(_MockDataSource());
-    addTearDown(cubit.close);
+    final cubit = buildOnboardingContainer(_MockDataSource());
+    addTearDown(cubit.dispose);
 
     await _pumpScreen(tester, onboarding: cubit, role: 'nasabah');
 
@@ -197,8 +224,8 @@ void main() {
       final dataSource = _MockDataSource();
       // Seeded so the prefill leaves a complete, valid form — this exercises
       // the submit path without having to drive the date picker.
-      final cubit = OnboardingCubit(dataSource)..saveProfileDraft(_draft);
-      addTearDown(cubit.close);
+      final cubit = _containerWithDraft(dataSource);
+      addTearDown(cubit.dispose);
 
       // No bank sampah on the account: AuthService.user_state guarantees the
       // next step is register_bank_sampah, so the answer needs no round trip.
@@ -208,14 +235,15 @@ void main() {
 
       expect(find.text('STEP TWO'), findsOneWidget);
       verifyNever(() => dataSource.completeProfile(any()));
-      expect(cubit.profileDraft?.nama, 'Sari Dewi');
+      expect(cubit.read(onboardingProvider.notifier).profileDraft?.nama,
+          'Sari Dewi');
     });
 
     testWidgets('leaves step one on the stack, with its input intact',
         (tester) async {
       final dataSource = _MockDataSource();
-      final cubit = OnboardingCubit(dataSource)..saveProfileDraft(_draft);
-      addTearDown(cubit.close);
+      final cubit = _containerWithDraft(dataSource);
+      addTearDown(cubit.dispose);
 
       final router = await _pumpRouter(
         tester,
@@ -247,8 +275,8 @@ void main() {
       when(() => dataSource.completeProfile(any())).thenAnswer(
         (_) async => const OnboardingResult(nextStep: 'approval_pending'),
       );
-      final cubit = OnboardingCubit(dataSource)..saveProfileDraft(_draft);
-      addTearDown(cubit.close);
+      final cubit = _containerWithDraft(dataSource);
+      addTearDown(cubit.dispose);
 
       // A pending registration means the destination is the backend's verdict,
       // not a new registration form — so there is nothing to defer for.
