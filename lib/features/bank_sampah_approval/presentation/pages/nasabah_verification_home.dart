@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -92,6 +93,25 @@ class NasabahVerificationHome extends ConsumerWidget {
                       ApprovalBankSampahDetailPage.route,
                       extra: membership,
                     )
+                        .then((_) {
+                      if (context.mounted) {
+                        ref
+                            .read(nasabahApprovalProvider.notifier)
+                            .load(silent: true);
+                      }
+                    }),
+                  ),
+                  const SizedBox(height: 8),
+                  // This shell replaces the whole navigation bar until a
+                  // membership is approved, so without this link a nasabah
+                  // with several pending applications could only ever see the
+                  // first one, and reached the full list by URL alone.
+                  AppButton(
+                    label: 'Bank sampah saya',
+                    variant: AppButtonVariant.text,
+                    icon: Icons.account_balance_wallet_outlined,
+                    onPressed: () => context
+                        .push(ApprovalBankSampahListPage.route)
                         .then((_) {
                       if (context.mounted) {
                         ref
