@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -151,6 +152,36 @@ void main() {
     // Without the saved choice the first load asks for null, and the beranda
     // would call whichever bank the backend defaulted to "Aktif".
     expect(repository.asked.first, 'membership-dipilih');
+  });
+
+  testWidgets('reloads when the active bank is switched elsewhere',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage)
+        .select('nasabah-1', 'membership-dipilih');
+    final repository = _HomeRepository(null, const []);
+
+    await pumpHome(
+      tester,
+      repository,
+      storage: storage,
+      memberships: [
+        membershipRow('membership-dipilih'),
+        membershipRow('membership-lain'),
+      ],
+    );
+    expect(repository.asked, ['membership-dipilih']);
+
+    // Standing in for the switch made on the "Bank sampah saya" detail page.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(BerandaNasabahPage)),
+    );
+    await container
+        .read(activeMembershipProvider.notifier)
+        .select('membership-lain');
+    await tester.pumpAndSettle();
+
+    expect(repository.asked, ['membership-dipilih', 'membership-lain']);
   });
 
   // The greeting follows the clock, so each time of day is checked against a

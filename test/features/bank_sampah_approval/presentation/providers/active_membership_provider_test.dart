@@ -5,6 +5,8 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
+import 'package:pilah_mobile/core/storage/app_storage.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/active_membership_support.dart';
 import '../../../../support/nasabah_approval_support.dart';
@@ -31,6 +33,25 @@ ProviderContainer _container(
 }
 
 void main() {
+  test('takes its storage from the container, or stays absent without it', () {
+    // Nothing registered: the screen degrades to remembering nothing rather
+    // than failing to build.
+    final bare = ProviderContainer();
+    addTearDown(bare.dispose);
+    expect(bare.read(activeMembershipSelectionProvider), isNull);
+
+    di.registerSingleton<AppStorage>(
+      MemoryAppStorage(),
+      instanceName: 'shared_preferences',
+    );
+    addTearDown(
+      () => di.unregister<AppStorage>(instanceName: 'shared_preferences'),
+    );
+    final registered = ProviderContainer();
+    addTearDown(registered.dispose);
+
+    expect(registered.read(activeMembershipSelectionProvider), isNotNull);
+  });
   test('settles on the first openable bank when nothing was chosen yet',
       () async {
     final storage = MemoryAppStorage();

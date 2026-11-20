@@ -43,7 +43,12 @@ void main() {
       ),
       GoRoute(
         path: ApprovalBankSampahListPage.route,
-        builder: (_, __) => const Scaffold(body: Text('daftar bank sampah')),
+        builder: (context, __) => Scaffold(
+          body: TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('daftar bank sampah'),
+          ),
+        ),
       ),
       GoRoute(
         path: ApprovalBankSampahDetailPage.route,
@@ -76,6 +81,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('daftar bank sampah'), findsOneWidget);
+  });
+
+  testWidgets('refreshes the status after returning from the list',
+      (tester) async {
+    final notifier = await pumpHome(
+      tester,
+      NasabahApprovalLoaded([_membership(MembershipStatus.pending)]),
+    );
+    notifier.loadCalls.clear();
+
+    await tester.tap(find.text('Bank sampah saya'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('daftar bank sampah'));
+    await tester.pumpAndSettle();
+
+    // Silent, so a status that changed while they were on the list appears
+    // without the screen falling back to its spinner.
+    expect(notifier.loadCalls, [true]);
   });
 
   testWidgets('greets the nasabah while status loads', (tester) async {
