@@ -42,4 +42,23 @@ void main() {
 
     expect(await container.read(activeMembershipProvider.future), 'first-open');
   });
+
+  test('choosing another openable bank remembers it', () async {
+    final storage = MemoryAppStorage();
+    final container = _container(storage, [
+      membershipRow('first-open'),
+      membershipRow('second-open'),
+    ]);
+    expect(await container.read(activeMembershipProvider.future), 'first-open');
+
+    await container
+        .read(activeMembershipProvider.notifier)
+        .select('second-open');
+
+    expect(container.read(activeMembershipProvider).value, 'second-open');
+    expect(
+      await ActiveMembershipSelection(storage).read('user-1'),
+      'second-open',
+    );
+  });
 }
