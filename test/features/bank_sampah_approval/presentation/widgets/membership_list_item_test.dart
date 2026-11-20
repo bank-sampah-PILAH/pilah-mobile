@@ -15,12 +15,16 @@ void main() {
     isActive: false,
   );
 
-  Widget host(VoidCallback onTap) => MaterialApp(
+  Widget host(VoidCallback onTap, {bool isActive = false}) => MaterialApp(
         theme: AppTheme.light,
         home: Scaffold(
           body: Padding(
             padding: const EdgeInsets.all(16),
-            child: MembershipListItem(membership: membership, onTap: onTap),
+            child: MembershipListItem(
+              membership: membership,
+              onTap: onTap,
+              isActive: isActive,
+            ),
           ),
         ),
       );
@@ -43,5 +47,13 @@ void main() {
     await tester.tap(find.text('Bank Sampah Melati'));
 
     expect(taps, 1);
+  });
+
+  testWidgets('marks only the bank that is active', (tester) async {
+    await tester.pumpWidget(host(() {}));
+    expect(find.text('Aktif'), findsNothing);
+
+    await tester.pumpWidget(host(() {}, isActive: true));
+    expect(find.text('Aktif'), findsOneWidget);
   });
 }
