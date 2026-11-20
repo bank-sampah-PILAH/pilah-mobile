@@ -419,6 +419,7 @@ void main() {
 Widget _wrapWithSelection(
   NasabahMembershipEntity membership,
   MemoryAppStorage storage, {
+  String userId = 'user-1',
   List<NasabahMembershipEntity>? memberships,
 }) =>
     ProviderScope(
@@ -428,7 +429,7 @@ Widget _wrapWithSelection(
         ),
         activeMembershipSelectionProvider
             .overrideWithValue(ActiveMembershipSelection(storage)),
-        activeMembershipUserIdProvider.overrideWithValue('user-1'),
+        activeMembershipUserIdProvider.overrideWithValue(userId),
         nasabahApprovalProvider.overrideWith(
           () => TestNasabahApprovalNotifier(
             initialState: NasabahApprovalLoaded(
@@ -442,33 +443,51 @@ Widget _wrapWithSelection(
     );
 
 void _mainActiveBank() {
-  testWidgets('offers to open only a bank that is openable and not active',
+  testWidgets('offers to open a bank that is openable but not active',
       (tester) async {
     final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
-    final closed =
-        membershipRow('m-closed', nama: 'Bank Sampah Tutup', dibuka: false);
-
-    // Openable, and the active one is some other bank: the action is offered.
     await tester.pumpWidget(_wrapWithSelection(
       openable,
       MemoryAppStorage(),
+      userId: 'user-offer',
       memberships: [membershipRow('m-other'), openable],
     ));
     await tester.pumpAndSettle();
+
     expect(find.text('Jadikan bank aktif'), findsOneWidget);
+  });
 
-    // Not openable: never offered, whatever its status says.
-    await tester.pumpWidget(_wrapWithSelection(closed, MemoryAppStorage()));
+  testWidgets('never offers to open a bank the backend closed', (tester) async {
+    final closed = membershipRow(
+      'm-closed',
+      nama: 'Bank Sampah Tutup',
+      dibuka: false,
+    );
+    await tester.pumpWidget(_wrapWithSelection(
+      closed,
+      MemoryAppStorage(),
+      userId: 'user-closed',
+      memberships: [closed],
+    ));
     await tester.pumpAndSettle();
-    expect(find.text('Jadikan bank aktif'), findsNothing);
 
-    // Already the active bank: nothing to switch to.
+    // Its own status still reads approved and active; only dapat_dibuka says
+    // the bank cannot be opened.
+    expect(closed.status, MembershipStatus.approved);
+    expect(closed.isActive, isTrue);
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+  });
+
+  testWidgets('does not offer to open the bank already in use', (tester) async {
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
     await tester.pumpWidget(_wrapWithSelection(
       openable,
       MemoryAppStorage(),
+      userId: 'user-current',
       memberships: [openable],
     ));
     await tester.pumpAndSettle();
+
     expect(find.text('Jadikan bank aktif'), findsNothing);
   });
 }

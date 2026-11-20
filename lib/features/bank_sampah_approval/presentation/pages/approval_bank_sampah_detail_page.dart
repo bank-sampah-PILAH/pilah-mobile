@@ -11,6 +11,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_appeal_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_appeal_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
@@ -85,6 +86,10 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             children: [
               _buildStatusCard(),
               const SizedBox(height: 24),
+              if (_canBeMadeActive(ref)) ...[
+                _buildMakeActiveButton(context, ref),
+                const SizedBox(height: 24),
+              ],
               if (membership.status == MembershipStatus.rejected) ...[
                 _buildAppealButton(context, ref),
                 const SizedBox(height: 24),
@@ -155,6 +160,45 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+
+  /// Whether this bank can be switched to: the backend says it is openable,
+  /// and it is not already the one being used.
+  bool _canBeMadeActive(WidgetRef ref) {
+    if (!membership.dapatDibuka) return false;
+    final active = ref.watch(activeMembershipProvider);
+    // Until the saved choice has been read, offering the switch could make
+    // the active bank look inactive, so wait for it.
+    if (active.isLoading) return false;
+    return active.value != membership.id;
+  }
+
+  Widget _buildMakeActiveButton(BuildContext context, WidgetRef ref) =>
+      AppButton(
+        label: 'Jadikan bank aktif',
+        onPressed: () => _makeActive(context, ref),
+      );
+
+  Future<void> _makeActive(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(activeMembershipProvider.notifier);
+    await notifier.select(membership.id);
+    if (!context.mounted) return;
+    // select() never throws; a rejected write arrives as an error on the
+    // state, with the bank that is still active kept as its value.
+    final result = ref.read(activeMembershipProvider);
+    if (result.hasError) {
+      AppNotification.showError(
+        context,
+        title: 'Gagal Mengubah Bank Aktif',
+        message: 'Pilihan bank aktif belum tersimpan. Coba lagi.',
+      );
+      return;
+    }
+    AppNotification.showSuccess(
+      context,
+      title: 'Bank Aktif Diubah',
+      message: '${membership.bankSampahNama} sekarang menjadi bank aktif Anda.',
     );
   }
 
