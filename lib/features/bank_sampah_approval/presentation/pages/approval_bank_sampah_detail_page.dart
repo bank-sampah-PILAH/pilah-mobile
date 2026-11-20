@@ -182,12 +182,10 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
 
   Future<void> _makeActive(BuildContext context, WidgetRef ref) async {
     final notifier = ref.read(activeMembershipProvider.notifier);
-    await notifier.select(membership.id);
+    // select() never throws; it answers false when the choice was not saved.
+    final saved = await notifier.select(membership.id);
     if (!context.mounted) return;
-    // select() never throws; a rejected write arrives as an error on the
-    // state, with the bank that is still active kept as its value.
-    final result = ref.read(activeMembershipProvider);
-    if (result.hasError) {
+    if (!saved) {
       AppNotification.showError(
         context,
         title: 'Gagal Mengubah Bank Aktif',

@@ -72,16 +72,14 @@ void main() {
     expect(await container.read(activeMembershipProvider.future), 'first-open');
 
     storage.putFailure = Exception('penyimpanan penuh');
-    // Choosing must not throw at the caller: the screen reads the error off
-    // the state instead, so a rejected write cannot escape as an unhandled
-    // async error.
-    await container
+    // Choosing must not throw at the caller: it answers false instead, so a
+    // rejected write cannot escape as an unhandled async error.
+    final saved = await container
         .read(activeMembershipProvider.notifier)
         .select('second-open');
 
-    final state = container.read(activeMembershipProvider);
-    expect(state.hasError, isTrue);
-    expect(state.value, 'first-open');
+    expect(saved, isFalse);
+    expect(container.read(activeMembershipProvider).value, 'first-open');
     expect(
       await ActiveMembershipSelection(storage).read('user-1'),
       'first-open',

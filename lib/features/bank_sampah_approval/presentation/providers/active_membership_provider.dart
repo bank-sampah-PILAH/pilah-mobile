@@ -56,26 +56,25 @@ class ActiveMembershipNotifier extends AsyncNotifier<String?> {
     return selection.resolve(userId, approval.memberships);
   }
 
-  /// Makes [membershipId] the bank the nasabah is banking with.
+  /// Makes [membershipId] the bank the nasabah is banking with, and reports
+  /// whether that was saved.
   ///
-  /// This never throws. A rejected write is published as an error that keeps
-  /// the previous value, so the screen can say the choice was not saved while
-  /// still showing which bank is actually active, and a failure on a screen
-  /// the user has already left cannot surface as an unhandled async error.
-  Future<void> select(String membershipId) async {
+  /// This never throws. A rejected write leaves the state alone and returns
+  /// false, so the bank that is actually active stays on display while the
+  /// screen says the choice was not saved, and a failure on a screen the user
+  /// has already left cannot surface as an unhandled async error.
+  Future<bool> select(String membershipId) async {
     final selection = ref.read(activeMembershipSelectionProvider);
     final userId = ref.read(activeMembershipUserIdProvider);
-    if (selection == null || userId.isEmpty) return;
-    final previous = state;
+    if (selection == null || userId.isEmpty) return false;
     try {
       await selection.select(userId, membershipId);
-      if (!ref.mounted) return;
-      state = AsyncData(membershipId);
-    } catch (error, stackTrace) {
-      // The screen may be gone by now; writing to a disposed notifier throws.
-      if (!ref.mounted) return;
-      state = AsyncValue<String?>.error(error, stackTrace)
-          .copyWithPrevious(previous);
+    } catch (_) {
+      return false;
     }
+    // The screen may be gone by now; writing to a disposed notifier throws.
+    if (!ref.mounted) return true;
+    state = AsyncData(membershipId);
+    return true;
   }
 }
