@@ -55,11 +55,25 @@ class ActiveMembershipNotifier extends AsyncNotifier<String?> {
   }
 
   /// Makes [membershipId] the bank the nasabah is banking with.
+  ///
+  /// This never throws. A rejected write is published as an error that keeps
+  /// the previous value, so the screen can say the choice was not saved while
+  /// still showing which bank is actually active, and a failure on a screen
+  /// the user has already left cannot surface as an unhandled async error.
   Future<void> select(String membershipId) async {
     final selection = ref.read(activeMembershipSelectionProvider);
     final userId = ref.read(activeMembershipUserIdProvider);
     if (selection == null || userId.isEmpty) return;
-    await selection.select(userId, membershipId);
-    state = AsyncData(membershipId);
+    final previous = state;
+    try {
+      await selection.select(userId, membershipId);
+      if (!ref.mounted) return;
+      state = AsyncData(membershipId);
+    } catch (error, stackTrace) {
+      // The screen may be gone by now; writing to a disposed notifier throws.
+      if (!ref.mounted) return;
+      state = AsyncValue<String?>.error(error, stackTrace)
+          .copyWithPrevious(previous);
+    }
   }
 }
