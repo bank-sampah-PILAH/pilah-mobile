@@ -490,4 +490,61 @@ void _mainActiveBank() {
 
     expect(find.text('Jadikan bank aktif'), findsNothing);
   });
+
+  testWidgets('choosing a bank saves it and stops offering the switch',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      storage,
+      userId: 'user-save',
+      memberships: [membershipRow('m-other'), openable],
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Jadikan bank aktif'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      await ActiveMembershipSelection(storage).read('user-save'),
+      'm-open',
+    );
+    expect(find.text('Bank Aktif Diubah'), findsOneWidget);
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+
+    // Runs the toast's auto-dismiss timer out so none is left pending.
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('a rejected save says so and keeps the bank in use',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      storage,
+      userId: 'user-reject',
+      memberships: [membershipRow('m-other'), openable],
+    ));
+    await tester.pumpAndSettle();
+
+    storage.putFailure = Exception('penyimpanan penuh');
+    await tester.tap(find.text('Jadikan bank aktif'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Gagal Mengubah Bank Aktif'), findsOneWidget);
+    expect(
+      await ActiveMembershipSelection(storage).read('user-reject'),
+      'm-other',
+    );
+    // Still on offer, because the switch did not happen.
+    expect(find.text('Jadikan bank aktif'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+  });
 }
