@@ -11,6 +11,13 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_appeal_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
+
+import '../../../../support/active_membership_support.dart';
+import '../../../../support/nasabah_approval_support.dart';
 
 class _MockAppealMembershipUseCase extends Mock
     implements AppealMembershipUseCase {}
@@ -60,6 +67,7 @@ GoRouter _routerWithDetail(
 }
 
 void main() {
+  _mainActiveBank();
   late _MockAppealMembershipUseCase cubit;
 
   setUp(() => cubit = _MockAppealMembershipUseCase());
@@ -403,5 +411,64 @@ void main() {
 
     expect(find.text('Daftar Approval'), findsOneWidget);
     expect(find.byType(ApprovalBankSampahDetailView), findsNothing);
+  });
+}
+
+/// The detail page with a real selection behind it, so the "Jadikan bank
+/// aktif" action can be exercised end to end.
+Widget _wrapWithSelection(
+  NasabahMembershipEntity membership,
+  MemoryAppStorage storage, {
+  List<NasabahMembershipEntity>? memberships,
+}) =>
+    ProviderScope(
+      overrides: [
+        nasabahAppealProvider.overrideWith(
+          () => NasabahAppealNotifier(_MockAppealMembershipUseCase()),
+        ),
+        activeMembershipSelectionProvider
+            .overrideWithValue(ActiveMembershipSelection(storage)),
+        activeMembershipUserIdProvider.overrideWithValue('user-1'),
+        nasabahApprovalProvider.overrideWith(
+          () => TestNasabahApprovalNotifier(
+            initialState: NasabahApprovalLoaded(
+                memberships ?? <NasabahMembershipEntity>[]),
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        home: ApprovalBankSampahDetailView(membership: membership),
+      ),
+    );
+
+void _mainActiveBank() {
+  testWidgets('offers to open only a bank that is openable and not active',
+      (tester) async {
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
+    final closed =
+        membershipRow('m-closed', nama: 'Bank Sampah Tutup', dibuka: false);
+
+    // Openable, and the active one is some other bank: the action is offered.
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      MemoryAppStorage(),
+      memberships: [membershipRow('m-other'), openable],
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Jadikan bank aktif'), findsOneWidget);
+
+    // Not openable: never offered, whatever its status says.
+    await tester.pumpWidget(_wrapWithSelection(closed, MemoryAppStorage()));
+    await tester.pumpAndSettle();
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+
+    // Already the active bank: nothing to switch to.
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      MemoryAppStorage(),
+      memberships: [openable],
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Jadikan bank aktif'), findsNothing);
   });
 }
