@@ -8,6 +8,11 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/n
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_list_item.dart';
+
+import '../../../../support/active_membership_support.dart';
 import '../../../../support/nasabah_approval_support.dart';
 
 const _pending = NasabahMembershipEntity(
@@ -28,10 +33,23 @@ const _approved = NasabahMembershipEntity(
   bankSampahAlamat: 'Jl. Sudirman No. 20',
   status: MembershipStatus.approved,
   isActive: true,
+  dapatDibuka: true,
 );
 
-Widget _wrap(TestNasabahApprovalNotifier notifier) => ProviderScope(
-      overrides: [nasabahApprovalProvider.overrideWith(() => notifier)],
+Widget _wrap(
+  TestNasabahApprovalNotifier notifier, {
+  MemoryAppStorage? storage,
+}) =>
+    ProviderScope(
+      overrides: [
+        nasabahApprovalProvider.overrideWith(() => notifier),
+        // Without storage the screen marks nothing active, which is what the
+        // list-only tests below expect.
+        activeMembershipSelectionProvider.overrideWithValue(
+          storage == null ? null : ActiveMembershipSelection(storage),
+        ),
+        activeMembershipUserIdProvider.overrideWithValue('user-1'),
+      ],
       child: const MaterialApp(home: ApprovalBankSampahListView()),
     );
 
@@ -39,6 +57,22 @@ TestNasabahApprovalNotifier _notifier(NasabahApprovalState state) =>
     TestNasabahApprovalNotifier(initialState: state);
 
 void main() {
+  testWidgets('marks the bank the nasabah is banking with', (tester) async {
+    await tester.pumpWidget(_wrap(
+      _notifier(const NasabahApprovalLoaded([_pending, _approved])),
+      storage: MemoryAppStorage(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.widgetWithText(MembershipListItem, 'Bank Sampah Lestari'),
+        matching: find.text('Aktif'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Aktif'), findsOneWidget);
+  });
   testWidgets('is titled Bank sampah saya', (tester) async {
     await tester.pumpWidget(
         _wrap(_notifier(const NasabahApprovalLoaded([_pending, _approved]))));
