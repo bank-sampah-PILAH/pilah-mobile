@@ -39,6 +39,13 @@ TestNasabahApprovalNotifier _notifier(NasabahApprovalState state) =>
     TestNasabahApprovalNotifier(initialState: state);
 
 void main() {
+  testWidgets('is titled Bank sampah saya', (tester) async {
+    await tester.pumpWidget(
+        _wrap(_notifier(const NasabahApprovalLoaded([_pending, _approved]))));
+
+    expect(find.text('Bank sampah saya'), findsOneWidget);
+    expect(find.text('Daftar Approval Bank Sampah'), findsNothing);
+  });
   testWidgets('renders one card per membership with the right status badge',
       (tester) async {
     await tester.pumpWidget(
