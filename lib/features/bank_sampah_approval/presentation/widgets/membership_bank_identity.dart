@@ -10,11 +10,16 @@ class MembershipBankIdentity extends StatelessWidget {
     required this.membership,
     required this.nameStyle,
     required this.locationStyle,
+    this.marker,
   });
 
   final NasabahMembershipEntity membership;
   final TextStyle nameStyle;
   final TextStyle locationStyle;
+
+  /// An extra pill shown just before the status badge, used by the list to
+  /// mark the active bank. Nothing is reserved for it when it is null.
+  final Widget? marker;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +60,7 @@ class MembershipBankIdentity extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
+        if (marker != null) ...[marker!, const SizedBox(width: 6)],
         MembershipStatusBadge(status: membership.status),
       ],
     );
