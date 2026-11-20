@@ -123,7 +123,7 @@ void main() {
         // test here assumes.
         activeMembershipSelectionProvider.overrideWithValue(
           storage == null
-              ? const ActiveMembershipSelection.none()
+              ? ActiveMembershipSelection.none()
               : ActiveMembershipSelection(storage),
         ),
         if (memberships != null)

@@ -47,7 +47,7 @@ Widget _wrap(
         // list-only tests below expect.
         activeMembershipSelectionProvider.overrideWithValue(
           storage == null
-              ? const ActiveMembershipSelection.none()
+              ? ActiveMembershipSelection.none()
               : ActiveMembershipSelection(storage),
         ),
         activeMembershipUserIdProvider.overrideWithValue('user-1'),

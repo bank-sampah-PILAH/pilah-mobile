@@ -18,7 +18,11 @@ abstract class ActiveMembershipSelection {
       _StoredActiveMembershipSelection;
 
   /// Remembers nothing: no bank is ever active and no choice is ever kept.
-  const factory ActiveMembershipSelection.none() = _NoActiveMembershipSelection;
+  ///
+  /// Deliberately not a const constructor. It carries no state, so const
+  /// would buy nothing, and a const instance is built at compile time, which
+  /// leaves the one line that creates it looking unreachable to coverage.
+  factory ActiveMembershipSelection.none() = _NoActiveMembershipSelection;
 
   /// Whether a choice can be kept at all. Callers use it to skip work that
   /// only pays off when something can be remembered, such as loading the
@@ -111,7 +115,7 @@ class _StoredActiveMembershipSelection extends ActiveMembershipSelection {
 /// The do-nothing selection. Every answer is "nothing is remembered", which
 /// is exactly what the screens should show when there is nowhere to remember.
 class _NoActiveMembershipSelection extends ActiveMembershipSelection {
-  const _NoActiveMembershipSelection() : super._();
+  _NoActiveMembershipSelection() : super._();
 
   @override
   bool get remembers => false;
