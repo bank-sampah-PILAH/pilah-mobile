@@ -11,6 +11,48 @@ import '../../../../support/auth_support.dart';
 import '../../../../support/stub_api.dart';
 
 void main() {
+  Future<void> openActivity(WidgetTester tester, String activity) async {
+    final api = StubApi();
+    api.on('GET', '/api/v1/jadwal/activity', json: {
+      'id': 'activity',
+      'bank_sampah_id': 'bank',
+      'jenis_kegiatan': activity,
+      'status': 'diterbitkan',
+      'mulai_pada': DateTime(2026, 11, 22, 9).toUtc().toIso8601String(),
+      'selesai_pada': DateTime(2026, 11, 22, 11).toUtc().toIso8601String(),
+      'lokasi': 'Balai Warga',
+    });
+    di.registerSingleton<JadwalRepository>(
+        JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network)));
+    addTearDown(di.reset);
+    final auth = authNotifierIn(Authenticated(
+        authEntity: const AuthEntity(
+      id: 'customer',
+      name: 'Siti',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'token',
+      role: 'nasabah',
+    )));
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
+      const MaterialApp(home: NasabahJadwalDetailPage(id: 'activity')),
+    ));
+    await tester.pumpAndSettle();
+    expect(api.requests.single.path, '/api/v1/jadwal/activity');
+  }
+
+  testWidgets(
+      'pencairan schedule details show the customer-facing activity label',
+      (tester) async {
+    await openActivity(tester, 'pencairan');
+
+    expect(find.text('Pencairan Saldo'), findsOneWidget);
+    expect(find.text('pencairan'), findsNothing);
+    expect(find.text('Penimbangan Sampah'), findsNothing);
+    expect(find.text('Ubah Jadwal'), findsNothing);
+  });
+
   testWidgets('a schedule spanning midnight shows its end date',
       (tester) async {
     final api = StubApi();
