@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,6 +11,11 @@ import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -18,6 +24,8 @@ import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_reposito
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
+import '../../../support/active_membership_support.dart';
+import '../../../support/nasabah_approval_support.dart';
 import '../../../support/auth_support.dart';
 import '../../../support/fake_image_download.dart';
 import '../../../support/stub_api.dart';
@@ -87,6 +95,8 @@ void main() {
     NasabahRepository repository, {
     Map<String, Widget Function(BuildContext, GoRouterState)> extraRoutes =
         const {},
+    MemoryAppStorage? storage,
+    List<NasabahMembershipEntity>? memberships,
   }) async {
     di.registerSingleton<NasabahRepository>(repository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
@@ -108,9 +118,73 @@ void main() {
     await tester.pumpWidget(withAuthenticationProvider(
       auth,
       MaterialApp.router(routerConfig: router),
+      overrides: [
+        // Without storage nothing is remembered, which is what every other
+        // test here assumes.
+        activeMembershipSelectionProvider.overrideWithValue(
+          storage == null
+              ? ActiveMembershipSelection.none()
+              : ActiveMembershipSelection(storage),
+        ),
+        if (memberships != null)
+          nasabahApprovalProvider.overrideWith(
+            () => TestNasabahApprovalNotifier(
+              initialState: NasabahApprovalLoaded(memberships),
+            ),
+          ),
+      ],
     ));
     await tester.pumpAndSettle();
   }
+
+  testWidgets('opens on the bank the nasabah last chose', (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage)
+        .select('nasabah-1', 'membership-dipilih');
+    final repository = _HomeRepository(null, const []);
+
+    await pumpHome(
+      tester,
+      repository,
+      storage: storage,
+      // The saved bank is still openable, so it survives reconciliation.
+      memberships: [membershipRow('membership-dipilih')],
+    );
+
+    // Without the saved choice the first load asks for null, and the beranda
+    // would call whichever bank the backend defaulted to "Aktif".
+    expect(repository.asked.first, 'membership-dipilih');
+  });
+
+  testWidgets('reloads when the active bank is switched elsewhere',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage)
+        .select('nasabah-1', 'membership-dipilih');
+    final repository = _HomeRepository(null, const []);
+
+    await pumpHome(
+      tester,
+      repository,
+      storage: storage,
+      memberships: [
+        membershipRow('membership-dipilih'),
+        membershipRow('membership-lain'),
+      ],
+    );
+    expect(repository.asked, ['membership-dipilih']);
+
+    // Standing in for the switch made on the "Bank sampah saya" detail page.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(BerandaNasabahPage)),
+    );
+    await container
+        .read(activeMembershipProvider.notifier)
+        .select('membership-lain');
+    await tester.pumpAndSettle();
+
+    expect(repository.asked, ['membership-dipilih', 'membership-lain']);
+  });
 
   // The greeting follows the clock, so each time of day is checked against a
   // fixed one and the result does not depend on when the suite runs.

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/repository/auth_repository.dart';
@@ -202,9 +203,13 @@ TestAuthenticationNotifier authNotifierIn(AuthenticationStates state) =>
 
 Widget withAuthenticationProvider(
   TestAuthenticationNotifier notifier,
-  Widget child,
-) =>
+  Widget child, {
+  List<Override> overrides = const [],
+}) =>
     ProviderScope(
-      overrides: [authenticationProvider.overrideWith(() => notifier)],
+      overrides: [
+        authenticationProvider.overrideWith(() => notifier),
+        ...overrides,
+      ],
       child: child,
     );

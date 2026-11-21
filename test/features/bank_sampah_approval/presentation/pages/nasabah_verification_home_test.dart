@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
@@ -41,6 +42,15 @@ void main() {
         builder: (_, __) => const Scaffold(body: Text('form pengajuan')),
       ),
       GoRoute(
+        path: ApprovalBankSampahListPage.route,
+        builder: (context, __) => Scaffold(
+          body: TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('daftar bank sampah'),
+          ),
+        ),
+      ),
+      GoRoute(
         path: ApprovalBankSampahDetailPage.route,
         builder: (context, state) => Scaffold(
           body: TextButton(
@@ -59,6 +69,37 @@ void main() {
     await tester.pump();
     return notifier;
   }
+
+  testWidgets('a nasabah still waiting can reach Bank sampah saya',
+      (tester) async {
+    await pumpHome(
+      tester,
+      NasabahApprovalLoaded([_membership(MembershipStatus.pending)]),
+    );
+
+    await tester.tap(find.text('Bank sampah saya'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('daftar bank sampah'), findsOneWidget);
+  });
+
+  testWidgets('refreshes the status after returning from the list',
+      (tester) async {
+    final notifier = await pumpHome(
+      tester,
+      NasabahApprovalLoaded([_membership(MembershipStatus.pending)]),
+    );
+    notifier.loadCalls.clear();
+
+    await tester.tap(find.text('Bank sampah saya'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('daftar bank sampah'));
+    await tester.pumpAndSettle();
+
+    // Silent, so a status that changed while they were on the list appears
+    // without the screen falling back to its spinner.
+    expect(notifier.loadCalls, [true]);
+  });
 
   testWidgets('greets the nasabah while status loads', (tester) async {
     await pumpHome(tester, const NasabahApprovalLoading());
