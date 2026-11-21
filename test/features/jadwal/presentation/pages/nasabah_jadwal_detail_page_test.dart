@@ -53,6 +53,16 @@ void main() {
     expect(find.text('Ubah Jadwal'), findsNothing);
   });
 
+  testWidgets('unknown activity types retain their server-provided label',
+      (tester) async {
+    await openActivity(tester, 'kegiatan-komunitas');
+
+    expect(find.text('kegiatan-komunitas'), findsOneWidget);
+    expect(find.text('Penimbangan Sampah'), findsNothing);
+    expect(find.text('Pencairan Saldo'), findsNothing);
+    expect(find.text('Ubah Jadwal'), findsNothing);
+  });
+
   testWidgets('a schedule spanning midnight shows its end date',
       (tester) async {
     final api = StubApi();
