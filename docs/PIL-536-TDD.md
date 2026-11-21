@@ -68,3 +68,14 @@ These checks cover reused behavior; they are not claimed as additional demonstra
 - An additional `flutter test --platform chrome` run stalled at suite loading and was stopped; it is not reported as passing.
 - Playwright browser QA used production routes and synthetic HTTP fixtures at 1280×720 and 390×844: schedule list/detail, selected-day return, direct-detail refresh, unavailable and empty states, profile layout/editing, and legal navigation. Screenshots remain outside the repository.
 - Backend code was unchanged. The existing schedule list/retrieve queryset was reviewed: it restricts Nasabah reads to active, approved bank memberships, published schedules that have not ended, and eligible recipients. This frontend change reuses that server enforcement.
+
+## Coverage follow-up
+
+- Added one focused regression for `pencairan`: the detail displays `Pencairan Saldo` instead of the wire value or the penimbangan label, without an edit action. It passed before the next test was added.
+- Added a separate regression for an unknown activity type: the detail preserves the server-provided label instead of misclassifying it as penimbangan or pencairan, without an edit action.
+- `flutter --no-version-check test --no-pub test/features/jadwal/presentation/pages/nasabah_jadwal_detail_page_test.dart --reporter expanded` — 4 passed.
+- These cover existing behavior and are not claimed as demonstrated RED cycles. Application code, coverage exclusions, and existing assertions were unchanged.
+- `flutter --no-version-check analyze --no-pub` after adding these tests — no issues.
+- Fresh coverage command: `flutter --no-version-check test --no-pub --coverage --coverage-path coverage/pil-536-lcov.info --reporter expanded` — 3705 passed, 1 skipped, and the same 2 previously confirmed Windows staff-logo filename failures.
+- Intersecting that fresh LCOV report's executable lines with added `lib/` lines in `git diff --unified=0 origin/staging -- lib` gives **100/100 covered new executable lines (100%)**, up from 98/100. `nasabah_jadwal_detail_page.dart` is now 46/46 (100%). No executable new lines remain uncovered.
+- This is local added-line coverage against baseline `ed4004a5`, not a SonarCloud `new_coverage` result. Official SonarCloud metrics still require a branch/PR analysis.
