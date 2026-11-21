@@ -79,3 +79,13 @@ These checks cover reused behavior; they are not claimed as additional demonstra
 - Fresh coverage command: `flutter --no-version-check test --no-pub --coverage --coverage-path coverage/pil-536-lcov.info --reporter expanded` — 3705 passed, 1 skipped, and the same 2 previously confirmed Windows staff-logo filename failures.
 - Intersecting that fresh LCOV report's executable lines with added `lib/` lines in `git diff --unified=0 origin/staging -- lib` gives **100/100 covered new executable lines (100%)**, up from 98/100. `nasabah_jadwal_detail_page.dart` is now 46/46 (100%). No executable new lines remain uncovered.
 - This is local added-line coverage against baseline `ed4004a5`, not a SonarCloud `new_coverage` result. Official SonarCloud metrics still require a branch/PR analysis.
+
+## SonarQube cognitive-complexity follow-up
+
+- SonarCloud PR #268 reported `dart:S3776` on `NasabahJadwalDetailPage.build`: cognitive complexity 19, above the allowed 15. The deeply nested activity-label switch and conditional detail rows contributed to that score.
+- Extracted the unchanged schedule-information card into a private `_ScheduleDetails` stateless widget. Authentication, request loading, safe error messages, and the session-sensitive resource key remain in the page; the labels, dates, notes, layout, and read-only behavior are unchanged.
+- This is a necessary behavior-preserving refactor after GREEN, not a new RED cycle. Existing detail and routing regressions passed: `flutter --no-version-check test --no-pub test/features/jadwal/presentation/pages/nasabah_jadwal_detail_page_test.dart test/core/router/nasabah_schedule_detail_test.dart --reporter expanded` — 5 passed.
+- `flutter --no-version-check analyze --no-pub` — no issues.
+- `flutter --no-version-check build apk --debug --no-pub -t lib/main_development.dart` — passed with process-local JDK 21 selection.
+- `flutter --no-version-check build web --release --no-pub --no-wasm-dry-run -t lib/main_development.dart` after the extraction — passed.
+- Fresh full-suite coverage after the extraction: 3705 passed, 1 skipped, and the same 2 confirmed Windows staff-logo filename failures. Added-line coverage against `origin/staging` remains **100/100 (100%)**, with 46/46 covered lines in the detail page.

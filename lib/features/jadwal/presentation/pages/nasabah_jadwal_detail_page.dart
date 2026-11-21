@@ -53,46 +53,51 @@ class NasabahJadwalDetailPage extends ConsumerWidget {
                               ),
                               (schedule) => schedule,
                             ),
-                            builder: (_, schedule) => NasabahCard(
-                              child: Column(children: [
-                                AppDetailRow(
-                                    label: 'Kegiatan',
-                                    value: switch (schedule.jenisKegiatan) {
-                                      'penimbangan' => 'Penimbangan Sampah',
-                                      'pencairan' => 'Pencairan Saldo',
-                                      _ => schedule.jenisKegiatan,
-                                    }),
-                                AppDetailRow(
-                                    label: 'Tanggal',
-                                    value: nasabahDate(schedule.mulaiPada)),
-                                AppDetailRow(
-                                    label: 'Mulai',
-                                    value: DateFormat('HH:mm')
-                                        .format(schedule.mulaiPada.toLocal())),
-                                if (!DateUtils.isSameDay(
-                                  schedule.mulaiPada.toLocal(),
-                                  schedule.selesaiPada.toLocal(),
-                                ))
-                                  AppDetailRow(
-                                    label: 'Tanggal selesai',
-                                    value: nasabahDate(schedule.selesaiPada),
-                                  ),
-                                AppDetailRow(
-                                    label: 'Selesai',
-                                    value: DateFormat('HH:mm').format(
-                                        schedule.selesaiPada.toLocal())),
-                                AppDetailRow(
-                                    label: 'Lokasi', value: schedule.lokasi),
-                                if (schedule.keterangan.trim().isNotEmpty)
-                                  AppDetailRow(
-                                      label: 'Keterangan',
-                                      value: schedule.keterangan),
-                              ]),
-                            ),
+                            builder: (_, schedule) =>
+                                _ScheduleDetails(schedule: schedule),
                           ),
                         ],
                       )),
             ),
     );
   }
+}
+
+class _ScheduleDetails extends StatelessWidget {
+  const _ScheduleDetails({required this.schedule});
+
+  final JadwalEntity schedule;
+
+  @override
+  Widget build(BuildContext context) => NasabahCard(
+        child: Column(children: [
+          AppDetailRow(
+              label: 'Kegiatan',
+              value: switch (schedule.jenisKegiatan) {
+                'penimbangan' => 'Penimbangan Sampah',
+                'pencairan' => 'Pencairan Saldo',
+                _ => schedule.jenisKegiatan,
+              }),
+          AppDetailRow(
+              label: 'Tanggal', value: nasabahDate(schedule.mulaiPada)),
+          AppDetailRow(
+              label: 'Mulai',
+              value: DateFormat('HH:mm').format(schedule.mulaiPada.toLocal())),
+          if (!DateUtils.isSameDay(
+            schedule.mulaiPada.toLocal(),
+            schedule.selesaiPada.toLocal(),
+          ))
+            AppDetailRow(
+              label: 'Tanggal selesai',
+              value: nasabahDate(schedule.selesaiPada),
+            ),
+          AppDetailRow(
+              label: 'Selesai',
+              value:
+                  DateFormat('HH:mm').format(schedule.selesaiPada.toLocal())),
+          AppDetailRow(label: 'Lokasi', value: schedule.lokasi),
+          if (schedule.keterangan.trim().isNotEmpty)
+            AppDetailRow(label: 'Keterangan', value: schedule.keterangan),
+        ]),
+      );
 }
