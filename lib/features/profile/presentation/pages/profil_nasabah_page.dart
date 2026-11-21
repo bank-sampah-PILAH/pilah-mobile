@@ -7,6 +7,12 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +32,9 @@ import 'package:pilah_mobile/design/constants/font_weight.dart';
 /// allows (nama, no_hp, jenis_kelamin, tanggal_lahir, alamat). Email, role and
 /// id are always read-only.
 class ProfilNasabahPage extends ConsumerWidget {
-  const ProfilNasabahPage({super.key});
+  const ProfilNasabahPage({super.key, this.isWeb = kIsWeb});
+
+  final bool isWeb;
 
   Future<void> _logout(BuildContext context) async {
     final confirmed = await showAppConfirmDialog(
@@ -47,12 +55,18 @@ class ProfilNasabahPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(authenticationProvider);
     final auth = state is Authenticated ? state.authEntity : null;
+    final webHeader =
+        isWeb && context.layoutBreakpoint != LayoutBreakpoint.compact;
     return Scaffold(
-      backgroundColor: NasabahStyle.background,
-      appBar: const NasabahPageAppBar(title: 'Profil'),
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: NasabahStyle.background),
+      appBar: webHeader ? null : const NasabahPageAppBar(title: 'Profil'),
       body: SafeArea(
-          child:
-              _ProfilNasabahBody(auth: auth, onLogout: () => _logout(context))),
+          child: _ProfilNasabahBody(
+              auth: auth,
+              onLogout: () => _logout(context),
+              isWeb: isWeb,
+              webHeader: webHeader)),
     );
   }
 }
@@ -60,9 +74,15 @@ class ProfilNasabahPage extends ConsumerWidget {
 /// Owns the reload handle across rebuilds so a pull can reach the
 /// [NasabahResource] below without the page itself managing a request.
 class _ProfilNasabahBody extends StatefulWidget {
-  const _ProfilNasabahBody({required this.auth, required this.onLogout});
+  const _ProfilNasabahBody(
+      {required this.auth,
+      required this.onLogout,
+      required this.isWeb,
+      required this.webHeader});
   final AuthEntity? auth;
   final VoidCallback onLogout;
+  final bool isWeb;
+  final bool webHeader;
   @override
   State<_ProfilNasabahBody> createState() => _ProfilNasabahBodyState();
 }
@@ -73,16 +93,23 @@ class _ProfilNasabahBodyState extends State<_ProfilNasabahBody> {
   @override
   Widget build(BuildContext context) {
     final auth = widget.auth;
-    return Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
-            child: AppRefreshIndicator(
-              onRefresh: () => _reload?.call() ?? Future<void>.value(),
-              child: ListView(
+    final content = AppRefreshIndicator(
+      onRefresh: () => _reload?.call() ?? Future<void>.value(),
+      child: Builder(
+          builder: (context) => ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
+                  padding: ContentFrame.insetOf(context).add(widget.webHeader
+                      ? const EdgeInsets.fromLTRB(
+                          AppSpacing.webGutter,
+                          AppSpacing.webTop,
+                          AppSpacing.webGutter,
+                          AppSpacing.xl)
+                      : const EdgeInsets.all(AppSpacing.lg)),
                   children: [
+                    if (widget.webHeader) ...[
+                      const AppPageHeader(title: 'Profil'),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
                     if (auth?.role != 'nasabah')
                       Text('Silakan masuk untuk melihat profil Anda.',
                           style: NasabahStyle.text(15))
@@ -96,8 +123,17 @@ class _ProfilNasabahBodyState extends State<_ProfilNasabahBody> {
                             identity: identity,
                             onLogout: widget.onLogout),
                       ),
-                  ]),
-            )));
+                  ])),
+    );
+    return widget.isWeb
+        ? ContentFrame(maxWidth: NasabahStyle.maxWidth, child: content)
+        : Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints:
+                  const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
+              child: content,
+            ));
   }
 }
 
