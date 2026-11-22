@@ -25,6 +25,10 @@ class RegisterNasabahScreen extends ConsumerStatefulWidget {
 
   static const route = '/register-nasabah';
 
+  /// The same form, opened from "Bank sampah saya" by a nasabah who already
+  /// has a membership and applies to another bank sampah (PIL-539).
+  static const additionalRoute = '/ajukan-bank-sampah';
+
   @override
   ConsumerState<RegisterNasabahScreen> createState() =>
       _RegisterNasabahScreenState();
