@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,11 +11,30 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nas
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/onboarding_support.dart';
+import '../../../../support/pump_app.dart';
 
 /// PIL-539: the registration form opened from "Bank sampah saya" by a nasabah
 /// who already belongs to a bank sampah.
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
+
+class _FakeRegisterNasabahRequest extends Fake
+    implements RegisterNasabahRequest {}
+
+class _FakeCompleteProfileRequest extends Fake
+    implements CompleteProfileRequest {}
+
+const _duplicate = 'Anda sudah terdaftar sebagai nasabah di bank sampah ini';
+
+DioException _refusal(String message) => DioException(
+      requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
+      type: DioExceptionType.badResponse,
+      response: Response(
+        requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
+        statusCode: 400,
+        data: {'error': message},
+      ),
+    );
 
 const _listRoute = '/approval-bank-sampah';
 
@@ -36,7 +56,13 @@ const _membershipA = NasabahMembershipEntity(
 );
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeRegisterNasabahRequest());
+    registerFallbackValue(_FakeCompleteProfileRequest());
+  });
+
   late TestAuthenticationNotifier auth;
+  late Future<bool?> pushed;
   late _MockOnboardingDataSource dataSource;
   late ProviderContainer container;
 
@@ -78,7 +104,7 @@ void main() {
       ),
     );
     await tester.pump();
-    router.push(RegisterNasabahScreen.additionalRoute);
+    pushed = router.push<bool>(RegisterNasabahScreen.additionalRoute);
     await tester.pumpAndSettle();
     return router;
   }
@@ -193,6 +219,66 @@ void main() {
 
       expect(find.text('Cari nama bank sampah...'), findsNothing);
       expect(find.text('Bank Sampah Mawar'), findsOneWidget);
+    });
+  });
+
+  group('applying', () {
+    Future<void> pickBankB(WidgetTester tester) async {
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bank Sampah Mawar'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'sends only the membership request and returns to Bank sampah saya',
+        (tester) async {
+      when(() => dataSource.registerNasabah(any())).thenAnswer(
+          (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'));
+      await pumpFromList(tester);
+      await pickBankB(tester);
+
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await pumpToast(tester);
+
+      final request = verify(() => dataSource.registerNasabah(captureAny()))
+          .captured
+          .single as RegisterNasabahRequest;
+      expect(request.bankSampahId, 'bank-b');
+      verifyNever(() => dataSource.completeProfile(any()));
+      expect(find.text('BANK SAMPAH SAYA'), findsOneWidget);
+      expect(find.text('Pengajuan terkirim'), findsOneWidget);
+      expect(await pushed, isTrue);
+      // The account is already signed in and onboarded: applying to another
+      // bank does not touch its session.
+      expect(auth.calls, isNot(contains('refreshUser')));
+      await settleToasts(tester);
+    });
+
+    testWidgets('a duplicate application shows the reason and stays',
+        (tester) async {
+      when(() => dataSource.registerNasabah(any()))
+          .thenAnswer((_) async => throw _refusal(_duplicate));
+      await pumpFromList(tester);
+      await pickBankB(tester);
+
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await pumpToast(tester);
+
+      expect(find.text(_duplicate), findsOneWidget);
+      expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+      expect(find.text('BANK SAMPAH SAYA'), findsNothing);
+      await settleToasts(tester);
+    });
+
+    testWidgets('asks for a bank before sending anything', (tester) async {
+      await pumpFromList(tester);
+
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bank sampah wajib dipilih'), findsOneWidget);
+      verifyNever(() => dataSource.registerNasabah(any()));
     });
   });
 
