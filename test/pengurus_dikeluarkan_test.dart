@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -92,7 +91,7 @@ void main() {
               email: 'siti@example.test',
               photoUrl: '',
               token: 't',
-              nextStep: 'complete_profile',
+              nextStep: 'approval_pending',
               role: 'pengelola',
             ),
           ),
@@ -100,21 +99,59 @@ void main() {
 
     await evict(tester, 'Dikeluarkan');
 
-    expect(location(), '/complete-profile');
+    expect(location(), '/pending-approval');
   });
 
-  testWidgets('a second refusal while already there does nothing more',
+  testWidgets('refusals that arrive together send them away only once',
       (tester) async {
     shell.signedInAsRole('pengelola', bankStatus: 'active');
     await boot(tester);
+    shell.auth.onRefreshUser = () => shell.auth.setStateForTest(
+          Authenticated(
+            authEntity: const AuthEntity(
+              id: 'u1',
+              name: 'Siti',
+              email: 'siti@example.test',
+              photoUrl: '',
+              token: 't',
+              nextStep: 'register_bank_sampah',
+              role: 'pengelola',
+            ),
+          ),
+        );
+
+    PengurusDikeluarkanSignal.raise('Dikeluarkan');
+    PengurusDikeluarkanSignal.raise('Dikeluarkan');
     await evict(tester, 'Dikeluarkan');
-    final refreshes =
-        shell.auth.calls.where((c) => c == 'refreshUser').length;
+
+    expect(location(), '/register-bank-sampah');
+    expect(shell.auth.calls.where((c) => c == 'refreshUser').length, 1);
+    expect(find.text('Dikeluarkan'), findsOneWidget);
+  });
+
+  testWidgets('a refusal that arrives after they were sent away adds nothing',
+      (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+    shell.auth.onRefreshUser = () => shell.auth.setStateForTest(
+          Authenticated(
+            authEntity: const AuthEntity(
+              id: 'u1',
+              name: 'Siti',
+              email: 'siti@example.test',
+              photoUrl: '',
+              token: 't',
+              nextStep: 'register_bank_sampah',
+              role: 'pengelola',
+            ),
+          ),
+        );
+    await evict(tester, 'Dikeluarkan');
 
     await evict(tester, 'Dikeluarkan');
 
     expect(location(), '/register-bank-sampah');
-    expect(shell.auth.calls.where((c) => c == 'refreshUser').length, refreshes);
+    expect(find.text('Dikeluarkan'), findsOneWidget);
   });
 
   testWidgets('a signed-out session is left alone', (tester) async {

@@ -204,8 +204,8 @@ void main() {
         await tester.tap(find.text('Keluarkan'));
         await tester.pumpAndSettle();
         expect(find.text('Keluarkan Budi dari tim?'), findsOneWidget);
-        expect(find.textContaining('tidak bisa lagi mengakses'),
-            findsOneWidget);
+        expect(
+            find.textContaining('tidak bisa lagi mengakses'), findsOneWidget);
         await tester.tap(find.text('Ya, Keluarkan'));
         await settleKeepingToast(tester);
 

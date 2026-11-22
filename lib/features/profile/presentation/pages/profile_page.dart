@@ -68,7 +68,7 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
-enum _TeamAction { makePrimary }
+enum _TeamAction { makePrimary, remove }
 
 class _ProfileView extends ConsumerStatefulWidget {
   const _ProfileView({required this.isWeb});
@@ -376,6 +376,29 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     await ref.read(authenticationProvider.notifier).refreshUser();
     if (!mounted) return;
     _snack('Jabatan Pengurus Utama dialihkan ke $name');
+  }
+
+  Future<void> _onRemoveMember(TeamMember member) async {
+    final name = _displayName(member);
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluarkan $name dari tim?',
+      message: '$name tidak bisa lagi mengakses bank sampah ini. Mereka baru '
+          'bisa bergabung kembali lewat tautan undangan.',
+      confirmLabel: 'Ya, Keluarkan',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    final error =
+        await ref.read(profileProvider.notifier).removeMember(member.id);
+    if (!mounted) return;
+    memberRemoved(ref.read(analyticsClientProvider), success: error == null);
+    if (error != null) {
+      _snack(error.displayMessage, error: true);
+      return;
+    }
+    _snack('$name dikeluarkan dari tim');
   }
 
   Future<void> _onCreateInvite(TeamInvite? currentInvite) async {
@@ -1292,11 +1315,19 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               enabled: !busy,
               onSelected: (action) => switch (action) {
                 _TeamAction.makePrimary => _onMakePrimary(member),
+                _TeamAction.remove => _onRemoveMember(member),
               },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
+              itemBuilder: (_) => [
+                const PopupMenuItem(
                   value: _TeamAction.makePrimary,
                   child: Text('Jadikan Pengurus Utama'),
+                ),
+                PopupMenuItem(
+                  value: _TeamAction.remove,
+                  child: Text(
+                    'Keluarkan',
+                    style: TextStyle(color: AppColors.danger),
+                  ),
                 ),
               ],
             ),

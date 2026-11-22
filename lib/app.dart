@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:pilah_mobile/core/client/pengurus_dikeluarkan.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
@@ -148,22 +150,25 @@ class App extends StatelessWidget {
           }
         });
         return _PendingInviteResumeWatcher(
-          child: _BrowserTitleUpdater(
+          child: _PengurusDikeluarkanWatcher(
             router: router,
-            enabled: isWeb,
-            child: AnalyticsRecordingRoot(
-              child: MaterialApp.router(
-                // The banner is drawn over the whole screen, so it would be in
-                // every frame of the recording of a debug build.
-                debugShowCheckedModeBanner: false,
-                title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
-                theme: AppTheme.light,
-                // Material widgets (date pickers, dialog buttons) in
-                // Indonesian.
-                locale: const Locale('id'),
-                supportedLocales: const [Locale('id')],
-                localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                routerConfig: router,
+            child: _BrowserTitleUpdater(
+              router: router,
+              enabled: isWeb,
+              child: AnalyticsRecordingRoot(
+                child: MaterialApp.router(
+                  // The banner is drawn over the whole screen, so it would be in
+                  // every frame of the recording of a debug build.
+                  debugShowCheckedModeBanner: false,
+                  title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+                  theme: AppTheme.light,
+                  // Material widgets (date pickers, dialog buttons) in
+                  // Indonesian.
+                  locale: const Locale('id'),
+                  supportedLocales: const [Locale('id')],
+                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                  routerConfig: router,
+                ),
               ),
             ),
           ),
@@ -239,6 +244,94 @@ class _PendingInviteResumeWatcherState
     final router = AppRouterConfig.getRouter();
     if (router.routerDelegate.currentConfiguration.uri.path == target) return;
     router.go(target);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Sends a pengurus whom the Pengurus Utama has removed away from the bank
+/// sampah's screens, wherever they are when the server first refuses them.
+///
+/// The session is read again so the app knows the pengurus no longer has a bank
+/// sampah; the step the server then reports decides where they land, and
+/// without a clearer answer it is the screen for someone with no bank sampah at
+/// all. Everything cached for the old bank is dropped, and the reason is shown
+/// once they have arrived.
+class _PengurusDikeluarkanWatcher extends StatefulWidget {
+  const _PengurusDikeluarkanWatcher({
+    required this.router,
+    required this.child,
+  });
+
+  final GoRouter router;
+  final Widget child;
+
+  @override
+  State<_PengurusDikeluarkanWatcher> createState() =>
+      _PengurusDikeluarkanWatcherState();
+}
+
+class _PengurusDikeluarkanWatcherState
+    extends State<_PengurusDikeluarkanWatcher> {
+  StreamSubscription<String>? _subscription;
+  bool _handling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = PengurusDikeluarkanSignal.stream.listen(_onRemoved);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _onRemoved(String message) async {
+    // Every request in flight when the removal happens is refused, and each
+    // one raises the signal: the first is enough.
+    if (_handling) return;
+    _handling = true;
+    try {
+      await _sendAway(message);
+    } finally {
+      _handling = false;
+    }
+  }
+
+  Future<void> _sendAway(String message) async {
+    final container = ProviderScope.containerOf(context, listen: false);
+    if (container.read(authenticationProvider) is! Authenticated) return;
+
+    await container.read(authenticationProvider.notifier).refreshUser();
+    if (!mounted) return;
+    final session = container.read(authenticationProvider);
+    if (session is! Authenticated) return;
+
+    final reported = session.authEntity.nextStep;
+    final target = locationForAuthStep(
+      reported == null || reported == 'dashboard'
+          ? 'register_bank_sampah'
+          : reported,
+      role: session.authEntity.role,
+    );
+    // Requests that were refused after the user had already been sent away:
+    // once they are where they belong there is nothing to add.
+    if (widget.router.routerDelegate.currentConfiguration.uri.path == target) {
+      return;
+    }
+
+    resetSessionScopedState(context);
+    widget.router.go(target);
+    AppNotification.afterNavigation((context) {
+      AppNotification.showError(
+        context,
+        title: 'Anda dikeluarkan',
+        message: message,
+      );
+    });
   }
 
   @override

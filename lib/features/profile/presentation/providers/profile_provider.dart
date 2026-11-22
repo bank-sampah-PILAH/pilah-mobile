@@ -249,6 +249,34 @@ class ProfileNotifier extends Notifier<ProfileState> {
     );
   }
 
+  /// Removes the pengurus [id] from the bank sampah. The answer carries no
+  /// roster, so the row simply leaves the one on screen. Returns `null` on
+  /// success, otherwise the [NetworkException].
+  Future<NetworkException?> removeMember(String id) async {
+    state = state.copyWith(isChangingTeam: true);
+    final either = await apiCall<void>(
+      func: _dataSource.removeMember(id),
+      mapper: (_) {},
+    );
+    if (!ref.mounted) return null;
+    return either.fold(
+      (error) {
+        state = state.copyWith(isChangingTeam: false);
+        return error;
+      },
+      (_) {
+        state = state.copyWith(
+          isChangingTeam: false,
+          team: [
+            for (final member in state.team)
+              if (member.id != id) member,
+          ],
+        );
+        return null;
+      },
+    );
+  }
+
   /// Explicitly creates or replaces the team's invitation link.
   Future<NetworkException?> createInvite() async {
     state = state.copyWith(isCreatingInvite: true, clearInviteError: true);

@@ -145,7 +145,8 @@ void main() {
 
       final error = await notifier.removeMember('u2');
 
-      expect(error!.displayMessage, 'Anda tidak bisa mengeluarkan diri sendiri');
+      expect(
+          error!.displayMessage, 'Anda tidak bisa mengeluarkan diri sendiri');
       final state = container.read(profileProvider);
       expect(state.team.map((m) => m.nama), ['Siti', 'Andi', 'Budi']);
       expect(state.isChangingTeam, isFalse);
