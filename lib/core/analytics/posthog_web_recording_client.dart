@@ -53,10 +53,7 @@ class PosthogWebRecordingClient extends PosthogWebClient
           ..debug = false
           ..captureApplicationLifecycleEvents = false
           ..sessionReplay = true
-          ..sessionReplayConfig = (PostHogSessionReplayConfig()
-            ..maskAllTexts = true
-            ..maskAllImages = true
-            ..textMaskPolicy = replayTextMask)
+          ..sessionReplayConfig = maskedReplayConfig()
           ..surveys = false
           ..preloadFeatureFlags = false,
       );

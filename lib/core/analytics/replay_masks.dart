@@ -35,6 +35,13 @@ const _iconFontFamilies = {
   'packages/cupertino_icons/CupertinoIcons'
 };
 
+/// The one place that says what the screen recording hides, so the mobile and
+/// the web client cannot drift apart: every text and image, except the icons.
+PostHogSessionReplayConfig maskedReplayConfig() => PostHogSessionReplayConfig()
+  ..maskAllTexts = true
+  ..maskAllImages = true
+  ..textMaskPolicy = replayTextMask;
+
 /// What the recording hides inside a text: everything except icon glyphs.
 ///
 /// Flutter paints an icon as a one-character text, so hiding every text also
