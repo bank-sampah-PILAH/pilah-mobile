@@ -242,14 +242,14 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
       formKey: _formKey,
       formFields: _formFields(),
       footer: [
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xl),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Column(
             children: [
               _submitButton(),
               if (ref.read(onboardingProvider.notifier).hasProfileDraft) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 AppButton(
                   label: 'Kembali',
                   variant: AppButtonVariant.neutral,
@@ -277,7 +277,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
       );
 
   static const _reviewNote = Padding(
-    padding: EdgeInsets.all(24.0),
+    padding: EdgeInsets.all(AppSpacing.xl),
     child: Text(
       'Pengajuan akan ditinjau oleh pengurus bank sampah.',
       textAlign: TextAlign.center,
@@ -288,7 +288,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
   List<Widget> _formFields() => [
         if (_isLocked) ...[
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -302,7 +302,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
         ],
         OnboardingFormField(
           label: 'BANK SAMPAH',
@@ -330,10 +330,10 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               color: AppColors.inkSoft,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           for (final membership in _memberships)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Row(
                 children: [
                   Expanded(
