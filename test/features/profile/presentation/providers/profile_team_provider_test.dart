@@ -1,0 +1,115 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
+
+import '../../../../support/profile_support.dart';
+import '../../../../support/stub_api.dart';
+
+Map<String, dynamic> _member(
+  String id,
+  String nama, {
+  bool primary = false,
+  bool me = false,
+}) =>
+    {
+      'id': id,
+      'nama': nama,
+      'email': '$nama@x.test',
+      'is_primary_pengelola': primary,
+      'is_current_user': me,
+    };
+
+void main() {
+  late StubApi api;
+  late TestProfileNotifier notifier;
+  late ProviderContainer container;
+  late ProviderSubscription<ProfileState> subscription;
+
+  setUp(() {
+    api = StubApi();
+    notifier = buildProfileNotifier(api);
+    container = ProviderContainer(
+      overrides: [profileProvider.overrideWith(() => notifier)],
+    );
+    subscription = container.listen(profileProvider, (_, __) {});
+  });
+
+  tearDown(() {
+    subscription.close();
+    container.dispose();
+  });
+
+  group('transferPrimary', () {
+    setUp(() {
+      stubProfile(api, team: {
+        'members': [
+          _member('u1', 'Siti', primary: true, me: true),
+          _member('u2', 'Andi'),
+        ],
+      });
+      api.on('GET', '/api/v1/team/invite', json: {
+        'token': 't',
+        'invite_url': 'https://pilah.test/invite/t',
+        'expires_at': '2030-01-04T12:00:00Z',
+      });
+    });
+
+    test('posts the chosen pengurus and takes the roster from the answer',
+        () async {
+      await notifier.load();
+      api.on('POST', '/api/v1/team/transfer', json: {
+        'members': [
+          _member('u2', 'Andi', primary: true),
+          _member('u1', 'Siti', me: true),
+        ],
+      });
+
+      final error = await notifier.transferPrimary('u2');
+
+      expect(error, isNull);
+      expect(api.last.method, 'POST');
+      expect(api.last.path, '/api/v1/team/transfer');
+      expect(api.last.json, {'id': 'u2'});
+      final state = container.read(profileProvider);
+      expect(state.team.map((m) => m.nama), ['Andi', 'Siti']);
+      expect(state.team.first.isPrimary, isTrue);
+      expect(state.team.any((m) => m.isCurrentUser && m.isPrimary), isFalse);
+      expect(state.isChangingTeam, isFalse);
+    });
+
+    test('drops the invitation link the former owner no longer controls',
+        () async {
+      await notifier.load();
+      expect(container.read(profileProvider).invite, isNotNull);
+      api.on('POST', '/api/v1/team/transfer', json: {
+        'members': [
+          _member('u2', 'Andi', primary: true),
+          _member('u1', 'Siti', me: true),
+        ],
+      });
+
+      await notifier.transferPrimary('u2');
+
+      final state = container.read(profileProvider);
+      expect(state.invite, isNull);
+      expect(state.inviteError, isNull);
+    });
+
+    test('keeps the roster and reports the refusal', () async {
+      await notifier.load();
+      api.on('POST', '/api/v1/team/transfer',
+          status: 403,
+          json: {'error': 'Hanya pengelola utama yang dapat melakukan aksi ini'});
+
+      final error = await notifier.transferPrimary('u2');
+
+      expect(error!.displayMessage,
+          'Hanya pengelola utama yang dapat melakukan aksi ini');
+      final state = container.read(profileProvider);
+      expect(state.team.map((m) => m.nama), ['Siti', 'Andi']);
+      expect(state.team.first.isPrimary, isTrue);
+      expect(state.isChangingTeam, isFalse);
+    });
+  });
+}
