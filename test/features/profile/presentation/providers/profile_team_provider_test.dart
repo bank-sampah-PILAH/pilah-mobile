@@ -98,9 +98,9 @@ void main() {
 
     test('keeps the roster and reports the refusal', () async {
       await notifier.load();
-      api.on('POST', '/api/v1/team/transfer',
-          status: 403,
-          json: {'error': 'Hanya pengelola utama yang dapat melakukan aksi ini'});
+      api.on('POST', '/api/v1/team/transfer', status: 403, json: {
+        'error': 'Hanya pengelola utama yang dapat melakukan aksi ini'
+      });
 
       final error = await notifier.transferPrimary('u2');
 

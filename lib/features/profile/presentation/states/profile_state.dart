@@ -14,6 +14,9 @@ class ProfileState extends Equatable {
   final String? inviteError;
   final bool isLoadingInvite;
   final bool isCreatingInvite;
+
+  /// A change to the roster (handing over the role) is on its way.
+  final bool isChangingTeam;
   final String? error;
   final bool isSavingTemplate;
 
@@ -30,6 +33,7 @@ class ProfileState extends Equatable {
     this.inviteError,
     this.isLoadingInvite = false,
     this.isCreatingInvite = false,
+    this.isChangingTeam = false,
     this.error,
     this.isSavingTemplate = false,
     this.selectedLogoBytes,
@@ -45,9 +49,11 @@ class ProfileState extends Equatable {
     List<TeamMember>? team,
     TeamInvite? invite,
     String? inviteError,
+    bool clearInvite = false,
     bool clearInviteError = false,
     bool? isLoadingInvite,
     bool? isCreatingInvite,
+    bool? isChangingTeam,
     String? error,
     bool? isSavingTemplate,
     Uint8List? selectedLogoBytes,
@@ -59,10 +65,11 @@ class ProfileState extends Equatable {
       bankSampah: bankSampah ?? this.bankSampah,
       waTemplate: waTemplate ?? this.waTemplate,
       team: team ?? this.team,
-      invite: invite ?? this.invite,
+      invite: clearInvite ? null : (invite ?? this.invite),
       inviteError: clearInviteError ? null : (inviteError ?? this.inviteError),
       isLoadingInvite: isLoadingInvite ?? this.isLoadingInvite,
       isCreatingInvite: isCreatingInvite ?? this.isCreatingInvite,
+      isChangingTeam: isChangingTeam ?? this.isChangingTeam,
       error: error ?? this.error,
       isSavingTemplate: isSavingTemplate ?? this.isSavingTemplate,
       selectedLogoBytes: clearSelectedLogo
@@ -84,6 +91,7 @@ class ProfileState extends Equatable {
         inviteError,
         isLoadingInvite,
         isCreatingInvite,
+        isChangingTeam,
         error,
         isSavingTemplate,
         selectedLogoBytes,
