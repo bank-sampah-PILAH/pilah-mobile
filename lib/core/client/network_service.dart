@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/pengurus_dikeluarkan.dart';
 import 'package:pilah_mobile/core/client/retry_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -26,6 +27,9 @@ class NetworkService {
     // Added after the logger so a dropped GET is still logged, then quietly
     // retried once before the failure reaches state handling.
     dio.interceptors.add(RetryInterceptor(dio));
+    // Sees every refusal, so a removed pengurus is noticed on whatever screen
+    // they are on.
+    dio.interceptors.add(PengurusDikeluarkanInterceptor());
   }
 
   Map<String, String> headersRequest() {
