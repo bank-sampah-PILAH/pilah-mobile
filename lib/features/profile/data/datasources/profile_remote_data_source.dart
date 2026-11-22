@@ -29,6 +29,9 @@ abstract class ProfileRemoteDataSource {
   /// Hands the Pengurus Utama role to the pengurus [id]; answers the roster as
   /// it stands afterwards.
   Future<List<TeamMember>> transferPrimary(String id);
+
+  /// Removes the pengurus [id] from the bank sampah.
+  Future<void> removeMember(String id);
   Future<TeamInvite?> getTeamInvite();
   Future<TeamInvite> createTeamInvite();
 }
@@ -131,6 +134,11 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     final response =
         await networkService.post(Endpoints.teamTransfer, data: {'id': id});
     return _mapTeam(response.data);
+  }
+
+  @override
+  Future<void> removeMember(String id) async {
+    await networkService.delete(Endpoints.teamMember(id));
   }
 
   List<TeamMember> _mapTeam(dynamic data) {
