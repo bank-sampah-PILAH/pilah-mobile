@@ -68,6 +68,8 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
+enum _TeamAction { makePrimary }
+
 class _ProfileView extends ConsumerStatefulWidget {
   const _ProfileView({required this.isWeb});
 
@@ -343,6 +345,37 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     if (!mounted) return;
     inviteLinkCopied(ref.read(analyticsClientProvider), success: true);
     _snack('Link undangan disalin ke clipboard!');
+  }
+
+  String _displayName(TeamMember member) =>
+      member.nama.isNotEmpty ? member.nama : member.email;
+
+  Future<void> _onMakePrimary(TeamMember member) async {
+    final name = _displayName(member);
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Jadikan $name Pengurus Utama?',
+      message: 'Anda akan menjadi pengurus biasa dan tidak bisa lagi membuat '
+          'tautan undangan atau mengelola pengurus lain. Hanya $name yang '
+          'bisa mengembalikan jabatan ini.',
+      confirmLabel: 'Ya, Jadikan',
+    );
+    if (!confirmed || !mounted) return;
+
+    final error =
+        await ref.read(profileProvider.notifier).transferPrimary(member.id);
+    if (!mounted) return;
+    primaryTransferred(ref.read(analyticsClientProvider),
+        success: error == null);
+    if (error != null) {
+      _snack(error.displayMessage, error: true);
+      return;
+    }
+    // The role decides what the whole app lets this user do, so the signed-in
+    // user is read again rather than waiting for the next launch.
+    await ref.read(authenticationProvider.notifier).refreshUser();
+    if (!mounted) return;
+    _snack('Jabatan Pengurus Utama dialihkan ke $name');
   }
 
   Future<void> _onCreateInvite(TeamInvite? currentInvite) async {
@@ -1163,7 +1196,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                               thickness: 1,
                               indent: 16,
                               endIndent: 16),
-                        _buildMemberRow(team[i]),
+                        _buildMemberRow(
+                          team[i],
+                          canManage: isPengelolaUtama && !team[i].isCurrentUser,
+                          busy: state.isChangingTeam,
+                        ),
                       ],
                     ],
                   ),
@@ -1175,7 +1212,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     );
   }
 
-  Widget _buildMemberRow(TeamMember member) {
+  Widget _buildMemberRow(
+    TeamMember member, {
+    required bool canManage,
+    required bool busy,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
@@ -1243,6 +1284,22 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               ),
             ),
           ),
+          if (canManage)
+            PopupMenuButton<_TeamAction>(
+              key: ValueKey('team-menu-${member.id}'),
+              tooltip: 'Aksi untuk ${_displayName(member)}',
+              icon: const Icon(Icons.more_vert, color: AppColors.inkSoft),
+              enabled: !busy,
+              onSelected: (action) => switch (action) {
+                _TeamAction.makePrimary => _onMakePrimary(member),
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: _TeamAction.makePrimary,
+                  child: Text('Jadikan Pengurus Utama'),
+                ),
+              ],
+            ),
         ],
       ),
     );
