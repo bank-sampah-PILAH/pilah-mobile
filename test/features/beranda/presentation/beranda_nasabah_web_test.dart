@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
@@ -49,14 +50,13 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester, {
-    required bool isWeb,
     required Size window,
     bool inWebShell = false,
   }) async {
     tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    Widget page = BerandaNasabahPage(isWeb: isWeb);
+    Widget page = const BerandaNasabahPage();
     if (inWebShell) page = WebContentSurface(child: page);
     await tester.pumpWidget(withAuthenticationProvider(
       auth,
@@ -67,7 +67,7 @@ void main() {
 
   testWidgets('a wide browser shows the web page header, not the app bar',
       (tester) async {
-    await pump(tester, isWeb: true, window: const Size(1440, 900));
+    await pump(tester, window: const Size(1440, 900), inWebShell: true);
 
     expect(find.byType(AppPageHeader), findsOneWidget);
     expect(find.byType(NasabahPageAppBar), findsNothing);
@@ -76,41 +76,39 @@ void main() {
 
   testWidgets('the web header keeps balance, bank detail and schedule',
       (tester) async {
-    await pump(tester, isWeb: true, window: const Size(1440, 900));
+    await pump(tester, window: const Size(1440, 900), inWebShell: true);
 
     expect(find.textContaining('SALDO DI'), findsOneWidget);
     expect(find.text('Detail Bank Sampah'), findsOneWidget);
     expect(find.text('Jadwal Terdekat'), findsOneWidget);
-    expect(find.byTooltip('Notifikasi'), findsOneWidget);
+    expect(find.byType(AppTapTarget), findsOneWidget);
   });
 
   testWidgets('a tablet-width browser also gets the web page header',
       (tester) async {
-    await pump(tester, isWeb: true, window: const Size(700, 900));
+    await pump(tester, window: const Size(700, 900), inWebShell: true);
 
     expect(find.byType(AppPageHeader), findsOneWidget);
   });
 
-  testWidgets('a phone-width browser keeps the app bar under the menu header',
+  testWidgets('a browser without the rail (drawer form) keeps the app bar',
       (tester) async {
-    await pump(tester, isWeb: true, window: const Size(390, 844));
+    await pump(tester, window: const Size(390, 844));
 
     expect(find.byType(AppPageHeader), findsNothing);
     expect(find.byType(NasabahPageAppBar), findsOneWidget);
   });
 
-  testWidgets('the native app keeps the app bar on every width',
+  testWidgets('the native app keeps the app bar even on a wide window',
       (tester) async {
-    await pump(tester, isWeb: false, window: const Size(1440, 900));
+    await pump(tester, window: const Size(1440, 900));
 
     expect(find.byType(AppPageHeader), findsNothing);
     expect(find.byType(NasabahPageAppBar), findsOneWidget);
   });
 
-  testWidgets('inside the web shell the page is painted white',
-      (tester) async {
-    await pump(tester,
-        isWeb: true, window: const Size(1440, 900), inWebShell: true);
+  testWidgets('inside the web shell the page is painted white', (tester) async {
+    await pump(tester, window: const Size(1440, 900), inWebShell: true);
 
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
     expect(scaffold.backgroundColor, Colors.white);
