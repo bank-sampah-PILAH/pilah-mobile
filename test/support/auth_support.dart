@@ -105,8 +105,15 @@ class TestAuthenticationNotifier extends AuthenticationNotifier {
   /// backend refusal to delete the account (UAT 2026-11).
   String? discardFailure;
 
+  /// What [refreshUser] does besides being recorded: a server that now reports
+  /// something else about the signed-in user.
+  void Function()? onRefreshUser;
+
   @override
-  Future<void> refreshUser() async => calls.add('refreshUser');
+  Future<void> refreshUser() async {
+    calls.add('refreshUser');
+    onRefreshUser?.call();
+  }
 }
 
 class _NoopAuthenticationUseCases implements AuthenticationUseCases {

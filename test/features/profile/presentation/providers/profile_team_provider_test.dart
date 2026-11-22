@@ -112,4 +112,43 @@ void main() {
       expect(state.isChangingTeam, isFalse);
     });
   });
+
+  group('removeMember', () {
+    setUp(() async {
+      stubProfile(api, team: {
+        'members': [
+          _member('u1', 'Siti', primary: true, me: true),
+          _member('u2', 'Andi'),
+          _member('u3', 'Budi'),
+        ],
+      });
+      await notifier.load();
+    });
+
+    test('deletes the pengurus and drops them from the roster', () async {
+      api.on('DELETE', '/api/v1/team/u2', status: 204, json: null);
+
+      final error = await notifier.removeMember('u2');
+
+      expect(error, isNull);
+      expect(api.last.method, 'DELETE');
+      expect(api.last.path, '/api/v1/team/u2');
+      final state = container.read(profileProvider);
+      expect(state.team.map((m) => m.nama), ['Siti', 'Budi']);
+      expect(state.isChangingTeam, isFalse);
+    });
+
+    test('keeps the roster and reports the refusal', () async {
+      api.on('DELETE', '/api/v1/team/u2',
+          status: 403,
+          json: {'error': 'Anda tidak bisa mengeluarkan diri sendiri'});
+
+      final error = await notifier.removeMember('u2');
+
+      expect(error!.displayMessage, 'Anda tidak bisa mengeluarkan diri sendiri');
+      final state = container.read(profileProvider);
+      expect(state.team.map((m) => m.nama), ['Siti', 'Andi', 'Budi']);
+      expect(state.isChangingTeam, isFalse);
+    });
+  });
 }

@@ -178,4 +178,73 @@ void main() {
     expect(find.text('Undang Pengurus Baru'), findsOneWidget);
     expect(auth.calls, isNot(contains('refreshUser')));
   });
+
+  for (final (label, size, isWeb) in [
+    ('phone', const Size(390, 2400), false),
+    ('web phone width', const Size(390, 2400), true),
+    ('web desktop', const Size(1440, 1000), true),
+  ]) {
+    group('remove a pengurus on $label', () {
+      testWidgets('the menu offers it next to the hand-over', (tester) async {
+        stubTeam(iAmPrimary: true);
+        await openTeamTab(tester, size: size, isWeb: isWeb);
+
+        await openMenuOf(tester, 'u3');
+
+        expect(find.text('Jadikan Pengurus Utama'), findsOneWidget);
+        expect(find.text('Keluarkan'), findsOneWidget);
+      });
+
+      testWidgets('confirming deletes them and the row goes', (tester) async {
+        stubTeam(iAmPrimary: true);
+        await openTeamTab(tester, size: size, isWeb: isWeb);
+        api.on('DELETE', '/api/v1/team/u3', status: 204, json: null);
+
+        await openMenuOf(tester, 'u3');
+        await tester.tap(find.text('Keluarkan'));
+        await tester.pumpAndSettle();
+        expect(find.text('Keluarkan Budi dari tim?'), findsOneWidget);
+        expect(find.textContaining('tidak bisa lagi mengakses'),
+            findsOneWidget);
+        await tester.tap(find.text('Ya, Keluarkan'));
+        await settleKeepingToast(tester);
+
+        expect(api.last.method, 'DELETE');
+        expect(api.last.path, '/api/v1/team/u3');
+        expect(find.text('Budi'), findsNothing);
+        expect(find.text('Budi dikeluarkan dari tim'), findsOneWidget);
+        expect(menus, findsOneWidget);
+      });
+
+      testWidgets('cancelling deletes nothing', (tester) async {
+        stubTeam(iAmPrimary: true);
+        await openTeamTab(tester, size: size, isWeb: isWeb);
+
+        await openMenuOf(tester, 'u3');
+        await tester.tap(find.text('Keluarkan'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Batal'));
+        await tester.pumpAndSettle();
+
+        expect(api.requests.where((r) => r.method == 'DELETE'), isEmpty);
+        expect(find.text('Budi'), findsOneWidget);
+      });
+    });
+  }
+
+  testWidgets('a refused removal says why and keeps the row', (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.on('DELETE', '/api/v1/team/u3',
+        status: 403, json: {'error': 'Pengurus ini tidak bisa dikeluarkan'});
+
+    await openMenuOf(tester, 'u3');
+    await tester.tap(find.text('Keluarkan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Keluarkan'));
+    await settleKeepingToast(tester);
+
+    expect(find.text('Pengurus ini tidak bisa dikeluarkan'), findsOneWidget);
+    expect(find.text('Budi'), findsOneWidget);
+  });
 }
