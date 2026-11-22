@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/client/pengurus_dikeluarkan.dart';
+import 'package:pilah_mobile/core/constants/endpoints.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
@@ -44,13 +47,16 @@ void main() {
     await shell.unregisterDi();
   });
 
-  Future<void> boot(WidgetTester tester) async {
+  Future<void> boot(WidgetTester tester, {bool isWeb = false}) async {
     AppRouterConfig.getRouter().go('/splash');
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(App(providerScopeBuilder: shell.wrap));
+    await tester.pumpWidget(App(
+      isWebOverride: isWeb,
+      providerScopeBuilder: shell.wrap,
+    ));
     addTearDown(() => tester.pumpWidget(const SizedBox()));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
@@ -76,6 +82,41 @@ void main() {
 
     expect(location(), '/register-bank-sampah');
     expect(shell.auth.calls, contains('refreshUser'));
+    expect(find.text('Anda sudah dikeluarkan dari bank sampah ini'),
+        findsOneWidget);
+  });
+
+  testWidgets('a real refusal through the network stack does the same',
+      (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+    api.on('GET', '/api/v1/team', status: 403, json: {
+      'error':
+          'Anda telah dikeluarkan dari bank sampah ini oleh Pengurus Utama.',
+      'code': 'pengurus_dikeluarkan',
+    });
+
+    unawaited(api.network.get(Endpoints.team).then((_) {}, onError: (_) {}));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(location(), '/register-bank-sampah');
+    expect(
+      find.text(
+          'Anda telah dikeluarkan dari bank sampah ini oleh Pengurus Utama.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the browser app is sent away the same way', (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester, isWeb: true);
+    expect(location(), '/dashboard');
+
+    await evict(tester, 'Anda sudah dikeluarkan dari bank sampah ini');
+
+    expect(location(), '/register-bank-sampah');
     expect(find.text('Anda sudah dikeluarkan dari bank sampah ini'),
         findsOneWidget);
   });
