@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -80,6 +81,8 @@ void main() {
 
   Future<GoRouter> pumpFromList(WidgetTester tester) async {
     final router = GoRouter(
+      // The app's root key, so the toast raised after the pop finds a navigator.
+      navigatorKey: rootNavigatorKey,
       initialLocation: _listRoute,
       routes: [
         GoRoute(

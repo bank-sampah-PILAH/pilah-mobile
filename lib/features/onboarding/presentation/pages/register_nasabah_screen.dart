@@ -89,6 +89,8 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
   }
 
   Future<void> _onSubmit() async {
+    if (_isAdditional) return _applyToAnotherBank();
+
     // Locked means a membership already exists — usually because the
     // pengurus-entered record auto-linked at login, before this draft was
     // ever sent. There's no new bank to register, but the profile itself
@@ -124,6 +126,39 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
     // relaunch mid-flow lands on the right step.
     ref.read(authenticationProvider.notifier).refreshUser();
     context.go(locationForAuthStep(result?.nextStep));
+  }
+
+  /// PIL-539: the account is signed in and onboarded, so only the
+  /// membership request is sent: no profile draft, no session refresh, no
+  /// onboarding redirect. The server owns the one-membership-per-bank rule
+  /// and answers a duplicate with its own reason, shown as is.
+  Future<void> _applyToAnotherBank() async {
+    setState(() => _showBankError = _selectedBank == null);
+    final bank = _selectedBank;
+    if (bank == null) return;
+
+    setState(() => _isLoading = true);
+    final (:result, :error) = await ref
+        .read(onboardingProvider.notifier)
+        .registerNasabah(RegisterNasabahRequest(bankSampahId: bank.id));
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error != null) {
+      _showError(error.displayMessage);
+      return;
+    }
+
+    // Back to Bank sampah saya, which reloads on `true` and shows the new
+    // application as pending. The toast is raised once that page is back.
+    context.pop(true);
+    AppNotification.afterNavigation(
+      (context) => AppNotification.showSuccess(
+        context,
+        title: 'Pengajuan terkirim',
+        message: 'Pengajuan ke ${bank.nama} menunggu persetujuan pengurus.',
+      ),
+    );
   }
 
   void _showError(String message) {
