@@ -247,4 +247,85 @@ void main() {
     expect(find.text('Pengurus ini tidak bisa dikeluarkan'), findsOneWidget);
     expect(find.text('Budi'), findsOneWidget);
   });
+
+  const inviteNote = 'Hanya Pengurus Utama yang bisa mengundang pengurus baru.';
+
+  for (final (label, size, isWeb) in [
+    ('phone', const Size(390, 2400), false),
+    ('web phone width', const Size(390, 2400), true),
+    ('web desktop', const Size(1440, 1000), true),
+  ]) {
+    group('invitations are for the Pengurus Utama on $label', () {
+      testWidgets('a regular pengurus gets a short note and no invitation',
+          (tester) async {
+        stubTeam(iAmPrimary: false);
+        await openTeamTab(tester, size: size, isWeb: isWeb);
+
+        expect(find.text(inviteNote), findsOneWidget);
+        expect(find.text('Undang Pengurus Baru'), findsNothing);
+        expect(find.text('Buat Link Undangan'), findsNothing);
+        expect(
+          api.requests.where((r) => r.path == '/api/v1/team/invite'),
+          isEmpty,
+        );
+      });
+
+      testWidgets('the Pengurus Utama has the invitation, not the note',
+          (tester) async {
+        stubTeam(iAmPrimary: true);
+        await openTeamTab(tester, size: size, isWeb: isWeb);
+
+        expect(find.text('Undang Pengurus Baru'), findsOneWidget);
+        expect(find.text(inviteNote), findsNothing);
+      });
+
+      testWidgets('handing over the role swaps the invitation for the note',
+          (tester) async {
+        stubTeam(iAmPrimary: true);
+        await openTeamTab(tester, size: size, isWeb: isWeb);
+        api.on('POST', '/api/v1/team/transfer', json: {
+          'members': [
+            member('u2', 'Andi', primary: true),
+            member('u1', 'Siti', me: true),
+            member('u3', 'Budi'),
+          ],
+        });
+
+        await openMenuOf(tester, 'u2');
+        await tester.tap(find.text('Jadikan Pengurus Utama'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ya, Jadikan'));
+        await settleKeepingToast(tester);
+
+        expect(find.text(inviteNote), findsOneWidget);
+        expect(find.text('Undang Pengurus Baru'), findsNothing);
+      });
+    });
+  }
+
+  testWidgets('a roster that did not load shows neither', (tester) async {
+    stubProfile(api, team: {'members': []});
+    await openTeamTab(tester);
+
+    expect(find.text(inviteNote), findsNothing);
+    expect(find.text('Undang Pengurus Baru'), findsNothing);
+  });
+
+  testWidgets('a stale screen learns the role moved when the server refuses',
+      (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.on('POST', '/api/v1/team/invite', status: 403, json: {
+      'error': 'Hanya Pengurus Utama yang bisa membuat tautan undangan',
+    });
+    stubTeam(iAmPrimary: false);
+
+    await tester.tap(find.text('Buat Link Undangan'));
+    await settleKeepingToast(tester);
+
+    expect(find.text('Hanya Pengurus Utama yang bisa membuat tautan undangan'),
+        findsOneWidget);
+    expect(find.text(inviteNote), findsOneWidget);
+    expect(find.text('Undang Pengurus Baru'), findsNothing);
+  });
 }

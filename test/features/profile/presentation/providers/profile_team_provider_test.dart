@@ -152,4 +152,45 @@ void main() {
       expect(state.isChangingTeam, isFalse);
     });
   });
+
+  group('createInvite after the role moved', () {
+    test('a refusal reloads the roster so the screen follows', () async {
+      stubProfile(api, team: {
+        'members': [
+          _member('u1', 'Siti', primary: true, me: true),
+          _member('u2', 'Andi'),
+        ],
+      });
+      await notifier.load();
+      api.on('POST', '/api/v1/team/invite', status: 403, json: {
+        'error': 'Hanya Pengurus Utama yang bisa membuat tautan undangan'
+      });
+      stubProfile(api, team: {
+        'members': [
+          _member('u1', 'Siti', me: true),
+          _member('u2', 'Andi', primary: true),
+        ],
+      });
+
+      final error = await notifier.createInvite();
+
+      expect(error!.displayMessage,
+          'Hanya Pengurus Utama yang bisa membuat tautan undangan');
+      final state = container.read(profileProvider);
+      expect(state.team.any((m) => m.isCurrentUser && m.isPrimary), isFalse);
+      expect(state.invite, isNull);
+    });
+
+    test('another failure leaves the roster alone', () async {
+      stubProfile(api);
+      await notifier.load();
+      final before = api.requests.length;
+      api.on('POST', '/api/v1/team/invite',
+          status: 400, json: {'error': 'Bank sampah belum aktif'});
+
+      await notifier.createInvite();
+
+      expect(api.requests.length, before + 1);
+    });
+  });
 }
