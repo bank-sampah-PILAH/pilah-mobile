@@ -88,4 +88,44 @@ void main() {
       expect(replayTextMask('x', const SizedBox()), isA<PostHogTextMaskAll>());
     });
   });
+
+  group('FixedText', () {
+    testWidgets('shows a fixed wording in the screen recording',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: FixedText('Harga')),
+      );
+
+      expect(
+        find.ancestor(
+          of: find.text('Harga'),
+          matching: find.byType(RevealInReplay),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('draws the text the way Text would', (tester) async {
+      const style = TextStyle(fontSize: 21);
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: FixedText(
+            'Harga',
+            style: style,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            softWrap: false,
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text('Harga'));
+      expect(text.style, style);
+      expect(text.maxLines, 1);
+      expect(text.overflow, TextOverflow.ellipsis);
+      expect(text.textAlign, TextAlign.center);
+      expect(text.softWrap, isFalse);
+    });
+  });
 }
