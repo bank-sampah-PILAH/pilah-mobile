@@ -17,6 +17,42 @@ class RevealInReplay extends StatelessWidget {
   Widget build(BuildContext context) => PostHogUnmaskWidget(child: child);
 }
 
+/// A [Text] of fixed wording that the screen recording shows: the same as
+/// `RevealInReplay(child: Text(...))`, for the common case of one text.
+///
+/// The same rule applies as for [RevealInReplay]: never use it for anything
+/// that can hold what a pengurus typed or what came from the server.
+class FixedText extends StatelessWidget {
+  const FixedText(
+    this.data, {
+    super.key,
+    this.style,
+    this.textAlign,
+    this.maxLines,
+    this.overflow,
+    this.softWrap,
+  });
+
+  final String data;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final bool? softWrap;
+
+  @override
+  Widget build(BuildContext context) => RevealInReplay(
+        child: Text(
+          data,
+          style: style,
+          textAlign: textAlign,
+          maxLines: maxLines,
+          overflow: overflow,
+          softWrap: softWrap,
+        ),
+      );
+}
+
 /// Hides [child] in the screen recording even though it is not text or an
 /// image, such as a chart drawn on a canvas.
 class HideInReplay extends StatelessWidget {
