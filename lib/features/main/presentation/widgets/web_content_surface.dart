@@ -17,9 +17,13 @@ class WebContentSurface extends StatelessWidget {
 
   /// Latar halaman: [Colors.white] di dalam shell web, selain itu [phone].
   static Color pageColor(BuildContext context, {required Color phone}) =>
-      context.getInheritedWidgetOfExactType<_WebSurfaceScope>() != null
-          ? Colors.white
-          : phone;
+      contains(context) ? Colors.white : phone;
+
+  /// `true` bila [context] ada di dalam shell web, yaitu ketika rail terbuka
+  /// di sebelah kiri. Browser yang sempit memakai drawer dan tidak membungkus
+  /// badan halaman, jadi di sana halaman tetap menggambar bar atasnya sendiri.
+  static bool contains(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_WebSurfaceScope>() != null;
 
   @override
   Widget build(BuildContext context) => Theme(
