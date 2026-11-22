@@ -451,7 +451,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           const SizedBox(height: AppSpacing.sm),
           AppButton(
             label: 'Coba Lagi',
-            variant: AppButtonVariant.outlined,
+            variant: AppButtonVariant.outlinedOnDark,
             onPressed: () =>
                 ref.read(profileProvider.notifier).load(silent: true),
           ),
@@ -469,7 +469,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           const SizedBox(height: AppSpacing.sm),
           AppButton(
             label: 'Buat Link Undangan',
-            variant: AppButtonVariant.outlined,
+            variant: AppButtonVariant.outlinedOnDark,
             isLoading: state.isCreatingInvite,
             onPressed:
                 state.isCreatingInvite ? null : () => _onCreateInvite(null),
