@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -68,7 +69,11 @@ class ApprovalLogStep extends StatelessWidget {
                 height: 28,
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 child: Center(
-                  child: Icon(icon, color: Colors.white, size: 16),
+                  // The icon follows the decision (approved, rejected,
+                  // appealed), which belongs to one bank sampah.
+                  child: HideInReplay(
+                    child: Icon(icon, color: Colors.white, size: 16),
+                  ),
                 ),
               ),
               if (!isLast)
