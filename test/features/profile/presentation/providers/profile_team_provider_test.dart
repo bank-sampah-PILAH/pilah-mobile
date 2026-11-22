@@ -173,6 +173,7 @@ void main() {
       });
 
       final error = await notifier.createInvite();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
 
       expect(error!.displayMessage,
           'Hanya Pengurus Utama yang bisa membuat tautan undangan');

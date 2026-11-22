@@ -1153,6 +1153,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   ),
                 ),
                 const SizedBox(height: 28),
+              ] else if (team.isNotEmpty) ...[
+                // A regular pengurus has no invitation to offer, so say so
+                // instead of leaving the space unexplained. An empty roster
+                // means it did not load; nothing is claimed then.
+                _buildInviteNote(),
+                const SizedBox(height: 28),
               ],
 
               // Section Header
@@ -1231,6 +1237,30 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInviteNote() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.greenLight,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, size: 20, color: AppColors.greenDark),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Hanya Pengurus Utama yang bisa mengundang pengurus baru.',
+              style: AppTextStyle.small.copyWith(color: AppColors.greenDark),
+            ),
+          ),
+        ],
       ),
     );
   }

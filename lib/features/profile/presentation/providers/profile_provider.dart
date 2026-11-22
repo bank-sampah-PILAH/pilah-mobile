@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -277,6 +279,17 @@ class ProfileNotifier extends Notifier<ProfileState> {
     );
   }
 
+  /// Reads the roster again after the server refused to create an invitation.
+  /// A user who is still the Pengurus Utama was refused for another reason
+  /// (the bank sampah is not active, say), so the message stays on the screen.
+  Future<void> _reloadAfterRefusal(String message) async {
+    await load(silent: true);
+    if (!ref.mounted) return;
+    if (state.team.any((member) => member.isCurrentUser && member.isPrimary)) {
+      state = state.copyWith(inviteError: message);
+    }
+  }
+
   /// Explicitly creates or replaces the team's invitation link.
   Future<NetworkException?> createInvite() async {
     state = state.copyWith(isCreatingInvite: true, clearInviteError: true);
@@ -291,6 +304,13 @@ class ProfileNotifier extends Notifier<ProfileState> {
           isCreatingInvite: false,
           inviteError: error.displayMessage,
         );
+        // Only the Pengurus Utama may create a link, so a refusal means this
+        // screen is out of date: the role has moved on. Reading the roster
+        // again makes the screen show what the server already knows, without
+        // holding back the message.
+        if (error.response?.statusCode == 403) {
+          unawaited(_reloadAfterRefusal(error.displayMessage));
+        }
         return error;
       },
       (invite) {
