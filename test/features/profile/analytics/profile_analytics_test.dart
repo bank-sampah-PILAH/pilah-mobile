@@ -51,4 +51,15 @@ void main() {
       {'berhasil': false},
     ]);
   });
+
+  test('removing a pengurus says whether it worked, never who', () {
+    memberRemoved(client, success: true);
+    memberRemoved(client, success: false);
+
+    expect(client.events.map((e) => e.name).toSet(), {'pengurus_dikeluarkan'});
+    expect(client.events.map((e) => e.properties), [
+      {'berhasil': true},
+      {'berhasil': false},
+    ]);
+  });
 }
