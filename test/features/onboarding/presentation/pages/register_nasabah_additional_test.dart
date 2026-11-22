@@ -92,8 +92,7 @@ void main() {
     expect(find.byTooltip('Keluar'), findsNothing);
   });
 
-  testWidgets('an existing membership does not lock the form',
-      (tester) async {
+  testWidgets('an existing membership does not lock the form', (tester) async {
     await pumpFromList(tester);
 
     expect(find.textContaining('hanya dapat terdaftar di 1 bank sampah'),
