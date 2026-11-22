@@ -1,5 +1,5 @@
 import 'package:pilah_mobile/core/notifications/notifications_page.dart';
-import 'package:pilah_mobile/core/analytics/replay_masks.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

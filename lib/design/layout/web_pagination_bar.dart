@@ -1,4 +1,4 @@
-import 'package:pilah_mobile/core/analytics/replay_masks.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

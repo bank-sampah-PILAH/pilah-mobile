@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
-import 'package:pilah_mobile/core/analytics/replay_masks.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

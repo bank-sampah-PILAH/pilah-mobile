@@ -11,7 +11,7 @@ import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 
 export 'dashboard_report_range_filter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
-import 'package:pilah_mobile/core/analytics/replay_masks.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 
 class DashboardKpiCard extends StatelessWidget {
   final String label;

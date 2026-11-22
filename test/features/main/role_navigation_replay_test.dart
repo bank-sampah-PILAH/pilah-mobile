@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/analytics/replay_masks.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';

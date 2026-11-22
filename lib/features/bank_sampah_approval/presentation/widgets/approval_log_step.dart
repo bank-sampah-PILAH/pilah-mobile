@@ -1,4 +1,4 @@
-import 'package:pilah_mobile/core/analytics/replay_masks.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
