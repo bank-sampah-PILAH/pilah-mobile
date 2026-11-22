@@ -115,6 +115,87 @@ void main() {
     expect(auth.calls, isNot(contains('logout')));
   });
 
+  group('the bank picker', () {
+    const bankA = BankSampahDirectoryEntity(
+      id: 'bank-a',
+      nama: 'Bank Sampah Melati',
+      alamat: 'Jl. Melati',
+      kota: 'Bogor',
+      fotoLogo: '',
+    );
+    const bankC = BankSampahDirectoryEntity(
+      id: 'bank-c',
+      nama: 'Bank Sampah Kenanga',
+      alamat: 'Jl. Kenanga',
+      kota: 'Depok',
+      fotoLogo: '',
+    );
+
+    Future<void> openPicker(WidgetTester tester) async {
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('lists a bank already joined, marked, and does not pick it',
+        (tester) async {
+      when(() => dataSource.listBankSampahDirectory())
+          .thenAnswer((_) async => [bankA, _bankB]);
+      await pumpFromList(tester);
+      await openPicker(tester);
+
+      expect(find.text('Bank Sampah Melati'), findsWidgets);
+      expect(find.text('Sudah tergabung'), findsOneWidget);
+
+      await tester.tap(find.text('Sudah tergabung'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cari nama bank sampah...'), findsOneWidget);
+    });
+
+    testWidgets('marks a pending or rejected application too', (tester) async {
+      when(() => dataSource.listMyMemberships()).thenAnswer((_) async => [
+            _membershipA,
+            const NasabahMembershipEntity(
+              id: 'membership-b',
+              bankSampahId: 'bank-b',
+              bankSampahNama: 'Bank Sampah Mawar',
+              bankSampahKota: 'Depok',
+              status: 'pending',
+              isActive: false,
+            ),
+            const NasabahMembershipEntity(
+              id: 'membership-c',
+              bankSampahId: 'bank-c',
+              bankSampahNama: 'Bank Sampah Kenanga',
+              bankSampahKota: 'Depok',
+              status: 'rejected',
+              isActive: false,
+            ),
+          ]);
+      when(() => dataSource.listBankSampahDirectory())
+          .thenAnswer((_) async => [bankA, _bankB, bankC]);
+      await pumpFromList(tester);
+      await openPicker(tester);
+
+      expect(find.text('Sudah tergabung'), findsOneWidget);
+      expect(find.text('Menunggu persetujuan'), findsOneWidget);
+      expect(find.text('Pernah ditolak'), findsOneWidget);
+    });
+
+    testWidgets('picks a bank not joined yet', (tester) async {
+      when(() => dataSource.listBankSampahDirectory())
+          .thenAnswer((_) async => [bankA, _bankB]);
+      await pumpFromList(tester);
+      await openPicker(tester);
+
+      await tester.tap(find.text('Bank Sampah Mawar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cari nama bank sampah...'), findsNothing);
+      expect(find.text('Bank Sampah Mawar'), findsOneWidget);
+    });
+  });
+
   testWidgets('system back also returns without asking to log out',
       (tester) async {
     await pumpFromList(tester);
