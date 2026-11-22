@@ -141,6 +141,18 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
     }
   }
 
+  /// How the picker labels a bank this account already applied to.
+  static String _joinedLabel(NasabahMembershipEntity membership) {
+    switch (membership.status) {
+      case 'pending':
+        return 'Menunggu persetujuan';
+      case 'rejected':
+        return 'Pernah ditolak';
+      default:
+        return 'Sudah tergabung';
+    }
+  }
+
   void _onBankSelected(BankSampahDirectoryEntity bank) {
     setState(() {
       _selectedBank = bank;
@@ -267,9 +279,10 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
             hasError: _showBankError,
             errorText: 'Bank sampah wajib dipilih',
             enabled: !_isLocked,
-            excludedBankIds: _memberships
-                .map((membership) => membership.bankSampahId)
-                .toSet(),
+            joinedBanks: {
+              for (final membership in _memberships)
+                membership.bankSampahId: _joinedLabel(membership),
+            },
           ),
         ),
         if (_memberships.isNotEmpty) ...[
