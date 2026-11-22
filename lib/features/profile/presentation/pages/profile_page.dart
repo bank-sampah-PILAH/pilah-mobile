@@ -56,7 +56,7 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(authenticationProvider);
     final role = state is Authenticated ? state.authEntity.role : null;
-    if (role == 'nasabah') return const ProfilNasabahPage();
+    if (role == 'nasabah') return ProfilNasabahPage(isWeb: isWeb ?? kIsWeb);
     if (role == 'pengelola') {
       return _ProfileView(isWeb: isWeb ?? kIsWeb);
     }

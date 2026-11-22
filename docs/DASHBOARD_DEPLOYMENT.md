@@ -1,7 +1,9 @@
 # Dashboard hosting (PIL-335)
 
 Separate static dashboard apps; no custom domain or DNS. Supported web roles:
-**Super Admin and Pengurus** (not Nasabah). Native APK release
+**Super Admin, Pengurus, and Nasabah**. Nasabah schedule and profile pages reuse
+the mobile features, including membership-scoped schedule access and legal information.
+Native APK release
 workflows remain independent and unchanged.
 
 | Environment | Dashboard | API / entrypoint |
