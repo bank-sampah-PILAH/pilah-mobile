@@ -21,6 +21,7 @@ class Endpoints {
   static const String bankSampahMe = "/api/v1/bank-sampah/me";
   static const String team = "/api/v1/team";
   static const String teamInvite = "/api/v1/team/invite";
+  static const String teamTransfer = "/api/v1/team/transfer";
   static const String waTemplate = "/api/v1/pengaturan/wa-template";
 
   // dashboard

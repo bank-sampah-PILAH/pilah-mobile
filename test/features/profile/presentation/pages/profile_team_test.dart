@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
@@ -67,8 +66,18 @@ void main() {
       pushed: true,
     );
     await tester.pumpAndSettle();
+    // At a phone width in the browser the tab sits at the edge of the bar.
+    await tester.ensureVisible(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Manajemen Tim'));
     await tester.pumpAndSettle();
+  }
+
+  /// Lets the screen settle without running out the toast's own timer.
+  Future<void> settleKeepingToast(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   }
 
   final menus = find.byWidgetPredicate((w) => w is PopupMenuButton);
@@ -123,7 +132,7 @@ void main() {
         expect(find.textContaining('Anda akan menjadi pengurus biasa'),
             findsOneWidget);
         await tester.tap(find.text('Ya, Jadikan'));
-        await tester.pumpAndSettle();
+        await settleKeepingToast(tester);
 
         expect(api.last.method, 'POST');
         expect(api.last.path, '/api/v1/team/transfer');
@@ -157,13 +166,13 @@ void main() {
     stubTeam(iAmPrimary: true);
     await openTeamTab(tester);
     api.on('POST', '/api/v1/team/transfer',
-        status: 404, json: {'error': 'Pengurus tidak ditemukan'});
+        status: 403, json: {'error': 'Pengurus tidak ditemukan'});
 
     await openMenuOf(tester, 'u2');
     await tester.tap(find.text('Jadikan Pengurus Utama'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ya, Jadikan'));
-    await tester.pumpAndSettle();
+    await settleKeepingToast(tester);
 
     expect(find.text('Pengurus tidak ditemukan'), findsOneWidget);
     expect(find.text('Undang Pengurus Baru'), findsOneWidget);

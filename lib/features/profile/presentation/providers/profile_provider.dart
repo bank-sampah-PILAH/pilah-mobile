@@ -220,6 +220,35 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// Pending logo bytes must not be uploaded by the next signed-in user.
   void reset() => state = const ProfileState();
 
+  /// Hands the Pengurus Utama role to the pengurus [id]. The roster in the
+  /// answer replaces the one on screen, so who may invite and who may be acted
+  /// on follows at once; the invitation link goes with it, as only the Pengurus
+  /// Utama may see or create one. Returns `null` on success, otherwise the
+  /// [NetworkException].
+  Future<NetworkException?> transferPrimary(String id) async {
+    state = state.copyWith(isChangingTeam: true);
+    final either = await apiCall<List<TeamMember>>(
+      func: _dataSource.transferPrimary(id),
+      mapper: (value) => value as List<TeamMember>,
+    );
+    if (!ref.mounted) return null;
+    return either.fold(
+      (error) {
+        state = state.copyWith(isChangingTeam: false);
+        return error;
+      },
+      (team) {
+        state = state.copyWith(
+          isChangingTeam: false,
+          team: team,
+          clearInvite: true,
+          clearInviteError: true,
+        );
+        return null;
+      },
+    );
+  }
+
   /// Explicitly creates or replaces the team's invitation link.
   Future<NetworkException?> createInvite() async {
     state = state.copyWith(isCreatingInvite: true, clearInviteError: true);
