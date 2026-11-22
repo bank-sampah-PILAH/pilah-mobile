@@ -57,15 +57,11 @@ class EmptyView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            RevealInReplay(
-              child: Text(
-                title,
+            FixedText(title,
                 textAlign: TextAlign.center,
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.black,
-                ),
-              ),
-            ),
+                )),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
               Text(

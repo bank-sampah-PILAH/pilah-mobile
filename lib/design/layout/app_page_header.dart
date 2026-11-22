@@ -46,10 +46,8 @@ class AppPageHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        RevealInReplay(
-          child: Text(title,
-              style: AppTextStyle.headline1.copyWith(color: AppColors.black)),
-        ),
+        FixedText(title,
+            style: AppTextStyle.headline1.copyWith(color: AppColors.black)),
         if (subtitle != null) ...[
           const SizedBox(height: 2),
           DefaultTextStyle(

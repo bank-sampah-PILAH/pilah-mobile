@@ -88,16 +88,12 @@ class RoleNavigationDrawer extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
-              child: RevealInReplay(
-                child: Text(
-                  'MENU',
+              child: FixedText('MENU',
                   style: AppTextStyle.extraSmall.copyWith(
                     color: AppColors.grey100,
                     fontWeight: AppFontWeight.semibold,
                     letterSpacing: 0.8,
-                  ),
-                ),
-              ),
+                  )),
             ),
             Expanded(
               child: ListView(
@@ -258,18 +254,14 @@ class _Destination extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  RevealInReplay(
-                    child: Text(
-                      destination.label,
+                  FixedText(destination.label,
                       style: AppTextStyle.small.copyWith(
                         color:
                             selected ? AppColors.greenDark : AppColors.inkSoft,
                         fontWeight: selected
                             ? AppFontWeight.semibold
                             : AppFontWeight.medium,
-                      ),
-                    ),
-                  ),
+                      )),
                 ],
               ),
             ),

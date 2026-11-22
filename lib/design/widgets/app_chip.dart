@@ -93,15 +93,11 @@ class AppChip extends StatelessWidget {
                       Icon(icon, size: 16, color: color),
                       const SizedBox(width: 6),
                     ],
-                    RevealInReplay(
-                      child: Text(
-                        label,
+                    FixedText(label,
                         style: AppTextStyle.small.copyWith(
                           color: color,
                           fontWeight: AppFontWeight.bold,
-                        ),
-                      ),
-                    ),
+                        )),
                     if (count != null) ...[
                       const SizedBox(width: 6),
                       _CountBadge(

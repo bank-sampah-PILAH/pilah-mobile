@@ -193,14 +193,10 @@ class _DetailNasabahBottomSheetState
                 const SizedBox(height: 16),
                 _buildRingkasanRow(),
                 const SizedBox(height: 20),
-                RevealInReplay(
-                  child: Text(
-                    'Alamat',
+                FixedText('Alamat',
                     style: AppTextStyle.small.copyWith(
                       color: AppColors.grey100,
-                    ),
-                  ),
-                ),
+                    )),
                 const SizedBox(height: 8),
                 Text(
                   address,
@@ -456,14 +452,10 @@ class _DetailNasabahBottomSheetState
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        RevealInReplay(
-          child: Text(
-            label,
+        FixedText(label,
             style: AppTextStyle.small.copyWith(
               color: AppColors.grey100,
-            ),
-          ),
-        ),
+            )),
         const SizedBox(width: 16),
         Expanded(
           child: Row(

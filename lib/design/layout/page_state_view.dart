@@ -121,7 +121,7 @@ class _ErrorView extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: onRetry,
                       icon: const Icon(Icons.refresh, size: 18),
-                      label: const RevealInReplay(child: Text('Coba lagi')),
+                      label: const FixedText('Coba lagi'),
                     ),
                   ],
                 ],

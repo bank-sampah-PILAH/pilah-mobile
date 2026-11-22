@@ -576,10 +576,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     indicatorColor: AppColors.greenDark,
                     indicatorWeight: 3,
                     tabs: const [
-                      Tab(
-                          child:
-                              RevealInReplay(child: Text('Pengaturan Umum'))),
-                      Tab(child: RevealInReplay(child: Text('Manajemen Tim'))),
+                      Tab(child: FixedText('Pengaturan Umum')),
+                      Tab(child: FixedText('Manajemen Tim')),
                     ],
                   ),
                 ),
@@ -1265,16 +1263,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           ),
         ),
         const SizedBox(width: 8),
-        RevealInReplay(
-          child: Text(
-            label,
+        FixedText(label,
             style: AppTextStyle.extraSmall.copyWith(
               color: AppColors.grey100,
               fontWeight: AppFontWeight.bold,
               letterSpacing: 1.0,
-            ),
-          ),
-        ),
+            )),
       ],
     );
   }
@@ -1291,16 +1285,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        RevealInReplay(
-          child: Text(
-            label,
+        FixedText(label,
             style: AppTextStyle.extraSmall.copyWith(
               color: AppColors.grey100,
               fontWeight: AppFontWeight.bold,
               letterSpacing: 0.5,
-            ),
-          ),
-        ),
+            )),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,

@@ -249,17 +249,13 @@ class _RoleMenuRowState extends State<RoleMenuRow> {
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: RevealInReplay(
-                  child: Text(
-                    widget.label,
+                child: FixedText(widget.label,
                     style: AppTextStyle.small.copyWith(
                       color: color,
                       fontWeight: widget.selected
                           ? AppFontWeight.semibold
                           : AppFontWeight.medium,
-                    ),
-                  ),
-                ),
+                    )),
               ),
               if (widget.trailing != null) widget.trailing!,
             ],

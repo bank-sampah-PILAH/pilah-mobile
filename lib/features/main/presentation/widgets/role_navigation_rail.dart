@@ -133,7 +133,7 @@ class RoleNavigationRail extends StatelessWidget {
               for (final index in listed)
                 NavigationRailDestination(
                   icon: Icon(destinations[index].icon),
-                  label: RevealInReplay(child: Text(destinations[index].label)),
+                  label: FixedText(destinations[index].label),
                 ),
             ],
           ),
@@ -284,13 +284,11 @@ class _RailHeader extends StatelessWidget {
                       ? Row(mainAxisSize: MainAxisSize.min, children: [
                           logo,
                           const SizedBox(width: 8),
-                          RevealInReplay(
-                            child: Text('PILAH',
-                                style: AppTextStyle.headline1.copyWith(
-                                  color: AppColors.black,
-                                  fontWeight: AppFontWeight.bold,
-                                )),
-                          ),
+                          FixedText('PILAH',
+                              style: AppTextStyle.headline1.copyWith(
+                                color: AppColors.black,
+                                fontWeight: AppFontWeight.bold,
+                              )),
                         ])
                       : logo,
                 ),
@@ -309,14 +307,12 @@ class _RailHeader extends StatelessWidget {
           bank,
           if (extended) ...[
             const SizedBox(height: 24),
-            RevealInReplay(
-              child: Text('MENU',
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: AppColors.grey100,
-                    fontWeight: AppFontWeight.semibold,
-                    letterSpacing: 0.8,
-                  )),
-            ),
+            FixedText('MENU',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: AppColors.grey100,
+                  fontWeight: AppFontWeight.semibold,
+                  letterSpacing: 0.8,
+                )),
           ],
           if (onAddTransaction != null) ...[
             const SizedBox(height: AppSpacing.sm),

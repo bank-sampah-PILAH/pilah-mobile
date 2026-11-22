@@ -805,26 +805,19 @@ class _EmptyScheduleDay extends StatelessWidget {
             color: AppColors.greenDark.withValues(alpha: 0.8),
           ),
           const SizedBox(height: 12),
-          const RevealInReplay(
-            child: Text(
-              'Belum ada jadwal kegiatan',
+          const FixedText('Belum ada jadwal kegiatan',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold),
-            ),
-          ),
+                  fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold)),
           const SizedBox(height: 6),
-          RevealInReplay(
-            child: Text(
+          FixedText(
               'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.grey100,
                 fontSize: AppFontSize.sm,
                 height: 1.4,
-              ),
-            ),
-          ),
+              )),
           if (onCreate == null)
             const SizedBox(height: 12)
           else ...[

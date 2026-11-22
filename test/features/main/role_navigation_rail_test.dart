@@ -73,8 +73,7 @@ void main() {
 
       expect(find.text('Pengumuman'), findsNothing);
       expect(
-        rail.destinations
-            .map((d) => ((d.label as RevealInReplay).child as Text).data),
+        rail.destinations.map((d) => (d.label as FixedText).data),
         isNot(contains('Pengumuman')),
       );
       expect(find.byIcon(Icons.campaign_outlined), findsNothing);
@@ -325,8 +324,7 @@ void main() {
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.destinations.length, 4);
       expect(
-        rail.destinations
-            .map((d) => ((d.label as RevealInReplay).child as Text).data),
+        rail.destinations.map((d) => (d.label as FixedText).data),
         ['Dashboard', 'Nasabah', 'Harga', 'Jadwal'],
       );
       expect(find.text('Aktivitas'), findsNothing);
