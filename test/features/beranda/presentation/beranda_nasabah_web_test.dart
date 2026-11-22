@@ -1,7 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
@@ -112,5 +114,26 @@ void main() {
 
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
     expect(scaffold.backgroundColor, Colors.white);
+  });
+
+  testWidgets('the app bar avatar still opens Profil', (tester) async {
+    final router = GoRouter(routes: [
+      GoRoute(path: '/', builder: (_, __) => const BerandaNasabahPage()),
+      GoRoute(
+        path: AppLocations.profile,
+        builder: (_, __) => const Text('halaman profil'),
+      ),
+    ]);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
+      MaterialApp.router(routerConfig: router),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Profil'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('halaman profil'), findsOneWidget);
   });
 }
