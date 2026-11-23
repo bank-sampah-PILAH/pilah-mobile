@@ -1,16 +1,20 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/tile_health.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _FakeLocationService extends Mock implements LocationService {}
+
+class _FakeNetworkService extends Mock implements NetworkService {}
 
 // The test seam the page was built for: a tile layer that draws nothing, so
 // no network tile is ever fetched inside `flutter test`.
@@ -365,6 +369,47 @@ void main() {
     expect(double.parse(lngField.text), closeTo(107.6107, 0.0001));
   });
 
+  // Web regression (PIL-326): the picker's default search path must be our
+  // backend. A direct Nominatim call cannot set User-Agent in a browser and
+  // cross-origin calls can fail, so nothing here may touch that host.
+  testWidgets('the default place search goes through the backend',
+      (tester) async {
+    final network = _FakeNetworkService();
+    when(() => network.get(
+          '/bank-sampah/cari-tempat',
+          queryParams: any(named: 'queryParams'),
+        )).thenAnswer(
+      (_) async => Response<dynamic>(
+        requestOptions: RequestOptions(path: '/bank-sampah/cari-tempat'),
+        statusCode: 200,
+        data: {
+          'hasil': [
+            {
+              'nama': 'Universitas Indonesia',
+              'latitude': -6.8915,
+              'longitude': 107.6107,
+            },
+          ],
+        },
+      ),
+    );
+    di.allowReassignment = true;
+    di.registerSingleton<NetworkService>(network);
+    addTearDown(() => di.unregister<NetworkService>());
+
+    await tester.pumpWidget(hostWithExtras());
+    await tester.enterText(
+        find.byKey(const Key('peta_cari_tempat')), 'Universitas');
+    await tester.pump(const Duration(milliseconds: 550));
+    await tester.pumpAndSettle();
+
+    verify(() => network.get(
+          '/bank-sampah/cari-tempat',
+          queryParams: {'q': 'Universitas'},
+        )).called(1);
+    expect(find.text('Universitas Indonesia'), findsOneWidget);
+  });
+
   testWidgets('a failed place search degrades to an empty result list',
       (tester) async {
     await tester.pumpWidget(hostWithExtras(
@@ -399,34 +444,41 @@ void main() {
     expect(find.byKey(const Key('peta_hasil_cari')), findsNothing);
   });
 
-  group('parseNominatimRows (the real search body)', () {
-    test('parses display_name and the lat/lon pair', () {
-      final hasil = parseNominatimRows([
-        {
-          'display_name': 'Fakultas Ilmu Komputer',
-          'lat': '-6.36',
-          'lon': '106.83'
-        },
-      ]);
+  group('parseHasilCariTempat (the backend search body)', () {
+    test('parses nama and the latitude/longitude pair', () {
+      final hasil = parseHasilCariTempat({
+        'hasil': [
+          {
+            'nama': 'Fakultas Ilmu Komputer',
+            'latitude': -6.36,
+            'longitude': 106.83,
+          },
+        ],
+      });
       expect(hasil.single.nama, 'Fakultas Ilmu Komputer');
       expect(hasil.single.titik.latitude, -6.36);
       expect(hasil.single.titik.longitude, 106.83);
     });
 
-    test('a null body and a missing display_name degrade, not crash', () {
-      expect(parseNominatimRows(null), isEmpty);
-      final hasil = parseNominatimRows([
-        {'lat': '-6.36', 'lon': '106.83'}, // display_name missing
-      ]);
+    test('a null body and a missing nama degrade, not crash', () {
+      expect(parseHasilCariTempat(null), isEmpty);
+      expect(parseHasilCariTempat({'hasil': null}), isEmpty);
+      final hasil = parseHasilCariTempat({
+        'hasil': [
+          {'latitude': -6.36, 'longitude': 106.83},
+        ],
+      });
       expect(hasil.single.nama, '');
     });
 
     test('a malformed coordinate throws — the caller catches to empty', () {
       expect(
-        () => parseNominatimRows([
-          {'lat': 'y', 'lon': '106.8'},
-        ]),
-        throwsFormatException,
+        () => parseHasilCariTempat({
+          'hasil': [
+            {'latitude': 'y', 'longitude': 106.8},
+          ],
+        }),
+        throwsA(isA<TypeError>()),
       );
     });
   });
