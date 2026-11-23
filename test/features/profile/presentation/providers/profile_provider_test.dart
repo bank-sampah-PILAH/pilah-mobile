@@ -46,6 +46,65 @@ void main() {
     expect(state.team.last.isPrimary, isFalse);
   });
 
+  test('reload gates invite GET using the updated primary team member',
+      () async {
+    stubProfile(api, team: {
+      'members': [
+        {
+          'id': 'm1',
+          'nama': 'Siti',
+          'email': 'siti@x.test',
+          'is_primary_pengelola': true,
+          'is_current_user': true,
+        },
+        {
+          'id': 'm2',
+          'nama': 'Andi',
+          'email': 'andi@x.test',
+          'is_primary_pengelola': false,
+          'is_current_user': false,
+        },
+      ],
+    });
+    api.on('GET', '/api/v1/team/invite', json: {
+      'token': 'old-primary-token',
+      'invite_url': 'https://pilah.test/invite/old-primary-token',
+      'expires_at': '2030-01-04T12:00:00Z',
+    });
+    await notifier.load();
+    expect(container.read(profileProvider).team.first.isCurrentUser, isTrue);
+    expect(container.read(profileProvider).invite, isNotNull);
+
+    stubProfile(api, team: {
+      'members': [
+        {
+          'id': 'm1',
+          'nama': 'Siti',
+          'email': 'siti@x.test',
+          'is_primary_pengelola': false,
+          'is_current_user': true,
+        },
+        {
+          'id': 'm2',
+          'nama': 'Andi',
+          'email': 'andi@x.test',
+          'is_primary_pengelola': true,
+          'is_current_user': false,
+        },
+      ],
+    });
+    await notifier.load(silent: true);
+
+    final state = container.read(profileProvider);
+    expect(state.team.first.isCurrentUser, isTrue);
+    expect(state.team.first.isPrimary, isFalse);
+    expect(state.invite, isNull);
+    expect(
+      api.requests.where((request) => request.path == '/api/v1/team/invite'),
+      hasLength(1),
+    );
+  });
+
   test('invite validity requires a URL and a future expiry', () {
     final future = DateTime.now().add(const Duration(hours: 1));
     expect(

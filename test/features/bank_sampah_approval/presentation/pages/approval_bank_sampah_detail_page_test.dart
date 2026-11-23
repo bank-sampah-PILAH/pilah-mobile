@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -411,6 +413,29 @@ void main() {
 
     expect(find.text('Daftar Approval'), findsOneWidget);
     expect(find.byType(ApprovalBankSampahDetailView), findsNothing);
+  });
+
+  testWidgets('the icons of the approval timeline are hidden in the recording',
+      (tester) async {
+    const membership = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.pending,
+      isActive: true,
+    );
+
+    await tester.pumpWidget(_wrap(membership, cubit));
+
+    final timeline = find.byType(MembershipApprovalTimeline);
+    final icons = find.descendant(of: timeline, matching: find.byType(Icon));
+    expect(icons, findsWidgets);
+    expect(
+      find.descendant(of: timeline, matching: find.byType(HideInReplay)),
+      findsNWidgets(icons.evaluate().length),
+    );
   });
 }
 

@@ -1,4 +1,7 @@
 import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
 
@@ -57,12 +60,17 @@ class _HomeSession extends ConsumerStatefulWidget {
 
 class _HomeSessionState extends ConsumerState<_HomeSession>
     with WidgetsBindingObserver {
-  String? _membershipId;
+  /// The membership this screen is showing, and the one the active selection
+  /// last resolved to. They differ only while the nasabah is looking at a
+  /// pick of this screen's own: "none", to get the chooser back, or a pick
+  /// the storage would not keep. That difference is what tells a pick made
+  /// here from the bank "Bank sampah saya" considers active.
+  String? _shownId;
+  String? _activeId;
 
-  /// Whether the nasabah has picked a bank on this screen. Until they have,
-  /// the bank saved in "Bank sampah saya" decides; afterwards their pick
-  /// stands, including when they picked "none" to get the chooser back.
-  var _chosenHere = false;
+  /// Whether a load is in flight that already awaits the active selection, so
+  /// its resolution is recorded instead of reloaded.
+  var _seeding = false;
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
   Future<void> Function()? _reloadSchedule;
@@ -94,11 +102,23 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
     }
   }
 
-  void _select(String? id) => setState(() {
-        _membershipId = id;
-        _chosenHere = true;
-        _selectionVersion++;
-      });
+  /// Shows [id] and remembers it as the active bank, so "Bank sampah saya"
+  /// marks the bank the beranda displays rather than the one picked before.
+  ///
+  /// A null id is the nasabah asking for the chooser back: there is no bank
+  /// to remember, so that pick lives on this screen alone, as does one the
+  /// storage refused to keep. Both are given up as soon as the active bank
+  /// changes anywhere, because that is an explicit choice too.
+  Future<void> _select(String? id) async {
+    final kept = id != null &&
+        await ref.read(activeMembershipProvider.notifier).select(id);
+    if (!mounted) return;
+    setState(() {
+      _shownId = id;
+      if (kept) _activeId = id;
+      _selectionVersion++;
+    });
+  }
 
   /// The bank the beranda should load: the nasabah's pick on this screen, or
   /// else the one saved in "Bank sampah saya", so it opens on the bank they
@@ -109,18 +129,42 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
   /// still null, and the beranda would fetch the wrong bank and then fetch
   /// again. The resource's own spinner covers the wait.
   Future<String?> _seedMembershipId() async {
-    if (_chosenHere) return _membershipId;
-    return ref.read(activeMembershipProvider.future);
+    if (_shownId != _activeId) return _shownId;
+    _seeding = true;
+    try {
+      final resolved = await ref.read(activeMembershipProvider.future);
+      _shownId = resolved;
+      _activeId = resolved;
+      return resolved;
+    } finally {
+      _seeding = false;
+    }
   }
 
-  /// Reloads when the active bank is switched elsewhere, for instance on the
-  /// "Bank sampah saya" detail page. The first resolution is skipped, since
-  /// the load already in flight is awaiting that same value.
+  /// Reloads when the active bank changes elsewhere: switched on the "Bank
+  /// sampah saya" detail page, or resolved to another bank because a refresh
+  /// of the membership list left the saved one unopenable.
+  ///
+  /// The comparison is against the bank this screen last resolved to, not
+  /// against the previous state, so a later refresh is treated like any other
+  /// change rather than skipped along with the first resolution. That first
+  /// resolution is the one case with nothing to reload: the load in flight is
+  /// awaiting the very value being reported, so it is recorded and left to
+  /// finish.
   void _reloadWhenActiveBankChanges() {
-    ref.listenManual(activeMembershipProvider, (previous, next) {
-      if (_chosenHere || previous == null || previous.isLoading) return;
-      if (previous.value == next.value) return;
-      setState(() => _selectionVersion++);
+    ref.listenManual(activeMembershipProvider, (_, next) {
+      if (next.isLoading) return;
+      final resolved = next.value;
+      if (resolved == _activeId) return;
+      _activeId = resolved;
+      if (_seeding) {
+        _shownId = resolved;
+        return;
+      }
+      setState(() {
+        _shownId = resolved;
+        _selectionVersion++;
+      });
     });
   }
 
@@ -157,46 +201,70 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
     );
   }
 
+  Widget _notifications(BuildContext context) => AppTapTarget(
+        label: 'Notifikasi',
+        onTap: () => NotificationsPage.open(context),
+        child: const Icon(Icons.notifications_outlined),
+      );
+
+  // The web shell's rail replaces the phone app bar: the page paints its own
+  // title and the rail already leads to Profil. A narrow browser has no rail,
+  // so it keeps the app bar.
+  bool get _webHeader => WebContentSurface.contains(context);
+
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: NasabahStyle.background,
-        appBar: NasabahPageAppBar(
-          title: 'Beranda',
-          actions: [
-            AppTapTarget(
-              label: 'Notifikasi',
-              onTap: () => NotificationsPage.open(context),
-              child: const Icon(Icons.notifications_outlined),
-            ),
-            IconButton(
-              tooltip: 'Profil',
-              onPressed: () => context.go(AppLocations.profile),
-              icon: CircleAvatar(
-                radius: 19,
-                backgroundColor: NasabahStyle.emeraldLight,
-                child: Text(
-                  widget.name.isEmpty
-                      ? 'N'
-                      : widget.name.characters.first.toUpperCase(),
-                  style: _text(14,
-                      weight: AppFontWeight.semibold,
-                      color: NasabahStyle.emeraldDark),
-                ),
+        backgroundColor: WebContentSurface.pageColor(context,
+            phone: NasabahStyle.background),
+        appBar: _webHeader
+            ? null
+            : NasabahPageAppBar(
+                title: 'Beranda',
+                actions: [
+                  _notifications(context),
+                  IconButton(
+                    tooltip: 'Profil',
+                    onPressed: () => context.go(AppLocations.profile),
+                    icon: CircleAvatar(
+                      radius: 19,
+                      backgroundColor: NasabahStyle.emeraldLight,
+                      child: Text(
+                        widget.name.isEmpty
+                            ? 'N'
+                            : widget.name.characters.first.toUpperCase(),
+                        style: _text(14,
+                            weight: AppFontWeight.semibold,
+                            color: NasabahStyle.emeraldDark),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
         body: SafeArea(
             child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
+                  constraints:
+                      const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
                   child: AppRefreshIndicator(
                     onRefresh: _refresh,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      padding: _webHeader
+                          ? const EdgeInsets.fromLTRB(
+                              AppSpacing.webGutter,
+                              AppSpacing.webTop,
+                              AppSpacing.webGutter,
+                              AppSpacing.xl)
+                          : const EdgeInsets.fromLTRB(16, 12, 16, 24),
                       children: [
+                        if (_webHeader) ...[
+                          AppPageHeader(
+                            title: 'Beranda',
+                            actions: [_notifications(context)],
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                        ],
                         _HomeGreeting(name: widget.name),
                         const SizedBox(height: 12),
                         Align(

@@ -92,42 +92,48 @@ void main() {
     });
   }
 
-  testWidgets('offers roles supported by the platform and submits selection',
-      (tester) async {
-    tester.view.physicalSize = const Size(375, 812);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  for (final selection in {
+    'Nasabah': GoogleRegistrationRole.nasabah,
+    'Pengurus Bank Sampah': GoogleRegistrationRole.pengelola,
+  }.entries) {
+    testWidgets(
+        'offers roles supported by the platform and submits '
+        '${selection.value.wireValue}', (tester) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [authenticationProvider.overrideWith(() => auth)],
-      child: const MaterialApp(home: RoleSelectionPage()),
-    ));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [authenticationProvider.overrideWith(() => auth)],
+        child: const MaterialApp(home: RoleSelectionPage()),
+      ));
 
-    expect(find.text('Daftar Akun'), findsOneWidget);
-    expect(find.text('Peran Akun'), findsOneWidget);
-    expect(find.text('ayu@example.com'), findsOneWidget);
-    expect(find.text('Nasabah'), findsOneWidget);
-    expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
-    expect(find.text('Pengelola Bank Sampah Induk'), findsNothing);
-    expect(find.text('Superadmin'), findsNothing);
-    expect(find.text('Kembali'), findsNothing,
-        reason: 'a fresh registration has no profile to return to');
-    expect(tester.takeException(), isNull);
+      expect(find.text('Daftar Akun'), findsOneWidget);
+      expect(find.text('Peran Akun'), findsOneWidget);
+      expect(find.text('ayu@example.com'), findsOneWidget);
+      expect(find.text('Nasabah'), findsOneWidget);
+      expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
+      expect(find.text('Pengelola Bank Sampah Induk'), findsNothing);
+      expect(find.text('Superadmin'), findsNothing);
+      expect(find.text('Kembali'), findsNothing,
+          reason: 'a fresh registration has no profile to return to');
+      expect(tester.takeException(), isNull);
 
-    await tester.ensureVisible(find.text('Nasabah'));
-    await tester.tap(find.text('Nasabah'));
-    await tester.pump();
-    await tester.ensureVisible(find.text('Saya menyetujui ').first);
-    await tester.tap(find.text('Saya menyetujui ').first);
-    await tester.pump();
-    await tester.ensureVisible(find.byType(Checkbox).last);
-    await tester.tap(find.byType(Checkbox).last);
-    await tester.pump();
-    await tester.tap(find.text('Lanjutkan'));
+      await tester.ensureVisible(find.text('Nasabah'));
+      await tester.tap(find.text(selection.key));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Saya menyetujui ').first);
+      await tester.tap(find.text('Saya menyetujui ').first);
+      await tester.pump();
+      await tester.ensureVisible(find.byType(Checkbox).last);
+      await tester.tap(find.byType(Checkbox).last);
+      await tester.pump();
+      await tester.tap(find.text('Lanjutkan'));
 
-    expect(auth.lastRole, GoogleRegistrationRole.nasabah);
-  });
+      expect(auth.lastRole, selection.value);
+    });
+  }
 
   testWidgets('requires both legal documents before continuing',
       (tester) async {

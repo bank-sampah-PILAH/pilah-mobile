@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_consent_provider.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
@@ -950,6 +951,39 @@ void main() {
         find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });
 
+  testWidgets('ordinary Pengurus see who creates invitations without controls',
+      (tester) async {
+    stubProfile(api, team: {
+      'members': [
+        {
+          'id': 'm1',
+          'nama': 'Siti',
+          'email': 'siti@x.test',
+          'is_primary_pengelola': true,
+          'is_current_user': false,
+        },
+        {
+          'id': 'm2',
+          'nama': 'Andi',
+          'email': 'andi@x.test',
+          'is_primary_pengelola': false,
+          'is_current_user': true,
+        },
+      ],
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Link undangan dibuat oleh Pengurus Utama.'), findsOneWidget);
+    expect(find.text('Buat Link Undangan'), findsNothing);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+    expect(
+        api.requests.where((request) => request.path == '/api/v1/team/invite'),
+        isEmpty);
+  });
+
   testWidgets('a member without a name shows their email', (tester) async {
     stubProfile(api, team: {
       'members': [
@@ -1037,5 +1071,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.requests.length, greaterThan(before));
+  });
+
+  testWidgets(
+      'the tabs, section titles and field labels are shown in the screen '
+      'recording, the identity is not', (tester) async {
+    await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+    for (final label in [
+      'Pengaturan Umum',
+      'Manajemen Tim',
+      'PROFIL BANK SAMPAH',
+      'NAMA BANK SAMPAH',
+      'ALAMAT BANK SAMPAH',
+    ]) {
+      expect(
+        find.ancestor(
+          of: find.text(label),
+          matching: find.byType(RevealInReplay),
+        ),
+        findsOneWidget,
+        reason: label,
+      );
+    }
+    expect(
+      find.ancestor(
+        of: find.text('siti@example.test'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsNothing,
+    );
   });
 }

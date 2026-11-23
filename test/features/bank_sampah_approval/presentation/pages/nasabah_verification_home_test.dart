@@ -182,4 +182,15 @@ void main() {
 
     expect(notifier.loadCalls, [true]);
   });
+
+  testWidgets('shows the same icon for the link as the beranda does',
+      (tester) async {
+    await pumpHome(
+        tester, NasabahApprovalLoaded([_membership(MembershipStatus.pending)]));
+
+    // One destination, one glyph. The wallet is the nav rail's Tabungan icon,
+    // so using it here pointed this link at another feature as well.
+    expect(find.byIcon(Icons.fact_check_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.account_balance_wallet_outlined), findsNothing);
+  });
 }

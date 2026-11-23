@@ -109,7 +109,9 @@ class NasabahVerificationHome extends ConsumerWidget {
                   AppButton(
                     label: 'Bank sampah saya',
                     variant: AppButtonVariant.text,
-                    icon: Icons.account_balance_wallet_outlined,
+                    // The same glyph the beranda shows for this destination.
+                    // The wallet one belongs to Tabungan in the nav rail.
+                    icon: Icons.fact_check_outlined,
                     onPressed: () => context
                         .push(ApprovalBankSampahListPage.route)
                         .then((_) {

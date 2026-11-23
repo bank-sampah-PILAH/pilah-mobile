@@ -41,6 +41,10 @@ class _HomeRepository extends PreviewNasabahRepository {
   final String? logoUrl;
   final asked = <String?>[];
 
+  /// Banks the backend offers when the beranda asks without a membership,
+  /// which is how the nasabah picks one from this screen.
+  List<MembershipChoice> choices = const [];
+
   @override
   Future<NasabahBank> bank(String membershipId) async =>
       NasabahBank('Bank Sampah Melati', 'Jl. Melati', 'Depok', '08123456789',
@@ -49,6 +53,9 @@ class _HomeRepository extends PreviewNasabahRepository {
   @override
   Future<NasabahHome> home({String? membershipId}) async {
     asked.add(membershipId);
+    if (membershipId == null && choices.isNotEmpty) {
+      throw NasabahApiException('Pilih bank sampah Anda.', choices: choices);
+    }
     return NasabahHome(
       await profile(),
       membershipId ?? 'membership-1',
@@ -184,6 +191,90 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.asked, ['membership-dipilih', 'membership-lain']);
+  });
+
+  testWidgets(
+      'a bank picked here becomes the saved active bank, and a later switch '
+      'elsewhere still reloads', (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage)
+        .select('nasabah-1', 'membership-a');
+    final repository = _HomeRepository(null, const [])
+      ..choices = const [MembershipChoice('membership-b', 'Mawar')];
+
+    await pumpHome(
+      tester,
+      repository,
+      storage: storage,
+      memberships: [
+        membershipRow('membership-a'),
+        membershipRow('membership-b'),
+      ],
+    );
+    expect(repository.asked, ['membership-a']);
+
+    // Asking for the chooser back reloads without a membership, which is what
+    // makes the backend offer the banks to pick from.
+    await tester.tap(find.byTooltip('Pilih ulang bank sampah'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Mawar'));
+    await tester.pumpAndSettle();
+
+    expect(repository.asked, ['membership-a', null, 'membership-b']);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(BerandaNasabahPage)),
+    );
+    // The bank picked here is the one "Bank sampah saya" marks as active, so
+    // the two screens cannot disagree about which bank is in use.
+    expect(container.read(activeMembershipProvider).value, 'membership-b');
+    expect(storage.values['active_membership_id:nasabah-1'], 'membership-b');
+
+    // Standing in for a switch made afterwards on the membership detail page:
+    // a pick made here must not deafen the beranda to it.
+    await container
+        .read(activeMembershipProvider.notifier)
+        .select('membership-a');
+    await tester.pumpAndSettle();
+
+    expect(repository.asked,
+        ['membership-a', null, 'membership-b', 'membership-a']);
+  });
+
+  testWidgets('follows the bank a membership refresh resolves to',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage)
+        .select('nasabah-1', 'membership-a');
+    final repository = _HomeRepository(null, const []);
+
+    await pumpHome(
+      tester,
+      repository,
+      storage: storage,
+      memberships: [
+        membershipRow('membership-a'),
+        membershipRow('membership-b'),
+      ],
+    );
+    expect(repository.asked, ['membership-a']);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(BerandaNasabahPage)),
+    );
+    final approval = container.read(nasabahApprovalProvider.notifier)
+        as TestNasabahApprovalNotifier;
+    // The refresh finds the saved bank no longer openable, so the selection
+    // resolves to the other one. The reload is not the first resolution, and
+    // it arrives as a loading-to-data transition like every other refresh.
+    approval.setStateForTest(NasabahApprovalLoaded([
+      membershipRow('membership-a', dibuka: false),
+      membershipRow('membership-b'),
+    ]));
+    await tester.pumpAndSettle();
+
+    expect(repository.asked, ['membership-a', 'membership-b']);
+    expect(container.read(activeMembershipProvider).value, 'membership-b');
   });
 
   // The greeting follows the clock, so each time of day is checked against a

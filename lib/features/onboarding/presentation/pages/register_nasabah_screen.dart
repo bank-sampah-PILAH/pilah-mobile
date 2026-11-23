@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,11 +14,13 @@ import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
@@ -125,6 +129,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
     // Membership now linked to the account; refresh the cached session so a
     // relaunch mid-flow lands on the right step.
     ref.read(authenticationProvider.notifier).refreshUser();
+    unawaited(ref.read(nasabahApprovalProvider.notifier).load());
     context.go(locationForAuthStep(result?.nextStep));
   }
 
@@ -235,37 +240,31 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
       subtitle: 'Pilih bank sampah untuk mengajukan keanggotaan.',
       onExit: () => confirmExitOnboarding(context),
       onUnauthenticated: () => context.go(LoginPage.route),
-      progress: const OnboardingStepper(
+      progress: const OnboardingProgress(
         currentStep: 2,
-        secondStepLabel: 'Pilih Bank Sampah',
+        lastStepLabel: 'Pilih Bank Sampah',
       ),
       formKey: _formKey,
       formFields: _formFields(),
-      footer: [
-        const SizedBox(height: AppSpacing.xl),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: Column(
-            children: [
-              _submitButton(),
-              if (ref.read(onboardingProvider.notifier).hasProfileDraft) ...[
-                const SizedBox(height: AppSpacing.md),
-                AppButton(
-                  label: 'Kembali',
-                  variant: AppButtonVariant.neutral,
-                  onPressed: () => handleOnboardingStepPop(
-                    context,
-                    didPop: false,
-                    isWizardStep: true,
-                  ),
+      footer: const [],
+      notice: const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xl),
+        child: _reviewNoteText,
+      ),
+      actions: OnboardingActions(
+        primary: _submitButton(),
+        secondary: ref.read(onboardingProvider.notifier).hasProfileDraft
+            ? AppButton(
+                label: 'Kembali',
+                variant: AppButtonVariant.neutral,
+                onPressed: () => handleOnboardingStepPop(
+                  context,
+                  didPop: false,
+                  isWizardStep: true,
                 ),
-              ],
-            ],
-          ),
-        ),
-        _reviewNote,
-        const SizedBox(height: 20),
-      ],
+              )
+            : null,
+      ),
     );
   }
 
@@ -276,13 +275,15 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
         onPressed: _onSubmit,
       );
 
+  static const _reviewNoteText = Text(
+    'Pengajuan akan ditinjau oleh pengurus bank sampah.',
+    textAlign: TextAlign.center,
+    style: TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
+  );
+
   static const _reviewNote = Padding(
     padding: EdgeInsets.all(AppSpacing.xl),
-    child: Text(
-      'Pengajuan akan ditinjau oleh pengurus bank sampah.',
-      textAlign: TextAlign.center,
-      style: TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
-    ),
+    child: _reviewNoteText,
   );
 
   List<Widget> _formFields() => [
