@@ -161,6 +161,27 @@ void main() {
     expect(notifier.membershipCalls, ['membership-a']);
   });
 
+  testWidgets('opening a schedule keeps the bank it was read for',
+      (tester) async {
+    final schedule = _schedule(
+      id: 'schedule-1',
+      location: 'Balai RW 03',
+      status: 'diterbitkan',
+    );
+    await _pumpCustomer(
+      tester,
+      JadwalLoaded([schedule]),
+      membershipId: 'membership-a',
+    );
+
+    await tester.tap(find.text('Balai RW 03'));
+    await tester.pumpAndSettle();
+
+    // The backend resolves a membership for the detail as well, so a card that
+    // forgets the bank sends a nasabah with two banks to a 422.
+    expect(_lastLocation, contains('keanggotaan_id=membership-a'));
+  });
+
   testWidgets('a bank the nasabah may not open is not offered a retry',
       (tester) async {
     await _pumpCustomer(
@@ -176,6 +197,10 @@ void main() {
     expect(find.text('Bank sampah saya'), findsOneWidget);
   });
 }
+
+/// The location the `:id` route was last built with, so a test can read what
+/// the card actually asked for.
+String? _lastLocation;
 
 Future<TestJadwalNotifier> _pumpCustomer(
   WidgetTester tester,
@@ -205,7 +230,10 @@ Future<TestJadwalNotifier> _pumpCustomer(
         routes: [
           GoRoute(
               path: ':id',
-              builder: (_, __) => const Scaffold(body: Text('Detail Jadwal'))),
+              builder: (_, state) {
+                _lastLocation = state.uri.toString();
+                return const Scaffold(body: Text('Detail Jadwal'));
+              }),
         ]),
   ]);
   addTearDown(router.dispose);
