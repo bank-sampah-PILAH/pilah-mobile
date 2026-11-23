@@ -69,6 +69,9 @@ class _PencairanHistoryTabState extends ConsumerState<PencairanHistoryTab> {
               NasabahActivityCard(
                 title: 'Pencairan',
                 date: item.tanggal,
+                // This list spans every bank the account belongs to, unlike
+                // the setoran tab beside it, so each row says which one.
+                subtitle: item.bankSampahNama,
                 amount: nasabahRupiah(item.nominal.toString()),
                 isWithdrawal: true,
                 onTap: () => showNasabahPencairanDetailSheet(context, item),
