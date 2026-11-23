@@ -73,6 +73,11 @@ class _ActiveMembershipScopeState extends ConsumerState<ActiveMembershipScope> {
   var _seeding = false;
   var _resolved = false;
 
+  /// Whether this scope is already listening for a switch made elsewhere. A
+  /// route that names a bank does not listen, and starts to only if the link
+  /// later stops naming one.
+  var _following = false;
+
   /// Bumped on every change of bank, and used to key the subtree.
   var _version = 0;
 
@@ -86,6 +91,34 @@ class _ActiveMembershipScopeState extends ConsumerState<ActiveMembershipScope> {
       return;
     }
     _followActiveBank();
+    unawaited(_seed());
+  }
+
+  /// Re-resolves when the route names a different bank.
+  ///
+  /// The screens that take a bank from the query sit in kept-alive shell
+  /// branches, where going from `?keanggotaan_id=A` to `?keanggotaan_id=B`
+  /// reuses this State instead of building a new one. Without this the screen
+  /// would keep showing A while the link says B.
+  @override
+  void didUpdateWidget(covariant ActiveMembershipScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.membershipId == oldWidget.membershipId) return;
+    final named = widget.membershipId;
+    if (named != null && named.isNotEmpty) {
+      setState(() {
+        _shownId = named;
+        _resolved = true;
+        _version++;
+      });
+      return;
+    }
+    // The link stopped naming a bank, so the saved choice answers again.
+    setState(() {
+      _resolved = false;
+      _version++;
+    });
+    if (!_following) _followActiveBank();
     unawaited(_seed());
   }
 
@@ -121,6 +154,7 @@ class _ActiveMembershipScopeState extends ConsumerState<ActiveMembershipScope> {
   /// resolution is the one case with nothing to reload, because [_seed] is
   /// already awaiting the very value being reported.
   void _followActiveBank() {
+    _following = true;
     ref.listenManual(activeMembershipProvider, (_, next) {
       if (next.isLoading) return;
       final resolved = next.value;
