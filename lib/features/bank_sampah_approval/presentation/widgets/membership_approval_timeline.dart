@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
@@ -121,10 +122,12 @@ class _TimelineStep extends StatelessWidget {
                     border:
                         isCurrent ? Border.all(color: color, width: 1.5) : null,
                   ),
-                  child: Icon(
-                    icon,
-                    size: 16,
-                    color: isCurrent ? color : Colors.white,
+                  child: HideInReplay(
+                    child: Icon(
+                      icon,
+                      size: 16,
+                      color: isCurrent ? color : Colors.white,
+                    ),
                   ),
                 ),
                 if (!isLast)

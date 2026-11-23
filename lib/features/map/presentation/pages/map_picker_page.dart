@@ -457,29 +457,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
           ).copyWith(
             hintStyle: NasabahStyle.text(13, color: NasabahStyle.muted),
             prefixIconColor: AppColors.greenDark,
-            suffixIcon: _mencari
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  )
-                : (_cari.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          size: 18,
-                        ),
-                        onPressed: () {
-                          _cari.clear();
-                          _cariTempat('');
-                        },
-                      )),
+            suffixIcon: _akhiranCari(),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
             border: OutlineInputBorder(
@@ -489,6 +467,29 @@ class _MapPickerPageState extends State<MapPickerPage> {
           ),
         ),
       );
+
+  Widget? _akhiranCari() {
+    if (_mencari) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (_cari.text.isEmpty) {
+      return null;
+    }
+    return IconButton(
+      icon: const Icon(Icons.close, size: 18),
+      onPressed: () {
+        _cari.clear();
+        _cariTempat('');
+      },
+    );
+  }
 
   Widget _daftarHasil() => Container(
         key: const Key('peta_hasil_cari'),

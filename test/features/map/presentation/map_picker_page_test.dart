@@ -224,6 +224,22 @@ void main() {
     expect(peta.dx, greaterThanOrEqualTo(300));
   });
 
+  testWidgets('a phone window keeps the header, search and save in reach',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(hostWithExtras(showRadius: true));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('peta_kembali')), findsOneWidget);
+    expect(find.byKey(const Key('peta_cari_tempat')), findsOneWidget);
+    expect(find.byKey(const Key('simpan_lokasi')), findsOneWidget);
+    expect(find.byType(FlutterMap), findsOneWidget);
+  });
+
   testWidgets('Gunakan Lokasi Saya writes the fix into the fields',
       (tester) async {
     when(() => location.currentLocation())

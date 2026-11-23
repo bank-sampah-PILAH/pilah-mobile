@@ -66,6 +66,16 @@ void main() {
     await tester.pump();
   }
 
+  for (final size in const [Size(390, 844), Size(1440, 900)]) {
+    testWidgets('carries no access notice under the form at ${size.width}px',
+        (tester) async {
+      await pumpPage(tester, size: size);
+
+      expect(find.textContaining('Hanya untuk Pengurus'), findsNothing);
+      expect(find.textContaining('Terenkripsi'), findsNothing);
+    });
+  }
+
   testWidgets('keeps Google first and provides an email/password form below it',
       (tester) async {
     await pumpPage(tester);

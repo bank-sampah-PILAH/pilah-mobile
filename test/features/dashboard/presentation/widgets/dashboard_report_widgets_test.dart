@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -540,5 +541,62 @@ void main() {
 
     expect(source.requestedCategoryRanges.last.start, DateTime(2026, 6, 10));
     expect(source.requestedCategoryRanges.last.end, DateTime(2026, 6, 20));
+  });
+
+  testWidgets(
+      'a KPI card shows its caption in the screen recording, not its '
+      'value', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: DashboardKpiCard(
+          label: 'Total Kas Bulan Ini',
+          value: 'Rp 69.250',
+          icon: Icons.account_balance_wallet_outlined,
+        ),
+      ),
+    ));
+
+    expect(
+      find.ancestor(
+        of: find.text('Total Kas Bulan Ini'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: find.text('Rp 69.250'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('the report section titles are shown in the screen recording',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 2, depositCount: 1),
+      ];
+    await tester.pumpWidget(withAnalytics(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: DashboardReportsSection(dataSource: source),
+        ),
+      ),
+    )));
+    await tester.pumpAndSettle();
+
+    for (final title in ['Periode laporan', 'Tren operasional']) {
+      expect(
+        find.ancestor(
+          of: find.text(title),
+          matching: find.byType(RevealInReplay),
+        ),
+        findsOneWidget,
+        reason: title,
+      );
+    }
   });
 }

@@ -35,6 +35,18 @@ const _approved = NasabahMembershipEntity(
   isActive: true,
 );
 
+NasabahMembershipEntity _membership(MembershipStatus status,
+        {required bool isActive}) =>
+    NasabahMembershipEntity(
+      id: 'application-${status.name}',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Melati',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Melati',
+      status: status,
+      isActive: isActive,
+    );
+
 /// The lead dev's rule: in the app the navigation sits at the bottom, in a
 /// browser it sits on the left. So the shell picks the navigation *family* from
 /// the platform, and uses width only to decide how much of the left-hand
@@ -51,6 +63,8 @@ void main() {
     required bool isWeb,
     String initialLocation = '/home',
     ProfileNotifier? profile,
+    NasabahApprovalState approvalState =
+        const NasabahApprovalLoaded([_approved]),
     List<Override> extraOverrides = const [],
   }) async {
     tester.view.physicalSize = window;
@@ -58,8 +72,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final approval = TestNasabahApprovalNotifier(
-        initialState: const NasabahApprovalLoaded([_approved]));
+    final approval = TestNasabahApprovalNotifier(initialState: approvalState);
 
     final state = Authenticated(
       authEntity: AuthEntity(
@@ -86,7 +99,7 @@ void main() {
               '/prices',
               '/reports',
               '/schedule',
-              '/history',
+              '/riwayat',
               '/bank',
               '/profile'
             ])
@@ -115,6 +128,54 @@ void main() {
     await tester.pumpAndSettle();
     return router;
   }
+
+  testWidgets('direct history branch stays gated until membership is active',
+      (tester) async {
+    final cases = [
+      (
+        const NasabahApprovalLoaded([]),
+        'Belum ada pengajuan',
+      ),
+      (
+        NasabahApprovalLoaded([
+          _membership(MembershipStatus.pending, isActive: false),
+        ]),
+        'Pengajuan sedang ditinjau',
+      ),
+      (
+        NasabahApprovalLoaded([
+          _membership(MembershipStatus.rejected, isActive: false),
+        ]),
+        'Pengajuan belum disetujui',
+      ),
+      (
+        NasabahApprovalLoaded([
+          _membership(MembershipStatus.approved, isActive: false),
+        ]),
+        'Keanggotaan belum aktif',
+      ),
+      (
+        const NasabahApprovalLoaded([_approved]),
+        'body:/riwayat',
+      ),
+    ];
+
+    for (final (state, expected) in cases) {
+      await mountShell(
+        tester,
+        role: 'nasabah',
+        window: const Size(1440, 900),
+        isWeb: true,
+        initialLocation: '/riwayat',
+        approvalState: state,
+      );
+      expect(find.text(expected), findsOneWidget, reason: '$state');
+      if (expected != 'body:/riwayat') {
+        expect(find.text('body:/riwayat'), findsNothing);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
 
   group('asking for consent to be recorded', () {
     late FakeAppStorage storage;
