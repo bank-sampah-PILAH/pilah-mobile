@@ -62,7 +62,11 @@ void main() {
     await tester.pumpWidget(preview.buildPreviewApp());
     final router = GoRouter.of(tester.element(find.byType(BerandaNasabahPage)));
     addTearDown(router.dispose);
+    // Two frames: the beranda resolves which bank is active before it loads
+    // one (PIL-235), and the preview has nowhere to have saved a choice, so
+    // that resolution settles as "none" a frame before the card is built.
     await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
     expect(find.textContaining('Bank Terdaftar'), findsWidgets);
   });
 
