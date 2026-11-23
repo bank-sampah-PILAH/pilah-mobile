@@ -40,7 +40,13 @@ class ApprovalBankSampahDetailPage extends StatelessWidget {
 class ApprovalBankSampahDetailView extends ConsumerWidget {
   final NasabahMembershipEntity membership;
 
-  const ApprovalBankSampahDetailView({super.key, required this.membership});
+  const ApprovalBankSampahDetailView({
+    super.key,
+    required this.membership,
+    this.allowActiveSwitch = true,
+  });
+
+  final bool allowActiveSwitch;
 
   Future<void> _appeal(BuildContext context, WidgetRef ref) async {
     final pesan = await showDialog<String>(
@@ -86,7 +92,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             children: [
               _buildStatusCard(),
               const SizedBox(height: 24),
-              if (_canBeMadeActive(ref)) ...[
+              if (allowActiveSwitch && _canBeMadeActive(ref)) ...[
                 _buildMakeActiveButton(context, ref),
                 const SizedBox(height: 24),
               ],

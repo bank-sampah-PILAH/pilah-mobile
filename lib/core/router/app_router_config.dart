@@ -4,6 +4,7 @@ import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_pa
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -325,7 +326,20 @@ class AppRouterConfig {
       GoRoute(
         path: ApprovalBankSampahListPage.route,
         name: ApprovalBankSampahListPage.route,
-        builder: (context, state) => const ApprovalBankSampahListPage(),
+        builder: (context, state) => Consumer(
+          builder: (context, ref, child) {
+            final auth = ref.watch(authenticationProvider);
+            if (auth is! Authenticated || auth.authEntity.role != 'nasabah') {
+              return const Scaffold(
+                body: Center(child: Text('Silakan masuk sebagai nasabah.')),
+              );
+            }
+            return BankMembershipPanel(
+              owner: auth.authEntity,
+              scrollToHistory: state.uri.queryParameters['tab'] == 'history',
+            );
+          },
+        ),
       ),
       GoRoute(
         path: ApprovalBankSampahDetailPage.route,
