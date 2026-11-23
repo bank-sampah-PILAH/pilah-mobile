@@ -355,23 +355,14 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
       );
 }
 
-/// The nearest upcoming schedule of [membershipId], or null when there is
-/// none.
-///
-/// The bank is explicit because the backend otherwise refuses the list for a
-/// nasabah with more than one (PIL-235); before that it merged the schedules
-/// of every bank they belonged to, and this card showed whichever came first.
 /// One page of [membershipId]'s schedules, or null when the bank is refused.
 ///
 /// A bank that is no longer this nasabah's to read is not an error worth
 /// repeating here: the bank card above already carries the refusal, so the
-/// schedule card simply has nothing to show. The bank is left off the request
-/// entirely when there is none, so a pengurus request is unchanged.
-Future<JadwalPageResult?> _schedulePage(int pageNumber, String? membershipId) {
-  final repository = di<JadwalRepository>();
-  final result = membershipId == null
-      ? repository.getJadwal(page: pageNumber)
-      : repository.getJadwal(page: pageNumber, membershipId: membershipId);
+/// schedule card simply has nothing to show.
+Future<JadwalPageResult?> _schedulePage(int pageNumber, String membershipId) {
+  final result = di<JadwalRepository>()
+      .getJadwal(page: pageNumber, membershipId: membershipId);
   return result.then((either) => either.fold<JadwalPageResult?>(
         (failure) => failure.response?.statusCode == 403
             ? null
@@ -399,7 +390,13 @@ JadwalEntity? _soonestOf(
   return soonest;
 }
 
-Future<JadwalEntity?> _loadNearestSchedule(String? membershipId) async {
+/// The nearest upcoming schedule of [membershipId], or null when there is
+/// none.
+///
+/// The bank is explicit because the backend otherwise refuses the list for a
+/// nasabah with more than one (PIL-235); before that it merged the schedules
+/// of every bank they belonged to, and this card showed whichever came first.
+Future<JadwalEntity?> _loadNearestSchedule(String membershipId) async {
   final now = clock.now();
   JadwalEntity? nearest;
   var pageNumber = 1;
