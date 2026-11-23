@@ -111,6 +111,45 @@ void main() {
     expect(seen, ['membership-b']);
   });
 
+  testWidgets('follows the bank the route names when the link changes',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage)
+        .select('nasabah-1', 'membership-a');
+    final seen = <String?>[];
+    final overrides = [
+      activeMembershipSelectionProvider
+          .overrideWithValue(ActiveMembershipSelection(storage)),
+    ];
+    Widget host(String named) => withAuthenticationProvider(
+          auth,
+          MaterialApp(
+            home: Scaffold(
+              body: ActiveMembershipScope(
+                membershipId: named,
+                builder: (context, membership) {
+                  seen.add(membership.id);
+                  return Text('bank ${membership.id}');
+                },
+              ),
+            ),
+          ),
+          overrides: overrides,
+        );
+
+    await tester.pumpWidget(host('membership-a'));
+    await tester.pumpAndSettle();
+    expect(seen, ['membership-a']);
+
+    // The same route with another bank in the query keeps this State alive,
+    // so without this the screen would still be showing the first bank.
+    await tester.pumpWidget(host('membership-b'));
+    await tester.pumpAndSettle();
+
+    expect(seen.last, 'membership-b');
+    expect(find.text('bank membership-b'), findsOneWidget);
+  });
+
   testWidgets('without storage there is no bank to resolve', (tester) async {
     final (seen, _) = await pumpScope(tester);
 
