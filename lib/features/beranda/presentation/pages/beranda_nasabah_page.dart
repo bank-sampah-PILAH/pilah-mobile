@@ -134,34 +134,38 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
   // so it keeps the app bar.
   bool get _webHeader => WebContentSurface.contains(context);
 
+  /// The phone app bar, with the avatar that leads to Profil. Null on the web
+  /// shell, where the rail carries both and the page paints its own title.
+  PreferredSizeWidget? _appBar(BuildContext context) => _webHeader
+      ? null
+      : NasabahPageAppBar(
+          title: 'Beranda',
+          actions: [
+            _notifications(context),
+            IconButton(
+              tooltip: 'Profil',
+              onPressed: () => context.go(AppLocations.profile),
+              icon: CircleAvatar(
+                radius: 19,
+                backgroundColor: NasabahStyle.emeraldLight,
+                child: Text(
+                  widget.name.isEmpty
+                      ? 'N'
+                      : widget.name.characters.first.toUpperCase(),
+                  style: _text(14,
+                      weight: AppFontWeight.semibold,
+                      color: NasabahStyle.emeraldDark),
+                ),
+              ),
+            ),
+          ],
+        );
+
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: WebContentSurface.pageColor(context,
             phone: NasabahStyle.background),
-        appBar: _webHeader
-            ? null
-            : NasabahPageAppBar(
-                title: 'Beranda',
-                actions: [
-                  _notifications(context),
-                  IconButton(
-                    tooltip: 'Profil',
-                    onPressed: () => context.go(AppLocations.profile),
-                    icon: CircleAvatar(
-                      radius: 19,
-                      backgroundColor: NasabahStyle.emeraldLight,
-                      child: Text(
-                        widget.name.isEmpty
-                            ? 'N'
-                            : widget.name.characters.first.toUpperCase(),
-                        style: _text(14,
-                            weight: AppFontWeight.semibold,
-                            color: NasabahStyle.emeraldDark),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        appBar: _appBar(context),
         body: SafeArea(
             child: Align(
                 alignment: Alignment.topCenter,
@@ -357,39 +361,54 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
 /// The bank is explicit because the backend otherwise refuses the list for a
 /// nasabah with more than one (PIL-235); before that it merged the schedules
 /// of every bank they belonged to, and this card showed whichever came first.
-Future<JadwalEntity?> _loadNearestSchedule(String? membershipId) async {
+/// One page of [membershipId]'s schedules, or null when the bank is refused.
+///
+/// A bank that is no longer this nasabah's to read is not an error worth
+/// repeating here: the bank card above already carries the refusal, so the
+/// schedule card simply has nothing to show. The bank is left off the request
+/// entirely when there is none, so a pengurus request is unchanged.
+Future<JadwalPageResult?> _schedulePage(int pageNumber, String? membershipId) {
   final repository = di<JadwalRepository>();
+  final result = membershipId == null
+      ? repository.getJadwal(page: pageNumber)
+      : repository.getJadwal(page: pageNumber, membershipId: membershipId);
+  return result.then((either) => either.fold<JadwalPageResult?>(
+        (failure) => failure.response?.statusCode == 403
+            ? null
+            : throw NasabahApiException(failure.displayMessage),
+        (page) => page,
+      ));
+}
+
+/// The earlier of [nearest] and the soonest published schedule in [items] that
+/// has not finished yet.
+JadwalEntity? _soonestOf(
+  Iterable<JadwalEntity> items,
+  JadwalEntity? nearest,
+  DateTime now,
+) {
+  var soonest = nearest;
+  for (final schedule in items) {
+    final start = schedule.mulaiPada.toLocal();
+    if (schedule.isPublished &&
+        !schedule.selesaiPada.toLocal().isBefore(now) &&
+        (soonest == null || start.isBefore(soonest.mulaiPada.toLocal()))) {
+      soonest = schedule;
+    }
+  }
+  return soonest;
+}
+
+Future<JadwalEntity?> _loadNearestSchedule(String? membershipId) async {
   final now = clock.now();
   JadwalEntity? nearest;
   var pageNumber = 1;
   // ponytail: scans every upcoming page; add a server-side nearest query if
   // volume hurts homepage load time.
   while (true) {
-    final result = membershipId == null
-        ? await repository.getJadwal(page: pageNumber)
-        : await repository.getJadwal(
-            page: pageNumber,
-            membershipId: membershipId,
-          );
-    final page = result.fold<JadwalPageResult?>(
-      // A bank that is no longer this nasabah's to read is not an error worth
-      // repeating here: the bank card above already carries the refusal, so
-      // the schedule card simply has nothing to show.
-      (failure) => failure.response?.statusCode == 403
-          ? null
-          : throw NasabahApiException(failure.displayMessage),
-      (page) => page,
-    );
+    final page = await _schedulePage(pageNumber, membershipId);
     if (page == null) return null;
-    for (final schedule in page.items) {
-      final start = schedule.mulaiPada.toLocal();
-      final end = schedule.selesaiPada.toLocal();
-      if (schedule.isPublished &&
-          !end.isBefore(now) &&
-          (nearest == null || start.isBefore(nearest.mulaiPada.toLocal()))) {
-        nearest = schedule;
-      }
-    }
+    nearest = _soonestOf(page.items, nearest, now);
     if (page.items.isEmpty || !page.hasMore) return nearest;
     pageNumber++;
   }

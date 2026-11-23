@@ -68,6 +68,39 @@ class NasabahResourceState<T> extends State<NasabahResource<T>>
     return future;
   }
 
+  /// What a failed request offers: the reason, the banks to choose from when
+  /// the API asked for one (422), and then either a way out or a retry.
+  ///
+  /// A refusal (403) is the answer rather than a hiccup: the bank stopped
+  /// being one this nasabah may open, so reloading cannot change it and the
+  /// way out is another bank (PIL-235, same shape as jadwal).
+  Widget _buildError(BuildContext context, Object? error) {
+    final apiError = error is NasabahApiException ? error : null;
+    final choices = widget.onSelect == null
+        ? const <MembershipChoice>[]
+        : apiError?.choices;
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(apiError?.message ?? 'Data gagal dimuat. Silakan coba lagi.'),
+          for (final choice in choices ?? const <MembershipChoice>[])
+            TextButton(
+                onPressed: () => widget.onSelect!(choice.id),
+                child: Text(choice.bankName)),
+          if (apiError?.statusCode == 403)
+            TextButton(
+              onPressed: () => context.push(ApprovalBankSampahListPage.route),
+              child: const Text('Bank sampah saya'),
+            )
+          else
+            TextButton(onPressed: reload, child: const Text('Coba lagi')),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => FutureBuilder<T>(
         future: _request,
@@ -78,38 +111,7 @@ class NasabahResourceState<T> extends State<NasabahResource<T>>
                     padding: EdgeInsets.all(24),
                     child: CircularProgressIndicator()));
           }
-          if (snapshot.hasError) {
-            final error = snapshot.error;
-            final apiError = error is NasabahApiException ? error : null;
-            // A refusal is the answer, not a hiccup: the bank stopped being
-            // one this nasabah may open, so reloading cannot change it and
-            // the way out is another bank (PIL-235, same shape as jadwal).
-            final locked = apiError?.statusCode == 403;
-            return Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(apiError?.message ??
-                        'Data gagal dimuat. Silakan coba lagi.'),
-                    if (widget.onSelect != null)
-                      for (final choice
-                          in apiError?.choices ?? <MembershipChoice>[])
-                        TextButton(
-                            onPressed: () => widget.onSelect!(choice.id),
-                            child: Text(choice.bankName)),
-                    if (locked)
-                      TextButton(
-                        onPressed: () =>
-                            context.push(ApprovalBankSampahListPage.route),
-                        child: const Text('Bank sampah saya'),
-                      )
-                    else
-                      TextButton(
-                          onPressed: reload, child: const Text('Coba lagi')),
-                  ],
-                ));
-          }
+          if (snapshot.hasError) return _buildError(context, snapshot.error);
           return widget.builder(context, snapshot.data as T);
         },
       );
