@@ -876,6 +876,33 @@ void main() {
           membershipId: 'membership-a')).called(1);
     });
 
+    test('carries the chosen bank on a date range', () async {
+      when(() => repository.getJadwal(
+            page: 1,
+            date: DateTime(2026, 10, 19),
+            dateTo: DateTime(2026, 10, 25),
+            membershipId: 'membership-a',
+          )).thenAnswer((_) async => Right(_page([schedule])));
+      final cubit = createNotifier(repository);
+
+      cubit.useMembership('membership-a');
+      await cubit.loadJadwal(
+        date: DateTime(2026, 10, 19),
+        dateTo: DateTime(2026, 10, 25),
+      );
+
+      // Picking a week on the calendar must not drop the bank: the range and
+      // the bank narrow the same queryset, and a request that keeps only the
+      // range is refused for a nasabah with more than one bank.
+      expect(cubit.state, isA<JadwalLoaded>());
+      verify(() => repository.getJadwal(
+            page: 1,
+            date: DateTime(2026, 10, 19),
+            dateTo: DateTime(2026, 10, 25),
+            membershipId: 'membership-a',
+          )).called(1);
+    });
+
     test('a bank that may not be opened is locked, not an error', () async {
       when(() => repository.getJadwal(
             page: 1,

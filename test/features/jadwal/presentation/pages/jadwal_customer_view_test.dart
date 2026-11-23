@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -196,6 +197,23 @@ void main() {
     expect(find.text('Coba Lagi'), findsNothing);
     expect(find.text('Bank sampah saya'), findsOneWidget);
   });
+
+  testWidgets('the locked screen leads to the banks the nasabah does have',
+      (tester) async {
+    await _pumpCustomer(
+      tester,
+      const JadwalLocked('Keanggotaan dan bank sampah harus aktif.'),
+      membershipId: 'membership-a',
+    );
+
+    await tester.tap(find.text('Bank sampah saya'));
+    await tester.pumpAndSettle();
+
+    // The only way out of a bank that is no longer theirs is another bank, so
+    // the button has to actually go there rather than just say so.
+    expect(_lastLocation, ApprovalBankSampahListPage.route);
+    expect(find.text('Bank Sampah Saya'), findsOneWidget);
+  });
 }
 
 /// The location the `:id` route was last built with, so a test can read what
@@ -235,6 +253,12 @@ Future<TestJadwalNotifier> _pumpCustomer(
                 return const Scaffold(body: Text('Detail Jadwal'));
               }),
         ]),
+    GoRoute(
+        path: ApprovalBankSampahListPage.route,
+        builder: (_, state) {
+          _lastLocation = state.uri.toString();
+          return const Scaffold(body: Text('Bank Sampah Saya'));
+        }),
   ]);
   addTearDown(router.dispose);
   await tester.pumpWidget(

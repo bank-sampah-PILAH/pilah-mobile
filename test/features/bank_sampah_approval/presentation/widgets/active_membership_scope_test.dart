@@ -150,6 +150,54 @@ void main() {
     expect(find.text('bank membership-b'), findsOneWidget);
   });
 
+  testWidgets('falls back to the saved bank when the link stops naming one',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage)
+        .select('nasabah-1', 'membership-a');
+    final seen = <String?>[];
+    final overrides = [
+      activeMembershipSelectionProvider
+          .overrideWithValue(ActiveMembershipSelection(storage)),
+      nasabahApprovalProvider.overrideWith(
+        () => TestNasabahApprovalNotifier(
+          initialState: NasabahApprovalLoaded([
+            membershipRow('membership-a'),
+            membershipRow('membership-b'),
+          ]),
+        ),
+      ),
+    ];
+    Widget host(String? named) => withAuthenticationProvider(
+          auth,
+          MaterialApp(
+            home: Scaffold(
+              body: ActiveMembershipScope(
+                membershipId: named,
+                builder: (context, membership) {
+                  seen.add(membership.id);
+                  return Text('bank ${membership.id}');
+                },
+              ),
+            ),
+          ),
+          overrides: overrides,
+        );
+
+    await tester.pumpWidget(host('membership-b'));
+    await tester.pumpAndSettle();
+    expect(seen, ['membership-b']);
+
+    // Going back to a link with no bank in the query is not "keep the last
+    // one": the saved choice answers again, and from here on a switch made
+    // elsewhere is followed, which a named link deliberately ignores.
+    await tester.pumpWidget(host(null));
+    await tester.pumpAndSettle();
+
+    expect(seen.last, 'membership-a');
+    expect(find.text('bank membership-a'), findsOneWidget);
+  });
+
   testWidgets('without storage there is no bank to resolve', (tester) async {
     final (seen, _) = await pumpScope(tester);
 
