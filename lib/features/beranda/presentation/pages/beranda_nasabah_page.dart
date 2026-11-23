@@ -1,4 +1,7 @@
 import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
 
@@ -125,46 +128,70 @@ class _HomeSessionState extends State<_HomeSession>
     );
   }
 
+  Widget _notifications(BuildContext context) => AppTapTarget(
+        label: 'Notifikasi',
+        onTap: () => NotificationsPage.open(context),
+        child: const Icon(Icons.notifications_outlined),
+      );
+
+  // The web shell's rail replaces the phone app bar: the page paints its own
+  // title and the rail already leads to Profil. A narrow browser has no rail,
+  // so it keeps the app bar.
+  bool get _webHeader => WebContentSurface.contains(context);
+
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: NasabahStyle.background,
-        appBar: NasabahPageAppBar(
-          title: 'Beranda',
-          actions: [
-            AppTapTarget(
-              label: 'Notifikasi',
-              onTap: () => NotificationsPage.open(context),
-              child: const Icon(Icons.notifications_outlined),
-            ),
-            IconButton(
-              tooltip: 'Profil',
-              onPressed: () => context.go(AppLocations.profile),
-              icon: CircleAvatar(
-                radius: 19,
-                backgroundColor: NasabahStyle.emeraldLight,
-                child: Text(
-                  widget.name.isEmpty
-                      ? 'N'
-                      : widget.name.characters.first.toUpperCase(),
-                  style: _text(14,
-                      weight: AppFontWeight.semibold,
-                      color: NasabahStyle.emeraldDark),
-                ),
+        backgroundColor: WebContentSurface.pageColor(context,
+            phone: NasabahStyle.background),
+        appBar: _webHeader
+            ? null
+            : NasabahPageAppBar(
+                title: 'Beranda',
+                actions: [
+                  _notifications(context),
+                  IconButton(
+                    tooltip: 'Profil',
+                    onPressed: () => context.go(AppLocations.profile),
+                    icon: CircleAvatar(
+                      radius: 19,
+                      backgroundColor: NasabahStyle.emeraldLight,
+                      child: Text(
+                        widget.name.isEmpty
+                            ? 'N'
+                            : widget.name.characters.first.toUpperCase(),
+                        style: _text(14,
+                            weight: AppFontWeight.semibold,
+                            color: NasabahStyle.emeraldDark),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
         body: SafeArea(
             child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
+                  constraints:
+                      const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
                   child: AppRefreshIndicator(
                     onRefresh: _refresh,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      padding: _webHeader
+                          ? const EdgeInsets.fromLTRB(
+                              AppSpacing.webGutter,
+                              AppSpacing.webTop,
+                              AppSpacing.webGutter,
+                              AppSpacing.xl)
+                          : const EdgeInsets.fromLTRB(16, 12, 16, 24),
                       children: [
+                        if (_webHeader) ...[
+                          AppPageHeader(
+                            title: 'Beranda',
+                            actions: [_notifications(context)],
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                        ],
                         _HomeGreeting(name: widget.name),
                         const SizedBox(height: 8),
                         Align(

@@ -4,10 +4,10 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 void main() {
   group('isSupportedWebRole', () {
     test('allows only roles supported by the web app', () {
-      for (final role in ['superadmin', 'pengelola']) {
+      for (final role in ['superadmin', 'pengelola', 'nasabah']) {
         expect(isSupportedWebRole(role), isTrue);
       }
-      for (final role in ['nasabah', 'unknown', null]) {
+      for (final role in ['unknown', null]) {
         expect(isSupportedWebRole(role), isFalse);
       }
     });
@@ -16,7 +16,8 @@ void main() {
   group('isRoleSupportedOnPlatform', () {
     test('filters unsupported web roles only on web', () {
       expect(isRoleSupportedOnPlatform('pengelola', isWeb: true), isTrue);
-      expect(isRoleSupportedOnPlatform('nasabah', isWeb: true), isFalse);
+      expect(isRoleSupportedOnPlatform('nasabah', isWeb: true), isTrue);
+      expect(isRoleSupportedOnPlatform('unknown', isWeb: true), isFalse);
       expect(isRoleSupportedOnPlatform('nasabah', isWeb: false), isTrue);
     });
   });
@@ -29,9 +30,18 @@ void main() {
           isWeb: true,
           path: '/dashboard',
           loginPath: '/login',
-          role: 'nasabah',
+          role: 'unknown',
         ),
         '/login?$webRoleBounceFlag=1',
+      );
+      expect(
+        webRoleRedirect(
+          isWeb: true,
+          path: '/dashboard',
+          loginPath: '/login',
+          role: 'nasabah',
+        ),
+        isNull,
       );
       expect(
         webRoleRedirect(

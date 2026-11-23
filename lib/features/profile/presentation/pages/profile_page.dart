@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'dart:async';
 
 import 'package:pilah_mobile/design/constants/font_size.dart';
@@ -60,7 +61,7 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(authenticationProvider);
     final role = state is Authenticated ? state.authEntity.role : null;
-    if (role == 'nasabah') return const ProfilNasabahPage();
+    if (role == 'nasabah') return ProfilNasabahPage(isWeb: isWeb ?? kIsWeb);
     if (role == 'pengelola') {
       return _ProfileView(isWeb: isWeb ?? kIsWeb);
     }
@@ -585,8 +586,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     indicatorColor: AppColors.greenDark,
                     indicatorWeight: 3,
                     tabs: const [
-                      Tab(text: 'Pengaturan Umum'),
-                      Tab(text: 'Manajemen Tim'),
+                      Tab(child: FixedText('Pengaturan Umum')),
+                      Tab(child: FixedText('Manajemen Tim')),
                     ],
                   ),
                 ),
@@ -1191,8 +1192,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Invite Banner — owner only. Both the banner and its trailing gap
-              // are guarded so hiding it leaves no dangling spacing above the list.
+              // Invite controls are primary-only; other Pengurus are told who
+              // manages invitations without making an invitation request.
+              _buildInviteManagerNotice(state, isPengelolaUtama),
               if (isPengelolaUtama) ...[
                 Container(
                   width: double.infinity,
@@ -1304,6 +1306,20 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     );
   }
 
+  Widget _buildInviteManagerNotice(ProfileState state, bool isPengelolaUtama) {
+    if (isPengelolaUtama ||
+        state.bankSampah?.status.toLowerCase() != 'active') {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Text(
+        'Link undangan dibuat oleh Pengurus Utama.',
+        style: AppTextStyle.small,
+      ),
+    );
+  }
+
   Widget _buildMemberRow(TeamMember member) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1391,14 +1407,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: AppTextStyle.extraSmall.copyWith(
-            color: AppColors.grey100,
-            fontWeight: AppFontWeight.bold,
-            letterSpacing: 1.0,
-          ),
-        ),
+        FixedText(label,
+            style: AppTextStyle.extraSmall.copyWith(
+              color: AppColors.grey100,
+              fontWeight: AppFontWeight.bold,
+              letterSpacing: 1.0,
+            )),
       ],
     );
   }
@@ -1415,14 +1429,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyle.extraSmall.copyWith(
-            color: AppColors.grey100,
-            fontWeight: AppFontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
+        FixedText(label,
+            style: AppTextStyle.extraSmall.copyWith(
+              color: AppColors.grey100,
+              fontWeight: AppFontWeight.bold,
+              letterSpacing: 0.5,
+            )),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,

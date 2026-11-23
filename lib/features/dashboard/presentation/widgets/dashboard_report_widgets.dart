@@ -11,7 +11,7 @@ import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 
 export 'dashboard_report_range_filter.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
-import 'package:pilah_mobile/core/analytics/replay_masks.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 
 class DashboardKpiCard extends StatelessWidget {
   final String label;
@@ -44,7 +44,7 @@ class DashboardKpiCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(label,
+                  child: FixedText(label,
                       style: AppTextStyle.small
                           .copyWith(color: AppColors.grey100)),
                 ),
@@ -543,7 +543,7 @@ class _DashboardReportsSectionState extends State<DashboardReportsSection> {
             runSpacing: 12,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('Periode laporan', style: AppTextStyle.title1),
+              FixedText('Periode laporan', style: AppTextStyle.title1),
               DashboardReportRangeFilter(
                 range: _range,
                 onChanged: (value) => setState(() => _range = value),
@@ -596,7 +596,7 @@ class _ReportCard extends StatelessWidget {
                 runSpacing: 12,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(title, style: AppTextStyle.title1),
+                  FixedText(title, style: AppTextStyle.title1),
                   ...controls,
                 ],
               )
@@ -608,7 +608,7 @@ class _ReportCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: AppTextStyle.title1),
+                        FixedText(title, style: AppTextStyle.title1),
                         if (subtitle != null) ...[
                           const SizedBox(height: 4),
                           Text(subtitle!,

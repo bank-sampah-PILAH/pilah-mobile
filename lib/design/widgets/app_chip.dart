@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -92,13 +93,11 @@ class AppChip extends StatelessWidget {
                       Icon(icon, size: 16, color: color),
                       const SizedBox(width: 6),
                     ],
-                    Text(
-                      label,
-                      style: AppTextStyle.small.copyWith(
-                        color: color,
-                        fontWeight: AppFontWeight.bold,
-                      ),
-                    ),
+                    FixedText(label,
+                        style: AppTextStyle.small.copyWith(
+                          color: color,
+                          fontWeight: AppFontWeight.bold,
+                        )),
                     if (count != null) ...[
                       const SizedBox(width: 6),
                       _CountBadge(

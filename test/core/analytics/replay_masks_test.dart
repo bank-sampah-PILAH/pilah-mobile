@@ -1,59 +1,38 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/analytics/replay_masks.dart';
-import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 void main() {
-  testWidgets('RevealInReplay unmasks and HideInReplay masks its child', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Column(
-          children: [
-            RevealInReplay(child: Text('tampil')),
-            HideInReplay(child: Text('tersembunyi')),
-          ],
-        ),
-      ),
-    );
+  group('replayTextMask', () {
+    testWidgets('shows icons and hides every other text', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Column(children: [
+          Icon(Icons.home),
+          Icon(CupertinoIcons.back),
+          Text('Budi Santoso'),
+        ]),
+      ));
+      RichText richOf(Finder f) => tester.widget<RichText>(
+          find.descendant(of: f, matching: find.byType(RichText)));
 
-    expect(find.byType(PostHogUnmaskWidget), findsOneWidget);
-    expect(find.byType(PostHogMaskWidget), findsOneWidget);
-    expect(find.text('tampil'), findsOneWidget);
-    expect(find.text('tersembunyi'), findsOneWidget);
-  });
+      expect(
+        replayTextMask('', richOf(find.byIcon(Icons.home))),
+        isA<PostHogTextMaskNone>(),
+      );
+      expect(
+        replayTextMask('', richOf(find.byIcon(CupertinoIcons.back))),
+        isA<PostHogTextMaskNone>(),
+      );
+      expect(
+        replayTextMask('Budi Santoso', richOf(find.text('Budi Santoso'))),
+        isA<PostHogTextMaskAll>(),
+      );
+    });
 
-  testWidgets('field captions and button labels are revealed in the recording',
-      (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Column(
-          children: [
-            const AppFieldLabel('NAMA LENGKAP'),
-            AppButton(label: 'Simpan', onPressed: () {}),
-          ],
-        ),
-      ),
-    );
-
-    expect(
-      find.ancestor(
-        of: find.text('NAMA LENGKAP'),
-        matching: find.byType(RevealInReplay),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.ancestor(
-        of: find.text('Simpan'),
-        matching: find.byType(RevealInReplay),
-      ),
-      findsOneWidget,
-    );
+    test('hides a widget that is not text', () {
+      expect(replayTextMask('x', const SizedBox()), isA<PostHogTextMaskAll>());
+    });
   });
 }

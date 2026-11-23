@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -125,5 +126,28 @@ void main() {
 
     expect(asked, 1);
     expect(find.text('Editor'), findsOneWidget);
+  });
+
+  testWidgets('hides its title in the screen recording unless told it is fixed',
+      (tester) async {
+    await tester.pumpWidget(host(AppBackHeader(title: 'Budi Santoso')));
+    expect(
+      find.ancestor(
+        of: find.text('Budi Santoso'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsNothing,
+    );
+
+    await tester.pumpWidget(
+      host(AppBackHeader(title: 'Transaksi Baru', revealTitle: true)),
+    );
+    expect(
+      find.ancestor(
+        of: find.text('Transaksi Baru'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
   });
 }

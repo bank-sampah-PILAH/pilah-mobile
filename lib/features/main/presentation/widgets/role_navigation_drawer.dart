@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -87,14 +88,12 @@ class RoleNavigationDrawer extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
-              child: Text(
-                'MENU',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: AppColors.grey100,
-                  fontWeight: AppFontWeight.semibold,
-                  letterSpacing: 0.8,
-                ),
-              ),
+              child: FixedText('MENU',
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: AppColors.grey100,
+                    fontWeight: AppFontWeight.semibold,
+                    letterSpacing: 0.8,
+                  )),
             ),
             Expanded(
               child: ListView(
@@ -255,15 +254,14 @@ class _Destination extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    destination.label,
-                    style: AppTextStyle.small.copyWith(
-                      color: selected ? AppColors.greenDark : AppColors.inkSoft,
-                      fontWeight: selected
-                          ? AppFontWeight.semibold
-                          : AppFontWeight.medium,
-                    ),
-                  ),
+                  FixedText(destination.label,
+                      style: AppTextStyle.small.copyWith(
+                        color:
+                            selected ? AppColors.greenDark : AppColors.inkSoft,
+                        fontWeight: selected
+                            ? AppFontWeight.semibold
+                            : AppFontWeight.medium,
+                      )),
                 ],
               ),
             ),

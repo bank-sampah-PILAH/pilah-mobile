@@ -1,9 +1,11 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/jadwal/analytics/jadwal_analytics.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:clock/clock.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
@@ -295,11 +297,9 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     await _changeStatus(item, JadwalAction.selesaikan);
   }
 
-  /// Pengurus di layar lebar memakai kepala halaman yang sama dengan tab web
+  /// Layar lebar memakai kepala halaman yang sama dengan tab web
   /// lain, di dalam daftar, bukan `AppBar`.
-  bool get _webHeader =>
-      !widget.customerMode &&
-      context.layoutBreakpoint != LayoutBreakpoint.compact;
+  bool get _webHeader => context.layoutBreakpoint != LayoutBreakpoint.compact;
 
   /// Di jendela expanded "Buat Jadwal" ada di kepala halaman seperti tab web
   /// lain, bukan tombol mengambang; di bawahnya tombol mengambang tetap.
@@ -312,11 +312,12 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     return Scaffold(
       backgroundColor:
           WebContentSurface.pageColor(context, phone: Colors.white),
-      appBar: widget.customerMode
-          ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
-          : _webHeader
-              ? null
-              : const NasabahPageAppBar(title: 'Jadwal Kegiatan'),
+      appBar: _webHeader
+          ? null
+          : NasabahPageAppBar(
+              title: widget.customerMode
+                  ? 'Jadwal Bank Sampah'
+                  : 'Jadwal Kegiatan'),
       floatingActionButton: widget.customerMode || _createInHeader
           ? null
           : Builder(
@@ -368,7 +369,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     return RefreshIndicator(
       onRefresh: _refreshAgenda,
       child: widget.customerMode
-          ? _buildCustomerAgenda(items, loadedState)
+          ? ContentFrame(child: _buildCustomerAgenda(items, loadedState))
           : MasterDetailLayout(
               masterScrolls: true,
               master: _buildPengurusAgenda(items, loadedState),
@@ -380,22 +381,36 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
   Widget _buildCustomerAgenda(
     List<JadwalEntity> items,
     JadwalLoaded loadedState,
-  ) {
-    return ListView(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: [
-        JadwalCalendar(
-          selectedDate: _selectedDate,
-          scheduledDates: loadedState.scheduledDates,
-          isMonthExpanded: _isMonthExpanded,
-          onSelectDate: _selectDate,
-          onNavigate: _navigateCalendar,
-          onToggleMonth: () =>
-              setState(() => _isMonthExpanded = !_isMonthExpanded),
-        ),
-        const SizedBox(height: 24),
+  ) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final sideBySide =
+            _webHeader && constraints.maxWidth >= _sideBySideMinWidth;
+        final sideInset = ContentFrame.insetOf(context) +
+            EdgeInsets.symmetric(
+              horizontal: _webHeader ? AppSpacing.webGutter : AppSpacing.lg,
+            );
+        final calendar = _agendaCalendar(loadedState, sideBySide: sideBySide);
+        final agenda = _customerAgendaChildren(items, loadedState);
+        final header = _agendaHeader(loadedState);
+        return sideBySide
+            ? _sideBySideAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda,
+                loadedState: loadedState)
+            : _stackedAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda);
+      });
+
+  List<Widget> _customerAgendaChildren(
+    List<JadwalEntity> items,
+    JadwalLoaded loadedState,
+  ) =>
+      [
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -437,7 +452,14 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: _ScheduleCard(
                 item: item,
-                onTap: null,
+                onTap: () => context.go(Uri(
+                  path: '${JadwalPage.route}/${Uri.encodeComponent(item.id)}',
+                  queryParameters: {
+                    'date': '${_selectedDate.year}-'
+                        '${_selectedDate.month.toString().padLeft(2, '0')}-'
+                        '${_selectedDate.day.toString().padLeft(2, '0')}'
+                  },
+                ).toString()),
                 onCancel: null,
                 onPublish: null,
                 onComplete: null,
@@ -447,9 +469,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
           ),
         if (!loadedState.isLoading && loadedState.hasMore)
           _buildLoadMoreFooter(loadedState),
-      ],
-    );
-  }
+      ];
 
   Widget _buildPengurusAgenda(
     List<JadwalEntity> items,
@@ -514,7 +534,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
 
   List<Widget> _agendaHeader(JadwalLoaded loadedState) => [
         AppPageHeader(
-          title: 'Jadwal Kegiatan',
+          title: widget.customerMode ? 'Jadwal Bank Sampah' : 'Jadwal Kegiatan',
           actions: [
             if (_createInHeader)
               AppButton(
@@ -804,22 +824,19 @@ class _EmptyScheduleDay extends StatelessWidget {
             color: AppColors.greenDark.withValues(alpha: 0.8),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Belum ada jadwal kegiatan',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold),
-          ),
+          const FixedText('Belum ada jadwal kegiatan',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold)),
           const SizedBox(height: 6),
-          Text(
-            'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.grey100,
-              fontSize: AppFontSize.sm,
-              height: 1.4,
-            ),
-          ),
+          FixedText(
+              'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.grey100,
+                fontSize: AppFontSize.sm,
+                height: 1.4,
+              )),
           if (onCreate == null)
             const SizedBox(height: 12)
           else ...[

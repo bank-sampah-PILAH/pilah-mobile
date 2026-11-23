@@ -175,6 +175,11 @@ class SelectCiChangesTest(unittest.TestCase):
         self.assertTrue(is_web_diff(["test/features/main/web_shell_style_test.dart"]))
         self.assertTrue(
             is_web_diff(
+                ["test/features/authentication/presentation/pages/role_selection_page_test.dart"]
+            )
+        )
+        self.assertTrue(
+            is_web_diff(
                 ["test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart"]
             )
         )

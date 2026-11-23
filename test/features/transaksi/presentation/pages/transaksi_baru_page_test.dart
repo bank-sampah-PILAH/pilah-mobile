@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
@@ -1382,5 +1383,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('route:/'), findsOneWidget);
+  });
+
+  testWidgets('the page title is shown in the screen recording',
+      (tester) async {
+    await open(tester);
+
+    expect(
+      find.ancestor(
+        of: find.text('Transaksi Baru'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
   });
 }

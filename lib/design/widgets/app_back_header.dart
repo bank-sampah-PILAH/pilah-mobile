@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -21,14 +22,22 @@ class AppBackHeader extends StatelessWidget {
     this.onBack,
     this.actions = const [],
     this.backKey,
+    this.revealTitle = false,
   });
 
   final String title;
+
+  /// Shows [title] in the screen recording. Only for a title that is fixed
+  /// wording of the app, never one that carries a name.
+  final bool revealTitle;
   final VoidCallback? onBack;
   final List<Widget> actions;
 
   /// Key of the back button, for a test to find it.
   final Key? backKey;
+
+  Widget _maybeReveal(Widget child) =>
+      revealTitle ? RevealInReplay(child: child) : child;
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +65,16 @@ class AppBackHeader extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle.headline1.copyWith(
-                color: AppColors.black,
-                fontWeight: AppFontWeight.bold,
-                fontSize: AppFontSize.xxl,
+            child: _maybeReveal(
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyle.headline1.copyWith(
+                  color: AppColors.black,
+                  fontWeight: AppFontWeight.bold,
+                  fontSize: AppFontSize.xxl,
+                ),
               ),
             ),
           ),
