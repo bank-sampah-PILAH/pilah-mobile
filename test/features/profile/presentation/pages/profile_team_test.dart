@@ -191,8 +191,7 @@ void main() {
         member('u3', 'Budi'),
       ],
     });
-    api.delay(
-        'POST', '/api/v1/team/transfer', const Duration(milliseconds: 600));
+    api.delay('POST', '/api/v1/team/transfer', const Duration(seconds: 3));
     bool anyEnabled() => tester
         .widgetList<PopupMenuButton<dynamic>>(menus)
         .any((m) => m.enabled);
@@ -205,13 +204,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(anyEnabled(), isFalse);
 
-    await tester.fling(
-        find.text('Undang Pengurus Baru'), const Offset(0, 400), 1000);
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.fling(find.text('Andi'), const Offset(0, 300), 1000);
+    for (var i = 0; i < 7; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(api.requests.where((r) => r.path == '/api/v1/team'), hasLength(2));
     expect(anyEnabled(), isFalse);
 
+    await tester.pump(const Duration(seconds: 4));
     await settleKeepingToast(tester);
-    await tester.pump(const Duration(seconds: 2));
     expect(find.text('Undang Pengurus Baru'), findsNothing);
     expect(menus, findsNothing);
   });
