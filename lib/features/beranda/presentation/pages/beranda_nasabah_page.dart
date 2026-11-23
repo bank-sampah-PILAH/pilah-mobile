@@ -10,7 +10,6 @@ import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
-import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
@@ -18,9 +17,10 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -46,14 +46,21 @@ class BerandaNasabahPage extends ConsumerWidget {
     return _HomeSession(
       key: ObjectKey(auth),
       repository: di<NasabahRepository>(),
+      owner: auth,
       name: auth.name,
     );
   }
 }
 
 class _HomeSession extends ConsumerStatefulWidget {
-  const _HomeSession({super.key, required this.repository, required this.name});
+  const _HomeSession({
+    super.key,
+    required this.repository,
+    required this.owner,
+    required this.name,
+  });
   final NasabahRepository repository;
+  final AuthEntity owner;
   final String name;
   @override
   ConsumerState<_HomeSession> createState() => _HomeSessionState();
@@ -90,7 +97,7 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
     }
   }
 
-  void _details(String title, Widget body) {
+  void _details(BuildContext context, String title, Widget body) {
     final initial = ProviderScope.containerOf(context, listen: false)
         .read(authenticationProvider);
     final owner = initial is Authenticated ? initial.authEntity : null;
@@ -192,19 +199,7 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
                           const SizedBox(height: AppSpacing.xl),
                         ],
                         _HomeGreeting(name: widget.name),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: AppButton(
-                            label: 'Bank sampah saya',
-                            variant: AppButtonVariant.text,
-                            icon: Icons.fact_check_outlined,
-                            onPressed: () => context.push(
-                              ApprovalBankSampahListPage.route,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.md),
                         ActiveMembershipScope(
                           builder: (context, membership) =>
                               NasabahResource<NasabahHome>(
@@ -216,15 +211,16 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
                             builder: (context, home) => Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _BankUnitCard(
-                                  unitName: home.bank.name,
-                                  logoUrl: home.bank.logoUrl,
-                                  onSelect: () => membership.select(null),
-                                  onOpen: () => _details(
+                                BankMembershipHomeCard(
+                                  owner: widget.owner,
+                                  activeBankName: home.bank.name,
+                                  onOpenActiveBank: (context, membership) =>
+                                      _details(
+                                    context,
                                     'Detail Bank Sampah',
                                     NasabahResource<NasabahBank>(
-                                      load: () => widget.repository
-                                          .bank(home.membershipId),
+                                      load: () =>
+                                          widget.repository.bank(membership.id),
                                       builder: (_, bank) => Padding(
                                         padding: const EdgeInsets.only(top: 16),
                                         child: NasabahBankDetail(bank: bank),
@@ -232,7 +228,7 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
                                 _BalanceCard(
                                   balance: home.balance,
                                   bankName: home.bank.name,
@@ -510,80 +506,6 @@ class _BalanceCard extends StatelessWidget {
           ),
         ),
       );
-}
-
-class _BankUnitCard extends StatelessWidget {
-  const _BankUnitCard({
-    required this.unitName,
-    this.logoUrl,
-    required this.onOpen,
-    required this.onSelect,
-  });
-  final String unitName;
-
-  /// Logo bank sampah dari payload beranda; null menggambar inisial.
-  final String? logoUrl;
-  final VoidCallback onOpen;
-  final VoidCallback onSelect;
-  @override
-  Widget build(BuildContext context) {
-    final hasLogo = logoUrl?.isNotEmpty ?? false;
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 17,
-                backgroundColor: NasabahStyle.emeraldLight,
-                foregroundImage: hasLogo ? NetworkImage(logoUrl!) : null,
-                onForegroundImageError: hasLogo ? (_, __) {} : null,
-                child: Text(
-                  'BS',
-                  style: _text(
-                    11,
-                    weight: AppFontWeight.semibold,
-                    color: _emerald,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('KEANGGOTAAN AKTIF',
-                        style: _text(10,
-                            weight: AppFontWeight.medium, color: _muted)),
-                    Text(
-                      unitName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _text(14, weight: AppFontWeight.medium),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Pilih ulang bank sampah',
-                onPressed: onSelect,
-                icon: const Icon(Icons.expand_more),
-              ),
-            ],
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AppButton(
-              label: 'Detail Bank Sampah',
-              variant: AppButtonVariant.text,
-              onPressed: onOpen,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _HomeGreeting extends StatelessWidget {
