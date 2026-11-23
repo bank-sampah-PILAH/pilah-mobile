@@ -3,11 +3,20 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Resolves the API's active membership, including explicit multi-bank choice.
+///
+/// This is the fallback for a screen that could not resolve a bank locally:
+/// the active-bank scope answers first, and only when it has nothing saved
+/// does the API get asked and the picker appear.
 class NasabahMembershipContent extends StatefulWidget {
   const NasabahMembershipContent(
-      {super.key, this.membershipId, required this.builder});
+      {super.key, this.membershipId, required this.builder, this.onSelect});
   final String? membershipId;
   final Widget Function(String) builder;
+
+  /// Remembers a bank picked here as the active one, so the screen the nasabah
+  /// opens next shows the same bank. Without it the pick is shown but not
+  /// kept, which is what every screen but the beranda used to do.
+  final ValueChanged<String>? onSelect;
   @override
   State<NasabahMembershipContent> createState() =>
       _NasabahMembershipContentState();
@@ -26,6 +35,19 @@ class _NasabahMembershipContentState extends State<NasabahMembershipContent> {
   void _load([String? id]) => setState(() {
         _request = di<NasabahRepository>().home(membershipId: id);
       });
+
+  /// A bank picked from the chooser. Handing it to [onSelect] lets the scope
+  /// above remember it and rebuild with it; without one, this widget shows it
+  /// on its own.
+  void _pick(String id) {
+    final onSelect = widget.onSelect;
+    if (onSelect == null) {
+      _load(id);
+      return;
+    }
+    onSelect(id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final id = widget.membershipId;
@@ -47,7 +69,7 @@ class _NasabahMembershipContentState extends State<NasabahMembershipContent> {
                 Text(api?.message ?? 'Data gagal dimuat. Silakan coba lagi.'),
                 for (final choice in api?.choices ?? <MembershipChoice>[])
                   TextButton(
-                      onPressed: () => _load(choice.id),
+                      onPressed: () => _pick(choice.id),
                       child: Text(choice.bankName)),
                 TextButton(
                     onPressed: () => _load(), child: const Text('Coba Lagi')),
