@@ -87,6 +87,22 @@ class JadwalLoaded extends JadwalState {
       ];
 }
 
+/// The schedules are not the caller's to read: for a nasabah, the membership
+/// or its bank is no longer openable, or they have none they may open (the
+/// backend answers 403 either way).
+///
+/// Separate from [JadwalError] because there is nothing to retry. The message
+/// is the backend's own reason, which is the only thing that tells the two
+/// refusals apart.
+class JadwalLocked extends JadwalState {
+  final String message;
+
+  const JadwalLocked(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class JadwalError extends JadwalState {
   final String message;
 

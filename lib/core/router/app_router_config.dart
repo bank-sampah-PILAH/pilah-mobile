@@ -24,6 +24,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_pag
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
@@ -386,11 +387,27 @@ class AppRouterConfig {
                       return const Center(child: CircularProgressIndicator());
                     }
                     final auth = authState.authEntity;
+                    final initialDate = DateTime.tryParse(
+                        state.uri.queryParameters['date'] ?? '');
+                    if (auth.role != 'pengelola') {
+                      // A nasabah reads one bank at a time (PIL-235), and the
+                      // backend refuses the list outright when it cannot tell
+                      // which. The scope answers that before the page loads.
+                      return ActiveMembershipScope(
+                        membershipId:
+                            state.uri.queryParameters['keanggotaan_id'],
+                        builder: (context, membership) => JadwalPage(
+                          key: ValueKey(auth.id ?? auth.email),
+                          customerMode: true,
+                          initialDate: initialDate,
+                          membershipId: membership.id,
+                        ),
+                      );
+                    }
                     return JadwalPage(
                       key: ValueKey(auth.id ?? auth.email),
-                      customerMode: auth.role != 'pengelola',
-                      initialDate: DateTime.tryParse(
-                          state.uri.queryParameters['date'] ?? ''),
+                      customerMode: false,
+                      initialDate: initialDate,
                     );
                   },
                 ),
