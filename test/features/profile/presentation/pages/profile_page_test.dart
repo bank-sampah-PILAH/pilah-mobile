@@ -974,10 +974,13 @@ void main() {
     await tester.tap(find.text('Manajemen Tim'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Link undangan dibuat oleh Pengurus Utama.'), findsOneWidget);
+    expect(
+        find.text('Link undangan dibuat oleh Pengurus Utama.'), findsOneWidget);
     expect(find.text('Buat Link Undangan'), findsNothing);
     expect(find.text('Salin Link Undangan'), findsNothing);
-    expect(api.requests.where((request) => request.path == '/api/v1/team/invite'), isEmpty);
+    expect(
+        api.requests.where((request) => request.path == '/api/v1/team/invite'),
+        isEmpty);
   });
 
   testWidgets('a member without a name shows their email', (tester) async {

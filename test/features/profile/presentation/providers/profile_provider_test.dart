@@ -46,7 +46,8 @@ void main() {
     expect(state.team.last.isPrimary, isFalse);
   });
 
-  test('reload gates invite GET using the updated primary team member', () async {
+  test('reload gates invite GET using the updated primary team member',
+      () async {
     stubProfile(api, team: {
       'members': [
         {
