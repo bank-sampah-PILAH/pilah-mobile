@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:pilah_mobile/design/constants/form_style.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
@@ -15,6 +14,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/osm_tiles.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -58,7 +58,7 @@ class MapPickerPage extends StatefulWidget {
   /// hand-rolling a TileProvider.
   final Widget Function() tileLayerBuilder;
 
-  /// Test seam for the Nominatim place search: null = the real HTTP call,
+  /// Test seam for the place search: null = the backend call,
   /// a test injects its own shaped results. Same contract as tileLayerBuilder.
   final Future<List<({String nama, LatLng titik})>> Function(String kueri)?
       placeSearch;
@@ -114,7 +114,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
     super.dispose();
   }
 
-  /// Nominatim place search (OpenStreetMap) — types "Universitas Indonesia",
+  /// Backend place search — types "Universitas Indonesia",
   /// moves the camera to the best hit. Debounced per keystroke.
   Future<void> _cariTempat(String kata) async {
     _jedaCari?.cancel();
@@ -124,15 +124,15 @@ class _MapPickerPageState extends State<MapPickerPage> {
       return;
     }
     _jedaCari = Timer(const Duration(milliseconds: 500), () {
-      _panggilNominatim(kueri);
+      _panggilCariTempat(kueri);
     });
   }
 
-  Future<void> _panggilNominatim(String kueri) async {
+  Future<void> _panggilCariTempat(String kueri) async {
     final percobaan = ++_percobaanCari;
     setState(() => _mencari = true);
     try {
-      final hasil = await (widget.placeSearch ?? _cariNominatimAsli)(kueri);
+      final hasil = await (widget.placeSearch ?? _cariTempatServer)(kueri);
       if (!mounted || percobaan != _percobaanCari) return;
       setState(() => _hasilCari = hasil);
     } on Exception {
@@ -144,26 +144,19 @@ class _MapPickerPageState extends State<MapPickerPage> {
   }
 
   // Raw network glue; its parsing is extracted (and tested) as
-  // parseNominatimRows, and a live Nominatim call inside `flutter test` is
+  // parseHasilCariTempat, and a real HTTP call inside `flutter test` is
   // exactly what the seam avoids.
   // coverage:ignore-start
-  /// The real HTTP place search against Nominatim (OpenStreetMap).
-  Future<List<({String nama, LatLng titik})>> _cariNominatimAsli(
+  /// Place search through our backend: it caches results across users and
+  /// serializes outbound geocoder calls, so the app never hits the public
+  /// Nominatim endpoint itself (which browsers also block cross-origin).
+  Future<List<({String nama, LatLng titik})>> _cariTempatServer(
       String kueri) async {
-    final response = await Dio().get<List<dynamic>>(
-      'https://nominatim.openstreetmap.org/search',
-      queryParameters: {
-        'q': kueri,
-        'format': 'json',
-        'limit': '5',
-        'accept-language': 'id',
-      },
-      options: Options(
-        headers: {'User-Agent': 'pilah-mobile/1.0 (pemilihan lokasi)'},
-        receiveTimeout: const Duration(seconds: 10),
-      ),
+    final response = await di<NetworkService>().get(
+      '/bank-sampah/cari-tempat',
+      queryParams: {'q': kueri},
     );
-    return parseNominatimRows(response.data);
+    return parseHasilCariTempat(response.data);
   }
   // coverage:ignore-end
 
@@ -665,19 +658,23 @@ class _MapPickerPageState extends State<MapPickerPage> {
       );
 }
 
-/// Shaping for a Nominatim `/search` JSON array; null data parses as an
-/// empty result list. Pure so the real HTTP body's parsing can be tested
-/// without a network stack.
-List<({String nama, LatLng titik})> parseNominatimRows(List<dynamic>? rows) => [
-      for (final row in rows ?? const [])
-        (
-          nama: (row as Map<String, dynamic>)['display_name'] as String? ?? '',
-          titik: LatLng(
-            double.parse(row['lat'] as String),
-            double.parse(row['lon'] as String),
-          ),
+/// Shaping for the backend `/bank-sampah/cari-tempat` body; missing or
+/// malformed data parses as an empty result list. Pure so the real HTTP
+/// body's parsing can be tested without a network stack.
+List<({String nama, LatLng titik})> parseHasilCariTempat(dynamic data) {
+  final rows = data is Map<String, dynamic> ? data['hasil'] : null;
+  if (rows is! List) return const [];
+  return [
+    for (final row in rows)
+      (
+        nama: ((row as Map<String, dynamic>)['nama'] as String?) ?? '',
+        titik: LatLng(
+          (row['latitude'] as num).toDouble(),
+          (row['longitude'] as num).toDouble(),
         ),
-    ];
+      ),
+  ];
+}
 
 /// Titik pusat Marketplace-style: bulatan hijau pekat dengan cincin putih.
 class _TitikPusat extends StatelessWidget {
