@@ -1,26 +1,35 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
-import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart'
+    show
+        webRoleBounceFlag,
+        webRoleBounceMessage,
+        WebRoleBounceNotice,
+        locationForAuthStep;
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/services/di.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_background_wrapper.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
-import 'package:pilah_mobile/features/authentication/presentation/widgets/login_footer.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_header.dart';
-import 'package:pilah_mobile/features/authentication/presentation/widgets/welcome_card.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends ConsumerStatefulWidget {
   @visibleForTesting
   final bool? debugShowDemoLogin;
 
@@ -29,14 +38,72 @@ class LoginPage extends StatelessWidget {
   static const route = '/login';
 
   @override
+  ConsumerState<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends ConsumerState<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // A web session whose role has no web shell was bounced here by the
+    // router's webRoleRedirect. The redirect lands within one frame, so a
+    // toast fired along the way died with the page that showed it (CPBI-21
+    // UAT finding). Raise it here instead, on the page the user actually
+    // lands on, and long enough to read.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // A URL flag alone cannot be trusted (the logout that carries the user
+      // here races the redirect that would have appended it), so the shell
+      // arms an in-memory one-shot. Direct deep links with the query still
+      // count; tests may build this page outside a GoRoute, where
+      // GoRouterState.of throws — reading the flag then is skipped.
+      bool queryHasFlag;
+      try {
+        queryHasFlag = GoRouterState.of(context)
+                .uri
+                .queryParameters[webRoleBounceFlag]
+                ?.isNotEmpty ??
+            false;
+      } on GoError catch (_) {
+        queryHasFlag = false;
+      }
+      // Consume even when the query already says so: the shell arms the same
+      // one-shot for this redirect, and a flag left armed would replay a
+      // stale warning on a later ordinary login.
+      final armed = WebRoleBounceNotice.consume();
+      if (queryHasFlag || armed) {
+        _showWebRoleBounceNotice(context);
+      }
+    });
+  }
+
+  void _showWebRoleBounceNotice(BuildContext context) {
+    AppNotification.showError(
+      context,
+      title: 'Peran Tidak Didukung',
+      message: webRoleBounceMessage,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    ref.listen(authenticationProvider, (previous, state) {
+      _handleAuthenticationState(context, state);
+    });
     return Scaffold(
       backgroundColor: Colors.white,
-      body: BlocConsumer<AuthenticationBloc, AuthenticationStates>(
-        listener: _handleAuthenticationState,
-        builder: (context, state) => _buildLoginBody(state),
-      ),
+      body: _buildLoginBody(ref.watch(authenticationProvider)),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   void _handleAuthenticationState(
@@ -63,9 +130,9 @@ class LoginPage extends StatelessWidget {
   Widget _buildLoginBody(AuthenticationStates state) {
     final isLoading = state is AuthenticationLoading;
     final environment =
-        debugShowDemoLogin == null ? di<AppEnvironment>() : null;
-    final demoLoginEnabled =
-        !kReleaseMode && (debugShowDemoLogin ?? environment!.supportsDemoLogin);
+        widget.debugShowDemoLogin == null ? di<AppEnvironment>() : null;
+    final demoLoginEnabled = !kReleaseMode &&
+        (widget.debugShowDemoLogin ?? environment!.supportsDemoLogin);
     final demoProfiles = demoLoginEnabled && environment != null
         ? DemoLoginProfiles.forEnvironment(environment)
         : DemoLoginProfiles.all;
@@ -79,12 +146,16 @@ class LoginPage extends StatelessWidget {
                 isLoading: isLoading,
                 showDemoLogin: demoLoginEnabled,
                 demoProfiles: demoProfiles,
+                emailController: _emailController,
+                passwordController: _passwordController,
               );
             }
             return _buildMobileLoginLayout(
               isLoading: isLoading,
               showDemoLogin: demoLoginEnabled,
               demoProfiles: demoProfiles,
+              emailController: _emailController,
+              passwordController: _passwordController,
             );
           },
         ),
@@ -96,6 +167,8 @@ class LoginPage extends StatelessWidget {
     required bool isLoading,
     required bool showDemoLogin,
     required List<DemoLoginProfile> demoProfiles,
+    required TextEditingController emailController,
+    required TextEditingController passwordController,
   }) {
     return SingleChildScrollView(
       child: Padding(
@@ -105,10 +178,14 @@ class LoginPage extends StatelessWidget {
           children: [
             const SizedBox(height: 40),
             const LoginHeader(),
-            const SizedBox(height: 48),
-            const WelcomeCard(),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             LoginButton(isLoading: isLoading),
+            const SizedBox(height: 16),
+            _EmailPasswordLoginForm(
+              isLoading: isLoading,
+              emailController: emailController,
+              passwordController: passwordController,
+            ),
             if (showDemoLogin) ...[
               const SizedBox(height: 12),
               DemoLoginButton(
@@ -116,8 +193,6 @@ class LoginPage extends StatelessWidget {
                 profiles: demoProfiles,
               ),
             ],
-            const SizedBox(height: 48),
-            const LoginFooter(),
           ],
         ),
       ),
@@ -129,11 +204,15 @@ class _DesktopLoginLayout extends StatelessWidget {
   final bool isLoading;
   final bool showDemoLogin;
   final List<DemoLoginProfile> demoProfiles;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
 
   const _DesktopLoginLayout({
     required this.isLoading,
     required this.showDemoLogin,
     required this.demoProfiles,
+    required this.emailController,
+    required this.passwordController,
   });
 
   @override
@@ -151,15 +230,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                 child: Row(
                   children: [
                     const Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          LoginHeader(),
-                          SizedBox(height: 48),
-                          WelcomeCard(),
-                        ],
-                      ),
-                    ),
+                        child: Center(child: LoginHeader(large: true))),
                     const SizedBox(width: 64),
                     SizedBox(
                       width: 448,
@@ -167,7 +238,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                         padding: const EdgeInsets.all(40),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
                           border: Border.all(color: AppColors.greenLight),
                           boxShadow: [
                             BoxShadow(
@@ -184,19 +255,25 @@ class _DesktopLoginLayout extends StatelessWidget {
                             Text(
                               'Masuk ke akun Anda',
                               style: AppTextStyle.headline1.copyWith(
-                                fontWeight: FontWeight.w700,
+                                fontWeight: AppFontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Gunakan akun Google yang terdaftar untuk melanjutkan.',
+                              'Pilih Google atau gunakan email dan kata sandi yang terdaftar untuk melanjutkan.',
                               style: AppTextStyle.small.copyWith(
                                 color: AppColors.grey100,
-                                fontSize: 14,
+                                fontSize: AppFontSize.md,
                               ),
                             ),
                             const SizedBox(height: 32),
                             Center(child: LoginButton(isLoading: isLoading)),
+                            const SizedBox(height: 16),
+                            _EmailPasswordLoginForm(
+                              isLoading: isLoading,
+                              emailController: emailController,
+                              passwordController: passwordController,
+                            ),
                             if (showDemoLogin) ...[
                               const SizedBox(height: 12),
                               DemoLoginButton(
@@ -204,8 +281,6 @@ class _DesktopLoginLayout extends StatelessWidget {
                                 profiles: demoProfiles,
                               ),
                             ],
-                            const SizedBox(height: 32),
-                            const LoginFooter(),
                           ],
                         ),
                       ),
@@ -216,6 +291,99 @@ class _DesktopLoginLayout extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmailPasswordLoginForm extends StatefulWidget {
+  final bool isLoading;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+
+  const _EmailPasswordLoginForm({
+    required this.isLoading,
+    required this.emailController,
+    required this.passwordController,
+  });
+
+  @override
+  State<_EmailPasswordLoginForm> createState() =>
+      _EmailPasswordLoginFormState();
+}
+
+class _EmailPasswordLoginFormState extends State<_EmailPasswordLoginForm> {
+  String get _email => widget.emailController.text;
+  String get _password => widget.passwordController.text;
+
+  bool get _canSubmit =>
+      !widget.isLoading && _email.trim().isNotEmpty && _password.isNotEmpty;
+
+  void _submit() {
+    if (!_canSubmit) return;
+    FocusScope.of(context).unfocus();
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .postLogin(_email.trim(), _password);
+  }
+
+  void _updateInput(String _) => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    return AutofillGroup(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Expanded(child: Divider(color: AppColors.border)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'ATAU',
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: AppColors.grey100,
+                    fontWeight: AppFontWeight.semibold,
+                  ),
+                ),
+              ),
+              const Expanded(child: Divider(color: AppColors.border)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const AppFieldLabel('EMAIL'),
+          const SizedBox(height: 8),
+          AppTextField(
+            key: const ValueKey('login-email-field'),
+            controller: widget.emailController,
+            hint: 'Masukkan email Anda',
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.username],
+            onChanged: _updateInput,
+          ),
+          const SizedBox(height: 16),
+          const AppFieldLabel('KATA SANDI'),
+          const SizedBox(height: 8),
+          AppTextField(
+            key: const ValueKey('login-password-field'),
+            controller: widget.passwordController,
+            hint: 'Masukkan kata sandi',
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.password],
+            onChanged: _updateInput,
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 20),
+          AppButton(
+            key: const ValueKey('login-email-submit'),
+            label: 'Masuk dengan Email',
+            onPressed: _canSubmit ? _submit : null,
+            isLoading: widget.isLoading,
+          ),
+        ],
       ),
     );
   }

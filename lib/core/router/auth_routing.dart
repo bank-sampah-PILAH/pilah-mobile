@@ -16,9 +16,41 @@ const completeProfileLocation = '/complete-profile';
 const inviteProcessingLocation = '/invite-processing';
 
 const superadminDashboardLocation = '/superadmin-dashboard';
-const pengelolaIndukDashboardLocation = '/pengelola-induk-dashboard';
 
-const _webSupportedRoles = {'superadmin', 'pengelola', 'pengelola_induk'};
+const _webSupportedRoles = {'superadmin', 'pengelola', 'nasabah'};
+
+/// Query flag the web router appends when a signed-in session's role has no
+/// web shell: the login page reads it to raise a visible toast explaining the
+/// bounce. Without the toast the redirect happens so fast the user only sees
+/// a flash and believes the login silently failed (CPBI-21 UAT finding).
+const webRoleBounceFlag = 'peran-tak-tertinggal';
+
+/// Why the web signs out a session whose role it has no shell for. One text
+/// for both surfaces that raise it (app shell and login page).
+const webRoleBounceMessage =
+    'Akun ini tidak memiliki peran Nasabah atau Pengurus, sehingga tidak dapat '
+    'mengakses aplikasi web. Silakan masuk dengan akun Nasabah atau Pengurus.';
+
+/// One-shot flag: the app shell arms it when it logs a web session out for
+/// having a role the web does not support, and the login page consumes it to
+/// raise its explanatory toast. In-memory only — the flag answers "why am I
+/// back at login", which no URL can carry reliably because the logout races
+/// the redirect that would have carried it (CPBI-21).
+bool _webRoleBounceArmed = false;
+
+class WebRoleBounceNotice {
+  static void arm() => _webRoleBounceArmed = true;
+
+  /// Consume: read once and reset, so the notice shows for the bounce it
+  /// describes and not again on the next manual login.
+  static bool consume({bool isWeb = true}) {
+    if (!isWeb || !_webRoleBounceArmed) return false;
+    _webRoleBounceArmed = false;
+    return true;
+  }
+
+  static void reset() => _webRoleBounceArmed = false;
+}
 
 bool isSupportedWebRole(String? role) => _webSupportedRoles.contains(role);
 
@@ -31,7 +63,9 @@ String? webRoleRedirect({
   required String loginPath,
   required String? role,
 }) =>
-    isWeb && path != loginPath && !isSupportedWebRole(role) ? loginPath : null;
+    isWeb && path != loginPath && !isSupportedWebRole(role)
+        ? '$loginPath?$webRoleBounceFlag=1'
+        : null;
 
 /// Paths that make sense without a session, and so must not be bounced to the
 /// splash. `/splash` is where the restore itself happens.
@@ -42,6 +76,9 @@ const _publicPaths = {
   '/forgot_password',
   '/invite',
 };
+
+bool _isPublicPath(String path) =>
+    _publicPaths.contains(path) || path.startsWith('/invite/');
 
 /// Sends a cold start that landed straight on a protected path to the splash.
 ///
@@ -55,7 +92,7 @@ String? sessionRestoreRedirect({
   required String path,
   String query = '',
 }) {
-  if (sessionChecked || _publicPaths.contains(path)) return null;
+  if (sessionChecked || _isPublicPath(path)) return null;
   final location = query.isEmpty ? path : '$path?$query';
   return '/splash?from=${Uri.encodeComponent(location)}';
 }
@@ -65,14 +102,13 @@ String? sessionRestoreRedirect({
 /// Logging out already navigates to login, but the browser's Back button can
 /// return to `/dashboard` afterwards, where the shell has no role to render.
 String? signedOutRedirect({required bool signedOut, required String path}) =>
-    signedOut && !_publicPaths.contains(path) ? '/login' : null;
+    signedOut && !_isPublicPath(path) ? '/login' : null;
 
 /// The home each fully onboarded role lands on. A [target] outside this set is
 /// an onboarding step, which always outranks the page being restored.
 const _homeLocations = {
   AppLocations.dashboard,
   superadminDashboardLocation,
-  pengelolaIndukDashboardLocation,
 };
 
 /// Where the splash sends a restored session. A fully onboarded user goes back
@@ -82,7 +118,7 @@ String locationAfterRestore({required String target, String? from}) {
   final safe = from != null &&
       from.startsWith('/') &&
       !from.startsWith('//') &&
-      !_publicPaths.contains(Uri.tryParse(from)?.path);
+      !_isPublicPath(Uri.tryParse(from)?.path ?? '');
   return safe && _homeLocations.contains(target) ? from : target;
 }
 
@@ -124,10 +160,6 @@ String locationForAuthStep(
       return '/register-nasabah';
     case 'nasabah_dashboard':
       return AppLocations.dashboard;
-    case 'register_bank_sampah_induk':
-      return '/register-bank-sampah-induk';
-    case 'pengelola_induk_dashboard':
-      return pengelolaIndukDashboardLocation;
     case 'complete_profile':
       return completeProfileLocation;
     case 'register_bank_sampah':

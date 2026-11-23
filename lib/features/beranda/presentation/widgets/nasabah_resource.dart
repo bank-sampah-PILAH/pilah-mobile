@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_activity_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Owns one request. Re-key on session/selection changes to discard stale data.
 ///
@@ -16,22 +19,39 @@ class NasabahResource<T> extends StatefulWidget {
       required this.load,
       required this.builder,
       this.onSelect,
-      this.registerReload});
+      this.registerReload,
+      this.refreshOnResume = false});
   final Future<T> Function() load;
   final Widget Function(BuildContext, T) builder;
   final ValueChanged<String>? onSelect;
   final void Function(Future<void> Function() reload)? registerReload;
+  final bool refreshOnResume;
   @override
   State<NasabahResource<T>> createState() => NasabahResourceState<T>();
 }
 
-class NasabahResourceState<T> extends State<NasabahResource<T>> {
+class NasabahResourceState<T> extends State<NasabahResource<T>>
+    with WidgetsBindingObserver {
   late Future<T> _request;
   @override
   void initState() {
     super.initState();
+    if (widget.refreshOnResume) WidgetsBinding.instance.addObserver(this);
     _request = widget.load();
     widget.registerReload?.call(reload);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (widget.refreshOnResume && state == AppLifecycleState.resumed) {
+      unawaited(reload());
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.refreshOnResume) WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   /// Reloads and returns a future that settles once the new request does, so
@@ -84,8 +104,7 @@ class NasabahResourceState<T> extends State<NasabahResource<T>> {
 
 String nasabahRupiah(String amount) {
   final parts = amount.split('.');
-  final whole = parts.first
-      .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+  final whole = CurrencyFormatter.formatNumber(int.tryParse(parts.first) ?? 0);
   return 'Rp $whole${parts.length > 1 && parts[1] != '00' ? ',${parts[1]}' : ''}';
 }
 

@@ -3,6 +3,8 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/approval_log_step.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// A chronological, top-to-bottom view of a membership application.
 class MembershipApprovalTimeline extends StatelessWidget {
@@ -57,7 +59,7 @@ class _CurrentStatusStep extends StatelessWidget {
     final (icon, color, title, subtitle) = switch (status) {
       MembershipStatus.pending => (
           Icons.hourglass_top_rounded,
-          const Color(0xFF9A6400),
+          AppColors.warning,
           'Menunggu verifikasi pengurus',
           'Pengurus sedang meninjau pengajuan Anda.',
         ),
@@ -69,7 +71,7 @@ class _CurrentStatusStep extends StatelessWidget {
         ),
       MembershipStatus.rejected => (
           Icons.close_rounded,
-          const Color(0xFFC62828),
+          AppColors.danger,
           'Pengajuan ditolak',
           'Lihat alasan penolakan dan langkah berikutnya di atas.',
         ),
@@ -142,7 +144,7 @@ class _TimelineStep extends StatelessWidget {
                       title,
                       style: NasabahStyle.text(
                         14,
-                        weight: FontWeight.w600,
+                        weight: AppFontWeight.semibold,
                         color: isCurrent ? color : NasabahStyle.ink,
                       ),
                     ),

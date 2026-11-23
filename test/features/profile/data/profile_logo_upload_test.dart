@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -23,9 +22,6 @@ class _StubEnvironment implements AppEnvironment {
 
   @override
   String get demoPengurusEmail => '';
-
-  @override
-  String get demoPengelolaIndukEmail => '';
 
   @override
   String get demoCustomerEmail => '';
@@ -106,21 +102,25 @@ void main() {
     }));
 
     test('attaches the picked file under foto_logo', () async {
-      final file =
-          File('${Directory.systemTemp.createTempSync().path}/logo.png')
-            ..writeAsBytesSync(List<int>.filled(64, 7));
-      addTearDown(() => file.parent.deleteSync(recursive: true));
+      final bytes = Uint8List.fromList(List<int>.filled(64, 7));
       stubPut(_bankJson(fotoLogo: '/media/bank_sampah/logo/logo.png'));
 
       await dataSource.updateBankSampah(
         nama: 'Bank Sampah BTH',
         alamat: 'Kel. Kukusan',
         noHpPic: '081234567890',
-        fotoLogoPath: file.path,
+        fotoLogoBytes: bytes,
+        fotoLogoFilename: 'logo.png',
       );
 
       expect(sent!.files.map((f) => f.key), ['foto_logo']);
       expect(sent!.files.single.value.filename, 'logo.png');
+      expect(
+          await sent!.files.single.value
+              .finalize()
+              .expand((chunk) => chunk)
+              .toList(),
+          bytes);
     });
 
     test('uploads browser-selected logo bytes with their filename', () async {

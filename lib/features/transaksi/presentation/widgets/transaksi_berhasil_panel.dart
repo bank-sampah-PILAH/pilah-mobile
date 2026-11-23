@@ -1,0 +1,162 @@
+import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+class TransaksiBerhasilPanel extends StatefulWidget {
+  final String customerName;
+  final int totalSetoran;
+  final int newBalance;
+  final int itemCount;
+
+  /// Opens the WhatsApp message for the nasabah, then closes the form.
+  final Future<void> Function() onKirimWa;
+
+  /// Closes the form without sending anything.
+  final VoidCallback onSelesai;
+
+  const TransaksiBerhasilPanel({
+    super.key,
+    required this.customerName,
+    required this.totalSetoran,
+    required this.newBalance,
+    required this.itemCount,
+    required this.onKirimWa,
+    required this.onSelesai,
+  });
+
+  @override
+  State<TransaksiBerhasilPanel> createState() => _TransaksiBerhasilPanelState();
+}
+
+class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
+  bool _isSending = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Tanpa chrome wadahnya sendiri — warna, sudut dan padding datang dari
+    // showAdaptiveConfirmation, supaya isi yang sama tampil sebagai bottom
+    // sheet pada telepon dan dialog pada peramban.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Icon
+        Container(
+          width: 64,
+          height: 64,
+          decoration: const BoxDecoration(
+            color: AppColors.greenLight,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_circle,
+              color: AppColors.greenDark, size: 40),
+        ),
+        const SizedBox(height: 24),
+
+        // Title & Subtitle
+        Text(
+          'Transaksi Berhasil!',
+          style: AppTextStyle.headline1.copyWith(
+            color: AppColors.black,
+            fontWeight: AppFontWeight.bold,
+            fontSize: AppFontSize.xxl,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${widget.itemCount} jenis sampah berhasil dicatat.',
+          style: AppTextStyle.small.copyWith(
+            color: AppColors.grey100,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Summary Box
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: [
+              _buildSummaryRow('Nasabah', widget.customerName, isBold: false),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: AppColors.border),
+              ),
+              _buildSummaryRow('Nilai Setoran',
+                  '+${CurrencyFormatter.formatRupiah(widget.totalSetoran)}',
+                  isPrimary: true),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: AppColors.border),
+              ),
+              _buildSummaryRow('Saldo Terbaru',
+                  CurrencyFormatter.formatRupiah(widget.newBalance),
+                  isPrimary: true),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // Action Buttons. Sending the message is the main choice; finishing is
+        // the quieter one. The first choice locks both: while the message is
+        // prepared, and while the sheet plays its exit animation after Selesai
+        // (it stays hit-testable then, so a second tap would pop again).
+        AppButton(
+          label: 'Kirim WhatsApp',
+          isLoading: _isSending,
+          onPressed: () async {
+            setState(() => _isSending = true);
+            await widget.onKirimWa();
+            if (!mounted) return;
+            setState(() => _isSending = false);
+          },
+        ),
+        const SizedBox(height: 12),
+        AppButton(
+          label: 'Selesai',
+          variant: AppButtonVariant.outlined,
+          onPressed: _isSending
+              ? null
+              : () {
+                  // Never reset: the panel is leaving, nothing to re-enable.
+                  setState(() => _isSending = true);
+                  widget.onSelesai();
+                },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value,
+      {bool isPrimary = false, bool isBold = true}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: AppTextStyle.small.copyWith(
+            color: AppColors.grey100,
+          ),
+        ),
+        Text(
+          value,
+          style: AppTextStyle.title1.copyWith(
+            color: isPrimary ? AppColors.greenDark : AppColors.black,
+            fontWeight: isBold || isPrimary
+                ? AppFontWeight.bold
+                : AppFontWeight.semibold,
+            fontSize: isPrimary ? 16 : 14,
+          ),
+        ),
+      ],
+    );
+  }
+}

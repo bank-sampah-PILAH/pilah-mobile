@@ -1,32 +1,24 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 
+import '../../../../support/onboarding_support.dart';
+import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
-
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
 
 class _FakeRegisterNasabahRequest extends Fake
     implements RegisterNasabahRequest {}
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 class _FakeCompleteProfileRequest extends Fake
     implements CompleteProfileRequest {}
@@ -38,36 +30,14 @@ const _bank = BankSampahDirectoryEntity(
   kota: 'Depok',
   fotoLogo: '',
 );
-const _otherJoinedBank = BankSampahDirectoryEntity(
-  id: 'bank-2',
-  nama: 'Bank Sampah Lain',
-  alamat: 'Jl. Anggrek',
-  kota: 'Depok',
-  fotoLogo: '',
-);
-const _availableBank = BankSampahDirectoryEntity(
-  id: 'bank-3',
-  nama: 'Bank Sampah Baru',
-  alamat: 'Jl. Mawar',
-  kota: 'Depok',
-  fotoLogo: '',
-);
 
 const _joinedMembership = NasabahMembershipEntity(
   id: 'membership-1',
-  bankSampahId: 'bank-1',
+  bankSampahId: 'bank-joined',
   bankSampahNama: 'Bank Sampah Lama',
   bankSampahKota: 'Bogor',
   status: 'approved',
   isActive: true,
-);
-const _secondJoinedMembership = NasabahMembershipEntity(
-  id: 'membership-2',
-  bankSampahId: 'bank-2',
-  bankSampahNama: 'Bank Sampah Lain',
-  bankSampahKota: 'Depok',
-  status: 'pending',
-  isActive: false,
 );
 
 const _draft = CompleteProfileRequest(
@@ -81,40 +51,31 @@ const _draft = CompleteProfileRequest(
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeRegisterNasabahRequest());
-    registerFallbackValue(_FakeAuthEvent());
     registerFallbackValue(_FakeCompleteProfileRequest());
   });
 
-  late _MockAuthBloc auth;
+  late TestAuthenticationNotifier auth;
   late _MockOnboardingDataSource dataSource;
-  late OnboardingCubit onboarding;
+  late ProviderContainer container;
+  late OnboardingNotifier onboarding;
 
   setUp(() {
-    auth = _MockAuthBloc();
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
-      initialState: AuthenticationInitial(),
-    );
+    auth = authNotifierIn(AuthenticationInitial());
     dataSource = _MockOnboardingDataSource();
-    onboarding = OnboardingCubit(dataSource);
+    container = buildOnboardingContainer(dataSource);
+    onboarding = container.read(onboardingProvider.notifier);
     when(() => dataSource.listBankSampahDirectory())
-        .thenAnswer((_) async => [_bank, _otherJoinedBank, _availableBank]);
+        .thenAnswer((_) async => [_bank]);
     when(() => dataSource.listMyMemberships()).thenAnswer((_) async => []);
   });
 
-  tearDown(() => onboarding.close());
+  tearDown(() => container.dispose());
 
   Future<GoRouter> pump(WidgetTester tester,
-      {bool pushed = false,
-      bool pushedFromMembershipList = false,
-      List<String> extraRoutes = const []}) async {
+      {bool pushed = false, List<String> extraRoutes = const []}) async {
     final router = GoRouter(
-      initialLocation: pushed
-          ? '/complete-profile'
-          : pushedFromMembershipList
-              ? '/memberships'
-              : RegisterNasabahScreen.route,
+      initialLocation:
+          pushed ? '/complete-profile' : RegisterNasabahScreen.route,
       routes: [
         GoRoute(
           path: '/complete-profile',
@@ -125,10 +86,6 @@ void main() {
               builder: (_, __) => const RegisterNasabahScreen(),
             ),
           ],
-        ),
-        GoRoute(
-          path: '/memberships',
-          builder: (_, __) => const Scaffold(body: Text('MEMBERSHIPS')),
         ),
         GoRoute(
           path: RegisterNasabahScreen.route,
@@ -148,21 +105,18 @@ void main() {
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        child: MaterialApp.router(routerConfig: router),
+      UncontrolledProviderScope(
+        container: container,
+        child: withAuthenticationProvider(
+          auth,
+          MaterialApp.router(routerConfig: router),
+        ),
       ),
     );
     await tester.pump();
 
     if (pushed) {
       router.push('/complete-profile/register-nasabah');
-      await tester.pumpAndSettle();
-    } else if (pushedFromMembershipList) {
-      router.push(RegisterNasabahScreen.route);
       await tester.pumpAndSettle();
     }
 
@@ -195,9 +149,7 @@ void main() {
 
     verify(() => dataSource.registerNasabah(
         const RegisterNasabahRequest(bankSampahId: 'bank-1'))).called(1);
-    verify(() => auth.add(
-          any<AuthenticationEvent>(that: isA<RefreshUserRequested>()),
-        )).called(1);
+    expect(auth.calls, contains('refreshUser'));
     expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
   });
 
@@ -270,8 +222,8 @@ void main() {
     expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
   });
 
-  group('existing memberships', () {
-    testWidgets('shows each joined bank sampah and its status', (tester) async {
+  group('existing membership lock', () {
+    testWidgets('shows the joined bank sampah and its status', (tester) async {
       when(() => dataSource.listMyMemberships())
           .thenAnswer((_) async => [_joinedMembership]);
 
@@ -279,42 +231,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Bank Sampah Lama'), findsOneWidget);
-      expect(find.text('Aktif'), findsOneWidget);
       expect(find.textContaining('hanya dapat terdaftar di 1 bank sampah'),
-          findsNothing);
+          findsOneWidget);
     });
 
-    testWidgets('excludes all joined banks and submits another application',
-        (tester) async {
-      when(() => dataSource.listMyMemberships()).thenAnswer(
-          (_) async => [_joinedMembership, _secondJoinedMembership]);
-      when(() => dataSource.registerNasabah(
-          const RegisterNasabahRequest(bankSampahId: 'bank-3'))).thenAnswer(
-        (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'),
-      );
-
-      await pump(tester);
-      await tester.pumpAndSettle();
-      expect(find.text('Aktif'), findsOneWidget);
-
-      await tester.tap(find.text('Tap untuk pilih bank sampah'));
-      await tester.pumpAndSettle();
-      expect(find.text('Bank Sampah Baru'), findsOneWidget);
-      expect(find.text('Bank Sampah BTH'), findsNothing);
-      expect(find.text('Bank Sampah Lain'), findsOneWidget);
-
-      await tester.tap(find.text('Bank Sampah Baru'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Ajukan Pendaftaran'));
-      await tester.tap(find.text('Ajukan Pendaftaran'));
-      await tester.pumpAndSettle();
-
-      verify(() => dataSource.registerNasabah(
-          const RegisterNasabahRequest(bankSampahId: 'bank-3'))).called(1);
-      expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
-    });
-
-    testWidgets('allows the picker to open for another bank', (tester) async {
+    testWidgets('locks the picker so it no longer opens', (tester) async {
       when(() => dataSource.listMyMemberships())
           .thenAnswer((_) async => [_joinedMembership]);
 
@@ -324,12 +245,11 @@ void main() {
       await tester.tap(find.text('Tap untuk pilih bank sampah'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cari nama bank sampah...'), findsOneWidget);
-      expect(find.text('Bank Sampah BTH'), findsNothing);
+      expect(find.text('Cari nama bank sampah...'), findsNothing);
     });
 
     testWidgets(
-        'completing a saved profile with a pre-linked membership skips a new '
+        'submitting while locked lands the profile without a new '
         'registration', (tester) async {
       // Realistic shape of this state: the pengurus-entered record already
       // linked at login, before the profile draft banked on step one was
@@ -429,19 +349,6 @@ void main() {
       expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
     });
 
-    testWidgets(
-        'system back from an existing-member application returns to its list',
-        (tester) async {
-      await pump(tester, pushedFromMembershipList: true);
-
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-
-      expect(find.text('MEMBERSHIPS'), findsOneWidget);
-      expect(find.text('Keluar dari Pendaftaran?'), findsNothing);
-      verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
-    });
-
     testWidgets('system back mid-wizard returns to the profile screen',
         (tester) async {
       onboarding.saveProfileDraft(_draft);
@@ -474,22 +381,31 @@ void main() {
 
       await tester.tap(find.text('Batal'));
       await tester.pumpAndSettle();
-      verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+      expect(auth.calls, isNot(contains('logout')));
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ya, Keluar'));
       await tester.pumpAndSettle();
-      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+      expect(auth.calls, contains('logout'));
+    });
+
+    testWidgets('the logout button in the header asks before logging out',
+        (tester) async {
+      await pump(tester);
+
+      await tester.tap(find.byTooltip('Keluar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Keluar dari Pendaftaran?'), findsOneWidget);
+
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('logout'));
     });
 
     testWidgets('signing out routes to the login page', (tester) async {
-      whenListen(
-        auth,
-        Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
-        initialState: AuthenticationInitial(),
-      );
       await pump(tester, extraRoutes: ['/login']);
+      auth.setStateForTest(Unauthenticated());
       await tester.pumpAndSettle();
 
       expect(find.text('route:/login'), findsOneWidget);

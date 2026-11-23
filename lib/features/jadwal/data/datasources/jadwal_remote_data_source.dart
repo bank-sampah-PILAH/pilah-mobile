@@ -7,6 +7,7 @@ abstract class JadwalRemoteDataSource {
   Future<JadwalPageModel> getJadwal({
     required int page,
     DateTime? date,
+    DateTime? dateTo,
     String? membershipId,
   });
   Future<Set<DateTime>> getCalendarDates(
@@ -29,14 +30,21 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   Future<JadwalPageModel> getJadwal({
     required int page,
     DateTime? date,
+    DateTime? dateTo,
     String? membershipId,
   }) async {
+    // Dengan [dateTo], [date] menjadi awal rentang (`date_from`); tanpa itu satu
+    // hari saja (`date`).
     final response = await networkService.get(
       '/api/v1/jadwal',
       queryParams: {
         'page_size': 20,
         'page': page,
-        if (date != null) 'date': _formatDate(date),
+        if (date != null && dateTo != null) ...{
+          'date_from': _formatDate(date),
+          'date_to': _formatDate(dateTo),
+        } else if (date != null)
+          'date': _formatDate(date),
         if (membershipId != null) 'keanggotaan_id': membershipId,
       },
     );

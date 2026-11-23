@@ -1,11 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/data/datasources/bank_sampah_approval_remote_data_source.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 
 class _MockNetworkService extends Mock implements NetworkService {}
+
+class _StubEnvironment implements AppEnvironment {
+  @override
+  String get baseUrl => 'http://api.test';
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   test('maps a successful GET nasabah/me response to memberships', () async {
@@ -60,6 +69,56 @@ void main() {
     expect(membership.riwayat[0].catatan, 'Dokumen tidak lengkap');
     expect(membership.riwayat[0].createdAt, DateTime.utc(2026, 9, 20, 10));
     expect(membership.riwayat[1].status, ApprovalLogStatus.approved);
+  });
+
+  test('resolves the stored bank logo that came with the membership', () async {
+    final network = _MockNetworkService();
+    when(() => network.get(any())).thenAnswer(
+      (_) async => Response<List<dynamic>>(
+        requestOptions: RequestOptions(path: '/api/v1/nasabah/me'),
+        data: [
+          {
+            'id': 'membership-1',
+            'bank_sampah': {
+              'id': 'bank-1',
+              'nama': 'Bank Sampah Sejahtera',
+              'kota': 'Bandung',
+              'alamat': 'Jl. Merdeka No. 10',
+              'foto_logo': 'https://media.test/bank-1/logo.png',
+            },
+            'status': 'approved',
+            'is_active': true,
+          },
+          {
+            'id': 'membership-2',
+            'bank_sampah': {
+              'id': 'bank-2',
+              'nama': 'Logo Relatif',
+              'foto_logo': '/media/bank-2/logo.png',
+            },
+            'status': 'pending',
+            'is_active': true,
+          },
+          {
+            'id': 'membership-3',
+            'bank_sampah': {'id': 'bank-3', 'nama': 'Tanpa Logo'},
+            'status': 'pending',
+            'is_active': true,
+          },
+        ],
+      ),
+    );
+
+    // A relative /media path resolves against the API origin.
+    when(() => network.environment).thenReturn(_StubEnvironment());
+    final memberships =
+        await BankSampahApprovalRemoteDataSourceImpl(network).getMemberships();
+
+    expect(
+        memberships[0].bankSampahLogoUrl, 'https://media.test/bank-1/logo.png');
+    expect(memberships[1].bankSampahLogoUrl,
+        'http://api.test/media/bank-2/logo.png');
+    expect(memberships[2].bankSampahLogoUrl, isNull);
   });
 
   test('posts an appeal to onboarding/nasabah with the bank sampah id',

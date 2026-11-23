@@ -12,14 +12,16 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
 
   static const String _path = '/api/v1/nasabah';
 
-  /// Batas `max_page_size` backend; dipakai picker yang menarik satu kali ambil.
+  /// Batas `max_page_size` backend for the legacy active snapshot.
   static const int _batasPicker = 100;
 
   @override
   Future<HalamanNasabah> getNasabah({
     int page = 1,
+    int? pageSize,
     String status = 'aktif',
     String? search,
+    String urutan = 'nomor',
   }) async {
     // Penyaringan dilakukan server supaya paginasi tetap benar: menyaring di
     // aplikasi hanya akan menyaring halaman yang kebetulan sudah dimuat.
@@ -29,6 +31,8 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
       queryParams: {
         'status': status,
         'page': page,
+        'urutan': urutan,
+        if (pageSize != null) 'page_size': pageSize,
         if (search != null && search.isNotEmpty) 'search': search,
       },
     );

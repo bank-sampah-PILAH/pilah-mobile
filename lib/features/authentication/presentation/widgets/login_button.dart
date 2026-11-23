@@ -2,13 +2,12 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/google_sign_in_error.dart';
 
 import 'google_sign_in_web_button_stub.dart'
@@ -53,14 +52,9 @@ class LoginButton extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    context.read<AuthenticationBloc>().add(
-          LoginWithGoogleRequested(
-            name: googleUser.displayName ?? 'Unknown',
-            email: googleUser.email,
-            photoUrl: googleUser.photoUrl ?? '',
-            idToken: idToken,
-          ),
-        );
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .loginWithGoogle(idToken);
   }
 
   void _showGoogleSignInError(BuildContext context, Object error) {
@@ -98,34 +92,15 @@ class LoginButton extends StatelessWidget {
       );
     }
 
-    return OutlinedButton(
+    return AppButton(
+      label: 'Masuk dengan Google',
+      variant: AppButtonVariant.neutral,
+      leading: Image.asset(
+        'assets/images/google_logo.png',
+        width: 24,
+        height: 24,
+      ),
       onPressed: () => _handleGoogleSignIn(context),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        side: BorderSide(color: Colors.grey.shade300),
-        backgroundColor: Colors.white,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/google_logo.png',
-            width: 24,
-            height: 24,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Masuk dengan Google',
-            style: AppTextStyle.headline3.copyWith(
-              color: AppColors.black,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

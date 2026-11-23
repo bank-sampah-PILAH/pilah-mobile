@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 // Request/result models for the real onboarding endpoints
 // (PUT /onboarding/profile, POST /onboarding/bank-sampah).
 
@@ -7,8 +9,11 @@ class CompleteProfileRequest {
   /// Backend enum value: `laki-laki` or `perempuan`.
   final String jenisKelamin;
 
-  /// ISO date, `yyyy-MM-dd`.
-  final String tanggalLahir;
+  /// ISO date, `yyyy-MM-dd`, or null when it was not given.
+  ///
+  /// Optional for a nasabah since PIL-478. A pengelola still gives one,
+  /// because their profile has to be complete before a bank registration.
+  final String? tanggalLahir;
 
   /// Local number digits (e.g. `81234567890`); the backend normalizes it.
   final String noHp;
@@ -20,7 +25,7 @@ class CompleteProfileRequest {
   const CompleteProfileRequest({
     required this.nama,
     required this.jenisKelamin,
-    required this.tanggalLahir,
+    this.tanggalLahir,
     required this.noHp,
     this.alamat = '',
   });
@@ -28,7 +33,8 @@ class CompleteProfileRequest {
   Map<String, dynamic> toJson() => {
         'nama': nama,
         'jenis_kelamin': jenisKelamin,
-        'tanggal_lahir': tanggalLahir,
+        'tanggal_lahir':
+            (tanggalLahir?.trim().isEmpty ?? true) ? null : tanggalLahir,
         'no_hp': noHp,
         if (alamat.trim().isNotEmpty) 'alamat': alamat,
       };
@@ -40,15 +46,17 @@ class RegisterBankSampahRequest {
   final String? kota;
   final String noHpPic;
 
-  /// Absolute path to the selected `foto_kegiatan` image (sent as multipart).
-  final String fotoKegiatanPath;
+  /// Picker output sent as multipart on web and native platforms.
+  final Uint8List fotoKegiatanBytes;
+  final String fotoKegiatanFilename;
 
   const RegisterBankSampahRequest({
     required this.nama,
     required this.alamat,
     this.kota,
     required this.noHpPic,
-    required this.fotoKegiatanPath,
+    required this.fotoKegiatanBytes,
+    required this.fotoKegiatanFilename,
   });
 }
 
@@ -79,9 +87,10 @@ class BankSampahDirectoryEntity {
       );
 }
 
-/// One row from `GET /nasabah/me`, representing one bank membership for a
-/// calon/active nasabah. The registration form displays it with its status
-/// and excludes its bank ID from new bank applications.
+/// One row from `GET /nasabah/me`: a calon/active nasabah's own membership.
+/// Used by the bank-sampah picker (PIL-204) to show what's already joined
+/// and lock further registrations under the current one-membership-per-
+/// nasabah scope.
 class NasabahMembershipEntity {
   final String id;
   final String bankSampahId;

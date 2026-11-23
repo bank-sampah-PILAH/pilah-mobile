@@ -3,6 +3,7 @@ import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
+import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
@@ -17,16 +18,16 @@ class JadwalRepositoryImpl implements JadwalRepository {
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
+    DateTime? dateTo,
     String? membershipId,
   }) async {
     try {
-      final response = membershipId == null
-          ? await remoteDataSource.getJadwal(page: page, date: date)
-          : await remoteDataSource.getJadwal(
-              page: page,
-              date: date,
-              membershipId: membershipId,
-            );
+      final response = await _requestPage(
+        page: page,
+        date: date,
+        dateTo: dateTo,
+        membershipId: membershipId,
+      );
       return Right(JadwalPageResult(
         items: response.items,
         totalCount: response.totalCount,
@@ -35,6 +36,34 @@ class JadwalRepositoryImpl implements JadwalRepository {
     } on Exception catch (error) {
       return Left(NetworkException.handleException(error));
     }
+  }
+
+  /// Argumen opsional yang kosong **tidak dikirim**, bukan dikirim bernilai
+  /// null, sehingga panggilan sisi pengurus tetap sama persis seperti sebelum
+  /// keanggotaan ikut dibawa dan stub pengujian yang ada tidak ikut berubah.
+  Future<JadwalPageModel> _requestPage({
+    required int page,
+    DateTime? date,
+    DateTime? dateTo,
+    String? membershipId,
+  }) {
+    if (dateTo == null) {
+      return membershipId == null
+          ? remoteDataSource.getJadwal(page: page, date: date)
+          : remoteDataSource.getJadwal(
+              page: page,
+              date: date,
+              membershipId: membershipId,
+            );
+    }
+    return membershipId == null
+        ? remoteDataSource.getJadwal(page: page, date: date, dateTo: dateTo)
+        : remoteDataSource.getJadwal(
+            page: page,
+            date: date,
+            dateTo: dateTo,
+            membershipId: membershipId,
+          );
   }
 
   @override

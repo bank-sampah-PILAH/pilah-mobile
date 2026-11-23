@@ -7,6 +7,12 @@ abstract class JadwalRepository {
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
+
+    /// Akhir rentang (inklusif) yang dimulai di [date]; kosong berarti satu hari.
+    DateTime? dateTo,
+
+    /// Keanggotaan yang jadwalnya diminta; wajib bagi nasabah dengan lebih
+    /// dari satu bank, dan tidak dikirim sama sekali bila kosong.
     String? membershipId,
   });
   Future<Either<NetworkException, Set<DateTime>>> getCalendarDates(

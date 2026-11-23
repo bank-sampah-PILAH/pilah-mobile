@@ -12,22 +12,21 @@ abstract class ProfileRemoteDataSource {
 
   /// Updates the editable bank sampah fields, optionally replacing the logo.
   ///
-  /// [fotoLogoPath] is the absolute path of a freshly picked image. Omitting it
-  /// leaves the stored logo alone — the endpoint patches partially, so a key
-  /// that is not sent is not touched. Sending an empty one would clear it.
+  /// Omitting [fotoLogoBytes] leaves the stored logo alone: the endpoint
+  /// patches partially, so a key that is not sent is not touched.
   Future<BankSampahProfile> updateBankSampah({
     required String nama,
     required String alamat,
     String? kota,
     required String noHpPic,
-    String? fotoLogoPath,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
   });
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
   Future<List<TeamMember>> getTeam();
-  Future<String> generateInviteUrl();
+  Future<TeamInvite?> getTeamInvite();
+  Future<TeamInvite> createTeamInvite();
 }
 
 @LazySingleton(as: ProfileRemoteDataSource)
@@ -55,7 +54,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     required String alamat,
     String? kota,
     required String noHpPic,
-    String? fotoLogoPath,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
   }) async {
@@ -68,11 +66,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         'foto_logo': MultipartFile.fromBytes(
           fotoLogoBytes,
           filename: fotoLogoFilename ?? 'logo.jpg',
-        )
-      else if (fotoLogoPath != null && fotoLogoPath.isNotEmpty)
-        'foto_logo': await MultipartFile.fromFile(
-          fotoLogoPath,
-          filename: fotoLogoPath.split(RegExp(r'[\\/]')).last,
         ),
     });
 
@@ -143,10 +136,27 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   }
 
   @override
-  Future<String> generateInviteUrl() async {
+  Future<TeamInvite?> getTeamInvite() async {
+    final response = await networkService.get(Endpoints.teamInvite);
+    final json = response.data as Map<String, dynamic>;
+    final invite = _mapTeamInvite(json);
+    return invite.token == null &&
+            invite.url == null &&
+            invite.expiresAt == null
+        ? null
+        : invite;
+  }
+
+  @override
+  Future<TeamInvite> createTeamInvite() async {
     final response =
         await networkService.post(Endpoints.teamInvite, data: const {});
-    final json = response.data as Map<String, dynamic>;
-    return json['invite_url']?.toString() ?? '';
+    return _mapTeamInvite(response.data as Map<String, dynamic>);
   }
+
+  TeamInvite _mapTeamInvite(Map<String, dynamic> json) => TeamInvite(
+        token: json['token']?.toString(),
+        url: json['invite_url']?.toString(),
+        expiresAt: DateTime.tryParse(json['expires_at']?.toString() ?? ''),
+      );
 }

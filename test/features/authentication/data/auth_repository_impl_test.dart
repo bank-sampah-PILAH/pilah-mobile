@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/data/auth_repository_impl.dart';
@@ -102,6 +103,107 @@ void main() {
 
       expect(result.isRight(), isTrue);
       verify(() => local.saveToken(any())).called(1);
+    });
+  });
+
+  group('role change (PIL-451)', () {
+    test('stores the session issued for the new role', () async {
+      when(() => remote.changeRole('nasabah')).thenAnswer(
+        (_) async => <String, dynamic>{
+          'access_token': 'access-new',
+          'refresh_token': 'refresh-new',
+          'user': {
+            'id': 'user-1',
+            'name': 'Ayu',
+            'email': 'ayu@example.com',
+            'role': 'nasabah',
+          },
+          'next_step': 'complete_profile',
+        },
+      );
+      when(() => local.saveToken(any())).thenAnswer((_) async {});
+
+      final result = await repo.changeRole(GoogleRegistrationRole.nasabah);
+
+      final auth = result.getOrElse(() => throw 'expected a session');
+      expect(auth.role, 'nasabah');
+      expect(auth.nextStep, 'complete_profile');
+      final saved = verify(() => local.saveToken(captureAny())).captured.single
+          as SaveTokenRequest;
+      expect(saved.accessToken, 'access-new');
+      expect(saved.refreshToken, 'refresh-new');
+    });
+
+    test('a refused change keeps the stored session and says why', () async {
+      final options = RequestOptions(path: '/api/v1/onboarding/role');
+      when(() => remote.changeRole('nasabah')).thenThrow(DioException(
+        requestOptions: options,
+        type: DioExceptionType.badResponse,
+        response: Response(
+          requestOptions: options,
+          statusCode: 409,
+          data: {
+            'error': 'Peran tidak dapat diganti setelah pendaftaran berjalan.',
+            'code': 'role_locked',
+          },
+        ),
+      ));
+
+      final result = await repo.changeRole(GoogleRegistrationRole.nasabah);
+
+      final failure = result.swap().getOrElse(() => throw 'expected a failure');
+      expect(failure.displayMessage,
+          'Peran tidak dapat diganti setelah pendaftaran berjalan.');
+      verifyNever(() => local.saveToken(any()));
+    });
+
+    test('saveToken stores both tokens as given', () async {
+      when(() => local.saveToken(any())).thenAnswer((_) async {});
+
+      final result = await repo.saveToken('access-x', 'refresh-x');
+
+      expect(result.isRight(), isTrue);
+      final saved = verify(() => local.saveToken(captureAny())).captured.single
+          as SaveTokenRequest;
+      expect(saved.accessToken, 'access-x');
+      expect(saved.refreshToken, 'refresh-x');
+    });
+
+    test('a malformed 2xx body is a failure, not a crash', () async {
+      // Same class of failure as loginWithGoogle's M1 case: a Dart Error from
+      // parsing, which the `on Exception` guard does not catch.
+      when(() => remote.changeRole('nasabah'))
+          .thenThrow(ArgumentError('malformed 2xx body'));
+
+      final result = await repo.changeRole(GoogleRegistrationRole.nasabah);
+
+      expect(result.isLeft(), isTrue);
+      verifyNever(() => local.saveToken(any()));
+    });
+  });
+
+  group('discardRegistration', () {
+    test('clears the persisted session after a successful delete', () async {
+      when(() => remote.discardRegistration()).thenAnswer((_) async {});
+      when(() => local.clearToken()).thenAnswer((_) async {});
+
+      expect((await repo.discardRegistration()).isRight(), isTrue);
+      verify(() => local.clearToken()).called(1);
+    });
+
+    test('surfaces an Error as a Left instead of throwing', () async {
+      // The remote source may fail outside Dio's exception wrapping (a decode
+      // Error on an unexpected reply shape) — an Error, not an Exception.
+      when(() => remote.discardRegistration())
+          .thenThrow(ArgumentError('unexpected reply shape'));
+      when(() => local.clearToken()).thenAnswer((_) async {});
+
+      final result = await repo.discardRegistration();
+
+      expect(result.isLeft(), isTrue);
+      // A refusal still ends the session in the notifier, so the token must
+      // not survive to restore it on the next cold start.
+      verify(() => local.clearToken()).called(1);
     });
   });
 }

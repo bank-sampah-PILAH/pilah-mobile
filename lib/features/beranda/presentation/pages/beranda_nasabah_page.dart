@@ -1,17 +1,24 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'dart:async';
+
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/notifications/notifications_page.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
-import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
@@ -19,102 +26,51 @@ import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_reposito
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_weight.dart';
 
 /// Membership eligibility comes from the API, not the login bank status.
-class BerandaNasabahPage extends StatelessWidget {
+class BerandaNasabahPage extends ConsumerWidget {
   const BerandaNasabahPage({super.key});
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-        builder: (context, state) {
-          if (state is! Authenticated || state.authEntity.role != 'nasabah') {
-            return const Scaffold(
-                body: Center(child: Text('Silakan masuk sebagai nasabah.')));
-          }
-          final auth = state.authEntity;
-          return _HomeSession(
-              key: ObjectKey(auth),
-              repository: di<NasabahRepository>(),
-              name: auth.name,
-              userId: auth.id ?? auth.email);
-        },
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    if (state is! Authenticated || state.authEntity.role != 'nasabah') {
+      return const Scaffold(
+          body: Center(child: Text('Silakan masuk sebagai nasabah.')));
+    }
+    final auth = state.authEntity;
+    return _HomeSession(
+      key: ObjectKey(auth),
+      repository: di<NasabahRepository>(),
+      name: auth.name,
+    );
+  }
 }
 
-class _HomeSession extends StatefulWidget {
-  const _HomeSession({
-    super.key,
-    required this.repository,
-    required this.name,
-    required this.userId,
-  });
+class _HomeSession extends ConsumerStatefulWidget {
+  const _HomeSession({super.key, required this.repository, required this.name});
   final NasabahRepository repository;
   final String name;
-  final String userId;
   @override
-  State<_HomeSession> createState() => _HomeSessionState();
+  ConsumerState<_HomeSession> createState() => _HomeSessionState();
 }
 
-class _HomeSessionState extends State<_HomeSession> {
-  String? _membershipId;
+class _HomeSessionState extends ConsumerState<_HomeSession>
+    with WidgetsBindingObserver {
+  /// The membership this screen is showing, and the one the active selection
+  /// last resolved to. They differ only while the nasabah is looking at a
+  /// pick of this screen's own: "none", to get the chooser back, or a pick
+  /// the storage would not keep. That difference is what tells a pick made
+  /// here from the bank "Bank sampah saya" considers active.
+  String? _shownId;
+  String? _activeId;
+
+  /// Whether a load is in flight that already awaits the active selection, so
+  /// its resolution is recorded instead of reloaded.
+  var _seeding = false;
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
   Future<void> Function()? _reloadSchedule;
-
-  ActiveMembershipSelection? get _membershipSelection =>
-      di.isRegistered<AppStorage>(instanceName: 'shared_preferences')
-          ? ActiveMembershipSelection(
-              di<AppStorage>(instanceName: 'shared_preferences'))
-          : null;
-
-  @override
-  void initState() {
-    super.initState();
-    _restoreSelection();
-  }
-
-  Future<void> _restoreSelection() async {
-    final revision = _selectionVersion;
-    try {
-      final id = await _membershipSelection?.read(widget.userId);
-      if (!mounted || revision != _selectionVersion || id == _membershipId) {
-        return;
-      }
-      setState(() {
-        _membershipId = id;
-        _selectionVersion++;
-      });
-    } catch (_) {
-      // The unscoped request can still offer the available membership choices.
-    }
-  }
-
-  Future<void> _openApprovalList() async {
-    await context.push<void>(ApprovalBankSampahListPage.route);
-    if (mounted) await _restoreSelection();
-  }
-
-  Future<NasabahHome> _loadHome() async {
-    final requestedId = _membershipId;
-    try {
-      return await widget.repository.home(membershipId: requestedId);
-    } on NasabahApiException catch (error) {
-      if (requestedId == null ||
-          (error.statusCode != 403 && error.statusCode != 404) ||
-          _membershipId != requestedId) {
-        rethrow;
-      }
-      final selection = _membershipSelection;
-      if (selection != null) await selection.clear(widget.userId);
-      if (mounted && _membershipId == requestedId) {
-        setState(() {
-          _membershipId = null;
-          _selectionVersion++;
-        });
-      }
-      rethrow;
-    }
-  }
 
   Future<void> _refresh() async {
     await Future.wait([
@@ -123,24 +79,99 @@ class _HomeSessionState extends State<_HomeSession> {
     ]);
   }
 
-  void _select(String? id) {
-    if (id != null) _saveSelection(id);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _reloadWhenActiveBankChanges();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refresh().catchError((_) {}));
+    }
+  }
+
+  /// Shows [id] and remembers it as the active bank, so "Bank sampah saya"
+  /// marks the bank the beranda displays rather than the one picked before.
+  ///
+  /// A null id is the nasabah asking for the chooser back: there is no bank
+  /// to remember, so that pick lives on this screen alone, as does one the
+  /// storage refused to keep. Both are given up as soon as the active bank
+  /// changes anywhere, because that is an explicit choice too.
+  Future<void> _select(String? id) async {
+    final kept = id != null &&
+        await ref.read(activeMembershipProvider.notifier).select(id);
+    if (!mounted) return;
     setState(() {
-      _membershipId = id;
+      _shownId = id;
+      if (kept) _activeId = id;
       _selectionVersion++;
     });
   }
 
-  Future<void> _saveSelection(String id) async {
-    final selection = _membershipSelection;
-    if (selection != null) await selection.select(widget.userId, id);
+  /// The bank the beranda should load: the nasabah's pick on this screen, or
+  /// else the one saved in "Bank sampah saya", so it opens on the bank they
+  /// actually chose rather than whichever row the backend returned first.
+  ///
+  /// Awaiting the saved choice here, rather than reading it off the first
+  /// frame, is what keeps this to a single request. Read too early it is
+  /// still null, and the beranda would fetch the wrong bank and then fetch
+  /// again. The resource's own spinner covers the wait.
+  Future<String?> _seedMembershipId() async {
+    if (_shownId != _activeId) return _shownId;
+    _seeding = true;
+    try {
+      final resolved = await ref.read(activeMembershipProvider.future);
+      _shownId = resolved;
+      _activeId = resolved;
+      return resolved;
+    } finally {
+      _seeding = false;
+    }
+  }
+
+  /// Reloads when the active bank changes elsewhere: switched on the "Bank
+  /// sampah saya" detail page, or resolved to another bank because a refresh
+  /// of the membership list left the saved one unopenable.
+  ///
+  /// The comparison is against the bank this screen last resolved to, not
+  /// against the previous state, so a later refresh is treated like any other
+  /// change rather than skipped along with the first resolution. That first
+  /// resolution is the one case with nothing to reload: the load in flight is
+  /// awaiting the very value being reported, so it is recorded and left to
+  /// finish.
+  void _reloadWhenActiveBankChanges() {
+    ref.listenManual(activeMembershipProvider, (_, next) {
+      if (next.isLoading) return;
+      final resolved = next.value;
+      if (resolved == _activeId) return;
+      _activeId = resolved;
+      if (_seeding) {
+        _shownId = resolved;
+        return;
+      }
+      setState(() {
+        _shownId = resolved;
+        _selectionVersion++;
+      });
+    });
   }
 
   void _details(String title, Widget body) {
-    final initial = context.read<AuthenticationBloc>().state;
+    final initial = ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider);
     final owner = initial is Authenticated ? initial.authEntity : null;
-    final guardedBody = BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-      builder: (context, current) {
+    final guardedBody = Consumer(
+      builder: (context, ref, child) {
+        final current = ref.watch(authenticationProvider);
         if (current is! Authenticated ||
             current.authEntity.id != owner?.id ||
             current.authEntity.email != owner?.email ||
@@ -151,23 +182,20 @@ class _HomeSessionState extends State<_HomeSession> {
         return body;
       },
     );
-    showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        isScrollControlled: true,
-        builder: (context) => SafeArea(
-                child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w700)),
-                guardedBody,
-                TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Tutup')),
-              ]),
-            )));
+    showAdaptiveConfirmation<void>(
+      context: context,
+      builder: (context, _) => SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(title,
+              style: const TextStyle(
+                  fontSize: AppFontSize.xxl, fontWeight: AppFontWeight.bold)),
+          guardedBody,
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Tutup')),
+        ]),
+      ),
+    );
   }
 
   @override
@@ -176,6 +204,11 @@ class _HomeSessionState extends State<_HomeSession> {
         appBar: NasabahPageAppBar(
           title: 'Beranda',
           actions: [
+            AppTapTarget(
+              label: 'Notifikasi',
+              onTap: () => NotificationsPage.open(context),
+              child: const Icon(Icons.notifications_outlined),
+            ),
             IconButton(
               tooltip: 'Profil',
               onPressed: () => context.go(AppLocations.profile),
@@ -187,7 +220,8 @@ class _HomeSessionState extends State<_HomeSession> {
                       ? 'N'
                       : widget.name.characters.first.toUpperCase(),
                   style: _text(14,
-                      weight: FontWeight.w600, color: NasabahStyle.emeraldDark),
+                      weight: AppFontWeight.semibold,
+                      color: NasabahStyle.emeraldDark),
                 ),
               ),
             ),
@@ -208,167 +242,153 @@ class _HomeSessionState extends State<_HomeSession> {
                         const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: _openApprovalList,
-                            icon:
-                                const Icon(Icons.fact_check_outlined, size: 16),
-                            label: Text(
-                              'Lihat Status Approval Bank Sampah',
-                              style: _text(12,
-                                  weight: FontWeight.w600, color: _emerald),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: _emerald,
-                              padding: EdgeInsets.zero,
-                              alignment: Alignment.centerLeft,
+                          child: AppButton(
+                            label: 'Bank sampah saya',
+                            variant: AppButtonVariant.text,
+                            icon: Icons.fact_check_outlined,
+                            onPressed: () => context.push(
+                              ApprovalBankSampahListPage.route,
                             ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         NasabahResource<NasabahHome>(
                           key: ValueKey(_selectionVersion),
-                          load: _loadHome,
+                          load: () async => widget.repository.home(
+                            membershipId: await _seedMembershipId(),
+                          ),
                           onSelect: _select,
                           registerReload: (reload) => _reload = reload,
-                          builder: (context, home) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _BankUnitCard(
-                                  unitName: home.bank.name,
-                                  onSelect: () => _select(null),
-                                  onOpen: () => _details(
-                                    'Detail Bank Sampah',
-                                    NasabahResource<NasabahBank>(
-                                      load: () => widget.repository
-                                          .bank(home.membershipId),
-                                      builder: (_, bank) => Padding(
-                                        padding: const EdgeInsets.only(top: 16),
-                                        child: NasabahBankDetail(bank: bank),
-                                      ),
+                          builder: (context, home) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _BankUnitCard(
+                                unitName: home.bank.name,
+                                logoUrl: home.bank.logoUrl,
+                                onSelect: () => _select(null),
+                                onOpen: () => _details(
+                                  'Detail Bank Sampah',
+                                  NasabahResource<NasabahBank>(
+                                    load: () => widget.repository
+                                        .bank(home.membershipId),
+                                    builder: (_, bank) => Padding(
+                                      padding: const EdgeInsets.only(top: 16),
+                                      child: NasabahBankDetail(bank: bank),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                _BalanceCard(
-                                  balance: home.balance,
-                                  bankName: home.bank.name,
-                                  latestActivity: home.activities.isEmpty
-                                      ? null
-                                      : home.activities.first,
-                                  onOpen: () => context.go(Uri(
-                                    path: AppLocations.history,
-                                    queryParameters: {
-                                      'keanggotaan_id': home.membershipId,
-                                    },
-                                  ).toString()),
-                                ),
-                                const SizedBox(height: 24),
-                                _SectionHeading(
-                                  title: 'Jadwal Terdekat',
-                                  onAll: () => context.go(Uri(
-                                    path: JadwalPage.route,
-                                    queryParameters: {
-                                      'keanggotaan_id': home.membershipId,
-                                    },
-                                  ).toString()),
-                                ),
-                                const SizedBox(height: 8),
-                                NasabahResource<JadwalEntity?>(
-                                  key: ValueKey(home.membershipId),
-                                  load: () =>
-                                      _loadNearestSchedule(home.membershipId),
-                                  registerReload: (reload) =>
-                                      _reloadSchedule = reload,
-                                  builder: (context, schedule) {
-                                    if (schedule == null) {
-                                      return _card(
-                                        child: Row(children: [
-                                          const Icon(
-                                            Icons.calendar_month_outlined,
-                                            color: _emerald,
+                              ),
+                              const SizedBox(height: 12),
+                              _BalanceCard(
+                                balance: home.balance,
+                                bankName: home.bank.name,
+                                latestActivity: home.activities.isEmpty
+                                    ? null
+                                    : home.activities.first,
+                                onOpen: () => context.go(Uri(
+                                  path: AppLocations.history,
+                                  queryParameters: {
+                                    'keanggotaan_id': home.membershipId,
+                                  },
+                                ).toString()),
+                              ),
+                              const SizedBox(height: 24),
+                              _SectionHeading(
+                                title: 'Jadwal Terdekat',
+                                onAll: () => context.go(JadwalPage.route),
+                              ),
+                              const SizedBox(height: 8),
+                              NasabahResource<JadwalEntity?>(
+                                load: _loadNearestSchedule,
+                                registerReload: (reload) =>
+                                    _reloadSchedule = reload,
+                                builder: (context, schedule) {
+                                  if (schedule == null) {
+                                    return _card(
+                                      child: Row(children: [
+                                        const Icon(
+                                          Icons.calendar_month_outlined,
+                                          color: _emerald,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Belum ada jadwal mendatang.',
+                                            style: _text(13, color: _muted),
                                           ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              'Belum ada jadwal mendatang.',
-                                              style: _text(13, color: _muted),
-                                            ),
-                                          ),
-                                        ]),
-                                      );
-                                    }
-                                    final start = schedule.mulaiPada.toLocal();
-                                    return InkWell(
-                                      borderRadius: BorderRadius.circular(16),
-                                      onTap: () => context.go(Uri(
-                                        path: JadwalPage.route,
-                                        queryParameters: {
-                                          'date': _scheduleDateParam(start),
-                                          'keanggotaan_id': home.membershipId,
-                                        },
-                                      ).toString()),
-                                      child: _card(
-                                        child: Row(children: [
-                                          const Icon(
-                                            Icons.calendar_month_outlined,
-                                            color: _emerald,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
+                                        ),
+                                      ]),
+                                    );
+                                  }
+                                  final start = schedule.mulaiPada.toLocal();
+                                  return InkWell(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.lg),
+                                    onTap: () => context.go(Uri(
+                                      path: JadwalPage.route,
+                                      queryParameters: {
+                                        'date': _scheduleDateParam(start),
+                                      },
+                                    ).toString()),
+                                    child: _card(
+                                      child: Row(children: [
+                                        const Icon(
+                                          Icons.calendar_month_outlined,
+                                          color: _emerald,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                schedule.jenisKegiatan,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: _text(14,
+                                                    weight:
+                                                        AppFontWeight.semibold),
+                                              ),
+                                              Text(
+                                                '${nasabahDate(start)} · ${_scheduleTime(start)}',
+                                                style: _text(12, color: _muted),
+                                              ),
+                                              if (schedule.lokasi.isNotEmpty)
                                                 Text(
-                                                  schedule.jenisKegiatan,
+                                                  schedule.lokasi,
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: _text(14,
-                                                      weight: FontWeight.w600),
-                                                ),
-                                                Text(
-                                                  '${nasabahDate(start)} · ${_scheduleTime(start)}',
                                                   style:
                                                       _text(12, color: _muted),
                                                 ),
-                                                if (schedule.lokasi.isNotEmpty)
-                                                  Text(
-                                                    schedule.lokasi,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: _text(12,
-                                                        color: _muted),
-                                                  ),
-                                              ],
-                                            ),
+                                            ],
                                           ),
-                                          const Icon(Icons.chevron_right,
-                                              color: _muted),
-                                        ]),
-                                      ),
-                                    );
+                                        ),
+                                        const Icon(Icons.chevron_right,
+                                            color: _muted),
+                                      ]),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                              _SectionHeading(
+                                title: 'Terbaru',
+                                onAll: () => context.go(Uri(
+                                  path: AppLocations.history,
+                                  queryParameters: {
+                                    'keanggotaan_id': home.membershipId,
                                   },
-                                ),
-                                const SizedBox(height: 24),
-                                _SectionHeading(
-                                  title: 'Terbaru',
-                                  onAll: () => context.go(Uri(
-                                    path: AppLocations.history,
-                                    queryParameters: {
-                                      'keanggotaan_id': home.membershipId,
-                                    },
-                                  ).toString()),
-                                ),
-                                const SizedBox(height: 8),
-                                NasabahActivityList(
-                                  activities: home.activities.take(1).toList(),
-                                ),
-                              ],
-                            );
-                          },
+                                ).toString()),
+                              ),
+                              const SizedBox(height: 8),
+                              NasabahActivityList(
+                                activities: home.activities.take(1).toList(),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -377,26 +397,24 @@ class _HomeSessionState extends State<_HomeSession> {
       );
 }
 
-Future<JadwalEntity?> _loadNearestSchedule(String membershipId) async {
+Future<JadwalEntity?> _loadNearestSchedule() async {
   final repository = di<JadwalRepository>();
-  final now = DateTime.now();
+  final now = clock.now();
   JadwalEntity? nearest;
   var pageNumber = 1;
   // ponytail: scans every upcoming page; add a server-side nearest query if
   // volume hurts homepage load time.
   while (true) {
-    final result = await repository.getJadwal(
-      page: pageNumber,
-      membershipId: membershipId,
-    );
+    final result = await repository.getJadwal(page: pageNumber);
     final page = result.fold(
       (failure) => throw NasabahApiException(failure.displayMessage),
       (page) => page,
     );
     for (final schedule in page.items) {
       final start = schedule.mulaiPada.toLocal();
+      final end = schedule.selesaiPada.toLocal();
       if (schedule.isPublished &&
-          !start.isBefore(now) &&
+          !end.isBefore(now) &&
           (nearest == null || start.isBefore(nearest.mulaiPada.toLocal()))) {
         nearest = schedule;
       }
@@ -420,7 +438,7 @@ const _ink = NasabahStyle.ink;
 const _muted = NasabahStyle.muted;
 TextStyle _text(
   double size, {
-  FontWeight weight = FontWeight.w400,
+  FontWeight weight = AppFontWeight.regular,
   Color color = _ink,
   double height = 1.45,
 }) =>
@@ -444,10 +462,10 @@ class _BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
         color: _emerald,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: InkWell(
           onTap: onOpen,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -462,15 +480,15 @@ class _BalanceCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: _text(
                           11,
-                          weight: FontWeight.w600,
+                          weight: AppFontWeight.semibold,
                           color: NasabahStyle.emeraldLight,
                         ),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0x22FFFFFF),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.13),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -486,7 +504,7 @@ class _BalanceCard extends StatelessWidget {
                   nasabahRupiah(balance.amount),
                   style: _text(
                     28,
-                    weight: FontWeight.w700,
+                    weight: AppFontWeight.bold,
                     color: Colors.white,
                     height: 1.22,
                   ),
@@ -510,78 +528,75 @@ class _BalanceCard extends StatelessWidget {
 class _BankUnitCard extends StatelessWidget {
   const _BankUnitCard({
     required this.unitName,
+    this.logoUrl,
     required this.onOpen,
     required this.onSelect,
   });
   final String unitName;
+
+  /// Logo bank sampah dari payload beranda; null menggambar inisial.
+  final String? logoUrl;
   final VoidCallback onOpen;
   final VoidCallback onSelect;
   @override
-  Widget build(BuildContext context) => _card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 17,
-                  backgroundColor: NasabahStyle.emeraldLight,
-                  child: Text(
-                    'BS',
-                    style: _text(
-                      11,
-                      weight: FontWeight.w600,
-                      color: _emerald,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('KEANGGOTAAN AKTIF',
-                          style: _text(10,
-                              weight: FontWeight.w500, color: _muted)),
-                      Text(
-                        unitName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _text(14, weight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Pilih ulang bank sampah',
-                  onPressed: onSelect,
-                  icon: const Icon(Icons.expand_more),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  alignment: Alignment.centerLeft,
-                ),
-                onPressed: onOpen,
+  Widget build(BuildContext context) {
+    final hasLogo = logoUrl?.isNotEmpty ?? false;
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 17,
+                backgroundColor: NasabahStyle.emeraldLight,
+                foregroundImage: hasLogo ? NetworkImage(logoUrl!) : null,
+                onForegroundImageError: hasLogo ? (_, __) {} : null,
                 child: Text(
-                  'Detail Bank Sampah',
+                  'BS',
                   style: _text(
-                    12,
-                    weight: FontWeight.w600,
+                    11,
+                    weight: AppFontWeight.semibold,
                     color: _emerald,
                   ),
                 ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('KEANGGOTAAN AKTIF',
+                        style: _text(10,
+                            weight: AppFontWeight.medium, color: _muted)),
+                    Text(
+                      unitName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _text(14, weight: AppFontWeight.medium),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Pilih ulang bank sampah',
+                onPressed: onSelect,
+                icon: const Icon(Icons.expand_more),
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton(
+              label: 'Detail Bank Sampah',
+              variant: AppButtonVariant.text,
+              onPressed: onOpen,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HomeGreeting extends StatelessWidget {
@@ -597,7 +612,7 @@ class _HomeGreeting extends StatelessWidget {
             name.isEmpty ? 'Nasabah' : name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: _text(18, weight: FontWeight.w600),
+            style: _text(18, weight: AppFontWeight.semibold),
           ),
         ],
       );
@@ -620,7 +635,8 @@ class _SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         children: [
           Expanded(
-              child: Text(title, style: _text(17, weight: FontWeight.w600))),
+              child: Text(title,
+                  style: _text(17, weight: AppFontWeight.semibold))),
           if (onAll != null)
             TextButton(onPressed: onAll, child: const Text('Semua')),
         ],

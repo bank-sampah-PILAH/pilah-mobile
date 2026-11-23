@@ -8,14 +8,14 @@ abstract class NasabahRemoteDataSource {
   /// `ditolak`. [search] diabaikan server bila kurang dari dua karakter.
   Future<HalamanNasabah> getNasabah({
     int page,
+    int? pageSize,
     String status,
     String? search,
+    String urutan = 'nomor',
   });
 
-  /// Seluruh nasabah aktif dalam satu panggilan, untuk picker Transaksi Baru.
-  ///
-  /// Picker memerlukan semua pilihan sekaligus, jadi ia sengaja tidak memakai
-  /// paginasi halaman daftar nasabah (PIL-214).
+  /// Legacy one-page snapshot of active nasabah; paginated consumers should
+  /// use [getNasabah] with `status: 'aktif'`.
   Future<HalamanNasabah> getActiveNasabah();
   Future<NasabahRingkasan> getNasabahRingkasan(String id);
   Future<NasabahModel> addNasabah(NasabahRequest request);

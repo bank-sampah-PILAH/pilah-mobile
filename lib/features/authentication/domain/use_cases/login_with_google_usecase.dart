@@ -25,4 +25,9 @@ class LoginWithGoogleUseCase extends UseCase<GoogleAuthOutcome, String> {
       role: role,
     );
   }
+
+  Future<Either<NetworkException, AuthEntity>> changeRole(
+      GoogleRegistrationRole role) {
+    return _repository.changeRole(role);
+  }
 }
