@@ -90,6 +90,13 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
         : cubit.loadJadwal(date: date, dateTo: end);
   }
 
+  /// Whether this page has asked for its own schedules yet.
+  ///
+  /// The provider is global and outlives the screen, so a page built for
+  /// another bank, or for another account, would otherwise paint whatever the
+  /// previous one left in it for the frame before its first load.
+  var _askedForOwn = false;
+
   @override
   void initState() {
     super.initState();
@@ -105,6 +112,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     _rangeMode = _wantsRange(LayoutBreakpoint.fromWidth(width ?? 0));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      setState(() => _askedForOwn = true);
       _loadAgenda(_selectedDate);
       ref.read(jadwalProvider.notifier).loadUpcomingDates();
       _loadCalendarDatesFor(_selectedDate);
@@ -355,7 +363,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
 
   Widget _buildAgendaBody() {
     final state = ref.watch(jadwalProvider);
-    if (state is JadwalInitial || state is JadwalLoading) {
+    if (!_askedForOwn || state is JadwalInitial || state is JadwalLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state is JadwalLocked) {

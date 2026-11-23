@@ -39,12 +39,21 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  Widget app({DateTime? initialDate, bool customerMode = false}) =>
+  Widget app({
+    DateTime? initialDate,
+    bool customerMode = false,
+    String? membershipId,
+    Key? pageKey,
+  }) =>
       ProviderScope(
         overrides: [jadwalProvider.overrideWith(() => cubit)],
         child: MaterialApp(
-          home:
-              JadwalPage(initialDate: initialDate, customerMode: customerMode),
+          home: JadwalPage(
+            key: pageKey,
+            initialDate: initialDate,
+            customerMode: customerMode,
+            membershipId: membershipId,
+          ),
         ),
       );
 
@@ -58,6 +67,53 @@ void main() {
           hasMore: hasMore,
         )));
   }
+
+  testWidgets('a switch of bank clears the schedules of the previous one',
+      (tester) async {
+    tallScreen(tester);
+    when(() => repository.getCalendarDates(any(), any(),
+        membershipId: any(named: 'membershipId'))).thenAnswer(
+      (_) async => const Right({}),
+    );
+    void answerFor(String membership, List<JadwalEntity> items) {
+      when(() => repository.getJadwal(
+            page: 1,
+            date: any(named: 'date'),
+            membershipId: membership,
+          )).thenAnswer((_) async => Right(JadwalPageResult(
+            items: items,
+            totalCount: items.length,
+            hasMore: false,
+          )));
+    }
+
+    answerFor('membership-a',
+        [_schedule(location: 'Balai Warga', status: 'diterbitkan')]);
+    answerFor('membership-b',
+        [_schedule(id: 'b', location: 'Pos Ronda', status: 'diterbitkan')]);
+    await tester.pumpWidget(app(
+      customerMode: true,
+      membershipId: 'membership-a',
+      pageKey: const ValueKey('bank-a'),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Balai Warga'), findsOneWidget);
+
+    // The scope re-keys the subtree on a switch, which is what gives the page
+    // a fresh State; the provider behind it is global and still holds bank A.
+    await tester.pumpWidget(app(
+      customerMode: true,
+      membershipId: 'membership-b',
+      pageKey: const ValueKey('bank-b'),
+    ));
+    await tester.pump();
+
+    expect(find.text('Balai Warga'), findsNothing);
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pos Ronda'), findsOneWidget);
+  });
 
   group('date driven by the parent', () {
     testWidgets('follows a new initial date and falls back to today',
