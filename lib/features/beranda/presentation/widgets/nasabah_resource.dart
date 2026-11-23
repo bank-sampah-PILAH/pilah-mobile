@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_activity_card.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
@@ -79,6 +81,10 @@ class NasabahResourceState<T> extends State<NasabahResource<T>>
           if (snapshot.hasError) {
             final error = snapshot.error;
             final apiError = error is NasabahApiException ? error : null;
+            // A refusal is the answer, not a hiccup: the bank stopped being
+            // one this nasabah may open, so reloading cannot change it and
+            // the way out is another bank (PIL-235, same shape as jadwal).
+            final locked = apiError?.statusCode == 403;
             return Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -92,8 +98,15 @@ class NasabahResourceState<T> extends State<NasabahResource<T>>
                         TextButton(
                             onPressed: () => widget.onSelect!(choice.id),
                             child: Text(choice.bankName)),
-                    TextButton(
-                        onPressed: reload, child: const Text('Coba lagi')),
+                    if (locked)
+                      TextButton(
+                        onPressed: () =>
+                            context.push(ApprovalBankSampahListPage.route),
+                        child: const Text('Bank sampah saya'),
+                      )
+                    else
+                      TextButton(
+                          onPressed: reload, child: const Text('Coba lagi')),
                   ],
                 ));
           }
