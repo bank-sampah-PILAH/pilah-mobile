@@ -32,6 +32,17 @@ import '../../support/stub_api.dart';
 
 /// Serves the balance card through [NasabahRepository] — the contract the
 /// screen's saldo column reads directly.
+/// A repository whose balance call is refused the way the backend refuses a
+/// bank that stopped being openable.
+class _LockedRepository extends PreviewNasabahRepository {
+  @override
+  Future<NasabahBalance> balance(String membershipId) async =>
+      throw const NasabahApiException(
+        'Akses belum tersedia. Pastikan akun, keanggotaan, dan bank sampah aktif.',
+        statusCode: 403,
+      );
+}
+
 class _Repository extends PreviewNasabahRepository {
   _Repository({this.updatedAt});
 
@@ -99,7 +110,7 @@ void main() {
 
   Future<void> pumpScreen(
     WidgetTester tester,
-    _Repository repo, {
+    PreviewNasabahRepository repo, {
     _RiwayatRepository? historyRepository,
     bool settle = true,
     String? membershipId = 'm1',
@@ -172,6 +183,21 @@ void main() {
     );
 
     expect(repository.askedFor, ['membership-a']);
+  });
+
+  testWidgets('a bank that may not be opened is not offered a retry',
+      (tester) async {
+    await pumpScreen(tester, _LockedRepository());
+
+    // Same shape as jadwal: the refusal is the answer, so reloading cannot
+    // help and the way out is another bank.
+    expect(
+      find.text(
+          'Akses belum tersedia. Pastikan akun, keanggotaan, dan bank sampah aktif.'),
+      findsOneWidget,
+    );
+    expect(find.text('Coba lagi'), findsNothing);
+    expect(find.text('Bank sampah saya'), findsOneWidget);
   });
 
   testWidgets('shows when the balance was last updated', (tester) async {
