@@ -216,6 +216,7 @@ void main() {
       final before = api.requests.where((r) => r.path == '/api/v1/team').length;
 
       final error = await notifier.transferPrimary('u2');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(error, isNotNull);
       expect(api.requests.where((r) => r.path == '/api/v1/team').length,
