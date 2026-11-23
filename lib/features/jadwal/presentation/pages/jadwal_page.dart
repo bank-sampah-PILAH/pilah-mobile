@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/features/analytics/presentation/providers/analytics_client_provider.dart';
 import 'package:pilah_mobile/features/jadwal/analytics/jadwal_analytics.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
@@ -823,22 +824,19 @@ class _EmptyScheduleDay extends StatelessWidget {
             color: AppColors.greenDark.withValues(alpha: 0.8),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Belum ada jadwal kegiatan',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold),
-          ),
+          const FixedText('Belum ada jadwal kegiatan',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: AppFontSize.lg, fontWeight: AppFontWeight.bold)),
           const SizedBox(height: 6),
-          Text(
-            'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.grey100,
-              fontSize: AppFontSize.sm,
-              height: 1.4,
-            ),
-          ),
+          FixedText(
+              'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.grey100,
+                fontSize: AppFontSize.sm,
+                height: 1.4,
+              )),
           if (onCreate == null)
             const SizedBox(height: 12)
           else ...[

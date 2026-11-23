@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'dart:async';
 
 import 'package:pilah_mobile/design/constants/font_size.dart';
@@ -575,8 +576,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     indicatorColor: AppColors.greenDark,
                     indicatorWeight: 3,
                     tabs: const [
-                      Tab(text: 'Pengaturan Umum'),
-                      Tab(text: 'Manajemen Tim'),
+                      Tab(child: FixedText('Pengaturan Umum')),
+                      Tab(child: FixedText('Manajemen Tim')),
                     ],
                   ),
                 ),
@@ -1262,14 +1263,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: AppTextStyle.extraSmall.copyWith(
-            color: AppColors.grey100,
-            fontWeight: AppFontWeight.bold,
-            letterSpacing: 1.0,
-          ),
-        ),
+        FixedText(label,
+            style: AppTextStyle.extraSmall.copyWith(
+              color: AppColors.grey100,
+              fontWeight: AppFontWeight.bold,
+              letterSpacing: 1.0,
+            )),
       ],
     );
   }
@@ -1286,14 +1285,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyle.extraSmall.copyWith(
-            color: AppColors.grey100,
-            fontWeight: AppFontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
+        FixedText(label,
+            style: AppTextStyle.extraSmall.copyWith(
+              color: AppColors.grey100,
+              fontWeight: AppFontWeight.bold,
+              letterSpacing: 0.5,
+            )),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,

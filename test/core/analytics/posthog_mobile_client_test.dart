@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client_factory.dart';
 import 'package:pilah_mobile/core/analytics/analytics_config.dart';
@@ -119,6 +120,8 @@ void main() {
     expect(config.sessionReplay, isTrue);
     expect(config.sessionReplayConfig.maskAllTexts, isTrue);
     expect(config.sessionReplayConfig.maskAllImages, isTrue);
+    // Icons are shown; every other text stays hidden.
+    expect(config.sessionReplayConfig.textMaskPolicy, same(replayTextMask));
     expect(config.captureApplicationLifecycleEvents, isFalse);
     expect(config.surveys, isFalse);
     expect(config.preloadFeatureFlags, isFalse);

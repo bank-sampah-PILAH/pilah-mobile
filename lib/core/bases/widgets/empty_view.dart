@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -56,13 +57,11 @@ class EmptyView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTextStyle.title1.copyWith(
-                color: AppColors.black,
-              ),
-            ),
+            FixedText(title,
+                textAlign: TextAlign.center,
+                style: AppTextStyle.title1.copyWith(
+                  color: AppColors.black,
+                )),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
               Text(

@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'bank_sampah_label.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -132,7 +133,7 @@ class RoleNavigationRail extends StatelessWidget {
               for (final index in listed)
                 NavigationRailDestination(
                   icon: Icon(destinations[index].icon),
-                  label: Text(destinations[index].label),
+                  label: FixedText(destinations[index].label),
                 ),
             ],
           ),
@@ -215,12 +216,14 @@ class _RailHeader extends StatelessWidget {
       ),
     );
 
-    final logo = Image.asset(
-      'assets/logo.png',
-      key: RoleNavigationRail.logoKey,
-      width: extended ? 44 : 40,
-      height: extended ? 44 : 40,
-      semanticLabel: 'PILAH',
+    final logo = RevealInReplay(
+      child: Image.asset(
+        'assets/logo.png',
+        key: RoleNavigationRail.logoKey,
+        width: extended ? 44 : 40,
+        height: extended ? 44 : 40,
+        semanticLabel: 'PILAH',
+      ),
     );
 
     final bank = extended
@@ -281,7 +284,7 @@ class _RailHeader extends StatelessWidget {
                       ? Row(mainAxisSize: MainAxisSize.min, children: [
                           logo,
                           const SizedBox(width: 8),
-                          Text('PILAH',
+                          FixedText('PILAH',
                               style: AppTextStyle.headline1.copyWith(
                                 color: AppColors.black,
                                 fontWeight: AppFontWeight.bold,
@@ -304,7 +307,7 @@ class _RailHeader extends StatelessWidget {
           bank,
           if (extended) ...[
             const SizedBox(height: 24),
-            Text('MENU',
+            FixedText('MENU',
                 style: AppTextStyle.extraSmall.copyWith(
                   color: AppColors.grey100,
                   fontWeight: AppFontWeight.semibold,
