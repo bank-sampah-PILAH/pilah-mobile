@@ -129,6 +129,17 @@ void main() {
     expect(find.text('Pilih di peta'), findsOneWidget);
   });
 
+  testWidgets('a device that throws on the GPS read keeps the form',
+      (tester) async {
+    when(() => location.currentLocation()).thenThrow(Exception('no plugin'));
+    await open(tester);
+
+    await tester.tap(find.byKey(const Key('lokasi_pakai_gps')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih di peta'), findsOneWidget);
+  });
+
   testWidgets('Dari alamat needs the address typed first', (tester) async {
     await open(tester);
 
