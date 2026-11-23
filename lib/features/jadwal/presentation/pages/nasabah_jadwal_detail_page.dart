@@ -18,9 +18,18 @@ import 'package:pilah_mobile/services/di.dart';
 /// Reloads from the membership-scoped endpoint, including after a web refresh.
 /// No schedule data or permission decision is taken from router extras.
 class NasabahJadwalDetailPage extends ConsumerWidget {
-  const NasabahJadwalDetailPage({super.key, required this.id});
+  const NasabahJadwalDetailPage({
+    super.key,
+    required this.id,
+    this.membershipId,
+  });
 
   final String id;
+
+  /// The bank this schedule was read in. The backend resolves a membership for
+  /// the detail too, so without it a nasabah with several banks gets the
+  /// picker error (422) instead of the schedule they just tapped.
+  final String? membershipId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,12 +49,13 @@ class NasabahJadwalDetailPage extends ConsumerWidget {
                           NasabahResource<JadwalEntity>(
                             key: ValueKey((
                               id,
+                              membershipId,
                               auth.authEntity.id,
                               auth.authEntity.token
                             )),
-                            load: () async =>
-                                (await di<JadwalRepository>().getDetail(id))
-                                    .fold(
+                            load: () async => (await di<JadwalRepository>()
+                                    .getDetail(id, membershipId: membershipId))
+                                .fold(
                               (error) => throw NasabahApiException(
                                 {403, 404}.contains(error.response?.statusCode)
                                     ? 'Jadwal tidak tersedia.'

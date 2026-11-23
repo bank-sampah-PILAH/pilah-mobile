@@ -15,9 +15,14 @@ class JadwalRepositoryImpl implements JadwalRepository {
   JadwalRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<NetworkException, JadwalEntity>> getDetail(String id) async {
+  Future<Either<NetworkException, JadwalEntity>> getDetail(
+    String id, {
+    String? membershipId,
+  }) async {
     try {
-      return Right(await remoteDataSource.getDetail(id));
+      return Right(membershipId == null
+          ? await remoteDataSource.getDetail(id)
+          : await remoteDataSource.getDetail(id, membershipId: membershipId));
     } on Exception catch (error) {
       return Left(NetworkException.handleException(error));
     }

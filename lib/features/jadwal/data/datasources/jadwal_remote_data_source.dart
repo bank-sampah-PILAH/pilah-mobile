@@ -4,7 +4,7 @@ import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 
 abstract class JadwalRemoteDataSource {
-  Future<JadwalModel> getDetail(String id);
+  Future<JadwalModel> getDetail(String id, {String? membershipId});
 
   Future<JadwalPageModel> getJadwal({
     required int page,
@@ -29,9 +29,16 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   JadwalRemoteDataSourceImpl(this.networkService);
 
   @override
-  Future<JadwalModel> getDetail(String id) async {
-    final response =
-        await networkService.get('/api/v1/jadwal/${Uri.encodeComponent(id)}');
+  Future<JadwalModel> getDetail(String id, {String? membershipId}) async {
+    final path = '/api/v1/jadwal/${Uri.encodeComponent(id)}';
+    // The parameter is left out rather than sent empty when no bank is known,
+    // so a pengurus request stays exactly what it was.
+    final response = membershipId == null
+        ? await networkService.get(path)
+        : await networkService.get(
+            path,
+            queryParams: {'keanggotaan_id': membershipId},
+          );
     return JadwalModel.fromJson(response.data as Map<String, dynamic>);
   }
 

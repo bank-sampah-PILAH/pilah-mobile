@@ -477,7 +477,11 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                   queryParameters: {
                     'date': '${_selectedDate.year}-'
                         '${_selectedDate.month.toString().padLeft(2, '0')}-'
-                        '${_selectedDate.day.toString().padLeft(2, '0')}'
+                        '${_selectedDate.day.toString().padLeft(2, '0')}',
+                    // The detail answers for one bank, so the link says which
+                    // one rather than making it resolve the question again.
+                    if (widget.membershipId != null)
+                      'keanggotaan_id': widget.membershipId!,
                   },
                 ).toString()),
                 onCancel: null,

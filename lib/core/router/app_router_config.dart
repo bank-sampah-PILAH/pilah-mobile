@@ -384,8 +384,15 @@ class AppRouterConfig {
                 routes: [
                   GoRoute(
                     path: ':id',
-                    builder: (_, state) => NasabahJadwalDetailPage(
-                      id: state.pathParameters['id']!,
+                    // The detail is membership-scoped like the list, so it
+                    // resolves a bank the same way rather than letting the
+                    // backend answer 422 for an account with several.
+                    builder: (_, state) => ActiveMembershipScope(
+                      membershipId: state.uri.queryParameters['keanggotaan_id'],
+                      builder: (context, membership) => NasabahJadwalDetailPage(
+                        id: state.pathParameters['id']!,
+                        membershipId: membership.id,
+                      ),
                     ),
                   ),
                 ],
