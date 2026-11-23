@@ -380,8 +380,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'Keluarkan $name dari tim?',
-      message: '$name tidak bisa lagi mengakses bank sampah ini. Mereka baru '
-          'bisa bergabung kembali lewat tautan undangan.',
+      message: '$name tidak bisa lagi mengakses bank sampah ini. Riwayat '
+          'setoran yang ia catat tetap ada. Mereka baru bisa bergabung '
+          'kembali lewat tautan undangan.',
       confirmLabel: 'Ya, Keluarkan',
       destructive: true,
     );
