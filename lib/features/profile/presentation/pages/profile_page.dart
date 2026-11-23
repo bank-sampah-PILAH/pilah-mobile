@@ -1063,8 +1063,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Invite Banner — owner only. Both the banner and its trailing gap
-              // are guarded so hiding it leaves no dangling spacing above the list.
+              // Invite controls are primary-only; other Pengurus are told who
+              // manages invitations without making an invitation request.
+              _buildInviteManagerNotice(state, isPengelolaUtama),
               if (isPengelolaUtama) ...[
                 Container(
                   width: double.infinity,
@@ -1172,6 +1173,20 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInviteManagerNotice(ProfileState state, bool isPengelolaUtama) {
+    if (isPengelolaUtama ||
+        state.bankSampah?.status.toLowerCase() != 'active') {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Text(
+        'Link undangan dibuat oleh Pengurus Utama.',
+        style: AppTextStyle.small,
       ),
     );
   }

@@ -951,6 +951,39 @@ void main() {
         find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });
 
+  testWidgets('ordinary Pengurus see who creates invitations without controls',
+      (tester) async {
+    stubProfile(api, team: {
+      'members': [
+        {
+          'id': 'm1',
+          'nama': 'Siti',
+          'email': 'siti@x.test',
+          'is_primary_pengelola': true,
+          'is_current_user': false,
+        },
+        {
+          'id': 'm2',
+          'nama': 'Andi',
+          'email': 'andi@x.test',
+          'is_primary_pengelola': false,
+          'is_current_user': true,
+        },
+      ],
+    });
+    await openPage(tester);
+    await tester.tap(find.text('Manajemen Tim'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Link undangan dibuat oleh Pengurus Utama.'), findsOneWidget);
+    expect(find.text('Buat Link Undangan'), findsNothing);
+    expect(find.text('Salin Link Undangan'), findsNothing);
+    expect(
+        api.requests.where((request) => request.path == '/api/v1/team/invite'),
+        isEmpty);
+  });
+
   testWidgets('a member without a name shows their email', (tester) async {
     stubProfile(api, team: {
       'members': [
