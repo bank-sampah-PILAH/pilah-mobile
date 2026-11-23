@@ -305,4 +305,123 @@ void main() {
     expect(find.text('Pengurus ini tidak bisa dikeluarkan'), findsOneWidget);
     expect(find.text('Budi'), findsOneWidget);
   });
+
+  testWidgets(
+      'the menus stay locked while the hand-over is in flight, even '
+      'through a pull to refresh', (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.on('POST', '/api/v1/team/transfer', json: {
+      'members': [
+        member('u2', 'Andi', primary: true),
+        member('u1', 'Siti', me: true),
+        member('u3', 'Budi'),
+      ],
+    });
+    api.delay('POST', '/api/v1/team/transfer', const Duration(seconds: 3));
+    bool anyEnabled() => tester
+        .widgetList<PopupMenuButton<dynamic>>(menus)
+        .any((m) => m.enabled);
+    expect(anyEnabled(), isTrue);
+
+    await openMenuOf(tester, 'u2');
+    await tester.tap(find.text('Jadikan Pengurus Utama'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Jadikan'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(anyEnabled(), isFalse);
+
+    await tester.fling(find.text('Andi'), const Offset(0, 300), 1000);
+    for (var i = 0; i < 7; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(api.requests.where((r) => r.path == '/api/v1/team'), hasLength(2));
+    expect(anyEnabled(), isFalse);
+
+    await tester.pump(const Duration(seconds: 4));
+    await settleKeepingToast(tester);
+    expect(find.text('Undang Pengurus Baru'), findsNothing);
+    expect(menus, findsNothing);
+  });
+
+  testWidgets('a transfer that cannot reach the server says so and unlocks',
+      (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.fail('POST', '/api/v1/team/transfer');
+
+    await openMenuOf(tester, 'u2');
+    await tester.tap(find.text('Jadikan Pengurus Utama'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Jadikan'));
+    await settleKeepingToast(tester);
+
+    expect(find.text('Undang Pengurus Baru'), findsOneWidget);
+    expect(
+        tester
+            .widgetList<PopupMenuButton<dynamic>>(menus)
+            .every((m) => m.enabled),
+        isTrue);
+  });
+
+  testWidgets('the menus stay locked while a removal is in flight',
+      (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.on('DELETE', '/api/v1/team/u3', status: 204, json: null);
+    api.delay('DELETE', '/api/v1/team/u3', const Duration(seconds: 2));
+    bool anyEnabled() => tester
+        .widgetList<PopupMenuButton<dynamic>>(menus)
+        .any((m) => m.enabled);
+    expect(anyEnabled(), isTrue);
+
+    await openMenuOf(tester, 'u3');
+    await tester.tap(find.text('Keluarkan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Keluarkan'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(anyEnabled(), isFalse);
+
+    await tester.pump(const Duration(seconds: 3));
+    await settleKeepingToast(tester);
+    expect(find.text('Budi'), findsNothing);
+    expect(anyEnabled(), isTrue);
+  });
+
+  testWidgets('a pengurus who is already gone leaves the screen as removed',
+      (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.on('DELETE', '/api/v1/team/u3',
+        status: 404, json: {'error': 'Pengurus tidak ditemukan'});
+
+    await openMenuOf(tester, 'u3');
+    await tester.tap(find.text('Keluarkan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Keluarkan'));
+    await settleKeepingToast(tester);
+
+    expect(find.text('Budi'), findsNothing);
+    expect(find.text('Budi dikeluarkan dari tim'), findsOneWidget);
+  });
+
+  testWidgets('a removal that cannot reach the server says so and unlocks',
+      (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.fail('DELETE', '/api/v1/team/u3');
+
+    await openMenuOf(tester, 'u3');
+    await tester.tap(find.text('Keluarkan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Keluarkan'));
+    await settleKeepingToast(tester);
+
+    expect(find.text('Budi'), findsOneWidget);
+    expect(
+        tester
+            .widgetList<PopupMenuButton<dynamic>>(menus)
+            .every((m) => m.enabled),
+        isTrue);
+  });
 }

@@ -340,5 +340,47 @@ void main() {
       expect(state.team.map((m) => m.nama), ['Siti', 'Andi', 'Budi']);
       expect(state.isChangingTeam, isFalse);
     });
+
+    test('drops the invitation link the server rotated with the removal',
+        () async {
+      api.on('GET', '/api/v1/team/invite', json: {
+        'token': 't',
+        'invite_url': 'https://pilah.test/invite/t',
+        'expires_at': '2030-01-04T12:00:00Z',
+      });
+      await notifier.load();
+      expect(container.read(profileProvider).invite, isNotNull);
+      api.on('DELETE', '/api/v1/team/u2', status: 204, json: null);
+
+      await notifier.removeMember('u2');
+
+      final state = container.read(profileProvider);
+      expect(state.invite, isNull);
+      expect(state.inviteError, isNull);
+    });
+
+    test('a member who is already gone counts as removed', () async {
+      api.on('DELETE', '/api/v1/team/u2',
+          status: 404, json: {'error': 'Pengurus tidak ditemukan'});
+
+      final error = await notifier.removeMember('u2');
+
+      expect(error, isNull);
+      final state = container.read(profileProvider);
+      expect(state.team.map((m) => m.nama), ['Siti', 'Budi']);
+      expect(state.isChangingTeam, isFalse);
+    });
+
+    test('a failure to reach the server keeps the roster and unlocks',
+        () async {
+      api.fail('DELETE', '/api/v1/team/u2');
+
+      final error = await notifier.removeMember('u2');
+
+      expect(error, isNotNull);
+      final state = container.read(profileProvider);
+      expect(state.team.map((m) => m.nama), ['Siti', 'Andi', 'Budi']);
+      expect(state.isChangingTeam, isFalse);
+    });
   });
 }
