@@ -111,5 +111,120 @@ void main() {
       expect(state.team.first.isPrimary, isTrue);
       expect(state.isChangingTeam, isFalse);
     });
+
+    group('while a hand-over is in flight', () {
+      final handedOver = {
+        'members': [
+          _member('u2', 'Andi', primary: true),
+          _member('u1', 'Siti', me: true),
+        ],
+      };
+
+      test('a second tap does not start a second hand-over', () async {
+        await notifier.load();
+        api.on('POST', '/api/v1/team/transfer', json: handedOver);
+        api.delay(
+            'POST', '/api/v1/team/transfer', const Duration(milliseconds: 60));
+
+        final first = notifier.transferPrimary('u2');
+        final second = await notifier.transferPrimary('u2');
+        await first;
+
+        expect(second, isNull);
+        expect(api.requests.where((r) => r.method == 'POST'), hasLength(1));
+      });
+
+      test('a refresh keeps the screen locked until the answer is in',
+          () async {
+        await notifier.load();
+        api.on('POST', '/api/v1/team/transfer', json: handedOver);
+        api.delay(
+            'POST', '/api/v1/team/transfer', const Duration(milliseconds: 80));
+
+        final transfer = notifier.transferPrimary('u2');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(container.read(profileProvider).isChangingTeam, isTrue);
+        await notifier.load(silent: true);
+
+        expect(container.read(profileProvider).isChangingTeam, isTrue);
+        await transfer;
+        expect(container.read(profileProvider).isChangingTeam, isFalse);
+      });
+
+      test('a roster fetched before the hand-over cannot overwrite it',
+          () async {
+        await notifier.load();
+        // The pre-transfer snapshot takes its time; the hand-over overtakes it.
+        api.delay('GET', '/api/v1/team', const Duration(milliseconds: 120));
+        api.on('POST', '/api/v1/team/transfer', json: handedOver);
+
+        final stale = notifier.load(silent: true);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await notifier.transferPrimary('u2');
+        await stale;
+
+        final state = container.read(profileProvider);
+        expect(state.team.map((m) => m.nama), ['Andi', 'Siti']);
+        expect(state.team.first.isPrimary, isTrue);
+        expect(state.invite, isNull);
+      });
+
+      test('a refresh after the hand-over is applied as usual', () async {
+        await notifier.load();
+        api.on('POST', '/api/v1/team/transfer', json: handedOver);
+        await notifier.transferPrimary('u2');
+        stubProfile(api, team: {
+          'members': [
+            _member('u2', 'Andi', primary: true),
+            _member('u1', 'Siti', me: true),
+            _member('u3', 'Budi'),
+          ],
+        });
+
+        await notifier.load(silent: true);
+
+        expect(container.read(profileProvider).team.map((m) => m.nama),
+            ['Andi', 'Siti', 'Budi']);
+      });
+    });
+
+    test('a failure to reach the server keeps the roster and unlocks',
+        () async {
+      await notifier.load();
+      api.fail('POST', '/api/v1/team/transfer');
+
+      final error = await notifier.transferPrimary('u2');
+
+      expect(error, isNotNull);
+      final state = container.read(profileProvider);
+      expect(state.isChangingTeam, isFalse);
+      expect(state.team.map((m) => m.nama), ['Siti', 'Andi']);
+    });
+
+    test('a refusal reloads the roster so the screen converges', () async {
+      await notifier.load();
+      api.on('POST', '/api/v1/team/transfer', status: 403, json: {
+        'error': 'Hanya pengelola utama yang dapat melakukan aksi ini'
+      });
+      // The role moved elsewhere in the meantime.
+      stubProfile(api, team: {
+        'members': [
+          _member('u1', 'Siti', me: true),
+          _member('u2', 'Andi', primary: true),
+        ],
+      });
+      final before = api.requests.where((r) => r.path == '/api/v1/team').length;
+
+      final error = await notifier.transferPrimary('u2');
+
+      expect(error, isNotNull);
+      expect(api.requests.where((r) => r.path == '/api/v1/team').length,
+          before + 1);
+      final state = container.read(profileProvider);
+      expect(state.team.first.isPrimary, isFalse);
+      expect(state.team.last.isPrimary, isTrue);
+      expect(state.status, ProfileStatus.loaded);
+      expect(state.isChangingTeam, isFalse);
+    });
   });
 }

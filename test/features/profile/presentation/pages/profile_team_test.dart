@@ -137,7 +137,7 @@ void main() {
         expect(api.last.method, 'POST');
         expect(api.last.path, '/api/v1/team/transfer');
         expect(api.last.json, {'id': 'u2'});
-        expect(auth.calls, contains('refreshUser'));
+        expect(auth.calls, isNot(contains('refreshUser')));
         expect(find.text('Undang Pengurus Baru'), findsNothing);
         expect(menus, findsNothing);
         expect(find.text('Jabatan Pengurus Utama dialihkan ke Andi'),
@@ -177,5 +177,62 @@ void main() {
     expect(find.text('Pengurus tidak ditemukan'), findsOneWidget);
     expect(find.text('Undang Pengurus Baru'), findsOneWidget);
     expect(auth.calls, isNot(contains('refreshUser')));
+  });
+
+  testWidgets(
+      'the menus stay locked while the hand-over is in flight, even '
+      'through a pull to refresh', (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.on('POST', '/api/v1/team/transfer', json: {
+      'members': [
+        member('u2', 'Andi', primary: true),
+        member('u1', 'Siti', me: true),
+        member('u3', 'Budi'),
+      ],
+    });
+    api.delay(
+        'POST', '/api/v1/team/transfer', const Duration(milliseconds: 600));
+    bool anyEnabled() => tester
+        .widgetList<PopupMenuButton<dynamic>>(menus)
+        .any((m) => m.enabled);
+    expect(anyEnabled(), isTrue);
+
+    await openMenuOf(tester, 'u2');
+    await tester.tap(find.text('Jadikan Pengurus Utama'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Jadikan'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(anyEnabled(), isFalse);
+
+    await tester.fling(
+        find.text('Undang Pengurus Baru'), const Offset(0, 400), 1000);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(anyEnabled(), isFalse);
+
+    await settleKeepingToast(tester);
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('Undang Pengurus Baru'), findsNothing);
+    expect(menus, findsNothing);
+  });
+
+  testWidgets('a transfer that cannot reach the server says so and unlocks',
+      (tester) async {
+    stubTeam(iAmPrimary: true);
+    await openTeamTab(tester);
+    api.fail('POST', '/api/v1/team/transfer');
+
+    await openMenuOf(tester, 'u2');
+    await tester.tap(find.text('Jadikan Pengurus Utama'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, Jadikan'));
+    await settleKeepingToast(tester);
+
+    expect(find.text('Undang Pengurus Baru'), findsOneWidget);
+    expect(
+        tester
+            .widgetList<PopupMenuButton<dynamic>>(menus)
+            .every((m) => m.enabled),
+        isTrue);
   });
 }
