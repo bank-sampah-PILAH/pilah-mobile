@@ -71,6 +71,21 @@ void main() {
     expect(find.text('Edit Pencairan'), findsNothing);
   });
 
+  testWidgets('names the bank each payout came from', (tester) async {
+    when(() => useCases.getRiwayat(any())).thenAnswer((_) async => Right([
+          _row(),
+          _row(id: 'p-2', bankSampahNama: 'Bank Sampah Induk Mawar'),
+        ]));
+
+    await pumpView(tester);
+    await tester.pumpAndSettle();
+
+    // This list is account-wide by design, unlike the setoran tab beside it,
+    // so a nasabah with several banks needs to see which bank paid out.
+    expect(find.text('Bank Sampah Kenanga'), findsOneWidget);
+    expect(find.text('Bank Sampah Induk Mawar'), findsOneWidget);
+  });
+
   testWidgets('tapping a payout opens a read-only detail sheet',
       (tester) async {
     await pumpView(tester);
