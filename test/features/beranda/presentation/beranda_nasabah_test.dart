@@ -237,7 +237,7 @@ void main() {
       }
     });
 
-    testWidgets('one Bank sampah saya card opens the active-bank detail action',
+    testWidgets('Bank sampah saya opens the full page on Bank Diikuti',
         (tester) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -251,16 +251,9 @@ void main() {
         );
         await tester.tap(find.text('Bank sampah saya'));
         await tester.pumpAndSettle();
-        final detailAction = find.text('Detail Bank Sampah');
-        expect(detailAction, findsOneWidget);
-        expect(
-          tester
-              .getSemantics(detailAction)
-              .getSemanticsData()
-              .hasAction(SemanticsAction.tap),
-          isTrue,
-        );
-        expect(find.text('Bank sampah saya'), findsNWidgets(2));
+        expect(find.text('Bank Diikuti'), findsOneWidget);
+        expect(find.text('Riwayat pengajuan'), findsOneWidget);
+        expect(find.text('Bank Sampah Melati'), findsWidgets);
       } finally {
         semantics.dispose();
       }
@@ -273,12 +266,16 @@ void main() {
       expect(find.text('TOTAL KAS BULAN INI'), findsNothing);
     });
 
-    testWidgets('active bank detail continues to use the shared detail widget',
+    testWidgets('active bank detail uses the mobile sheet and animated row',
         (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await loginAsNasabah(tester, activeBank: true);
       await tester.tap(find.text('Bank sampah saya'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Detail Bank Sampah'));
+      await tester.tap(find.text('Bank Sampah Melati').last);
       await tester.pumpAndSettle();
       expect(find.byType(NasabahBankDetail), findsOneWidget);
       expect(
@@ -286,9 +283,14 @@ void main() {
               of: find.byType(NasabahBankDetail),
               matching: find.text('Jl. Melati')),
           findsOneWidget);
-      await tester.ensureVisible(find.text('Tutup'));
-      await tester.tap(find.text('Tutup'));
+      expect(
+          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
+          .5);
+      await tester.pageBack();
       await tester.pumpAndSettle();
+      expect(
+          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
+          0);
       expect(tester.takeException(), isNull);
     });
 

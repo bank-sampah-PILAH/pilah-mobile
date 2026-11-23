@@ -14,6 +14,8 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -101,6 +103,8 @@ void main() {
     di.registerSingleton<NasabahRepository>(repository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
       GoRoute(path: '/beranda', builder: (_, __) => const BerandaNasabahPage()),
+      GoRoute(
+          path: '/dashboard', builder: (_, __) => const BerandaNasabahPage()),
       GoRoute(
         path: '/jadwal',
         builder: (_, state) => const Scaffold(body: Text('halaman jadwal')),
@@ -201,6 +205,20 @@ void main() {
         membershipRow('membership-a', nama: 'Bank Anggrek'),
         membershipRow('membership-b', nama: 'Bank Mawar'),
       ],
+      extraRoutes: {
+        ApprovalBankSampahListPage.route: (_, state) => BankMembershipPanel(
+              owner: const AuthEntity(
+                id: 'nasabah-1',
+                name: 'Siti',
+                email: 'siti@example.test',
+                photoUrl: '',
+                token: 'token',
+                role: 'nasabah',
+                nextStep: 'nasabah_dashboard',
+              ),
+              scrollToHistory: state.uri.queryParameters['tab'] == 'history',
+            ),
+      },
     );
     expect(repository.asked, ['membership-a']);
 
@@ -208,13 +226,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Bank Mawar').first);
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Jadikan bank aktif'));
+    await tester.pumpAndSettle();
 
     final container = ProviderScope.containerOf(
       tester.element(find.byType(BerandaNasabahPage)),
     );
     expect(container.read(activeMembershipProvider).value, 'membership-b');
     expect(storage.values['active_membership_id:nasabah-1'], 'membership-b');
-    expect(repository.asked, ['membership-a', 'membership-b']);
+    expect(repository.asked, ['membership-a', 'membership-b', 'membership-b']);
   });
 
   testWidgets('follows the bank a membership refresh resolves to',

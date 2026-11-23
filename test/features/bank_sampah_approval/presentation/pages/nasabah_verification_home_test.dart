@@ -6,11 +6,15 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
-import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 
+import '../../../../support/active_membership_support.dart';
 import '../../../../support/auth_support.dart';
 import '../../../../support/nasabah_approval_support.dart';
 
@@ -36,11 +40,26 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final notifier = TestNasabahApprovalNotifier(initialState: state);
+    final storage = MemoryAppStorage();
     final router = GoRouter(routes: [
       GoRoute(
         path: '/',
         builder: (_, __) => Scaffold(
           body: NasabahVerificationHome(name: name),
+        ),
+      ),
+      GoRoute(
+        path: ApprovalBankSampahListPage.route,
+        builder: (context, routeState) => BankMembershipPanel(
+          owner: const AuthEntity(
+            id: 'nasabah-1',
+            name: 'Siti',
+            email: 'siti@example.test',
+            photoUrl: '',
+            token: 'token-1',
+            role: 'nasabah',
+          ),
+          scrollToHistory: routeState.uri.queryParameters['tab'] == 'history',
         ),
       ),
       GoRoute(
@@ -72,7 +91,13 @@ void main() {
     await tester.pumpWidget(withAuthenticationProvider(
       auth,
       MaterialApp.router(routerConfig: router),
-      overrides: [nasabahApprovalProvider.overrideWith(() => notifier)],
+      overrides: [
+        nasabahApprovalProvider.overrideWith(() => notifier),
+        activeMembershipSelectionProvider.overrideWithValue(
+          ActiveMembershipSelection(storage),
+        ),
+        activeMembershipUserIdProvider.overrideWithValue('nasabah-1'),
+      ],
     ));
     await tester.pump();
     return notifier;
@@ -88,7 +113,7 @@ void main() {
     await tester.tap(find.text('Bank sampah saya'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Bank Sampah Melati'), findsNWidgets(2));
+    expect(find.text('Bank Sampah Melati'), findsOneWidget);
     expect(find.text('Belum ada riwayat pengajuan'), findsNothing);
     expect(find.text('Belum ada bank yang diikuti'), findsNothing);
   });
@@ -103,12 +128,10 @@ void main() {
 
     await tester.tap(find.text('Bank sampah saya'));
     await tester.pumpAndSettle();
-    await tester.drag(
-        find.byKey(AppSheetContainer.surfaceKey), const Offset(0, 600));
+    await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // The panel validates the current owner before showing memberships, then
-    // the verification page refreshes again when it closes.
+    // The full page loads on entry; verification refreshes when it closes.
     expect(notifier.loadCalls, [false, true]);
   });
 

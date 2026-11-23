@@ -131,17 +131,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bank sampah saya'), findsWidgets);
-    expect(find.text('Bank diikuti'), findsOneWidget);
+    expect(find.text('Bank Diikuti'), findsOneWidget);
     expect(find.text('Riwayat pengajuan'), findsOneWidget);
-    expect(find.text('Bank Sampah Sejahtera'), findsNWidgets(2));
+    expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
+    await tester.tap(find.text('Riwayat pengajuan'));
+    await tester.pumpAndSettle();
     expect(find.text('Bank Sampah Lestari'), findsOneWidget);
     await tester.tap(find.text('Bank Sampah Lestari'));
     await tester.pumpAndSettle();
 
     expect(find.text('Riwayat Persetujuan'), findsOneWidget);
-    final detailPage = tester.widget<ApprovalBankSampahDetailPage>(
-      find.byType(ApprovalBankSampahDetailPage),
-    );
-    expect(detailPage.membership.id, 'membership-2');
+    expect(find.byType(ApprovalBankSampahDetailView), findsOneWidget);
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }
