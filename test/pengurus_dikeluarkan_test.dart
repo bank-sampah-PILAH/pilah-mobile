@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,8 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import 'support/app_shell_support.dart';
@@ -84,6 +87,33 @@ void main() {
     expect(shell.auth.calls, contains('refreshUser'));
     expect(find.text('Anda sudah dikeluarkan dari bank sampah ini'),
         findsOneWidget);
+  });
+
+  testWidgets('what the removed pengurus cached for the bank is cleared',
+      (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+    shell.profile.setStateForTest(ProfileState(
+      status: ProfileStatus.loaded,
+      team: const [
+        TeamMember(
+          id: 'u1',
+          nama: 'Siti',
+          email: 'siti@x.test',
+          isPrimary: true,
+          isCurrentUser: true,
+        ),
+      ],
+      selectedLogoBytes: Uint8List.fromList([1]),
+      selectedLogoFilename: 'logo.png',
+    ));
+
+    await evict(tester, 'Anda sudah dikeluarkan dari bank sampah ini');
+
+    expect(location(), '/register-bank-sampah');
+    expect(shell.profile.state.status, isNot(ProfileStatus.loaded));
+    expect(shell.profile.state.team, isEmpty);
+    expect(shell.profile.state.selectedLogoBytes, isNull);
   });
 
   testWidgets('a real refusal through the network stack does the same',
