@@ -128,6 +128,33 @@ void main() {
     expect(find.text('Buat Jadwal'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
   });
+  testWidgets('the schedules are read for the bank the page was given',
+      (tester) async {
+    final notifier = await _pumpCustomer(
+      tester,
+      const JadwalLoaded([]),
+      membershipId: 'membership-a',
+    );
+
+    // Told before the first load, so the list and the calendar dots are asked
+    // for the same bank from the start rather than after a correction.
+    expect(notifier.membershipCalls, ['membership-a']);
+  });
+
+  testWidgets('a bank the nasabah may not open is not offered a retry',
+      (tester) async {
+    await _pumpCustomer(
+      tester,
+      const JadwalLocked('Keanggotaan dan bank sampah harus aktif.'),
+      membershipId: 'membership-a',
+    );
+
+    expect(
+        find.text('Keanggotaan dan bank sampah harus aktif.'), findsOneWidget);
+    // Reloading cannot help; picking another bank can.
+    expect(find.text('Coba Lagi'), findsNothing);
+    expect(find.text('Bank sampah saya'), findsOneWidget);
+  });
 }
 
 Future<TestJadwalNotifier> _pumpCustomer(
@@ -142,6 +169,7 @@ Future<TestJadwalNotifier> _pumpCustomer(
     required DateTime startDate,
     required DateTime endDate,
   })? onLoadCalendarDates,
+  String? membershipId,
 }) async {
   final notifier = TestJadwalNotifier(
     repository: UnusedJadwalRepository(),
@@ -152,7 +180,9 @@ Future<TestJadwalNotifier> _pumpCustomer(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [jadwalProvider.overrideWith(() => notifier)],
-      child: const MaterialApp(home: JadwalPage(customerMode: true)),
+      child: MaterialApp(
+        home: JadwalPage(customerMode: true, membershipId: membershipId),
+      ),
     ),
   );
   await tester.pump();
