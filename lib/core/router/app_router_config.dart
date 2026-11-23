@@ -305,6 +305,19 @@ class AppRouterConfig {
         builder: (context, state) => const RegisterNasabahScreen(),
       ),
       GoRoute(
+        path: RegisterNasabahScreen.additionalRoute,
+        name: RegisterNasabahScreen.additionalRoute,
+        redirect: (_, __) => isRoleSupportedOnPlatform(
+          'nasabah',
+          isWeb: kIsWeb,
+        )
+            ? null
+            : LoginPage.route,
+        builder: (context, state) => const RegisterNasabahScreen(
+          mode: RegisterNasabahMode.additional,
+        ),
+      ),
+      GoRoute(
         path: RoleHandoffPage.nasabahDashboardRoute,
         redirect: (_, __) => '/dashboard',
       ),

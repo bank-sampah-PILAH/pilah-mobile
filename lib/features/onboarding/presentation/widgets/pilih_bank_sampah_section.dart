@@ -20,8 +20,8 @@ class PilihBankSampahSection extends StatelessWidget {
   /// nasabah for now) — the field renders but no longer opens the picker.
   final bool enabled;
 
-  /// Bank sampah ids to hide from the picker, e.g. ones already joined.
-  final Set<String> excludedBankIds;
+  /// Banks already joined, by id, with the label the picker shows for each.
+  final Map<String, String> joinedBanks;
 
   const PilihBankSampahSection({
     super.key,
@@ -30,7 +30,7 @@ class PilihBankSampahSection extends StatelessWidget {
     this.hasError = false,
     this.errorText,
     this.enabled = true,
-    this.excludedBankIds = const {},
+    this.joinedBanks = const {},
   });
 
   @override
@@ -43,7 +43,7 @@ class PilihBankSampahSection extends StatelessWidget {
                   await showAdaptiveSurface<BankSampahDirectoryEntity>(
                 context,
                 builder: (context) => PilihBankSampahBottomSheet(
-                  excludedBankIds: excludedBankIds,
+                  joinedBanks: joinedBanks,
                 ),
               );
               if (result != null) onBankSelected(result);
