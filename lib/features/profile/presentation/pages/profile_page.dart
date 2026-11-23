@@ -372,10 +372,6 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
       _snack(error.displayMessage, error: true);
       return;
     }
-    // The role decides what the whole app lets this user do, so the signed-in
-    // user is read again rather than waiting for the next launch.
-    await ref.read(authenticationProvider.notifier).refreshUser();
-    if (!mounted) return;
     _snack('Jabatan Pengurus Utama dialihkan ke $name');
   }
 

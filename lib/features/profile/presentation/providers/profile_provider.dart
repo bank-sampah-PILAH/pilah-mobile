@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,11 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   final bool _isWeb;
 
+  /// Bumped when a hand-over begins and again when it ends. A [load] whose
+  /// requests straddle either moment holds a roster from before the hand-over
+  /// and must not be applied.
+  int _teamEpoch = 0;
+
   @override
   ProfileState build() => const ProfileState();
 
@@ -43,10 +50,12 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// [silent] only applies when there is a loaded profile to keep: otherwise
   /// the page has nothing to render, so a real loading state is emitted.
   Future<void> load({bool silent = false}) async {
+    final epoch = _teamEpoch;
     if (!silent || state.status != ProfileStatus.loaded) {
-      state = const ProfileState(
+      state = ProfileState(
         status: ProfileStatus.loading,
         isLoadingInvite: true,
+        isChangingTeam: state.isChangingTeam,
       );
     }
 
@@ -55,7 +64,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
       mapper: (value) => value as BankSampahProfile,
     );
 
-    if (!ref.mounted) return;
+    if (!ref.mounted || epoch != _teamEpoch) return;
     await bankEither.fold(
       (error) async => state = ProfileState(
           status: ProfileStatus.error, error: error.displayMessage),
@@ -81,7 +90,9 @@ class ProfileNotifier extends Notifier<ProfileState> {
           inviteError =
               inviteEither.fold((error) => error.displayMessage, (_) => null);
         }
-        if (!ref.mounted) return;
+        // A hand-over that began or ended while these requests were out makes
+        // the roster they brought a snapshot from before it.
+        if (!ref.mounted || epoch != _teamEpoch) return;
         state = ProfileState(
           status: ProfileStatus.loaded,
           bankSampah: bank,
@@ -89,6 +100,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
           team: team,
           invite: invite,
           inviteError: inviteError,
+          isChangingTeam: state.isChangingTeam,
         );
       },
     );
@@ -226,15 +238,21 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// Utama may see or create one. Returns `null` on success, otherwise the
   /// [NetworkException].
   Future<NetworkException?> transferPrimary(String id) async {
+    if (state.isChangingTeam) return null;
+    _teamEpoch++;
     state = state.copyWith(isChangingTeam: true);
     final either = await apiCall<List<TeamMember>>(
       func: _dataSource.transferPrimary(id),
       mapper: (value) => value as List<TeamMember>,
     );
     if (!ref.mounted) return null;
+    _teamEpoch++;
     return either.fold(
       (error) {
         state = state.copyWith(isChangingTeam: false);
+        // The refusal may mean the role moved elsewhere; read the roster again
+        // so the screen stops offering an action that can only be refused.
+        unawaited(load(silent: true));
         return error;
       },
       (team) {
