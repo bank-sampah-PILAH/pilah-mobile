@@ -12,6 +12,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart'
     show nasabahDate;
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
@@ -39,9 +40,12 @@ class PengumumanPage extends ConsumerWidget {
         body: Center(child: Text('Silakan masuk sebagai nasabah.')),
       );
     }
-    return _PengumumanListBody(
-      key: ValueKey((auth!.id, auth.email, membershipId)),
+    return ActiveMembershipScope(
       membershipId: membershipId,
+      builder: (context, membership) => _PengumumanListBody(
+        key: ValueKey((auth!.id, auth.email, membership.id)),
+        membershipId: membership.id,
+      ),
     );
   }
 }
