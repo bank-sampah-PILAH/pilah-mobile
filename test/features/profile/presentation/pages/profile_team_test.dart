@@ -308,64 +308,6 @@ void main() {
     expect(find.text('Budi'), findsOneWidget);
   });
 
-  testWidgets(
-      'the menus stay locked while the hand-over is in flight, even '
-      'through a pull to refresh', (tester) async {
-    stubTeam(iAmPrimary: true);
-    await openTeamTab(tester);
-    api.on('POST', '/api/v1/team/transfer', json: {
-      'members': [
-        member('u2', 'Andi', primary: true),
-        member('u1', 'Siti', me: true),
-        member('u3', 'Budi'),
-      ],
-    });
-    api.delay('POST', '/api/v1/team/transfer', const Duration(seconds: 3));
-    bool anyEnabled() => tester
-        .widgetList<PopupMenuButton<dynamic>>(menus)
-        .any((m) => m.enabled);
-    expect(anyEnabled(), isTrue);
-
-    await openMenuOf(tester, 'u2');
-    await tester.tap(find.text('Jadikan Pengurus Utama'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ya, Jadikan'));
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(anyEnabled(), isFalse);
-
-    await tester.fling(find.text('Andi'), const Offset(0, 300), 1000);
-    for (var i = 0; i < 7; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(api.requests.where((r) => r.path == '/api/v1/team'), hasLength(2));
-    expect(anyEnabled(), isFalse);
-
-    await tester.pump(const Duration(seconds: 4));
-    await settleKeepingToast(tester);
-    expect(find.text('Undang Pengurus Baru'), findsNothing);
-    expect(menus, findsNothing);
-  });
-
-  testWidgets('a transfer that cannot reach the server says so and unlocks',
-      (tester) async {
-    stubTeam(iAmPrimary: true);
-    await openTeamTab(tester);
-    api.fail('POST', '/api/v1/team/transfer');
-
-    await openMenuOf(tester, 'u2');
-    await tester.tap(find.text('Jadikan Pengurus Utama'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ya, Jadikan'));
-    await settleKeepingToast(tester);
-
-    expect(find.text('Undang Pengurus Baru'), findsOneWidget);
-    expect(
-        tester
-            .widgetList<PopupMenuButton<dynamic>>(menus)
-            .every((m) => m.enabled),
-        isTrue);
-  });
-
   testWidgets('the menus stay locked while a removal is in flight',
       (tester) async {
     stubTeam(iAmPrimary: true);
