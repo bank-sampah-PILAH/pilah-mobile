@@ -219,6 +219,74 @@ void main() {
     expect(container.read(activeMembershipProvider).value, bankA.id);
   });
 
+  testWidgets('search filters followed and history by bank name',
+      (tester) async {
+    final pending = membershipRow(
+      'pending-a',
+      nama: 'Anggrek',
+      status: MembershipStatus.pending,
+    );
+    final rejected = membershipRow(
+      'rejected-c',
+      nama: 'Cempaka',
+      status: MembershipStatus.rejected,
+    );
+    final storage = MemoryAppStorage()
+      ..values['active_membership_id:nasabah-1'] = bankA.id;
+    final (container, _) = await pumpPage(
+      tester,
+      memberships: [bankA, pending, rejected],
+      storage: storage,
+    );
+    final search = find.byType(TextField);
+
+    await tester.enterText(search, '  BANK A  ');
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+    await tester.tap(find.text('Riwayat pengajuan'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(search).controller!.text, '  BANK A  ');
+    expect(find.text('Bank A').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+
+    await tester.enterText(search, 'a');
+    await tester.pumpAndSettle();
+    expect(find.text('Anggrek').hitTestable(), findsOneWidget);
+    expect(find.text('Cempaka').hitTestable(), findsOneWidget);
+    await tester.tap(find.text('Bank Diikuti'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+    await tester.enterText(search, 'no matching bank');
+    await tester.pumpAndSettle();
+    expect(find.text('Tidak ada bank diikuti yang cocok'), findsOneWidget);
+    expect(storage.values['active_membership_id:nasabah-1'], bankA.id);
+    expect(container.read(activeMembershipProvider).value, bankA.id);
+  });
+
+  testWidgets('search clear and no-match differ from true empty state',
+      (tester) async {
+    await pumpPage(tester, memberships: [], storage: MemoryAppStorage());
+    final search = find.byType(TextField);
+
+    expect(find.text('Belum ada bank yang diikuti'), findsOneWidget);
+    await tester.enterText(search, 'bank');
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada bank yang diikuti'), findsOneWidget);
+    expect(find.text('Tidak ada bank diikuti yang cocok'), findsNothing);
+    await tester.tap(find.byTooltip('Hapus pencarian'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada bank yang diikuti'), findsOneWidget);
+    await tester.tap(find.text('Riwayat pengajuan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada riwayat pengajuan'), findsOneWidget);
+    await tester.enterText(search, 'bank');
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada riwayat pengajuan'), findsOneWidget);
+    expect(find.text('Tidak ada pengajuan yang cocok'), findsNothing);
+  });
+
   testWidgets('shows a load failure and retries the memberships',
       (tester) async {
     final approval = _FailOnceApproval([bankA]);
