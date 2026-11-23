@@ -1334,7 +1334,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   value: _TeamAction.makePrimary,
                   child: Text('Jadikan Pengurus Utama'),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: _TeamAction.remove,
                   child: Text(
                     'Keluarkan',

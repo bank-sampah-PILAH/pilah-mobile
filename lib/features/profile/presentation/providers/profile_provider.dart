@@ -274,8 +274,10 @@ class ProfileNotifier extends Notifier<ProfileState> {
   }
 
   /// Removes the pengurus [id] from the bank sampah. The answer carries no
-  /// roster, so the row simply leaves the one on screen. Returns `null` on
-  /// success, otherwise the [NetworkException].
+  /// roster, so the row simply leaves the one on screen. The server rotates the
+  /// invitation token with every removal, so the link on screen goes with it. A
+  /// pengurus the server no longer knows is already gone and counts as removed.
+  /// Returns `null` on success, otherwise the [NetworkException].
   Future<NetworkException?> removeMember(String id) async {
     state = state.copyWith(isChangingTeam: true);
     final either = await apiCall<void>(
@@ -283,22 +285,21 @@ class ProfileNotifier extends Notifier<ProfileState> {
       mapper: (_) {},
     );
     if (!ref.mounted) return null;
-    return either.fold(
-      (error) {
-        state = state.copyWith(isChangingTeam: false);
-        return error;
-      },
-      (_) {
-        state = state.copyWith(
-          isChangingTeam: false,
-          team: [
-            for (final member in state.team)
-              if (member.id != id) member,
-          ],
-        );
-        return null;
-      },
+    final error = either.fold((error) => error, (_) => null);
+    if (error != null && error is! NotFoundException) {
+      state = state.copyWith(isChangingTeam: false);
+      return error;
+    }
+    state = state.copyWith(
+      isChangingTeam: false,
+      team: [
+        for (final member in state.team)
+          if (member.id != id) member,
+      ],
+      clearInvite: true,
+      clearInviteError: true,
     );
+    return null;
   }
 
   /// Explicitly creates or replaces the team's invitation link.
