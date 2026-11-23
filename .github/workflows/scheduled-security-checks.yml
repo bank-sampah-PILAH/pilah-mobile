@@ -36,4 +36,7 @@ jobs:
           fetch-depth: 0
 
       - name: gitleaks
-        run: docker run --rm -v "$PWD":/repo zricethezav/gitleaks detect --source /repo --no-banner
+        run: >
+          docker run --rm -v "$PWD":/repo zricethezav/gitleaks detect
+          --source /repo --no-banner
+          --gitleaks-ignore-path /repo/.gitleaksignore
