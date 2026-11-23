@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
@@ -247,14 +248,8 @@ class ProfileNotifier extends Notifier<ProfileState> {
     );
     if (!ref.mounted) return null;
     _teamEpoch++;
-    return either.fold(
-      (error) {
-        state = state.copyWith(isChangingTeam: false);
-        // The refusal may mean the role moved elsewhere; read the roster again
-        // so the screen stops offering an action that can only be refused.
-        unawaited(load(silent: true));
-        return error;
-      },
+    final error = either.fold<NetworkException?>(
+      (error) => error,
       (team) {
         state = state.copyWith(
           isChangingTeam: false,
@@ -265,6 +260,17 @@ class ProfileNotifier extends Notifier<ProfileState> {
         return null;
       },
     );
+    if (error != null) {
+      state = state.copyWith(isChangingTeam: false);
+      // The refusal may mean the role moved elsewhere; read the roster again
+      // so the screen stops offering an action that can only be refused.
+      unawaited(load(silent: true));
+      return error;
+    }
+    // The marker on the signed-in user changed with the roster, so the session
+    // is read again rather than left saying the opposite.
+    await ref.read(authenticationProvider.notifier).refreshUser();
+    return null;
   }
 
   /// Explicitly creates or replaces the team's invitation link.

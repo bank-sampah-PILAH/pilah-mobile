@@ -137,7 +137,7 @@ void main() {
         expect(api.last.method, 'POST');
         expect(api.last.path, '/api/v1/team/transfer');
         expect(api.last.json, {'id': 'u2'});
-        expect(auth.calls, isNot(contains('refreshUser')));
+        expect(auth.calls, contains('refreshUser'));
         expect(find.text('Undang Pengurus Baru'), findsNothing);
         expect(menus, findsNothing);
         expect(find.text('Jabatan Pengurus Utama dialihkan ke Andi'),

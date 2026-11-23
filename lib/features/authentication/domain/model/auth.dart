@@ -9,6 +9,10 @@ class AuthEntity {
   final String? bankSampahStatus; // pending | active | rejected | null
   final String? role;
 
+  /// Whether this pengurus is the Pengurus Utama of their bank sampah. Read
+  /// again after a hand-over so the session never disagrees with the roster.
+  final bool isPrimaryPengelola;
+
   /// Backend-saved profile fields (empty/null when not yet filled). Lets
   /// complete_profile prefill from the account's actual data — e.g. a
   /// nasabah synced from a pengurus-entered record (PIL-154) — instead of
@@ -28,6 +32,7 @@ class AuthEntity {
     this.bankSampahNama,
     this.bankSampahStatus,
     this.role,
+    this.isPrimaryPengelola = false,
     this.noHp = '',
     this.jenisKelamin = '',
     this.tanggalLahir,
