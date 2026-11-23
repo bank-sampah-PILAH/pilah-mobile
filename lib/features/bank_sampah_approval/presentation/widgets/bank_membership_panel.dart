@@ -11,6 +11,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
@@ -62,6 +63,7 @@ class BankMembershipPanel extends ConsumerStatefulWidget {
 class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
     with SingleTickerProviderStateMixin {
   final _search = TextEditingController();
+  MembershipStatus? _historyStatus;
   bool _ownerDataReady = false;
   bool _loading = false;
   bool _loadFailed = false;
@@ -291,10 +293,13 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
   }
 
   Widget _historyTab(List<NasabahMembershipEntity> history, String query) {
-    final matches = history.where((item) => _matchesName(item, query));
+    final matches = history.where((membership) =>
+        _matchesName(membership, query) &&
+        (_historyStatus == null || membership.status == _historyStatus));
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
+        if (history.isNotEmpty) _historyFilters(query),
         if (history.isEmpty)
           const _PanelEmptyState(
             title: 'Belum ada riwayat pengajuan',
@@ -328,6 +333,36 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
       ],
     );
   }
+
+  Widget _historyFilters(String query) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.xs,
+            children: [
+              _statusChip('Semua', null),
+              _statusChip('Menunggu', MembershipStatus.pending),
+              _statusChip('Disetujui', MembershipStatus.approved),
+              _statusChip('Ditolak', MembershipStatus.rejected),
+            ],
+          ),
+          if (query.isNotEmpty || _historyStatus != null)
+            TextButton(
+              onPressed: () => setState(() {
+                _search.clear();
+                _historyStatus = null;
+              }),
+              child: const Text('Reset pencarian dan filter'),
+            ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      );
+
+  Widget _statusChip(String label, MembershipStatus? status) => AppChip(
+        label: label,
+        selected: _historyStatus == status,
+        onTap: () => setState(() => _historyStatus = status),
+      );
 
   Future<void> _openBankDetail(NasabahMembershipEntity membership) async {
     if (!_ownsCurrentSession() || !isSelectableMembership(membership)) return;
