@@ -1,5 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
+import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
+import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 
@@ -20,7 +27,22 @@ Map<String, dynamic> _member(
       'is_current_user': me,
     };
 
+class _MockUseCases extends Mock implements AuthenticationUseCases {}
+
+class _MockGoogle extends Mock implements LoginWithGoogleUseCase {}
+
+AuthEntity _session({required bool primary}) => AuthEntity(
+      id: 'u1',
+      name: 'Siti',
+      email: 'siti@x.test',
+      photoUrl: '',
+      token: 't',
+      role: 'pengelola',
+      isPrimaryPengelola: primary,
+    );
+
 void main() {
+  late _MockUseCases useCases;
   late StubApi api;
   late TestProfileNotifier notifier;
   late ProviderContainer container;
@@ -29,8 +51,15 @@ void main() {
   setUp(() {
     api = StubApi();
     notifier = buildProfileNotifier(api);
+    useCases = _MockUseCases();
+    when(() => useCases.getMe())
+        .thenAnswer((_) async => Right(_session(primary: true)));
     container = ProviderContainer(
-      overrides: [profileProvider.overrideWith(() => notifier)],
+      overrides: [
+        profileProvider.overrideWith(() => notifier),
+        authenticationProvider.overrideWith(
+            () => AuthenticationNotifier(useCases, _MockGoogle())),
+      ],
     );
     subscription = container.listen(profileProvider, (_, __) {});
   });
@@ -110,6 +139,50 @@ void main() {
       expect(state.team.map((m) => m.nama), ['Siti', 'Andi']);
       expect(state.team.first.isPrimary, isTrue);
       expect(state.isChangingTeam, isFalse);
+    });
+
+    group('the session', () {
+      final handedOver = {
+        'members': [
+          _member('u2', 'Andi', primary: true),
+          _member('u1', 'Siti', me: true),
+        ],
+      };
+
+      bool? marker() {
+        final state = container.read(authenticationProvider);
+        return state is Authenticated
+            ? state.authEntity.isPrimaryPengelola
+            : null;
+      }
+
+      test('is read again after a hand-over and loses the marker', () async {
+        await container.read(authenticationProvider.notifier).refreshUser();
+        expect(marker(), isTrue);
+        await notifier.load();
+        when(() => useCases.getMe())
+            .thenAnswer((_) async => Right(_session(primary: false)));
+        api.on('POST', '/api/v1/team/transfer', json: handedOver);
+
+        await notifier.transferPrimary('u2');
+
+        expect(marker(), isFalse);
+        verify(() => useCases.getMe()).called(2);
+      });
+
+      test('is left alone when the hand-over is refused', () async {
+        await container.read(authenticationProvider.notifier).refreshUser();
+        await notifier.load();
+        api.on('POST', '/api/v1/team/transfer', status: 403, json: {
+          'error': 'Hanya pengelola utama yang dapat melakukan aksi ini'
+        });
+
+        await notifier.transferPrimary('u2');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(marker(), isTrue);
+        verify(() => useCases.getMe()).called(1);
+      });
     });
 
     group('while a hand-over is in flight', () {
