@@ -26,6 +26,7 @@ import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/pages/nasabah_jadwal_detail_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
@@ -380,6 +381,14 @@ class AppRouterConfig {
               GoRoute(
                 path: JadwalPage.route,
                 name: JadwalPage.route,
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, state) => NasabahJadwalDetailPage(
+                      id: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
                 builder: (context, state) => Consumer(
                   builder: (context, ref, child) {
                     final authState = ref.watch(authenticationProvider);

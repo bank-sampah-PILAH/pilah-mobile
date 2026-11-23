@@ -24,6 +24,7 @@ class TransaksiBaruPage extends StatelessWidget {
         onClose: close,
         headerBuilder: (startTutorial) => AppBackHeader(
           title: 'Transaksi Baru',
+          revealTitle: true,
           onBack: close,
           actions: [
             AppIconButton(

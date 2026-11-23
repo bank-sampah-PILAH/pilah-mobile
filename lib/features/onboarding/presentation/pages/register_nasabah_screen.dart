@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,11 +11,13 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
@@ -95,6 +99,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
     // Membership now linked to the account; refresh the cached session so a
     // relaunch mid-flow lands on the right step.
     ref.read(authenticationProvider.notifier).refreshUser();
+    unawaited(ref.read(nasabahApprovalProvider.notifier).load());
     context.go(locationForAuthStep(result?.nextStep));
   }
 
@@ -127,9 +132,9 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
       subtitle: 'Pilih bank sampah untuk mengajukan keanggotaan.',
       onExit: () => confirmExitOnboarding(context),
       onUnauthenticated: () => context.go(LoginPage.route),
-      progress: const OnboardingStepper(
+      progress: const OnboardingProgress(
         currentStep: 2,
-        secondStepLabel: 'Pilih Bank Sampah',
+        lastStepLabel: 'Pilih Bank Sampah',
       ),
       formKey: _formKey,
       formFields: [
@@ -202,44 +207,34 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
             ),
         ],
       ],
-      footer: [
-        const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              AppButton(
-                label: _isLocked ? 'Lanjutkan' : 'Ajukan Pendaftaran',
-                trailingIcon: Icons.arrow_forward,
-                isLoading: _isLoading,
-                onPressed: _onSubmit,
-              ),
-              if (ref.read(onboardingProvider.notifier).hasProfileDraft) ...[
-                const SizedBox(height: 12),
-                AppButton(
-                  label: 'Kembali',
-                  variant: AppButtonVariant.neutral,
-                  onPressed: () => handleOnboardingStepPop(
-                    context,
-                    didPop: false,
-                    isWizardStep: true,
-                  ),
+      footer: const [],
+      notice: const Padding(
+        padding: EdgeInsets.only(top: 24),
+        child: Text(
+          'Pengajuan akan ditinjau oleh pengurus bank sampah.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
+        ),
+      ),
+      actions: OnboardingActions(
+        primary: AppButton(
+          label: _isLocked ? 'Lanjutkan' : 'Ajukan Pendaftaran',
+          trailingIcon: Icons.arrow_forward,
+          isLoading: _isLoading,
+          onPressed: _onSubmit,
+        ),
+        secondary: ref.read(onboardingProvider.notifier).hasProfileDraft
+            ? AppButton(
+                label: 'Kembali',
+                variant: AppButtonVariant.neutral,
+                onPressed: () => handleOnboardingStepPop(
+                  context,
+                  didPop: false,
+                  isWizardStep: true,
                 ),
-              ],
-            ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text(
-            'Pengajuan akan ditinjau oleh pengurus bank sampah.',
-            textAlign: TextAlign.center,
-            style:
-                TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
+              )
+            : null,
+      ),
     );
   }
 }

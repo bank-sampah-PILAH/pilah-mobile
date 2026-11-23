@@ -28,6 +28,7 @@ WEB_CODE_PATHS = {
 BROWSER_TEST_PATHS = {
     "test/browser/file_downloader_test.dart",
     "test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart",
+    "test/features/authentication/presentation/pages/role_selection_page_test.dart",
     "test/features/dashboard/presentation/pages/dashboard_page_test.dart",
     "test/report_download_browser_test.dart",
 }

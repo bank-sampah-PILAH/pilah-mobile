@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/data_table_card.dart';
@@ -99,5 +100,18 @@ void main() {
 
     expect(find.text('baris 2-0'), findsOneWidget,
         reason: 'a new page starts at its first row, not at the old offset');
+  });
+
+  testWidgets('the column names are shown in the screen recording',
+      (tester) async {
+    await pumpCard(tester);
+
+    expect(
+      find.ancestor(
+        of: find.text('KOLOM'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
   });
 }

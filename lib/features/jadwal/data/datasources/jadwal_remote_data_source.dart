@@ -4,6 +4,8 @@ import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 
 abstract class JadwalRemoteDataSource {
+  Future<JadwalModel> getDetail(String id);
+
   Future<JadwalPageModel> getJadwal({
     required int page,
     DateTime? date,
@@ -25,6 +27,13 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   final NetworkService networkService;
 
   JadwalRemoteDataSourceImpl(this.networkService);
+
+  @override
+  Future<JadwalModel> getDetail(String id) async {
+    final response =
+        await networkService.get('/api/v1/jadwal/${Uri.encodeComponent(id)}');
+    return JadwalModel.fromJson(response.data as Map<String, dynamic>);
+  }
 
   @override
   Future<JadwalPageModel> getJadwal({

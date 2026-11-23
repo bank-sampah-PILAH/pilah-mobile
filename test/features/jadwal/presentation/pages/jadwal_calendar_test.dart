@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -91,6 +92,66 @@ void main() {
         matching: find.text('Buat Jadwal'),
       ),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('the empty agenda is shown in the screen recording',
+      (tester) async {
+    await tester.pumpWidget(
+      _provideJadwal(
+        const JadwalLoaded([]),
+        const MaterialApp(home: JadwalPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.ancestor(
+        of: find.text('Belum ada jadwal kegiatan'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+      'the calendar is shown in the screen recording, the agenda of a day '
+      'is not', (tester) async {
+    final now = DateTime.now();
+    final scheduledDate =
+        DateTime(now.year, now.month, now.day == 10 ? 11 : 10);
+
+    await tester.pumpWidget(
+      _provideJadwal(
+        JadwalLoaded(
+          [_schedule(scheduledDate)],
+          totalCount: 1,
+          scheduledDates: {scheduledDate},
+        ),
+        const MaterialApp(home: JadwalPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('jadwal-calendar-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey(
+      'jadwal-date-${scheduledDate.year}-${scheduledDate.month}-${scheduledDate.day}',
+    )));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.ancestor(
+        of: find.text('Sen'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: find.text('Balai Warga'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsNothing,
     );
   });
 }

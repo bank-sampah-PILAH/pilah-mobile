@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
@@ -248,15 +249,13 @@ class _RoleMenuRowState extends State<RoleMenuRow> {
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: Text(
-                  widget.label,
-                  style: AppTextStyle.small.copyWith(
-                    color: color,
-                    fontWeight: widget.selected
-                        ? AppFontWeight.semibold
-                        : AppFontWeight.medium,
-                  ),
-                ),
+                child: FixedText(widget.label,
+                    style: AppTextStyle.small.copyWith(
+                      color: color,
+                      fontWeight: widget.selected
+                          ? AppFontWeight.semibold
+                          : AppFontWeight.medium,
+                    )),
               ),
               if (widget.trailing != null) widget.trailing!,
             ],

@@ -4,6 +4,8 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 
 abstract class JadwalRepository {
+  Future<Either<NetworkException, JadwalEntity>> getDetail(String id);
+
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
