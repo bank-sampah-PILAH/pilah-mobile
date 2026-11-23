@@ -264,6 +264,8 @@ void main() {
         expect(find.text('Keluarkan Budi dari tim?'), findsOneWidget);
         expect(
             find.textContaining('tidak bisa lagi mengakses'), findsOneWidget);
+        expect(find.textContaining('Riwayat setoran yang ia catat tetap ada'),
+            findsOneWidget);
         await tester.tap(find.text('Ya, Keluarkan'));
         await settleKeepingToast(tester);
 
