@@ -1,8 +1,6 @@
-import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
-import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
 
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -17,12 +15,10 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
-import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
-import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
@@ -46,7 +42,6 @@ class BerandaNasabahPage extends ConsumerWidget {
     return _HomeSession(
       key: ObjectKey(auth),
       repository: di<NasabahRepository>(),
-      owner: auth,
       name: auth.name,
     );
   }
@@ -56,11 +51,9 @@ class _HomeSession extends ConsumerStatefulWidget {
   const _HomeSession({
     super.key,
     required this.repository,
-    required this.owner,
     required this.name,
   });
   final NasabahRepository repository;
-  final AuthEntity owner;
   final String name;
   @override
   ConsumerState<_HomeSession> createState() => _HomeSessionState();
@@ -95,39 +88,6 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
     if (state == AppLifecycleState.resumed) {
       unawaited(_refresh().catchError((_) {}));
     }
-  }
-
-  void _details(BuildContext context, String title, Widget body) {
-    final initial = ProviderScope.containerOf(context, listen: false)
-        .read(authenticationProvider);
-    final owner = initial is Authenticated ? initial.authEntity : null;
-    final guardedBody = Consumer(
-      builder: (context, ref, child) {
-        final current = ref.watch(authenticationProvider);
-        if (current is! Authenticated ||
-            current.authEntity.id != owner?.id ||
-            current.authEntity.email != owner?.email ||
-            current.authEntity.token != owner?.token ||
-            current.authEntity.role != 'nasabah') {
-          return const Text('Sesi berubah. Tutup detail dan masuk kembali.');
-        }
-        return body;
-      },
-    );
-    showAdaptiveConfirmation<void>(
-      context: context,
-      builder: (context, _) => SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(title,
-              style: const TextStyle(
-                  fontSize: AppFontSize.xxl, fontWeight: AppFontWeight.bold)),
-          guardedBody,
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Tutup')),
-        ]),
-      ),
-    );
   }
 
   Widget _notifications(BuildContext context) => AppTapTarget(
@@ -212,21 +172,7 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 BankMembershipHomeCard(
-                                  owner: widget.owner,
                                   activeBankName: home.bank.name,
-                                  onOpenActiveBank: (context, membership) =>
-                                      _details(
-                                    context,
-                                    'Detail Bank Sampah',
-                                    NasabahResource<NasabahBank>(
-                                      load: () =>
-                                          widget.repository.bank(membership.id),
-                                      builder: (_, bank) => Padding(
-                                        padding: const EdgeInsets.only(top: 16),
-                                        child: NasabahBankDetail(bank: bank),
-                                      ),
-                                    ),
-                                  ),
                                 ),
                                 const SizedBox(height: AppSpacing.md),
                                 _BalanceCard(

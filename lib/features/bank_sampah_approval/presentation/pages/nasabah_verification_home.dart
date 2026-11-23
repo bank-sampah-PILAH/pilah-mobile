@@ -23,6 +23,15 @@ class NasabahVerificationHome extends ConsumerWidget {
 
   final String name;
 
+  Future<void> _openHistory(BuildContext context, WidgetRef ref) async {
+    final auth = ref.read(authenticationProvider);
+    if (auth is! Authenticated) return;
+    await showBankMembershipPanel(context, scrollToHistory: true);
+    if (context.mounted) {
+      await ref.read(nasabahApprovalProvider.notifier).load(silent: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(nasabahApprovalProvider);
@@ -112,21 +121,7 @@ class NasabahVerificationHome extends ConsumerWidget {
                     label: 'Bank sampah saya',
                     variant: AppButtonVariant.text,
                     icon: Icons.fact_check_outlined,
-                    onPressed: () {
-                      final auth = ref.read(authenticationProvider);
-                      if (auth is! Authenticated) return;
-                      showBankMembershipPanel(
-                        context,
-                        owner: auth.authEntity,
-                        scrollToHistory: true,
-                      ).then((_) {
-                        if (context.mounted) {
-                          ref
-                              .read(nasabahApprovalProvider.notifier)
-                              .load(silent: true);
-                        }
-                      });
-                    },
+                    onPressed: () => _openHistory(context, ref),
                   ),
                   const SizedBox(height: 32),
                   Text('Perjalanan pengajuan',

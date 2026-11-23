@@ -33,16 +33,9 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/n
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_bank_identity.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 
-typedef MembershipBankDetailCallback = void Function(
-  BuildContext context,
-  NasabahMembershipEntity membership,
-);
-
 Future<void> showBankMembershipPanel(
   BuildContext context, {
-  required AuthEntity owner,
   bool scrollToHistory = false,
-  MembershipBankDetailCallback? onOpenActiveBank,
 }) async {
   await context.push<void>(Uri(
     path: ApprovalBankSampahListPage.route,
@@ -55,12 +48,10 @@ class BankMembershipPanel extends ConsumerStatefulWidget {
     super.key,
     required this.owner,
     this.scrollToHistory = false,
-    this.onOpenActiveBank,
   });
 
   final AuthEntity owner;
   final bool scrollToHistory;
-  final MembershipBankDetailCallback? onOpenActiveBank;
 
   @override
   ConsumerState<BankMembershipPanel> createState() =>
@@ -69,7 +60,6 @@ class BankMembershipPanel extends ConsumerStatefulWidget {
 
 class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
     with SingleTickerProviderStateMixin {
-  final _historyKey = GlobalKey();
   bool _ownerDataReady = false;
   bool _loading = false;
   bool _loadFailed = false;
@@ -98,34 +88,24 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
       );
 
   Future<void> _reload({bool silent = false}) async {
-    if (_loading || !_ownsCurrentSession()) return;
+    if (!mounted || _loading || !_ownsCurrentSession()) return;
     setState(() {
       _loading = true;
       if (!silent) _ownerDataReady = false;
       _loadFailed = false;
     });
+    var failed = false;
     try {
       await ref.read(nasabahApprovalProvider.notifier).load(silent: silent);
     } catch (_) {
-      if (mounted && _ownsCurrentSession()) {
-        setState(() => _loadFailed = true);
-      }
-    } finally {
-      if (mounted && _ownsCurrentSession()) {
-        setState(() {
-          _loading = false;
-          _ownerDataReady = true;
-        });
-        if (widget.scrollToHistory && !silent) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final target = _historyKey.currentContext;
-            if (mounted && target != null) {
-              Scrollable.ensureVisible(target, duration: Duration.zero);
-            }
-          });
-        }
-      }
+      failed = true;
     }
+    if (!mounted || !_ownsCurrentSession()) return;
+    setState(() {
+      _loadFailed = failed;
+      _loading = false;
+      _ownerDataReady = true;
+    });
   }
 
   Future<void> _openHistoryDetail(NasabahMembershipEntity membership) async {
@@ -184,62 +164,65 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
             Tab(text: 'Bank Diikuti'),
             Tab(text: 'Riwayat pengajuan'),
           ]),
-          Expanded(
-            child: !_ownerDataReady
-                ? ListView(
-                    children: List.generate(
-                        3,
-                        (_) => const Padding(
-                              padding: EdgeInsets.all(AppSpacing.md),
-                              child: SkeletonListItem(),
-                            )))
-                : _loadFailed || state is NasabahApprovalError
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _PanelEmptyState(
-                            title: 'Gagal Memuat Data',
-                            message: state is NasabahApprovalError
-                                ? state.message
-                                : 'Coba periksa koneksi Anda.',
-                          ),
-                          AppButton(label: 'Coba lagi', onPressed: _reload),
-                        ],
-                      )
-                    : state is NasabahApprovalLoaded
-                        ? _membershipContent(state.memberships, activeId)
-                        : const SizedBox.shrink(),
-          ),
+          Expanded(child: _body(state, activeId)),
         ]),
       ),
     );
+  }
+
+  Widget _body(NasabahApprovalState state, String? activeId) {
+    if (!_ownerDataReady) {
+      return ListView(
+        children: List.generate(
+          3,
+          (_) => const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: SkeletonListItem(),
+          ),
+        ),
+      );
+    }
+    if (_loadFailed || state is NasabahApprovalError) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _PanelEmptyState(
+            title: 'Gagal Memuat Data',
+            message: state is NasabahApprovalError
+                ? state.message
+                : 'Coba periksa koneksi Anda.',
+          ),
+          AppButton(label: 'Coba lagi', onPressed: _reload),
+        ],
+      );
+    }
+    if (state is NasabahApprovalLoaded) {
+      return _membershipContent(state.memberships, activeId);
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _membershipContent(
     List<NasabahMembershipEntity> memberships,
     String? activeId,
   ) {
-    final currentByBank = <String, NasabahMembershipEntity>{};
-    for (final membership in memberships) {
-      final bankId = membership.bankSampahId.isEmpty
-          ? membership.id
-          : membership.bankSampahId;
-      currentByBank.putIfAbsent(bankId, () => membership);
-    }
-    final current = currentByBank.values.toList();
-    final followed = current
-        .where((item) => item.status == MembershipStatus.approved)
-        .toList()
-      ..sort((a, b) {
-        if (a.id == b.id) return 0;
-        if (a.id == activeId) return -1;
-        if (b.id == activeId) return 1;
-        return a.bankSampahNama.compareTo(b.bankSampahNama);
-      });
-    final history = [...current]
+    // The API enforces one membership per account and bank; appeals update it.
+    final history = [...memberships]
       ..sort((a, b) => a.bankSampahNama.compareTo(b.bankSampahNama));
+    final followed = history
+        .where((item) => item.status == MembershipStatus.approved)
+        .toList();
+    final activeIndex = followed.indexWhere((item) => item.id == activeId);
+    if (activeIndex > 0) followed.insert(0, followed.removeAt(activeIndex));
 
     return TabBarView(controller: _tabController, children: [
+      _followedTab(followed, activeId),
+      _historyTab(history),
+    ]);
+  }
+
+  Widget _followedTab(
+          List<NasabahMembershipEntity> followed, String? activeId) =>
       ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -250,45 +233,39 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
             ),
           for (final membership in followed) ...[
             _MembershipRow(
+              key: ValueKey(membership.id),
               membership: membership,
               isActive: membership.id == activeId,
               history: false,
-              onTap: membership.dapatDibuka
+              onTap: isSelectableMembership(membership)
                   ? () => _openBankDetail(membership)
                   : null,
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
         ],
-      ),
-      ListView(
+      );
+
+  Widget _historyTab(List<NasabahMembershipEntity> history) => ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          KeyedSubtree(
-            key: _historyKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (history.isEmpty)
-                  const _PanelEmptyState(
-                    title: 'Belum ada riwayat pengajuan',
-                    message: 'Pengajuan ke bank sampah akan muncul di sini.',
-                  )
-                else
-                  for (final membership in history) ...[
-                    _MembershipRow(
-                      membership: membership,
-                      isActive: false,
-                      history: true,
-                      onTap: () => _openHistoryDetail(membership),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
-              ],
+          if (history.isEmpty)
+            const _PanelEmptyState(
+              title: 'Belum ada riwayat pengajuan',
+              message: 'Pengajuan ke bank sampah akan muncul di sini.',
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (memberships.isNotEmpty)
+          for (final membership in history) ...[
+            _MembershipRow(
+              key: ValueKey(membership.id),
+              membership: membership,
+              isActive: false,
+              history: true,
+              onTap: () => _openHistoryDetail(membership),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          if (history.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
             AppButton(
               label: 'Ajukan bank baru',
               icon: Icons.add,
@@ -296,75 +273,75 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
               isLoading: _applying,
               onPressed: _applying ? null : _apply,
             ),
+          ],
         ],
-      ),
-    ]);
-  }
+      );
 
   Future<void> _openBankDetail(NasabahMembershipEntity membership) async {
     if (!_ownsCurrentSession() || !isSelectableMembership(membership)) return;
-    final pageContext = context;
-    await showAdaptiveSurface<void>(context, builder: (surfaceContext) {
-      final detail = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!DialogSurface.of(surfaceContext)) const AppSheetHandle(),
-          AppPanelHeader(
-            title: 'Detail Bank Sampah',
-            onClose: DialogSurface.of(surfaceContext)
-                ? () => Navigator.of(surfaceContext).pop()
-                : null,
-          ),
-          Consumer(
-            builder: (context, ref, _) {
-              final authState = ref.watch(authenticationProvider);
-              if (!_sameOwner(widget.owner, authState) ||
-                  !isSelectableMembership(membership)) {
-                return const Text('Sesi berubah. Tutup dan masuk kembali.');
+    await showAdaptiveSurface<void>(
+      context,
+      builder: (surfaceContext) => _bankDetailSurface(
+        surfaceContext,
+        membership,
+        onSelected: () {
+          if (!mounted || !_ownsCurrentSession()) return;
+          Navigator.of(surfaceContext).pop();
+          context.go('/dashboard');
+        },
+      ),
+    );
+  }
+
+  Widget _bankDetailSurface(
+    BuildContext surfaceContext,
+    NasabahMembershipEntity membership, {
+    required VoidCallback onSelected,
+  }) {
+    final dialog = DialogSurface.of(surfaceContext);
+    final detail = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!dialog) const AppSheetHandle(),
+        AppPanelHeader(
+          title: 'Detail Bank Sampah',
+          onClose: dialog ? () => Navigator.of(surfaceContext).pop() : null,
+        ),
+        Consumer(builder: (_, ref, __) {
+          if (!_sameOwner(widget.owner, ref.watch(authenticationProvider))) {
+            return const Text('Sesi berubah. Tutup dan masuk kembali.');
+          }
+          final active = ref.watch(activeMembershipProvider);
+          return NasabahResource<NasabahBank>(
+            load: () async {
+              if (!mounted || !_ownsCurrentSession()) {
+                throw StateError('Bank detail is no longer available.');
               }
-              final active = ref.watch(activeMembershipProvider);
-              return NasabahResource<NasabahBank>(
-                load: () {
-                  if (!_ownsCurrentSession() ||
-                      !isSelectableMembership(membership)) {
-                    throw StateError('Bank detail is no longer available.');
-                  }
-                  return di<NasabahRepository>().bank(membership.id);
-                },
-                builder: (context, bank) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    NasabahBankDetail(bank: bank),
-                    if (!active.isLoading &&
-                        membership.id != active.value &&
-                        isSelectableMembership(membership))
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: _MakeMembershipActiveButton(
-                          membership: membership,
-                          owner: widget.owner,
-                          onSuccess: () {
-                            if (mounted &&
-                                pageContext.mounted &&
-                                _ownsCurrentSession()) {
-                              Navigator.of(surfaceContext).pop();
-                              pageContext.go('/dashboard');
-                            }
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              );
+              return di<NasabahRepository>().bank(membership.id);
             },
-          ),
-        ],
-      );
-      return DialogSurface.of(surfaceContext)
-          ? SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl), child: detail)
-          : AppSheetContainer(child: detail);
-    });
+            builder: (_, bank) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                NasabahBankDetail(bank: bank),
+                if (!active.isLoading && membership.id != active.value)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: _MakeMembershipActiveButton(
+                      membership: membership,
+                      owner: widget.owner,
+                      onSuccess: onSelected,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+    return dialog
+        ? SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.xl), child: detail)
+        : AppSheetContainer(child: detail);
   }
 }
 
@@ -434,6 +411,7 @@ class _MakeMembershipActiveButtonState
 
 class _MembershipRow extends StatefulWidget {
   const _MembershipRow({
+    super.key,
     required this.membership,
     required this.isActive,
     required this.history,
@@ -470,18 +448,15 @@ class _MembershipRowState extends State<_MembershipRow> {
     final history = widget.history;
     final onTap = widget.onTap;
     final unavailable = !history && !membership.dapatDibuka;
-    final marker = history
-        ? null
-        : isActive
-            ? const _ActiveLabel()
-            : unavailable
-                ? Text(
-                    'Tidak tersedia',
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.grey100,
-                    ),
-                  )
-                : null;
+    final marker = isActive
+        ? const _ActiveLabel()
+        : unavailable
+            ? Text(
+                'Tidak tersedia',
+                style:
+                    AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+              )
+            : null;
     final row = Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -571,22 +546,15 @@ class _ActiveLabel extends StatelessWidget {
 class BankMembershipHomeCard extends StatelessWidget {
   const BankMembershipHomeCard({
     super.key,
-    required this.owner,
     required this.activeBankName,
-    required this.onOpenActiveBank,
   });
 
-  final AuthEntity owner;
   final String activeBankName;
-  final MembershipBankDetailCallback onOpenActiveBank;
 
   @override
   Widget build(BuildContext context) => AppTappableCard(
-        onTap: () => showBankMembershipPanel(
-          context,
-          owner: owner,
-          onOpenActiveBank: onOpenActiveBank,
-        ),
+        outlined: true,
+        onTap: () => showBankMembershipPanel(context),
         child: Row(children: [
           const Icon(Icons.account_balance_outlined,
               color: AppColors.greenDark),
@@ -611,9 +579,12 @@ class BankMembershipHomeCard extends StatelessWidget {
       );
 }
 
-bool _sameOwner(AuthEntity expected, AuthenticationStates current) =>
-    current is Authenticated &&
-    current.authEntity.role == 'nasabah' &&
-    current.authEntity.id == expected.id &&
-    current.authEntity.email == expected.email &&
-    current.authEntity.token == expected.token;
+bool _sameOwner(AuthEntity expected, AuthenticationStates current) {
+  if (current is! Authenticated || current.authEntity.role != 'nasabah') {
+    return false;
+  }
+  final actual = current.authEntity;
+  if (actual.id != null && expected.id != null) return actual.id == expected.id;
+  return actual.email.trim().toLowerCase() ==
+      expected.email.trim().toLowerCase();
+}
