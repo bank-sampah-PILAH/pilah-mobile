@@ -22,6 +22,7 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -221,7 +222,8 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
                                 ),
                                 const SizedBox(height: 8),
                                 NasabahResource<JadwalEntity?>(
-                                  load: _loadNearestSchedule,
+                                  load: () =>
+                                      _loadNearestSchedule(home.membershipId),
                                   registerReload: (reload) =>
                                       _reloadSchedule = reload,
                                   builder: (context, schedule) {
@@ -322,7 +324,13 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
       );
 }
 
-Future<JadwalEntity?> _loadNearestSchedule() async {
+/// The nearest upcoming schedule of [membershipId], or null when there is
+/// none.
+///
+/// The bank is explicit because the backend otherwise refuses the list for a
+/// nasabah with more than one (PIL-235); before that it merged the schedules
+/// of every bank they belonged to, and this card showed whichever came first.
+Future<JadwalEntity?> _loadNearestSchedule(String? membershipId) async {
   final repository = di<JadwalRepository>();
   final now = clock.now();
   JadwalEntity? nearest;
@@ -330,11 +338,22 @@ Future<JadwalEntity?> _loadNearestSchedule() async {
   // ponytail: scans every upcoming page; add a server-side nearest query if
   // volume hurts homepage load time.
   while (true) {
-    final result = await repository.getJadwal(page: pageNumber);
-    final page = result.fold(
-      (failure) => throw NasabahApiException(failure.displayMessage),
+    final result = membershipId == null
+        ? await repository.getJadwal(page: pageNumber)
+        : await repository.getJadwal(
+            page: pageNumber,
+            membershipId: membershipId,
+          );
+    final page = result.fold<JadwalPageResult?>(
+      // A bank that is no longer this nasabah's to read is not an error worth
+      // repeating here: the bank card above already carries the refusal, so
+      // the schedule card simply has nothing to show.
+      (failure) => failure.response?.statusCode == 403
+          ? null
+          : throw NasabahApiException(failure.displayMessage),
       (page) => page,
     );
+    if (page == null) return null;
     for (final schedule in page.items) {
       final start = schedule.mulaiPada.toLocal();
       final end = schedule.selesaiPada.toLocal();
