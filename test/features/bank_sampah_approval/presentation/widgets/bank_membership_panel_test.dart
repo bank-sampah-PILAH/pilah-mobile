@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
@@ -39,13 +40,16 @@ void main() {
     required List<NasabahMembershipEntity> memberships,
     required MemoryAppStorage storage,
     bool history = false,
+    Size size = const Size(390, 844),
+    TestNasabahApprovalNotifier? approval,
+    AuthEntity owner = _owner,
   }) async {
-    tester.view.physicalSize = const Size(390, 844);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final auth = TestAuthenticationNotifier(
-      initialState: Authenticated(authEntity: _owner),
+      initialState: Authenticated(authEntity: owner),
     );
     final container = ProviderContainer(overrides: [
       authenticationProvider.overrideWith(() => auth),
@@ -54,9 +58,11 @@ void main() {
       ),
       activeMembershipUserIdProvider.overrideWithValue('nasabah-1'),
       nasabahApprovalProvider.overrideWith(
-        () => TestNasabahApprovalNotifier(
-          initialState: NasabahApprovalLoaded(memberships),
-        ),
+        () =>
+            approval ??
+            TestNasabahApprovalNotifier(
+              initialState: NasabahApprovalLoaded(memberships),
+            ),
       ),
     ]);
     addTearDown(container.dispose);
@@ -76,7 +82,7 @@ void main() {
       GoRoute(
         path: '/approval-bank-sampah',
         builder: (context, state) => BankMembershipPanel(
-          owner: _owner,
+          owner: owner,
           scrollToHistory: state.uri.queryParameters['tab'] == 'history',
         ),
       ),
@@ -213,6 +219,149 @@ void main() {
     expect(container.read(activeMembershipProvider).value, bankA.id);
   });
 
+  testWidgets('shows a load failure and retries the memberships',
+      (tester) async {
+    final approval = _FailOnceApproval([bankA]);
+    await pumpPage(tester,
+        memberships: [bankA], storage: MemoryAppStorage(), approval: approval);
+
+    expect(find.text('Gagal Memuat Data'), findsOneWidget);
+    expect(find.text('Coba periksa koneksi Anda.'), findsOneWidget);
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A'), findsOneWidget);
+  });
+
+  testWidgets('shows the provider error and an empty history after retry',
+      (tester) async {
+    final approval =
+        _FailOnceApproval(const [], errorMessage: 'Tidak terhubung');
+    await pumpPage(tester,
+        history: true,
+        memberships: [],
+        storage: MemoryAppStorage(),
+        approval: approval);
+
+    expect(find.text('Tidak terhubung'), findsOneWidget);
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada riwayat pengajuan'), findsOneWidget);
+    expect(find.text('Ajukan bank baru'), findsNothing);
+    await tester.tap(find.text('Bank Diikuti'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada bank yang diikuti'), findsOneWidget);
+  });
+
+  testWidgets('active bank sorts first and wide detail closes its chevron',
+      (tester) async {
+    await pumpPage(
+      tester,
+      size: const Size(1440, 900),
+      memberships: [bankA, bankB],
+      storage: MemoryAppStorage()
+        ..values['active_membership_id:nasabah-1'] = bankB.id,
+    );
+
+    expect(tester.getTopLeft(find.text('Bank B')).dy,
+        lessThan(tester.getTopLeft(find.text('Bank A')).dy));
+    await tester.tap(find.text('Bank B'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+    expect(
+        tester
+            .widgetList<AnimatedRotation>(
+                find.byType(AnimatedRotation, skipOffstage: false))
+            .map((rotation) => rotation.turns),
+        contains(.5));
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+    expect(
+        tester
+            .widgetList<AnimatedRotation>(find.byType(AnimatedRotation))
+            .map((rotation) => rotation.turns),
+        everyElement(0));
+  });
+
+  testWidgets('successful history detail return reloads in place',
+      (tester) async {
+    final (container, _) = await pumpPage(tester,
+        history: true, memberships: [bankA], storage: MemoryAppStorage());
+    final approval = container.read(nasabahApprovalProvider.notifier)
+        as TestNasabahApprovalNotifier;
+    approval.loadCalls.clear();
+    await tester.tap(find.text('Bank A'));
+    await tester.pumpAndSettle();
+    expect(find.text('Riwayat Persetujuan'), findsOneWidget);
+
+    // A successful appeal returns true from the detail overlay.
+    Navigator.of(tester.element(find.text('Riwayat Persetujuan'))).pop(true);
+    await tester.pumpAndSettle();
+    expect(approval.loadCalls, [true]);
+    expect(find.text('Riwayat pengajuan'), findsOneWidget);
+  });
+
+  testWidgets('same-account refresh keeps the page and account change hides it',
+      (tester) async {
+    final (container, _) = await pumpPage(tester,
+        memberships: [bankA], storage: MemoryAppStorage());
+    final auth = container.read(authenticationProvider.notifier)
+        as TestAuthenticationNotifier;
+    auth.setStateForTest(Authenticated(
+        authEntity: const AuthEntity(
+      id: 'nasabah-1',
+      name: 'Siti',
+      email: 'SITI@example.test',
+      photoUrl: '',
+      token: '',
+      role: 'nasabah',
+    )));
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A'), findsOneWidget);
+    auth.setStateForTest(Unauthenticated());
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A'), findsNothing);
+    expect(find.textContaining('Sesi berubah'), findsOneWidget);
+  });
+
+  testWidgets('session without an ID matches normalized account email',
+      (tester) async {
+    final (container, _) = await pumpPage(
+      tester,
+      memberships: [bankA],
+      storage: MemoryAppStorage(),
+      owner: const AuthEntity(
+        name: 'Siti',
+        email: '  SITI@example.test ',
+        photoUrl: '',
+        token: 'token-1',
+        role: 'nasabah',
+      ),
+    );
+    final auth = container.read(authenticationProvider.notifier)
+        as TestAuthenticationNotifier;
+    auth.setStateForTest(Authenticated(authEntity: _owner));
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A'), findsOneWidget);
+  });
+
+  testWidgets('an open detail cannot reload after logout', (tester) async {
+    final (container, _) = await pumpPage(tester,
+        memberships: [bankA], storage: MemoryAppStorage());
+    await tester.tap(find.text('Bank A'));
+    await tester.pumpAndSettle();
+    final detail = tester.state<NasabahResourceState<NasabahBank>>(
+      find.byType(NasabahResource<NasabahBank>),
+    );
+    final auth = container.read(authenticationProvider.notifier)
+        as TestAuthenticationNotifier;
+    auth.setStateForTest(Unauthenticated());
+    await expectLater(detail.reload(), throwsStateError);
+    await tester.pumpAndSettle();
+    expect(find.text('Sesi berubah. Tutup dan masuk kembali.'), findsOneWidget);
+  });
+
   testWidgets('successful additional application returns to history',
       (tester) async {
     final (container, _) = await pumpPage(
@@ -236,4 +385,22 @@ void main() {
     expect(find.text('Bank A'), findsOneWidget);
     expect(container.read(activeMembershipProvider).value, bankA.id);
   });
+}
+
+class _FailOnceApproval extends TestNasabahApprovalNotifier {
+  _FailOnceApproval(List<NasabahMembershipEntity> memberships,
+      {this.errorMessage})
+      : super(initialState: NasabahApprovalLoaded(memberships));
+
+  final String? errorMessage;
+  bool _failed = false;
+
+  @override
+  Future<void> load({bool silent = false}) async {
+    if (_failed) return super.load(silent: silent);
+    _failed = true;
+    final message = errorMessage;
+    if (message == null) throw StateError('Test connection failure');
+    setStateForTest(NasabahApprovalError(message));
+  }
 }

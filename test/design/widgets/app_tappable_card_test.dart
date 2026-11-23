@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 
@@ -43,6 +44,21 @@ void main() {
     final decoration = box.decoration! as BoxDecoration;
     expect(decoration.color, Colors.white);
     expect(decoration.borderRadius, BorderRadius.circular(16));
+  });
+
+  testWidgets('can add the standard card outline', (tester) async {
+    await tester.pumpWidget(_host(
+      AppTappableCard(outlined: true, onTap: () {}, child: const Text('isi')),
+    ));
+
+    final box = tester.widget<Container>(find
+        .descendant(
+          of: find.byType(AppTappableCard),
+          matching: find.byType(Container),
+        )
+        .first);
+    expect((box.decoration! as BoxDecoration).border,
+        Border.all(color: AppColors.border));
   });
 
   testWidgets('tapping calls onTap', (tester) async {
