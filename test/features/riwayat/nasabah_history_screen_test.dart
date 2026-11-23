@@ -18,7 +18,15 @@ import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
+
+import '../../support/active_membership_support.dart';
 import '../../support/auth_support.dart';
+import '../../support/nasabah_approval_support.dart';
 import '../../support/pencairan_support.dart';
 import '../../support/stub_api.dart';
 
@@ -31,9 +39,14 @@ class _Repository extends PreviewNasabahRepository {
   String amount = '12500.50';
   int balanceRequests = 0;
 
+  /// Banks the screen asked for, in order, so a test can say which one it
+  /// opened on rather than only how many times it loaded.
+  final askedFor = <String>[];
+
   @override
   Future<NasabahBalance> balance(String membershipId) async {
     balanceRequests++;
+    askedFor.add(membershipId);
     return NasabahBalance(amount, updatedAt);
   }
 }
@@ -89,6 +102,9 @@ void main() {
     _Repository repo, {
     _RiwayatRepository? historyRepository,
     bool settle = true,
+    String? membershipId = 'm1',
+    MemoryAppStorage? storage,
+    List<NasabahMembershipEntity>? memberships,
   }) async {
     riwayatRepository = historyRepository ?? _RiwayatRepository();
     di.registerSingleton<NasabahRepository>(repo);
@@ -112,9 +128,20 @@ void main() {
             GetRiwayatSetoranDetailUseCase(riwayatRepository),
           ),
         ),
+        activeMembershipSelectionProvider.overrideWithValue(
+          storage == null
+              ? ActiveMembershipSelection.none()
+              : ActiveMembershipSelection(storage),
+        ),
+        if (memberships != null)
+          nasabahApprovalProvider.overrideWith(
+            () => TestNasabahApprovalNotifier(
+              initialState: NasabahApprovalLoaded(memberships),
+            ),
+          ),
       ],
-      child: const MaterialApp(
-        home: NasabahHistoryScreen(membershipId: 'm1'),
+      child: MaterialApp(
+        home: NasabahHistoryScreen(membershipId: membershipId),
       ),
     ));
     if (settle) {
@@ -123,6 +150,29 @@ void main() {
       await tester.pump();
     }
   }
+
+  testWidgets('opens on the active bank when the route names none',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage).select('u1', 'membership-a');
+    final repository = _Repository();
+
+    // Reached from the navigation bar rather than from the beranda, so there
+    // is no `keanggotaan_id` on the route. Before PIL-235 that left a nasabah
+    // with two banks facing the picker on a screen they had just opened.
+    await pumpScreen(
+      tester,
+      repository,
+      membershipId: null,
+      storage: storage,
+      memberships: [
+        membershipRow('membership-a'),
+        membershipRow('membership-b'),
+      ],
+    );
+
+    expect(repository.askedFor, ['membership-a']);
+  });
 
   testWidgets('shows when the balance was last updated', (tester) async {
     await pumpScreen(tester, _Repository(updatedAt: DateTime(2026, 9, 20, 9)));
