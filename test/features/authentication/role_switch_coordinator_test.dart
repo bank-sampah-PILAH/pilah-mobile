@@ -10,6 +10,25 @@ AuthEntity session(String role) => AuthEntity(
 );
 
 void main() {
+  test('a switch response arriving after logout cannot restore the session', () async {
+    AuthEntity? current = session('pengelola');
+    var mutations = 0;
+    final response = Completer<RoleSwitchSession>();
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => current, requestRole: (_) => response.future,
+      persistSession: (_, __) async { mutations++; },
+      resetRoleState: () { mutations++; },
+      publishSession: (_) { mutations++; },
+    );
+    addTearDown(coordinator.dispose);
+    final switching = coordinator.switchTo('nasabah');
+    current = null;
+    response.complete(RoleSwitchSession(session('nasabah'), 'refresh'));
+    await switching;
+    expect(mutations, 0);
+    expect(coordinator.completedSession, isNull);
+  });
+
   test('invalid switch responses cannot replace the current session', () async {
     final invalid = [
       RoleSwitchSession(session('pengelola'), 'refresh'),
