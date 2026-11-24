@@ -450,6 +450,13 @@ class AppRouterConfig {
 
   static GoRouter getRouter() => _router;
 
+  /// The route pattern of the screen showing now, such as `/nasabah/:id`, or
+  /// null before the router has a page.
+  static String? currentPath() {
+    final shown = _router.routerDelegate.currentConfiguration;
+    return shown.isEmpty ? null : shown.fullPath;
+  }
+
   static String? _roleRedirect(BuildContext context, String path) {
     final state = ProviderScope.containerOf(context, listen: false)
         .read(authenticationProvider);
