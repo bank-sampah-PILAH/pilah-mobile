@@ -38,9 +38,9 @@ class NetworkException implements Exception {
         return UnprocessableEntityException(
             response: response, message: message);
       case 500:
-        return InternalServerErrorException();
+        return InternalServerErrorException(response: response);
       case 503:
-        return InternalServerErrorException();
+        return InternalServerErrorException(response: response);
       default:
         var responseCode = statusCode;
         return FetchDataException(
@@ -190,7 +190,8 @@ class SendTimeOutException extends NetworkException {
 }
 
 class InternalServerErrorException extends NetworkException {
-  InternalServerErrorException() : super(prefix: 'Internal Server Error');
+  InternalServerErrorException({super.response})
+      : super(prefix: 'Internal Server Error');
 }
 
 class ConflictException extends NetworkException {
