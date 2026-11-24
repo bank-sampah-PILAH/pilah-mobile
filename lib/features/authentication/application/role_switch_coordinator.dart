@@ -38,6 +38,16 @@ class RoleSwitchCoordinator extends ChangeNotifier {
     notifyListeners();
     try {
       final next = await requestRole(role);
+      final allowedSteps = role == 'nasabah'
+          ? const ['nasabah_dashboard', 'register_nasabah', 'complete_profile']
+          : const ['dashboard', 'approval_pending', 'registration_rejected',
+              'register_bank_sampah', 'complete_profile'];
+      if (next.auth.id != current.id || current.id == null ||
+          next.auth.role != role || next.auth.token.trim().isEmpty ||
+          next.refreshToken.trim().isEmpty ||
+          !allowedSteps.contains(next.auth.nextStep)) {
+        throw const FormatException('Invalid role switch session');
+      }
       await persistSession(next.auth.token, next.refreshToken);
       resetRoleState();
       publishSession(next.auth);
