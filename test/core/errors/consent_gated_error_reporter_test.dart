@@ -20,8 +20,8 @@ void main() {
     test('reports nothing before analytics has started', () {
       final analytics = FakeAnalyticsClient();
       final inner = _RecordingReporter();
-      final reporter =
-          ConsentGatedErrorReporter(inner: inner, analytics: analytics);
+      final reporter = ConsentGatedErrorReporter(
+          inner: inner, allowed: () => analytics.isRecording);
 
       reporter.report(StateError('boom'), StackTrace.current);
 
@@ -31,8 +31,8 @@ void main() {
     test('passes the error on while analytics is recording', () async {
       final analytics = FakeAnalyticsClient();
       final inner = _RecordingReporter();
-      final reporter =
-          ConsentGatedErrorReporter(inner: inner, analytics: analytics);
+      final reporter = ConsentGatedErrorReporter(
+          inner: inner, allowed: () => analytics.isRecording);
 
       await analytics.start();
       final error = StateError('boom');
@@ -44,8 +44,8 @@ void main() {
     test('reports nothing again once analytics is stopped', () async {
       final analytics = FakeAnalyticsClient();
       final inner = _RecordingReporter();
-      final reporter =
-          ConsentGatedErrorReporter(inner: inner, analytics: analytics);
+      final reporter = ConsentGatedErrorReporter(
+          inner: inner, allowed: () => analytics.isRecording);
 
       await analytics.start();
       await analytics.stop();

@@ -1,4 +1,3 @@
-import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/errors/error_filter.dart';
 import 'package:pilah_mobile/core/errors/error_flows.dart';
 
@@ -99,13 +98,15 @@ class LateErrorReporter implements ErrorReporter {
 /// Passes an error on only while the pengurus has agreed to analytics.
 ///
 /// The consent controller is the only place that starts or stops analytics, so
-/// this follows [AnalyticsClient.isRecording] instead of keeping a second
-/// switch that could disagree with it.
+/// [allowed] should follow `AnalyticsClient.isRecording` instead of being a
+/// second switch that could disagree with it. It is a function, like
+/// `ContextualErrorReporter.currentScreen`, so this class needs to know nothing
+/// else about analytics.
 class ConsentGatedErrorReporter implements ErrorReporter {
-  ConsentGatedErrorReporter({required this.inner, required this.analytics});
+  ConsentGatedErrorReporter({required this.inner, required this.allowed});
 
   final ErrorReporter inner;
-  final AnalyticsClient analytics;
+  final bool Function() allowed;
 
   @override
   void report(
@@ -113,7 +114,7 @@ class ConsentGatedErrorReporter implements ErrorReporter {
     StackTrace stack, {
     Map<String, Object?> context = const {},
   }) {
-    if (!analytics.isRecording) return;
+    if (!allowed()) return;
     inner.report(error, stack, context: context);
   }
 }

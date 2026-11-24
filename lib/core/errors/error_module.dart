@@ -13,7 +13,7 @@ abstract class ErrorModule {
   @lazySingleton
   ErrorReporter errorReporter(AnalyticsClient analytics) =>
       ConsentGatedErrorReporter(
-        analytics: analytics,
+        allowed: () => analytics.isRecording,
         inner: FilteredErrorReporter(
           inner: ContextualErrorReporter(
             inner: createPlatformErrorReporter(),
