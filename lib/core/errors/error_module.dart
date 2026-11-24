@@ -24,16 +24,8 @@ abstract class ErrorModule {
       );
 
   /// The screen showing now, named like analytics names it, or null before the
-  /// router exists or has a page.
-  static String? _currentScreen() {
-    try {
-      final shown =
-          AppRouterConfig.getRouter().routerDelegate.currentConfiguration;
-      return shown.isEmpty
-          ? null
-          : AnalyticsScreenTracker.nameFor(shown.fullPath);
-    } catch (_) {
-      return null;
-    }
-  }
+  /// router has a page. A failure in here is caught by the `SafeErrorReporter`
+  /// around the chain.
+  static String? _currentScreen() =>
+      AnalyticsScreenTracker.nameFor(AppRouterConfig.currentPath());
 }

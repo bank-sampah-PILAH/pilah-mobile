@@ -13,10 +13,7 @@ final analyticsScreenTrackerProvider = Provider<AnalyticsScreenTracker>(
     final tracker = AnalyticsScreenTracker(
       client: ref.watch(analyticsClientProvider),
       changes: router.routerDelegate,
-      currentPath: () {
-        final shown = router.routerDelegate.currentConfiguration;
-        return shown.isEmpty ? null : shown.fullPath;
-      },
+      currentPath: AppRouterConfig.currentPath,
     )..attach();
     ref.onDispose(tracker.dispose);
     return tracker;
