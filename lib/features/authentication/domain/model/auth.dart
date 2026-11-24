@@ -14,6 +14,7 @@ class AuthEntity {
     id: id, name: name, email: email, photoUrl: photoUrl, token: token,
     nextStep: nextStep, bankSampahNama: bankSampahNama,
     bankSampahStatus: bankSampahStatus, role: role,
+    isPrimaryPengelola: isPrimaryPengelola,
     roles: List.unmodifiable(owned), noHp: noHp, jenisKelamin: jenisKelamin,
     tanggalLahir: tanggalLahir, alamat: alamat,
   );
