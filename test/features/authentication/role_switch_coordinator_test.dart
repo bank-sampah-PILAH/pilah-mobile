@@ -10,6 +10,28 @@ AuthEntity session(String role) => AuthEntity(
 );
 
 void main() {
+  test('failed switch keeps the old session and notifies a retryable error', () async {
+    final current = session('pengelola');
+    var mutations = 0;
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => current,
+      requestRole: (_) => Future.error(TimeoutException('connection lost')),
+      persistSession: (_, __) async { mutations++; },
+      resetRoleState: () { mutations++; },
+      publishSession: (_) { mutations++; },
+    );
+    addTearDown(coordinator.dispose);
+    final observed = <String>[];
+    coordinator.addListener(() {
+      if (coordinator.error != null) observed.add(coordinator.error!);
+    });
+    await expectLater(coordinator.switchTo('nasabah'), completes);
+    expect(mutations, 0);
+    expect(coordinator.busy, isFalse);
+    expect(coordinator.completedSession, isNull);
+    expect(observed.single, contains('Role sebelumnya tetap aktif'));
+  });
+
   test('repeated taps share one pending switch', () async {
     var requests = 0;
     final pending = Completer<RoleSwitchSession>();
