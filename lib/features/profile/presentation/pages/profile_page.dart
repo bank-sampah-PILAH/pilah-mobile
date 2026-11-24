@@ -601,7 +601,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       ),
               ),
 
-              ContentInset(child: Padding(
+              ContentInset(
+                  child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: _gutter),
                 child: const ConnectedRoleSwitcher(),
               )),

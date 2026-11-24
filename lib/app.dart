@@ -151,31 +151,32 @@ class App extends StatelessWidget {
           }
         });
         return RoleSwitchObserver(
-          navigate: router.go,
-          child: _PendingInviteResumeWatcher(
-          child: _PengurusDikeluarkanWatcher(
-            router: router,
-            child: _BrowserTitleUpdater(
-              router: router,
-              enabled: isWeb,
-              child: AnalyticsRecordingRoot(
-                child: MaterialApp.router(
-                  // The banner is drawn over the whole screen, so it would be in
-                  // every frame of the recording of a debug build.
-                  debugShowCheckedModeBanner: false,
-                  title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
-                  theme: AppTheme.light,
-                  // Material widgets (date pickers, dialog buttons) in
-                  // Indonesian.
-                  locale: const Locale('id'),
-                  supportedLocales: const [Locale('id')],
-                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                  routerConfig: router,
+            navigate: router.go,
+            child: _PendingInviteResumeWatcher(
+              child: _PengurusDikeluarkanWatcher(
+                router: router,
+                child: _BrowserTitleUpdater(
+                  router: router,
+                  enabled: isWeb,
+                  child: AnalyticsRecordingRoot(
+                    child: MaterialApp.router(
+                      // The banner is drawn over the whole screen, so it would be in
+                      // every frame of the recording of a debug build.
+                      debugShowCheckedModeBanner: false,
+                      title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+                      theme: AppTheme.light,
+                      // Material widgets (date pickers, dialog buttons) in
+                      // Indonesian.
+                      locale: const Locale('id'),
+                      supportedLocales: const [Locale('id')],
+                      localizationsDelegates:
+                          GlobalMaterialLocalizations.delegates,
+                      routerConfig: router,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ));
+            ));
       },
     );
     return providerScopeBuilder?.call(app) ?? ProviderScope(child: app);

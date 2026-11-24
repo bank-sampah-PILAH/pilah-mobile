@@ -14,7 +14,8 @@ class RoleSessionStore {
     // One keystore entry prevents an access token from being paired with the
     // previous role's refresh token if a second write fails.
     final record = jsonEncode({
-      'access_token': access, 'refresh_token': refresh,
+      'access_token': access,
+      'refresh_token': refresh,
     });
     await database.write(key: key, value: record);
     if (network.sessionRevision != revision) {

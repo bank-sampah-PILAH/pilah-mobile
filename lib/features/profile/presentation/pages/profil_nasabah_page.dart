@@ -111,8 +111,6 @@ class _ProfilNasabahBodyState extends State<_ProfilNasabahBody> {
                       const AppPageHeader(title: 'Profil'),
                       const SizedBox(height: AppSpacing.xl),
                     ],
-                    const ConnectedRoleSwitcher(),
-                    const SizedBox(height: 16),
                     if (auth?.role != 'nasabah')
                       Text('Silakan masuk untuk melihat profil Anda.',
                           style: NasabahStyle.text(15))
@@ -126,6 +124,8 @@ class _ProfilNasabahBodyState extends State<_ProfilNasabahBody> {
                             identity: identity,
                             onLogout: widget.onLogout),
                       ),
+                    const SizedBox(height: AppSpacing.md),
+                    const ConnectedRoleSwitcher(),
                   ])),
     );
     return widget.isWeb

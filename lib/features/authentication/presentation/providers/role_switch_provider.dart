@@ -47,7 +47,8 @@ final roleSwitchProvider = ChangeNotifierProvider<RoleSwitchCoordinator>((ref) {
     requestRole: repository.request,
     persistSession: store.save,
     resetRoleState: () => resetRoleScopedState(ref),
-    publishSession: (auth) => ref.read(authenticationProvider.notifier).applyRoleSession(auth),
+    publishSession: (auth) =>
+        ref.read(authenticationProvider.notifier).applyRoleSession(auth),
   );
 });
 
@@ -55,10 +56,18 @@ void resetRoleScopedState(Ref ref) {
   if (ref.exists(nasabahProvider)) ref.read(nasabahProvider.notifier).reset();
   if (ref.exists(hargaProvider)) ref.read(hargaProvider.notifier).reset();
   if (ref.exists(jadwalProvider)) ref.read(jadwalProvider.notifier).reset();
-  if (ref.exists(pengumumanProvider)) ref.read(pengumumanProvider.notifier).reset();
-  if (ref.exists(nasabahPengumumanProvider)) ref.read(nasabahPengumumanProvider.notifier).reset();
-  if (ref.exists(transaksiProvider)) ref.read(transaksiProvider.notifier).reset();
-  if (ref.exists(riwayatAktivitasProvider)) ref.read(riwayatAktivitasProvider.notifier).reset();
+  if (ref.exists(pengumumanProvider)) {
+    ref.read(pengumumanProvider.notifier).reset();
+  }
+  if (ref.exists(nasabahPengumumanProvider)) {
+    ref.read(nasabahPengumumanProvider.notifier).reset();
+  }
+  if (ref.exists(transaksiProvider)) {
+    ref.read(transaksiProvider.notifier).reset();
+  }
+  if (ref.exists(riwayatAktivitasProvider)) {
+    ref.read(riwayatAktivitasProvider.notifier).reset();
+  }
   if (ref.exists(profileProvider)) ref.read(profileProvider.notifier).reset();
   if (ref.exists(onboardingProvider)) {
     ref.read(onboardingProvider.notifier).clearProfileDraft();

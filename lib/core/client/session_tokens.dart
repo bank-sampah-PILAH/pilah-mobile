@@ -12,8 +12,8 @@ class SessionTokens {
     final record = await database.getString(key);
     if (record != null) {
       final data = jsonDecode(record) as Map<String, dynamic>;
-      return SessionTokens(data['access_token'] as String?,
-          data['refresh_token'] as String?);
+      return SessionTokens(
+          data['access_token'] as String?, data['refresh_token'] as String?);
     }
     return SessionTokens(await database.getString(AppKey.token),
         await database.getString(AppKey.refreshToken));

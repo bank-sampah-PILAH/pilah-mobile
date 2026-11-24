@@ -11,23 +11,35 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/role_s
 import '../../support/auth_support.dart';
 
 void main() {
-  testWidgets('observer reports failures without navigating or signing out', (tester) async {
-    const current = AuthEntity(id: 'u1', name: '', email: '', photoUrl: '',
-      token: 'old', role: 'pengelola', roles: ['nasabah', 'pengelola']);
+  testWidgets('observer reports failures without navigating or signing out',
+      (tester) async {
+    const current = AuthEntity(
+        id: 'u1',
+        name: '',
+        email: '',
+        photoUrl: '',
+        token: 'old',
+        role: 'pengelola',
+        roles: ['nasabah', 'pengelola']);
     final auth = authNotifierIn(Authenticated(authEntity: current));
     final coordinator = RoleSwitchCoordinator(
       readSession: () => current,
       requestRole: (_) => Future.error(StateError('server refused')),
-      persistSession: (_, __) async {}, resetRoleState: () {},
+      persistSession: (_, __) async {},
+      resetRoleState: () {},
       publishSession: (_) => fail('failed switch must not publish'),
     );
     final errors = <String>[];
     final destinations = <String>[];
-    await tester.pumpWidget(ProviderScope(overrides: [
-      authenticationProvider.overrideWith(() => auth),
-      roleSwitchProvider.overrideWith((_) => coordinator),
-    ], child: RoleSwitchObserver(navigate: destinations.add, onError: errors.add,
-      child: const MaterialApp(home: Scaffold(body: Text('profile'))))));
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          authenticationProvider.overrideWith(() => auth),
+          roleSwitchProvider.overrideWith((_) => coordinator),
+        ],
+        child: RoleSwitchObserver(
+            navigate: destinations.add,
+            onError: errors.add,
+            child: const MaterialApp(home: Scaffold(body: Text('profile'))))));
     await coordinator.switchTo('nasabah');
     await tester.pumpAndSettle();
     expect(errors, hasLength(1));
@@ -37,28 +49,47 @@ void main() {
     expect(auth.calls, isNot(contains('logout')));
   });
 
-  testWidgets('observer replaces profile navigation using the switched next_step', (tester) async {
-    const current = AuthEntity(id: 'u1', name: '', email: '', photoUrl: '',
-      token: 'old', role: 'nasabah', roles: ['nasabah', 'pengelola']);
-    const next = AuthEntity(id: 'u1', name: '', email: '', photoUrl: '',
-      token: 'new', role: 'pengelola', roles: ['nasabah', 'pengelola'],
-      nextStep: 'approval_pending');
+  testWidgets(
+      'observer replaces profile navigation using the switched next_step',
+      (tester) async {
+    const current = AuthEntity(
+        id: 'u1',
+        name: '',
+        email: '',
+        photoUrl: '',
+        token: 'old',
+        role: 'nasabah',
+        roles: ['nasabah', 'pengelola']);
+    const next = AuthEntity(
+        id: 'u1',
+        name: '',
+        email: '',
+        photoUrl: '',
+        token: 'new',
+        role: 'pengelola',
+        roles: ['nasabah', 'pengelola'],
+        nextStep: 'approval_pending');
     final auth = authNotifierIn(Authenticated(authEntity: current));
     final coordinator = RoleSwitchCoordinator(
       readSession: () => current,
       requestRole: (_) async => const RoleSwitchSession(next, 'refresh'),
-      persistSession: (_, __) async {}, resetRoleState: () {},
-      publishSession: (value) => auth.setStateForTest(Authenticated(authEntity: value)),
+      persistSession: (_, __) async {},
+      resetRoleState: () {},
+      publishSession: (value) =>
+          auth.setStateForTest(Authenticated(authEntity: value)),
     );
     final router = GoRouter(initialLocation: '/profile', routes: [
       for (final path in ['/profile', '/pending-approval', '/login'])
         GoRoute(path: path, builder: (_, __) => Scaffold(body: Text(path))),
     ]);
-    await tester.pumpWidget(ProviderScope(overrides: [
-      authenticationProvider.overrideWith(() => auth),
-      roleSwitchProvider.overrideWith((_) => coordinator),
-    ], child: RoleSwitchObserver(navigate: router.go,
-      child: MaterialApp.router(routerConfig: router))));
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          authenticationProvider.overrideWith(() => auth),
+          roleSwitchProvider.overrideWith((_) => coordinator),
+        ],
+        child: RoleSwitchObserver(
+            navigate: router.go,
+            child: MaterialApp.router(routerConfig: router))));
     await tester.pumpAndSettle();
     await coordinator.switchTo('pengelola');
     await tester.pumpAndSettle();

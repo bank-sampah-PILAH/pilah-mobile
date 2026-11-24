@@ -93,6 +93,16 @@ void main() {
   }
 
   group('PIL-226 profil nasabah — proposed RED slice', () {
+    testWidgets('Role saya remains reachable below the personal profile',
+        (tester) async {
+      await openProfile(tester);
+      await tester.scrollUntilVisible(find.text('Role saya'), 200);
+      await tester.pumpAndSettle();
+      expect(find.text('Role saya'), findsOneWidget);
+      expect(find.text('Aktif'), findsOneWidget);
+      expect(find.text('Gunakan role ini'), findsNothing);
+    });
+
     testWidgets(
         'logout clears customer identity without loading staff settings',
         (tester) async {
@@ -159,7 +169,7 @@ void main() {
 
     testWidgets('role nasabah tidak dilabeli Pengelola', (tester) async {
       await openProfile(tester);
-      expect(find.text('Nasabah'), findsNWidgets(2));
+      expect(find.text('Nasabah'), findsOneWidget);
       expect(find.text('Pengelola'), findsNothing);
     });
 

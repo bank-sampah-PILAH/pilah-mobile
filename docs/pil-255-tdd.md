@@ -56,3 +56,75 @@ Staging integration: HTTPS fetch succeeded; merged origin/staging df5eef02 after
 23. Current staging primary-pengurus field: RED flag became false during owned-role copy. GREEN: coordinator and role mapping suite, 10 passed.
 
 24. Stale removal error: RED old-role 403 reached removal handling. GREEN: stale response/error and current-session removal regressions, 26 passed.
+
+
+## Backend prerequisite (mobile-only scope)
+
+The user explicitly chose to keep PIL-255 mobile-only. No backend changes are
+included. PIL-251/PIL-540 must expose the account's owned `roles` in the login
+`user` object and the flat `/api/v1/auth/me` response. The inspected backend
+snapshots have `roles` internally but omit it from those serializers/responses.
+Until this is provided, legacy payloads show only the active role and no switch
+action. The client never invents role ownership.
+
+PIL-540 must provide `POST /api/v1/auth/switch-role` with `{ "role": "nasabah" }`
+or `{ "role": "pengelola" }`, returning `access_token`, `refresh_token`, `user`
+and a role-appropriate `next_step`. The active role is scoped to those tokens;
+server-side authorization, refresh continuity and device independence remain
+backend responsibilities. PIL-543 owns adding a role; this change supplies the
+shared profile switching section and does not implement role acquisition.
+
+## Design and security boundaries
+
+The coordinator validates the response, persists the token pair in one secure
+record, resets role-dependent state, and then publishes authentication. Riverpod
+observers handle rendering, navigation and error feedback. Loading/failure does
+not replace the authenticated session with an unauthenticated/loading state.
+
+Controls include owned-role selection guards, account/role/next-step response
+validation, duplicate-request prevention, previous-token response/error rejection,
+logout/write race protection, and credential redaction in network logs. Existing
+platform secure storage is used; changing web authentication to HttpOnly cookies
+or a BFF requires backend work and is outside this mobile-only change.
+
+## Broader regression checks
+
+Supplemental HTTP integration cases (403, 500, connection timeout and malformed
+2xx payload) were added after implementation and passed. They are regression
+coverage, not additional demonstrated RED cycles.
+
+After the broad run, the Nasabah role section was placed below personal details
+so existing edit controls remain in place; reachability is tested by scrolling.
+The legacy storage mock now supplies null for optional unknown records. These
+corrections and the affected profile/edit/storage tests passed (55 tests).
+
+Two logo filename failures reproduce on an untouched archive of current staging:
+`profile_photo_upload_test.dart` (blob filename) and `profile_page_test.dart`
+(Windows temporary-path filename). Their implementations are unchanged here.
+
+
+## Final validation
+
+- `flutter analyze --no-pub`: no issues.
+- Focused PIL-255 tests (9 files): 24 passed.
+- Affected Nasabah profile/edit and legacy storage regressions: 55 passed.
+- `flutter test --no-pub --reporter expanded`: 3,949 passed, 1 skipped,
+  2 failed. Both failures are the logo filename cases reproduced on untouched
+  `origin/staging` above; no feature test failures remain.
+- `flutter build web --release --no-pub -t lib/main_development.dart`: passed.
+- `flutter build apk --debug --no-pub -t lib/main_development.dart`: passed with
+  `GRADLE_OPTS=-Dorg.gradle.java.home="C:/Program Files/Java/jdk-22"` scoped to
+  the command. The initial machine-default JDK 25 attempt failed in Gradle.
+- Browser QA used an ignored offline demo harness with the actual profile
+  widgets, coordinator and root observer, with demo data only. Playwright
+  interactions verified switching in both directions, disabled controls while
+  pending, and navigation to the selected role's home. Screenshots captured
+  Pengurus and Nasabah at 1440x1000 and 390x844; no browser errors observed.
+  Captures are browser-session artifacts and were not committed.
+- Browser QA used mocked backend responses; it does not establish live API
+  compatibility or native device behavior. The backend prerequisite remains.
+
+There are 24 demonstrated RED/GREEN cycles, with one RED test commit followed by
+one passing implementation commit per cycle. Additional integration/regression
+coverage is explicitly distinguished above. The issue branch also incorporates
+current staging. No push or PR creation was requested.

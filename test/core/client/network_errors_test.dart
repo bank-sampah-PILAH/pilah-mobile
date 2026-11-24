@@ -349,6 +349,7 @@ void main() {
 
     setUp(() {
       db = _MockSecureDatabase();
+      when(() => db.getString(any())).thenAnswer((_) async => null);
       utils = NetworkUtils(db);
     });
 

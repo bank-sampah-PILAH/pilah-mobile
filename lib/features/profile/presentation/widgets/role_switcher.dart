@@ -19,8 +19,10 @@ class ConnectedRoleSwitcher extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final auth = state.authEntity;
-    return RoleSwitcher(auth: auth, coordinator: auth.ownedRoles.length > 1
-        ? ref.watch(roleSwitchProvider) : null);
+    return RoleSwitcher(
+        auth: auth,
+        coordinator:
+            auth.ownedRoles.length > 1 ? ref.watch(roleSwitchProvider) : null);
   }
 }
 
@@ -32,33 +34,39 @@ class RoleSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = coordinator;
-    return controller == null ? _content(context) : AnimatedBuilder(
-      animation: controller, builder: (context, _) => _content(context));
+    return controller == null
+        ? _content(context)
+        : AnimatedBuilder(
+            animation: controller, builder: (context, _) => _content(context));
   }
 
   Widget _content(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('Role saya', style: Theme.of(context).textTheme.titleMedium),
-        for (final role in const ['pengelola', 'nasabah'])
-          if (auth.ownedRoles.contains(role))
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(role == 'nasabah' ? 'Nasabah' : 'Pengurus'),
-              subtitle: role == auth.role ? const Text('Aktif') : null,
-              trailing: role == auth.role ? const Icon(Icons.check_circle_outline)
-                  : AppButton(label: 'Gunakan role ini',
-                      expand: false,
-                      variant: AppButtonVariant.outlined,
-                      onPressed: coordinator == null || coordinator!.busy
-                          ? null : () => coordinator!.switchTo(role)),
-            ),
-        if (coordinator?.busy == true)
-          const LinearProgressIndicator(semanticsLabel: 'Mengganti role'),
-        if (coordinator?.error != null)
-          Text(coordinator!.error!, semanticsLabel: coordinator!.error),
-      ]),
-    ),
-  );
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text('Role saya', style: Theme.of(context).textTheme.titleMedium),
+            for (final role in const ['pengelola', 'nasabah'])
+              if (auth.ownedRoles.contains(role))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(role == 'nasabah' ? 'Nasabah' : 'Pengurus'),
+                  subtitle: role == auth.role ? const Text('Aktif') : null,
+                  trailing: role == auth.role
+                      ? const Icon(Icons.check_circle_outline)
+                      : AppButton(
+                          label: 'Gunakan role ini',
+                          expand: false,
+                          variant: AppButtonVariant.outlined,
+                          onPressed: coordinator == null || coordinator!.busy
+                              ? null
+                              : () => coordinator!.switchTo(role)),
+                ),
+            if (coordinator?.busy == true)
+              const LinearProgressIndicator(semanticsLabel: 'Mengganti role'),
+            if (coordinator?.error != null)
+              Text(coordinator!.error!, semanticsLabel: coordinator!.error),
+          ]),
+        ),
+      );
 }

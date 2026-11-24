@@ -4,7 +4,8 @@ import 'package:pilah_mobile/features/authentication/data/remote/model/responses
 import '../../../support/auth_data_support.dart';
 
 void main() {
-  test('login retains owned roles while old single-role payloads still work', () {
+  test('login retains owned roles while old single-role payloads still work',
+      () {
     final payload = authPayload();
     payload['user'] = <String, dynamic>{
       ...payload['user'] as Map<String, dynamic>,
@@ -12,7 +13,8 @@ void main() {
     };
     final auth = AuthMapper.mapResponseToDomain(AuthResponse.fromJson(payload));
     expect(auth.ownedRoles, ['pengelola', 'nasabah']);
-    final legacy = AuthMapper.mapResponseToDomain(AuthResponse.fromJson(authPayload()));
+    final legacy =
+        AuthMapper.mapResponseToDomain(AuthResponse.fromJson(authPayload()));
     expect(legacy.ownedRoles, ['pengelola']);
   });
 

@@ -4,22 +4,43 @@ import 'package:pilah_mobile/features/authentication/application/role_switch_coo
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 AuthEntity session(String role) => AuthEntity(
-  id: 'u1', name: 'Siti', email: 'siti@example.test', photoUrl: '',
-  token: 'access-$role', role: role, roles: const ['pengelola', 'nasabah'],
-  nextStep: role == 'nasabah' ? 'nasabah_dashboard' : 'dashboard',
-);
+      id: 'u1',
+      name: 'Siti',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'access-$role',
+      role: role,
+      roles: const ['pengelola', 'nasabah'],
+      nextStep: role == 'nasabah' ? 'nasabah_dashboard' : 'dashboard',
+    );
 
 void main() {
-  test('retaining owned roles preserves the current primary-pengurus flag', () async {
-    const current = AuthEntity(id: 'u1', name: '', email: '', photoUrl: '',
-      token: 'old', role: 'nasabah', roles: ['nasabah', 'pengelola']);
+  test('retaining owned roles preserves the current primary-pengurus flag',
+      () async {
+    const current = AuthEntity(
+        id: 'u1',
+        name: '',
+        email: '',
+        photoUrl: '',
+        token: 'old',
+        role: 'nasabah',
+        roles: ['nasabah', 'pengelola']);
     AuthEntity? published;
     final coordinator = RoleSwitchCoordinator(
       readSession: () => current,
-      requestRole: (_) async => const RoleSwitchSession(AuthEntity(
-        id: 'u1', name: '', email: '', photoUrl: '', token: 'new',
-        role: 'pengelola', isPrimaryPengelola: true, nextStep: 'dashboard'), 'refresh'),
-      persistSession: (_, __) async {}, resetRoleState: () {},
+      requestRole: (_) async => const RoleSwitchSession(
+          AuthEntity(
+              id: 'u1',
+              name: '',
+              email: '',
+              photoUrl: '',
+              token: 'new',
+              role: 'pengelola',
+              isPrimaryPengelola: true,
+              nextStep: 'dashboard'),
+          'refresh'),
+      persistSession: (_, __) async {},
+      resetRoleState: () {},
       publishSession: (value) => published = value,
     );
     addTearDown(coordinator.dispose);
@@ -28,14 +49,22 @@ void main() {
     expect(published!.ownedRoles, ['nasabah', 'pengelola']);
   });
 
-  test('switch response without roles keeps the account able to switch back', () async {
+  test('switch response without roles keeps the account able to switch back',
+      () async {
     var current = session('pengelola');
-    const switched = AuthEntity(id: 'u1', name: 'Siti', email: 'siti@example.test',
-      photoUrl: '', token: 'new', role: 'nasabah', nextStep: 'nasabah_dashboard');
+    const switched = AuthEntity(
+        id: 'u1',
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'new',
+        role: 'nasabah',
+        nextStep: 'nasabah_dashboard');
     final coordinator = RoleSwitchCoordinator(
       readSession: () => current,
       requestRole: (_) async => const RoleSwitchSession(switched, 'refresh'),
-      persistSession: (_, __) async {}, resetRoleState: () {},
+      persistSession: (_, __) async {},
+      resetRoleState: () {},
       publishSession: (auth) => current = auth,
     );
     addTearDown(coordinator.dispose);
@@ -44,15 +73,23 @@ void main() {
     expect(current.role, 'nasabah');
   });
 
-  test('a switch response arriving after logout cannot restore the session', () async {
+  test('a switch response arriving after logout cannot restore the session',
+      () async {
     AuthEntity? current = session('pengelola');
     var mutations = 0;
     final response = Completer<RoleSwitchSession>();
     final coordinator = RoleSwitchCoordinator(
-      readSession: () => current, requestRole: (_) => response.future,
-      persistSession: (_, __) async { mutations++; },
-      resetRoleState: () { mutations++; },
-      publishSession: (_) { mutations++; },
+      readSession: () => current,
+      requestRole: (_) => response.future,
+      persistSession: (_, __) async {
+        mutations++;
+      },
+      resetRoleState: () {
+        mutations++;
+      },
+      publishSession: (_) {
+        mutations++;
+      },
     );
     addTearDown(coordinator.dispose);
     final switching = coordinator.switchTo('nasabah');
@@ -67,38 +104,76 @@ void main() {
     final invalid = [
       RoleSwitchSession(session('pengelola'), 'refresh'),
       RoleSwitchSession(session('nasabah'), ''),
-      const RoleSwitchSession(AuthEntity(id: 'other', name: '', email: '',
-        photoUrl: '', token: 'new', role: 'nasabah', nextStep: 'nasabah_dashboard'), 'refresh'),
-      const RoleSwitchSession(AuthEntity(id: 'u1', name: '', email: '',
-        photoUrl: '', token: '', role: 'nasabah', nextStep: 'nasabah_dashboard'), 'refresh'),
-      const RoleSwitchSession(AuthEntity(id: 'u1', name: '', email: '',
-        photoUrl: '', token: 'new', role: 'nasabah', nextStep: 'https://evil.test'), 'refresh'),
+      const RoleSwitchSession(
+          AuthEntity(
+              id: 'other',
+              name: '',
+              email: '',
+              photoUrl: '',
+              token: 'new',
+              role: 'nasabah',
+              nextStep: 'nasabah_dashboard'),
+          'refresh'),
+      const RoleSwitchSession(
+          AuthEntity(
+              id: 'u1',
+              name: '',
+              email: '',
+              photoUrl: '',
+              token: '',
+              role: 'nasabah',
+              nextStep: 'nasabah_dashboard'),
+          'refresh'),
+      const RoleSwitchSession(
+          AuthEntity(
+              id: 'u1',
+              name: '',
+              email: '',
+              photoUrl: '',
+              token: 'new',
+              role: 'nasabah',
+              nextStep: 'https://evil.test'),
+          'refresh'),
     ];
     for (final response in invalid) {
       var mutations = 0;
       final coordinator = RoleSwitchCoordinator(
         readSession: () => session('pengelola'),
         requestRole: (_) async => response,
-        persistSession: (_, __) async { mutations++; },
-        resetRoleState: () { mutations++; },
-        publishSession: (_) { mutations++; },
+        persistSession: (_, __) async {
+          mutations++;
+        },
+        resetRoleState: () {
+          mutations++;
+        },
+        publishSession: (_) {
+          mutations++;
+        },
       );
       await coordinator.switchTo('nasabah');
-      expect(mutations, 0, reason: 'invalid response must not mutate a session');
+      expect(mutations, 0,
+          reason: 'invalid response must not mutate a session');
       expect(coordinator.error, isNotNull);
       coordinator.dispose();
     }
   });
 
-  test('failed switch keeps the old session and notifies a retryable error', () async {
+  test('failed switch keeps the old session and notifies a retryable error',
+      () async {
     final current = session('pengelola');
     var mutations = 0;
     final coordinator = RoleSwitchCoordinator(
       readSession: () => current,
       requestRole: (_) => Future.error(TimeoutException('connection lost')),
-      persistSession: (_, __) async { mutations++; },
-      resetRoleState: () { mutations++; },
-      publishSession: (_) { mutations++; },
+      persistSession: (_, __) async {
+        mutations++;
+      },
+      resetRoleState: () {
+        mutations++;
+      },
+      publishSession: (_) {
+        mutations++;
+      },
     );
     addTearDown(coordinator.dispose);
     final observed = <String>[];
@@ -117,8 +192,12 @@ void main() {
     final pending = Completer<RoleSwitchSession>();
     final coordinator = RoleSwitchCoordinator(
       readSession: () => session('pengelola'),
-      requestRole: (_) { requests++; return pending.future; },
-      persistSession: (_, __) async {}, resetRoleState: () {},
+      requestRole: (_) {
+        requests++;
+        return pending.future;
+      },
+      persistSession: (_, __) async {},
+      resetRoleState: () {},
       publishSession: (_) {},
     );
     addTearDown(coordinator.dispose);
@@ -150,7 +229,8 @@ void main() {
     expect(requests, 0);
   });
 
-  test('publishes the new role only after persistence and cache reset', () async {
+  test('publishes the new role only after persistence and cache reset',
+      () async {
     for (final target in ['nasabah', 'pengelola']) {
       var current = session(target == 'nasabah' ? 'pengelola' : 'nasabah');
       final order = <String>[];
@@ -168,17 +248,20 @@ void main() {
           order.add('persist');
         },
         resetRoleState: () => order.add('reset'),
-        publishSession: (auth) { current = auth; order.add('publish'); },
+        publishSession: (auth) {
+          current = auth;
+          order.add('publish');
+        },
       );
       coordinator.addListener(() {
         if (coordinator.completedSession != null) order.add('observe');
       });
       await coordinator.switchTo(target);
       expect(current.role, target);
-      expect(order, ['request:$target', 'persist', 'reset', 'publish', 'observe']);
+      expect(
+          order, ['request:$target', 'persist', 'reset', 'publish', 'observe']);
       expect(coordinator.busy, isFalse);
       coordinator.dispose();
     }
   });
 }
-

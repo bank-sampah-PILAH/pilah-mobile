@@ -316,14 +316,18 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
 });
 
 Map<String, dynamic> _headersForLog(Map<String, dynamic> headers) => {
-  for (final entry in headers.entries)
-    entry.key: const ['authorization', 'cookie', 'set-cookie'].contains(entry.key.toLowerCase())
-        ? _redactedLogValue : entry.value,
-};
+      for (final entry in headers.entries)
+        entry.key: const ['authorization', 'cookie', 'set-cookie']
+                .contains(entry.key.toLowerCase())
+            ? _redactedLogValue
+            : entry.value,
+    };
 
 Object? _responseBodyForLog(RequestOptions options, Object? data) {
   if (options.path.contains(_deviceTokenPath) ||
-      options.path.contains('/auth/')) return _redactedLogValue;
+      options.path.contains('/auth/')) {
+    return _redactedLogValue;
+  }
   if (options.responseType == ResponseType.bytes) return 'bytes';
   return data;
 }

@@ -11,19 +11,24 @@ import 'package:pilah_mobile/features/authentication/data/role_session_store.dar
 class Database extends Mock implements SecureDatabase {}
 
 void main() {
-  test('logout during a keystore write cannot resurrect switched tokens', () async {
+  test('logout during a keystore write cannot resurrect switched tokens',
+      () async {
     final db = Database();
     final entered = Completer<void>();
     final release = Completer<void>();
     final disk = <String, String>{};
     when(() => db.write(key: any(named: 'key'), value: any(named: 'value')))
-      .thenAnswer((call) async {
-        entered.complete();
-        await release.future;
-        disk[call.namedArguments[#key] as String] = call.namedArguments[#value] as String;
-      });
-    when(() => db.getString(any())).thenAnswer((call) async => disk[call.positionalArguments.single]);
-    when(() => db.delete(any())).thenAnswer((call) async { disk.remove(call.positionalArguments.single); });
+        .thenAnswer((call) async {
+      entered.complete();
+      await release.future;
+      disk[call.namedArguments[#key] as String] =
+          call.namedArguments[#value] as String;
+    });
+    when(() => db.getString(any()))
+        .thenAnswer((call) async => disk[call.positionalArguments.single]);
+    when(() => db.delete(any())).thenAnswer((call) async {
+      disk.remove(call.positionalArguments.single);
+    });
     final network = NetworkUtils(db);
     await network.setToken(accessToken: 'old', refreshToken: 'old-refresh');
     final saving = RoleSessionStore(db, network).save('new', 'new-refresh');
@@ -36,14 +41,15 @@ void main() {
     expect(disk[RoleSessionStore.key], isNull);
   });
 
-  test('a subsequent login supersedes the switched session on restart', () async {
+  test('a subsequent login supersedes the switched session on restart',
+      () async {
     FlutterSecureStorage.setMockInitialValues({});
     const db = SecureDatabaseImpl();
     final network = NetworkUtils(db);
     await RoleSessionStore(db, network).save('switched', 'switched-refresh');
     final local = AuthLocalDataSourcesImpl(db, network);
     await local.saveToken(const SaveTokenRequest(
-      accessToken: 'login', refreshToken: 'login-refresh'));
+        accessToken: 'login', refreshToken: 'login-refresh'));
     final restored = NetworkUtils(db);
     await restored.init();
     expect(restored.accessToken, 'login');
@@ -65,9 +71,11 @@ void main() {
     expect(await local.readAccessToken(), isNull);
   });
 
-  test('cold start restores the switched access and refresh tokens together', () async {
+  test('cold start restores the switched access and refresh tokens together',
+      () async {
     FlutterSecureStorage.setMockInitialValues({
-      'token': 'legacy-access', 'refresh_token': 'legacy-refresh',
+      'token': 'legacy-access',
+      'refresh_token': 'legacy-refresh',
     });
     const db = SecureDatabaseImpl();
     final network = NetworkUtils(db);
@@ -86,8 +94,10 @@ void main() {
     when(() => db.write(key: any(named: 'key'), value: any(named: 'value')))
         .thenThrow(StateError('keystore unavailable'));
     final network = NetworkUtils(db);
-    await network.setToken(accessToken: 'old-access', refreshToken: 'old-refresh');
-    await expectLater(RoleSessionStore(db, network).save('new-access', 'new-refresh'),
+    await network.setToken(
+        accessToken: 'old-access', refreshToken: 'old-refresh');
+    await expectLater(
+        RoleSessionStore(db, network).save('new-access', 'new-refresh'),
         throwsStateError);
     expect(network.accessToken, 'old-access');
     expect(network.refreshToken, 'old-refresh');

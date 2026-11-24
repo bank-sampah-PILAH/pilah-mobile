@@ -7,8 +7,8 @@ import '../providers/role_switch_provider.dart';
 import '../states/authentication_states.dart';
 
 class RoleSwitchObserver extends ConsumerWidget {
-  const RoleSwitchObserver({super.key, required this.child,
-    required this.navigate, this.onError});
+  const RoleSwitchObserver(
+      {super.key, required this.child, required this.navigate, this.onError});
   final Widget child;
   final void Function(String location) navigate;
   final void Function(String message)? onError;
@@ -34,7 +34,8 @@ class RoleSwitchObserver extends ConsumerWidget {
             if (!context.mounted) return;
             final live = ref.read(authenticationProvider);
             if (live is! Authenticated || live.authEntity != completed) return;
-            navigate(locationForAuthStep(completed.nextStep, role: completed.role));
+            navigate(
+                locationForAuthStep(completed.nextStep, role: completed.role));
           });
         }
       });

@@ -8,9 +8,10 @@ class RoleSwitchRepository {
   final NetworkService network;
 
   Future<RoleSwitchSession> request(String role) async {
-    final response = await network.post('/api/v1/auth/switch-role',
-        data: {'role': role});
-    final payload = AuthResponse.fromJson(response.data as Map<String, dynamic>);
+    final response =
+        await network.post('/api/v1/auth/switch-role', data: {'role': role});
+    final payload =
+        AuthResponse.fromJson(response.data as Map<String, dynamic>);
     return RoleSwitchSession(
         AuthMapper.mapResponseToDomain(payload), payload.refreshToken);
   }

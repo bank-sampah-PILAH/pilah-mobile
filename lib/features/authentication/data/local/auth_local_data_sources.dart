@@ -42,10 +42,12 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
     // into a failure or leave the signed-in user unable to make authenticated
     // calls: they can finish onboarding now and re-authenticate next launch.
     try {
-      await _database.write(key: SessionTokens.key, value: jsonEncode({
-        'access_token': request.accessToken,
-        'refresh_token': request.refreshToken,
-      }));
+      await _database.write(
+          key: SessionTokens.key,
+          value: jsonEncode({
+            'access_token': request.accessToken,
+            'refresh_token': request.refreshToken,
+          }));
       await _database.write(key: AppKey.token, value: request.accessToken);
       await _database.write(
           key: AppKey.refreshToken, value: request.refreshToken);
