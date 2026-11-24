@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/profile/presentation/widgets/role_switcher.dart';
 import 'dart:async';
 
 import 'package:pilah_mobile/design/constants/font_size.dart';
@@ -546,6 +547,10 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       ),
               ),
 
+              ContentInset(child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: _gutter),
+                child: const ConnectedRoleSwitcher(),
+              )),
               // Tab Bar
               ContentInset(
                 child: Container(

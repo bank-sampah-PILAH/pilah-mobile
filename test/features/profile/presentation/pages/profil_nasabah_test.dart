@@ -159,7 +159,7 @@ void main() {
 
     testWidgets('role nasabah tidak dilabeli Pengelola', (tester) async {
       await openProfile(tester);
-      expect(find.text('Nasabah'), findsOneWidget);
+      expect(find.text('Nasabah'), findsNWidgets(2));
       expect(find.text('Pengelola'), findsNothing);
     });
 

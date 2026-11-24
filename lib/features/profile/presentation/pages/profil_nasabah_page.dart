@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/profile/presentation/widgets/role_switcher.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -83,6 +84,8 @@ class _ProfilNasabahBodyState extends State<_ProfilNasabahBody> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(16),
                   children: [
+                    const ConnectedRoleSwitcher(),
+                    const SizedBox(height: 16),
                     if (auth?.role != 'nasabah')
                       Text('Silakan masuk untuk melihat profil Anda.',
                           style: NasabahStyle.text(15))

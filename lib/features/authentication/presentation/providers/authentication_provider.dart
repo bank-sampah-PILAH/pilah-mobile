@@ -223,6 +223,9 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
     result.fold((_) {}, _emitAuthenticated);
   }
 
+  /// Called by the coordinator only after the new token pair is persisted.
+  void applyRoleSession(AuthEntity entity) => _emitAuthenticated(entity);
+
   void _rememberCurrentSession() {
     final current = state;
     if (current is Authenticated) _activeSession = current.authEntity;

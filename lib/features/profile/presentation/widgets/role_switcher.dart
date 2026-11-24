@@ -3,6 +3,26 @@ import 'package:pilah_mobile/features/authentication/application/role_switch_coo
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/role_switch_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+
+class ConnectedRoleSwitcher extends ConsumerWidget {
+  const ConnectedRoleSwitcher({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    if (state is! Authenticated ||
+        !const ['pengelola', 'nasabah'].contains(state.authEntity.role)) {
+      return const SizedBox.shrink();
+    }
+    final auth = state.authEntity;
+    return RoleSwitcher(auth: auth, coordinator: auth.ownedRoles.length > 1
+        ? ref.watch(roleSwitchProvider) : null);
+  }
+}
 
 class RoleSwitcher extends StatelessWidget {
   const RoleSwitcher({super.key, required this.auth, this.coordinator});
