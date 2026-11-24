@@ -7,8 +7,8 @@ import 'package:posthog_flutter/posthog_flutter.dart';
 /// An exception event in a shape nobody planned for cannot be cleaned, and
 /// sending it as it is would defeat the point, so it is dropped (`null`).
 ///
-/// Events the native SDKs capture by themselves, such as a Java crash, never
-/// pass through here: they leave without being cleaned.
+/// Native crash capture is kept off (see `PosthogMobileClient`) because those
+/// events would not pass through here.
 PostHogEvent? scrubExceptionEvent(PostHogEvent event) {
   if (event.event != r'$exception') return event;
   final list = event.properties?[r'$exception_list'];
