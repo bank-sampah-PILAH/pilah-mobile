@@ -134,8 +134,9 @@ void main() {
     expect(config.errorTrackingConfig.captureFlutterErrors, isFalse);
     expect(config.errorTrackingConfig.capturePlatformDispatcherErrors, isFalse);
     expect(config.errorTrackingConfig.captureIsolateErrors, isFalse);
-    // A crash in Java or Kotlin code (a plugin) is only seen by the native SDK.
-    expect(config.errorTrackingConfig.captureNativeExceptions, isTrue);
+    // Native crashes are not collected: the native SDK sends them without
+    // passing through beforeSend, so their message could not be cleaned.
+    expect(config.errorTrackingConfig.captureNativeExceptions, isFalse);
     expect(config.errorTrackingConfig.captureNativeCrashes, isFalse);
     // The message of an exception is cleaned before the SDK sends it.
     expect(config.beforeSend, [scrubExceptionEvent]);
