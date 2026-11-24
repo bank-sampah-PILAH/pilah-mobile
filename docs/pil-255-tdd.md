@@ -50,3 +50,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 21. Failure observer: RED expected one error notification, actual none. GREEN: navigation/error observer and coordinator tests, 9 passed.
 
 22. Keystore/logout race: RED pending save completed after logout. GREEN: session revision invalidates pending write and publication; 15 coordinator/store/integration/observer tests passed.
+
+Staging integration: HTTPS fetch succeeded; merged origin/staging df5eef02 after resolving auth, profile, network and App conflicts. Merge regression suite: 12 passed. Backend stays unchanged by user instruction; owned roles must be exposed in login and /auth/me before this switcher can offer a second role.

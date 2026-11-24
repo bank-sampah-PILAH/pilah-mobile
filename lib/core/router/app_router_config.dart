@@ -25,6 +25,7 @@ import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/pages/nasabah_jadwal_detail_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
@@ -304,6 +305,19 @@ class AppRouterConfig {
         builder: (context, state) => const RegisterNasabahScreen(),
       ),
       GoRoute(
+        path: RegisterNasabahScreen.additionalRoute,
+        name: RegisterNasabahScreen.additionalRoute,
+        redirect: (_, __) => isRoleSupportedOnPlatform(
+          'nasabah',
+          isWeb: kIsWeb,
+        )
+            ? null
+            : LoginPage.route,
+        builder: (context, state) => const RegisterNasabahScreen(
+          mode: RegisterNasabahMode.additional,
+        ),
+      ),
+      GoRoute(
         path: RoleHandoffPage.nasabahDashboardRoute,
         redirect: (_, __) => '/dashboard',
       ),
@@ -379,6 +393,14 @@ class AppRouterConfig {
               GoRoute(
                 path: JadwalPage.route,
                 name: JadwalPage.route,
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, state) => NasabahJadwalDetailPage(
+                      id: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
                 builder: (context, state) => Consumer(
                   builder: (context, ref, child) {
                     final authState = ref.watch(authenticationProvider);
@@ -427,6 +449,13 @@ class AppRouterConfig {
   );
 
   static GoRouter getRouter() => _router;
+
+  /// The route pattern of the screen showing now, such as `/nasabah/:id`, or
+  /// null before the router has a page.
+  static String? currentPath() {
+    final shown = _router.routerDelegate.currentConfiguration;
+    return shown.isEmpty ? null : shown.fullPath;
+  }
 
   static String? _roleRedirect(BuildContext context, String path) {
     final state = ProviderScope.containerOf(context, listen: false)

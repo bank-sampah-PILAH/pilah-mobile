@@ -1,7 +1,11 @@
 import 'dart:convert';
 
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/pengurus_dikeluarkan.dart';
+import 'package:pilah_mobile/core/client/request_id_interceptor.dart';
 import 'package:pilah_mobile/core/client/retry_interceptor.dart';
+import 'package:pilah_mobile/core/client/server_error_interceptor.dart';
+import 'package:pilah_mobile/core/errors/error_reporter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -17,10 +21,12 @@ class NetworkService {
   static const _jsonContentType = 'application/json';
   final AppEnvironment environment;
   final NetworkUtils networkUtils;
+  final ErrorReporter errorReporter;
 
   NetworkService({
     required this.environment,
     required this.networkUtils,
+    required this.errorReporter,
   }) {
     dio.interceptors.add(InterceptorsWrapper(onResponse: (response, handler) {
       final bearer = response.requestOptions.headers['Authorization'];
@@ -34,10 +40,18 @@ class NetworkService {
       }
       handler.next(response);
     }));
+    // First, so the id is already on the request when the logger prints it.
+    dio.interceptors.add(RequestIdInterceptor());
     dio.interceptors.add(interceptors);
     // Added after the logger so a dropped GET is still logged, then quietly
     // retried once before the failure reaches state handling.
     dio.interceptors.add(RetryInterceptor(dio));
+    // Sees every refusal, so a removed pengurus is noticed on whatever screen
+    // they are on.
+    dio.interceptors.add(PengurusDikeluarkanInterceptor());
+    // Last, so it sees only the failures nobody retried away. A server failure
+    // is reported here because most screens catch it and show "Coba Lagi".
+    dio.interceptors.add(ServerErrorInterceptor(errorReporter));
   }
 
   Map<String, String> headersRequest() {

@@ -2,6 +2,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
@@ -72,7 +73,7 @@ void main() {
 
       expect(find.text('Pengumuman'), findsNothing);
       expect(
-        rail.destinations.map((d) => (d.label as Text).data),
+        rail.destinations.map((d) => (d.label as FixedText).data),
         isNot(contains('Pengumuman')),
       );
       expect(find.byIcon(Icons.campaign_outlined), findsNothing);
@@ -323,7 +324,7 @@ void main() {
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.destinations.length, 4);
       expect(
-        rail.destinations.map((d) => (d.label as Text).data),
+        rail.destinations.map((d) => (d.label as FixedText).data),
         ['Dashboard', 'Nasabah', 'Harga', 'Jadwal'],
       );
       expect(find.text('Aktivitas'), findsNothing);

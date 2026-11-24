@@ -52,7 +52,7 @@ class AnalyticsScreenTracker {
   }
 
   void _onChange() {
-    final screen = _nameFor(currentPath());
+    final screen = nameFor(currentPath());
     if (screen == null || screen == _screen) return;
 
     final previous = _screen;
@@ -75,7 +75,9 @@ class AnalyticsScreenTracker {
     _since = now;
   }
 
-  static String? _nameFor(String? path) {
+  /// The name a screen is reported under: its route pattern without the
+  /// leading slash, or `beranda` for the root.
+  static String? nameFor(String? path) {
     if (path == null || path.isEmpty) return null;
     final name = path.replaceFirst(RegExp(r'^/'), '');
     return name.isEmpty ? 'beranda' : name;

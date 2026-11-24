@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 
 void main() {
@@ -146,6 +147,29 @@ void main() {
     // The selected page is inert; a neighboring page remains actionable.
     await tester.tap(find.bySemanticsLabel('Halaman 2'));
     expect(selectedPage, 2);
+  });
+
+  testWidgets('the counts and page numbers are shown in the screen recording',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: WebPaginationBar(
+          currentPage: 1,
+          totalItems: 30,
+          pageSize: 10,
+          itemLabel: 'nasabah',
+          onPageChanged: _ignorePage,
+        ),
+      ),
+    ));
+
+    expect(
+      find.ancestor(
+        of: find.text('Menampilkan 1–10 dari 30 nasabah'),
+        matching: find.byType(RevealInReplay),
+      ),
+      findsOneWidget,
+    );
   });
 }
 

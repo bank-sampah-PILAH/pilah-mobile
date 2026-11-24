@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/features/profile/presentation/widgets/role_switcher.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'dart:async';
 
 import 'package:pilah_mobile/design/constants/font_size.dart';
@@ -57,7 +58,7 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(authenticationProvider);
     final role = state is Authenticated ? state.authEntity.role : null;
-    if (role == 'nasabah') return const ProfilNasabahPage();
+    if (role == 'nasabah') return ProfilNasabahPage(isWeb: isWeb ?? kIsWeb);
     if (role == 'pengelola') {
       return _ProfileView(isWeb: isWeb ?? kIsWeb);
     }
@@ -68,6 +69,8 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 }
+
+enum _TeamAction { makePrimary, remove }
 
 class _ProfileView extends ConsumerStatefulWidget {
   const _ProfileView({required this.isWeb});
@@ -346,6 +349,57 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     _snack('Link undangan disalin ke clipboard!');
   }
 
+  String _displayName(TeamMember member) =>
+      member.nama.isNotEmpty ? member.nama : member.email;
+
+  Future<void> _onMakePrimary(TeamMember member) async {
+    final name = _displayName(member);
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Jadikan $name Pengurus Utama?',
+      message: 'Anda akan menjadi pengurus biasa dan tidak bisa lagi membuat '
+          'tautan undangan atau mengelola pengurus lain. Hanya $name yang '
+          'bisa mengembalikan jabatan ini.',
+      confirmLabel: 'Ya, Jadikan',
+    );
+    if (!confirmed || !mounted) return;
+
+    final error =
+        await ref.read(profileProvider.notifier).transferPrimary(member.id);
+    if (!mounted) return;
+    primaryTransferred(ref.read(analyticsClientProvider),
+        success: error == null);
+    if (error != null) {
+      _snack(error.displayMessage, error: true);
+      return;
+    }
+    _snack('Jabatan Pengurus Utama dialihkan ke $name');
+  }
+
+  Future<void> _onRemoveMember(TeamMember member) async {
+    final name = _displayName(member);
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluarkan $name dari tim?',
+      message: '$name tidak bisa lagi mengakses bank sampah ini. Riwayat '
+          'setoran yang ia catat tetap ada. Mereka baru bisa bergabung '
+          'kembali lewat tautan undangan.',
+      confirmLabel: 'Ya, Keluarkan',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    final error =
+        await ref.read(profileProvider.notifier).removeMember(member.id);
+    if (!mounted) return;
+    memberRemoved(ref.read(analyticsClientProvider), success: error == null);
+    if (error != null) {
+      _snack(error.displayMessage, error: true);
+      return;
+    }
+    _snack('$name dikeluarkan dari tim');
+  }
+
   Future<void> _onCreateInvite(TeamInvite? currentInvite) async {
     if (currentInvite != null) {
       final confirmed = await showAppConfirmDialog(
@@ -418,7 +472,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           const SizedBox(height: AppSpacing.sm),
           AppButton(
             label: 'Coba Lagi',
-            variant: AppButtonVariant.outlined,
+            variant: AppButtonVariant.outlinedOnDark,
             onPressed: () =>
                 ref.read(profileProvider.notifier).load(silent: true),
           ),
@@ -436,7 +490,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           const SizedBox(height: AppSpacing.sm),
           AppButton(
             label: 'Buat Link Undangan',
-            variant: AppButtonVariant.outlined,
+            variant: AppButtonVariant.outlinedOnDark,
             isLoading: state.isCreatingInvite,
             onPressed:
                 state.isCreatingInvite ? null : () => _onCreateInvite(null),
@@ -580,8 +634,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     indicatorColor: AppColors.greenDark,
                     indicatorWeight: 3,
                     tabs: const [
-                      Tab(text: 'Pengaturan Umum'),
-                      Tab(text: 'Manajemen Tim'),
+                      Tab(child: FixedText('Pengaturan Umum')),
+                      Tab(child: FixedText('Manajemen Tim')),
                     ],
                   ),
                 ),
@@ -1067,8 +1121,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Invite Banner — owner only. Both the banner and its trailing gap
-              // are guarded so hiding it leaves no dangling spacing above the list.
+              // Invite controls are primary-only; other Pengurus are told who
+              // manages invitations without making an invitation request.
+              _buildInviteManagerNotice(state, isPengelolaUtama),
               if (isPengelolaUtama) ...[
                 Container(
                   width: double.infinity,
@@ -1168,7 +1223,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                               thickness: 1,
                               indent: 16,
                               endIndent: 16),
-                        _buildMemberRow(team[i]),
+                        _buildMemberRow(
+                          team[i],
+                          canManage: isPengelolaUtama && !team[i].isCurrentUser,
+                          busy: state.isChangingTeam,
+                        ),
                       ],
                     ],
                   ),
@@ -1180,7 +1239,25 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     );
   }
 
-  Widget _buildMemberRow(TeamMember member) {
+  Widget _buildInviteManagerNotice(ProfileState state, bool isPengelolaUtama) {
+    if (isPengelolaUtama ||
+        state.bankSampah?.status.toLowerCase() != 'active') {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Text(
+        'Link undangan dibuat oleh Pengurus Utama.',
+        style: AppTextStyle.small,
+      ),
+    );
+  }
+
+  Widget _buildMemberRow(
+    TeamMember member, {
+    required bool canManage,
+    required bool busy,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
@@ -1248,6 +1325,30 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               ),
             ),
           ),
+          if (canManage)
+            PopupMenuButton<_TeamAction>(
+              key: ValueKey('team-menu-${member.id}'),
+              tooltip: 'Aksi untuk ${_displayName(member)}',
+              icon: const Icon(Icons.more_vert, color: AppColors.inkSoft),
+              enabled: !busy,
+              onSelected: (action) => switch (action) {
+                _TeamAction.makePrimary => _onMakePrimary(member),
+                _TeamAction.remove => _onRemoveMember(member),
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: _TeamAction.makePrimary,
+                  child: Text('Jadikan Pengurus Utama'),
+                ),
+                const PopupMenuItem(
+                  value: _TeamAction.remove,
+                  child: Text(
+                    'Keluarkan',
+                    style: TextStyle(color: AppColors.danger),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -1267,14 +1368,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: AppTextStyle.extraSmall.copyWith(
-            color: AppColors.grey100,
-            fontWeight: AppFontWeight.bold,
-            letterSpacing: 1.0,
-          ),
-        ),
+        FixedText(label,
+            style: AppTextStyle.extraSmall.copyWith(
+              color: AppColors.grey100,
+              fontWeight: AppFontWeight.bold,
+              letterSpacing: 1.0,
+            )),
       ],
     );
   }
@@ -1291,14 +1390,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyle.extraSmall.copyWith(
-            color: AppColors.grey100,
-            fontWeight: AppFontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
+        FixedText(label,
+            style: AppTextStyle.extraSmall.copyWith(
+              color: AppColors.grey100,
+              fontWeight: AppFontWeight.bold,
+              letterSpacing: 0.5,
+            )),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,

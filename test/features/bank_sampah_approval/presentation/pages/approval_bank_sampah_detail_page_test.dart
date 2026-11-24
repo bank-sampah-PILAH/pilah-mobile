@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
+import 'package:pilah_mobile/core/privacy/replay_privacy.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +13,13 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_appeal_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
+
+import '../../../../support/active_membership_support.dart';
+import '../../../../support/nasabah_approval_support.dart';
 
 class _MockAppealMembershipUseCase extends Mock
     implements AppealMembershipUseCase {}
@@ -60,6 +69,7 @@ GoRouter _routerWithDetail(
 }
 
 void main() {
+  _mainActiveBank();
   late _MockAppealMembershipUseCase cubit;
 
   setUp(() => cubit = _MockAppealMembershipUseCase());
@@ -403,5 +413,163 @@ void main() {
 
     expect(find.text('Daftar Approval'), findsOneWidget);
     expect(find.byType(ApprovalBankSampahDetailView), findsNothing);
+  });
+
+  testWidgets('the icons of the approval timeline are hidden in the recording',
+      (tester) async {
+    const membership = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.pending,
+      isActive: true,
+    );
+
+    await tester.pumpWidget(_wrap(membership, cubit));
+
+    final timeline = find.byType(MembershipApprovalTimeline);
+    final icons = find.descendant(of: timeline, matching: find.byType(Icon));
+    expect(icons, findsWidgets);
+    expect(
+      find.descendant(of: timeline, matching: find.byType(HideInReplay)),
+      findsNWidgets(icons.evaluate().length),
+    );
+  });
+}
+
+/// The detail page with a real selection behind it, so the "Jadikan bank
+/// aktif" action can be exercised end to end.
+Widget _wrapWithSelection(
+  NasabahMembershipEntity membership,
+  MemoryAppStorage storage, {
+  String userId = 'user-1',
+  List<NasabahMembershipEntity>? memberships,
+}) =>
+    ProviderScope(
+      overrides: [
+        nasabahAppealProvider.overrideWith(
+          () => NasabahAppealNotifier(_MockAppealMembershipUseCase()),
+        ),
+        activeMembershipSelectionProvider
+            .overrideWithValue(ActiveMembershipSelection(storage)),
+        activeMembershipUserIdProvider.overrideWithValue(userId),
+        nasabahApprovalProvider.overrideWith(
+          () => TestNasabahApprovalNotifier(
+            initialState: NasabahApprovalLoaded(
+                memberships ?? <NasabahMembershipEntity>[]),
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        home: ApprovalBankSampahDetailView(membership: membership),
+      ),
+    );
+
+void _mainActiveBank() {
+  testWidgets('offers to open a bank that is openable but not active',
+      (tester) async {
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      MemoryAppStorage(),
+      userId: 'user-offer',
+      memberships: [membershipRow('m-other'), openable],
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jadikan bank aktif'), findsOneWidget);
+  });
+
+  testWidgets('never offers to open a bank the backend closed', (tester) async {
+    final closed = membershipRow(
+      'm-closed',
+      nama: 'Bank Sampah Tutup',
+      dibuka: false,
+    );
+    await tester.pumpWidget(_wrapWithSelection(
+      closed,
+      MemoryAppStorage(),
+      userId: 'user-closed',
+      memberships: [closed],
+    ));
+    await tester.pumpAndSettle();
+
+    // Its own status still reads approved and active; only dapat_dibuka says
+    // the bank cannot be opened.
+    expect(closed.status, MembershipStatus.approved);
+    expect(closed.isActive, isTrue);
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+  });
+
+  testWidgets('does not offer to open the bank already in use', (tester) async {
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      MemoryAppStorage(),
+      userId: 'user-current',
+      memberships: [openable],
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+  });
+
+  testWidgets('choosing a bank saves it and stops offering the switch',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      storage,
+      userId: 'user-save',
+      memberships: [membershipRow('m-other'), openable],
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Jadikan bank aktif'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      await ActiveMembershipSelection(storage).read('user-save'),
+      'm-open',
+    );
+    expect(find.text('Bank Aktif Diubah'), findsOneWidget);
+    expect(find.text('Jadikan bank aktif'), findsNothing);
+
+    // Runs the toast's auto-dismiss timer out so none is left pending.
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('a rejected save says so and keeps the bank in use',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    final openable = membershipRow('m-open', nama: 'Bank Sampah Terbuka');
+    await tester.pumpWidget(_wrapWithSelection(
+      openable,
+      storage,
+      userId: 'user-reject',
+      memberships: [membershipRow('m-other'), openable],
+    ));
+    await tester.pumpAndSettle();
+
+    storage.putFailure = Exception('penyimpanan penuh');
+    await tester.tap(find.text('Jadikan bank aktif'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Gagal Mengubah Bank Aktif'), findsOneWidget);
+    expect(
+      await ActiveMembershipSelection(storage).read('user-reject'),
+      'm-other',
+    );
+    // Still on offer, because the switch did not happen.
+    expect(find.text('Jadikan bank aktif'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
   });
 }

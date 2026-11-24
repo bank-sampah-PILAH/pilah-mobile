@@ -26,7 +26,7 @@ void main() {
   });
 
   Future<void> openSheet(WidgetTester tester,
-      {Set<String> excluded = const {}}) async {
+      {Map<String, String> joined = const {}}) async {
     await pumpRouted(
       tester,
       Builder(
@@ -36,8 +36,7 @@ void main() {
               picked = await showModalBottomSheet<BankSampahDirectoryEntity>(
                 context: context,
                 isScrollControlled: true,
-                builder: (_) =>
-                    PilihBankSampahBottomSheet(excludedBankIds: excluded),
+                builder: (_) => PilihBankSampahBottomSheet(joinedBanks: joined),
               );
             },
             child: const Text('open'),
@@ -77,12 +76,21 @@ void main() {
     expect(find.text('Bank sampah tidak ditemukan.'), findsOneWidget);
   });
 
-  testWidgets('hides banks the nasabah already joined', (tester) async {
-    await openSheet(tester, excluded: {'b1'});
+  testWidgets('marks banks the nasabah already joined instead of hiding them',
+      (tester) async {
+    // PIL-539: a joined bank stays visible with its label in place of the
+    // address, and tapping it does not pick it.
+    await openSheet(tester, joined: {'b1': 'Sudah tergabung'});
     await tester.pumpAndSettle();
 
-    expect(find.text('Bank Melati'), findsNothing);
+    expect(find.text('Bank Melati'), findsOneWidget);
+    expect(find.text('Sudah tergabung'), findsOneWidget);
+    expect(find.text('Depok · Jl. Bank Melati'), findsNothing);
     expect(find.text('Bank Mawar'), findsOneWidget);
+
+    await tester.tap(find.text('Bank Melati'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cari nama bank sampah...'), findsOneWidget);
   });
 
   testWidgets('an empty directory says so', (tester) async {

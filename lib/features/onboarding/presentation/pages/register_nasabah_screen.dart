@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,23 +9,50 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
+
+/// Where [RegisterNasabahScreen] was opened from.
+enum RegisterNasabahMode {
+  /// Step two of onboarding (PIL-204): the account's first application.
+  onboarding,
+
+  /// From "Bank sampah saya" (PIL-539): an account that already belongs to a
+  /// bank sampah applies to another one, inside the app.
+  additional,
+}
 
 /// The nasabah half of PIL-204: a calon nasabah, having already completed
 /// their profile (including address) on the shared complete_profile step,
 /// picks a bank sampah to apply to join.
+///
+/// In [RegisterNasabahMode.additional] the same form is a page of the app:
+/// no onboarding stepper or exit, and no one-membership lock.
 class RegisterNasabahScreen extends ConsumerStatefulWidget {
-  const RegisterNasabahScreen({super.key});
+  const RegisterNasabahScreen({
+    super.key,
+    this.mode = RegisterNasabahMode.onboarding,
+  });
+
+  final RegisterNasabahMode mode;
 
   static const route = '/register-nasabah';
+
+  /// The same form, opened from "Bank sampah saya" by a nasabah who already
+  /// has a membership and applies to another bank sampah (PIL-539).
+  static const additionalRoute = '/ajukan-bank-sampah';
 
   @override
   ConsumerState<RegisterNasabahScreen> createState() =>
@@ -42,10 +71,13 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
 
   List<NasabahMembershipEntity> _memberships = const [];
 
-  /// PIL-204 scope for now: one membership per nasabah. Any existing
-  /// membership — pending, approved, or rejected — locks further
-  /// registration rather than letting a second application through.
-  bool get _isLocked => _memberships.isNotEmpty;
+  bool get _isAdditional => widget.mode == RegisterNasabahMode.additional;
+
+  /// During onboarding (PIL-204) an existing membership — usually a
+  /// pengurus-entered record auto-linked at login — locks the picker, so the
+  /// step only lands the profile. Applying from inside the app (PIL-539) is
+  /// how a second membership is made, so it is never locked.
+  bool get _isLocked => !_isAdditional && _memberships.isNotEmpty;
 
   @override
   void initState() {
@@ -61,6 +93,8 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
   }
 
   Future<void> _onSubmit() async {
+    if (_isAdditional) return _applyToAnotherBank();
+
     // Locked means a membership already exists — usually because the
     // pengurus-entered record auto-linked at login, before this draft was
     // ever sent. There's no new bank to register, but the profile itself
@@ -95,7 +129,41 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
     // Membership now linked to the account; refresh the cached session so a
     // relaunch mid-flow lands on the right step.
     ref.read(authenticationProvider.notifier).refreshUser();
+    unawaited(ref.read(nasabahApprovalProvider.notifier).load());
     context.go(locationForAuthStep(result?.nextStep));
+  }
+
+  /// PIL-539: the account is signed in and onboarded, so only the
+  /// membership request is sent: no profile draft, no session refresh, no
+  /// onboarding redirect. The server owns the one-membership-per-bank rule
+  /// and answers a duplicate with its own reason, shown as is.
+  Future<void> _applyToAnotherBank() async {
+    setState(() => _showBankError = _selectedBank == null);
+    final bank = _selectedBank;
+    if (bank == null) return;
+
+    setState(() => _isLoading = true);
+    final (:result, :error) = await ref
+        .read(onboardingProvider.notifier)
+        .registerNasabah(RegisterNasabahRequest(bankSampahId: bank.id));
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error != null) {
+      _showError(error.displayMessage);
+      return;
+    }
+
+    // Back to Bank sampah saya, which reloads on `true` and shows the new
+    // application as pending. The toast is raised once that page is back.
+    context.pop(true);
+    AppNotification.afterNavigation(
+      (context) => AppNotification.showSuccess(
+        context,
+        title: 'Pengajuan terkirim',
+        message: 'Pengajuan ke ${bank.nama} menunggu persetujuan pengurus.',
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -113,6 +181,18 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
     }
   }
 
+  /// How the picker labels a bank this account already applied to.
+  static String _joinedLabel(NasabahMembershipEntity membership) {
+    switch (membership.status) {
+      case 'pending':
+        return 'Menunggu persetujuan';
+      case 'rejected':
+        return 'Pernah ditolak';
+      default:
+        return 'Sudah tergabung';
+    }
+  }
+
   void _onBankSelected(BankSampahDirectoryEntity bank) {
     setState(() {
       _selectedBank = bank;
@@ -121,21 +201,95 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      _isAdditional ? _additionalPage(context) : _onboardingStep(context);
+
+  /// PIL-539: a page of the app, reached from "Bank sampah saya". Back (the
+  /// app bar's and the system's) simply returns there; there is no stepper
+  /// and no "Keluar", because the account is not mid-onboarding.
+  Widget _additionalPage(BuildContext context) {
+    return Scaffold(
+      appBar: const NasabahPageAppBar(
+        title: 'Ajukan bank sampah baru',
+        showBack: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: ContentFrame.insetOf(context)
+              .add(const EdgeInsets.all(AppSpacing.lg)),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ..._formFields(),
+                const SizedBox(height: AppSpacing.xl),
+                _submitButton(),
+                _reviewNote,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _onboardingStep(BuildContext context) {
     return OnboardingStepScaffold(
       title: 'Daftar Sebagai Nasabah',
       subtitle: 'Pilih bank sampah untuk mengajukan keanggotaan.',
       onExit: () => confirmExitOnboarding(context),
       onUnauthenticated: () => context.go(LoginPage.route),
-      progress: const OnboardingStepper(
+      progress: const OnboardingProgress(
         currentStep: 2,
-        secondStepLabel: 'Pilih Bank Sampah',
+        lastStepLabel: 'Pilih Bank Sampah',
       ),
       formKey: _formKey,
-      formFields: [
+      formFields: _formFields(),
+      footer: const [],
+      notice: const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xl),
+        child: _reviewNoteText,
+      ),
+      actions: OnboardingActions(
+        primary: _submitButton(),
+        secondary: ref.read(onboardingProvider.notifier).hasProfileDraft
+            ? AppButton(
+                label: 'Kembali',
+                variant: AppButtonVariant.neutral,
+                onPressed: () => handleOnboardingStepPop(
+                  context,
+                  didPop: false,
+                  isWizardStep: true,
+                ),
+              )
+            : null,
+      ),
+    );
+  }
+
+  Widget _submitButton() => AppButton(
+        label: _isLocked ? 'Lanjutkan' : 'Ajukan Pendaftaran',
+        trailingIcon: Icons.arrow_forward,
+        isLoading: _isLoading,
+        onPressed: _onSubmit,
+      );
+
+  static const _reviewNoteText = Text(
+    'Pengajuan akan ditinjau oleh pengurus bank sampah.',
+    textAlign: TextAlign.center,
+    style: TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
+  );
+
+  static const _reviewNote = Padding(
+    padding: EdgeInsets.all(AppSpacing.xl),
+    child: _reviewNoteText,
+  );
+
+  List<Widget> _formFields() => [
         if (_isLocked) ...[
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -149,7 +303,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
         ],
         OnboardingFormField(
           label: 'BANK SAMPAH',
@@ -161,9 +315,10 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
             hasError: _showBankError,
             errorText: 'Bank sampah wajib dipilih',
             enabled: !_isLocked,
-            excludedBankIds: _memberships
-                .map((membership) => membership.bankSampahId)
-                .toSet(),
+            joinedBanks: {
+              for (final membership in _memberships)
+                membership.bankSampahId: _joinedLabel(membership),
+            },
           ),
         ),
         if (_memberships.isNotEmpty) ...[
@@ -176,10 +331,10 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               color: AppColors.inkSoft,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           for (final membership in _memberships)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Row(
                 children: [
                   Expanded(
@@ -201,45 +356,5 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               ),
             ),
         ],
-      ],
-      footer: [
-        const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              AppButton(
-                label: _isLocked ? 'Lanjutkan' : 'Ajukan Pendaftaran',
-                trailingIcon: Icons.arrow_forward,
-                isLoading: _isLoading,
-                onPressed: _onSubmit,
-              ),
-              if (ref.read(onboardingProvider.notifier).hasProfileDraft) ...[
-                const SizedBox(height: 12),
-                AppButton(
-                  label: 'Kembali',
-                  variant: AppButtonVariant.neutral,
-                  onPressed: () => handleOnboardingStepPop(
-                    context,
-                    didPop: false,
-                    isWizardStep: true,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text(
-            'Pengajuan akan ditinjau oleh pengurus bank sampah.',
-            textAlign: TextAlign.center,
-            style:
-                TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
+      ];
 }

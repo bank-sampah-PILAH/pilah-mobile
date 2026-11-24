@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_badge.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_bank_identity.dart';
 import 'package:pilah_mobile/design/constants/font_weight.dart';
 
@@ -15,10 +16,15 @@ class MembershipListItem extends StatelessWidget {
   final NasabahMembershipEntity membership;
   final VoidCallback onTap;
 
+  /// Whether this is the bank the nasabah is banking with. The list decides
+  /// it from the persisted choice, not from the membership's own fields.
+  final bool isActive;
+
   const MembershipListItem({
     super.key,
     required this.membership,
     required this.onTap,
+    this.isActive = false,
   });
 
   @override
@@ -33,6 +39,7 @@ class MembershipListItem extends StatelessWidget {
           fontSize: AppFontSize.lg,
         ),
         locationStyle: AppTextStyle.small.copyWith(color: AppColors.grey100),
+        marker: isActive ? const ActiveMembershipBadge() : null,
       ),
     );
   }

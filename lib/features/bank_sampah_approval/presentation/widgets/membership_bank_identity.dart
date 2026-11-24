@@ -10,11 +10,16 @@ class MembershipBankIdentity extends StatelessWidget {
     required this.membership,
     required this.nameStyle,
     required this.locationStyle,
+    this.marker,
   });
 
   final NasabahMembershipEntity membership;
   final TextStyle nameStyle;
   final TextStyle locationStyle;
+
+  /// An extra pill shown before the status badge, used by the list to mark
+  /// the active bank. Nothing is reserved for it when it is null.
+  final Widget? marker;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +27,7 @@ class MembershipBankIdentity extends StatelessWidget {
         .where((part) => part.trim().isNotEmpty)
         .join(' · ');
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 48,
@@ -51,11 +57,22 @@ class MembershipBankIdentity extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              const SizedBox(height: 8),
+              // Under the address rather than beside it: sharing the row left
+              // a phone about 70px for the bank name, so both lines were cut.
+              // The wrap also keeps both pills whole on a narrow screen
+              // instead of squeezing the text to fit them.
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  if (marker != null) marker!,
+                  MembershipStatusBadge(status: membership.status),
+                ],
+              ),
             ],
           ),
         ),
-        const SizedBox(width: 8),
-        MembershipStatusBadge(status: membership.status),
       ],
     );
   }

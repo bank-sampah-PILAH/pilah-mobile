@@ -54,7 +54,9 @@ flutter build apk -t lib/main_production.dart
 
 See [dashboard deployment guide](docs/DASHBOARD_DEPLOYMENT.md) for Fly staging,
 Cloud Run production, CI gates, exact backend/Google origins, and the shared
-Web OAuth client ID. Web supports Super Admin and Pengurus only.
+Web OAuth client ID. Web supports Super Admin, Pengurus, and Nasabah.
+Nasabah can open active schedules and their details, edit their profile using
+the same rules as mobile (email stays read-only), and read legal information.
 
 ### ⚙️ Supported Flavor
 

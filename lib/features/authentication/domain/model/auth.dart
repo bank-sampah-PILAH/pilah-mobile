@@ -22,6 +22,10 @@ class AuthEntity {
       ? [if (role != null) role!]
       : List.unmodifiable(roles);
 
+  /// Whether this pengurus is the Pengurus Utama of their bank sampah. Read
+  /// again after a hand-over so the session never disagrees with the roster.
+  final bool isPrimaryPengelola;
+
   /// Backend-saved profile fields (empty/null when not yet filled). Lets
   /// complete_profile prefill from the account's actual data — e.g. a
   /// nasabah synced from a pengurus-entered record (PIL-154) — instead of
@@ -42,6 +46,7 @@ class AuthEntity {
     this.bankSampahStatus,
     this.role,
     this.roles = const [],
+    this.isPrimaryPengelola = false,
     this.noHp = '',
     this.jenisKelamin = '',
     this.tanggalLahir,

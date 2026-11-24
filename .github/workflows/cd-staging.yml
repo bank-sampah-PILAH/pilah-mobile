@@ -95,7 +95,27 @@ jobs:
       # This project has no Android product flavors. Staging is the existing
       # development entrypoint built as a signed release APK.
       - name: Build signed staging APK
-        run: flutter build apk --release -t lib/main_development.dart
+        run: flutter build apk --release -t lib/main_development.dart --split-debug-info=build/symbols
+
+      # The symbols turn the minified Dart frames of an error back into files
+      # and functions. A failed upload must not stop the release.
+      - name: Upload debug symbols to PostHog
+        continue-on-error: true
+        env:
+          POSTHOG_CLI_API_KEY: ${{ secrets.POSTHOG_CLI_API_KEY }}
+          # Not a secret: the id of the one PostHog project (it is in its URL).
+          POSTHOG_CLI_PROJECT_ID: "693641"
+          APP_VERSION_RUN: ${{ github.run_number }}
+        run: |
+          APP_VERSION="$(grep -m1 '^version:' pubspec.yaml | cut -d' ' -f2)-staging.${APP_VERSION_RUN}"
+          if [ -z "$POSTHOG_CLI_API_KEY" ]; then
+            echo "::warning::POSTHOG_CLI_API_KEY is not set; debug symbols were not uploaded."
+            exit 0
+          fi
+          npx --yes @posthog/cli@0.20.1 --host https://us.posthog.com \
+            symbol-sets upload --directory build/symbols \
+            --release-name pilah-android --release-version "$APP_VERSION" \
+            || echo "::warning::Debug symbol upload to PostHog failed; Dart errors will show minified stack traces."
 
       - name: Upload staging APK artifact
         uses: actions/upload-artifact@v4

@@ -58,7 +58,8 @@ void main() {
   late TestAuthenticationNotifier auth;
   late _Repository repository;
 
-  Future<void> open(WidgetTester tester, {NasabahIdentity? identity}) async {
+  Future<void> open(WidgetTester tester,
+      {NasabahIdentity? identity, bool isWeb = false}) async {
     auth = authNotifierIn(Authenticated(
         authEntity: AuthEntity(
       id: 'u',
@@ -80,9 +81,39 @@ void main() {
       await di.unregister<NasabahRepository>();
     });
     await tester.pumpWidget(withAuthenticationProvider(
-        auth, const MaterialApp(home: ProfilNasabahPage())));
+        auth, MaterialApp(home: ProfilNasabahPage(isWeb: isWeb))));
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+      'web validation failure preserves the draft and allows correction',
+      (tester) async {
+    await open(tester, isWeb: true);
+    repository.failNextUpdateWith =
+        const NasabahApiException('Nomor HP tidak valid.');
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, '081234567890'), 'invalid');
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nomor HP tidak valid.'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'invalid'), findsOneWidget);
+    await tester.enterText(
+        find.widgetWithText(TextField, 'invalid'), '089900001111');
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    expect(repository.updateCalls, [
+      {'no_hp': 'invalid'},
+      {'no_hp': '089900001111'}
+    ]);
+    expect(find.text('089900001111'), findsOneWidget);
+    expect(find.text('Simpan Perubahan'), findsNothing);
+  });
 
   testWidgets('profil menampilkan semua bidang profil dari respons server',
       (tester) async {

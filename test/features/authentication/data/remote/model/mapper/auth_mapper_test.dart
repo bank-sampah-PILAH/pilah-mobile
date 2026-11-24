@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/model/mapper/auth_mapper.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/model/responses/auth_response.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 void main() {
   group('mapResponseToDomain', () {
@@ -43,6 +44,47 @@ void main() {
       expect(entity.jenisKelamin, '');
       expect(entity.tanggalLahir, isNull);
       expect(entity.alamat, '');
+    });
+  });
+
+  group('the Pengurus Utama marker', () {
+    test('comes from the login answer', () {
+      const response = AuthResponse(
+        accessToken: 'token',
+        refreshToken: 'refresh',
+        user: UserResponse(
+            id: 'u-1',
+            email: 'p@example.com',
+            role: 'pengelola',
+            isPrimaryPengelola: true),
+      );
+
+      expect(
+          AuthMapper.mapResponseToDomain(response).isPrimaryPengelola, isTrue);
+    });
+
+    test('is false when the login answer omits it', () {
+      const response = AuthResponse(
+        accessToken: 'token',
+        refreshToken: 'refresh',
+        user:
+            UserResponse(id: 'u-1', email: 'p@example.com', role: 'pengelola'),
+      );
+
+      expect(
+          AuthMapper.mapResponseToDomain(response).isPrimaryPengelola, isFalse);
+    });
+
+    test('comes from GET /auth/me and defaults to false', () {
+      expect(
+        AuthMapper.mapMeResponseToDomain(
+            {'id': 'u-1', 'email': 'p@x.test', 'is_primary_pengelola': true}),
+        isA<AuthEntity>().having((e) => e.isPrimaryPengelola, 'flag', isTrue),
+      );
+      expect(
+          AuthMapper.mapMeResponseToDomain({'id': 'u-1', 'email': 'p@x.test'})
+              .isPrimaryPengelola,
+          isFalse);
     });
   });
 

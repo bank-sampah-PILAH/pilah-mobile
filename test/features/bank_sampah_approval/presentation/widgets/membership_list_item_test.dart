@@ -15,12 +15,16 @@ void main() {
     isActive: false,
   );
 
-  Widget host(VoidCallback onTap) => MaterialApp(
+  Widget host(VoidCallback onTap, {bool isActive = false}) => MaterialApp(
         theme: AppTheme.light,
         home: Scaffold(
           body: Padding(
             padding: const EdgeInsets.all(16),
-            child: MembershipListItem(membership: membership, onTap: onTap),
+            child: MembershipListItem(
+              membership: membership,
+              onTap: onTap,
+              isActive: isActive,
+            ),
           ),
         ),
       );
@@ -43,5 +47,57 @@ void main() {
     await tester.tap(find.text('Bank Sampah Melati'));
 
     expect(taps, 1);
+  });
+
+  testWidgets('marks only the bank that is active', (tester) async {
+    await tester.pumpWidget(host(() {}));
+    expect(find.text('Aktif'), findsNothing);
+
+    await tester.pumpWidget(host(() {}, isActive: true));
+    expect(find.text('Aktif'), findsOneWidget);
+  });
+
+  testWidgets('on a phone the pills leave the name and address their width',
+      (tester) async {
+    const long = NasabahMembershipEntity(
+      id: 'm2',
+      bankSampahId: 'b2',
+      bankSampahNama: 'Bank Sampah Induk Terpadu Daur Ulang Mandiri',
+      bankSampahKota: 'Depok',
+      bankSampahAlamat: 'Jl. E2E Induk Raya No. 45 Blok C',
+      status: MembershipStatus.pending,
+      isActive: false,
+    );
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: MembershipListItem(
+            membership: long,
+            onTap: () {},
+            isActive: true,
+          ),
+        ),
+      ),
+    ));
+
+    // Sharing the row with the pills left about a third of the card for the
+    // text, so both lines were cut on a phone. They now get the whole card.
+    final name = tester.getRect(find.text(long.bankSampahNama));
+    final location = tester.getRect(
+      find.text('Depok · Jl. E2E Induk Raya No. 45 Blok C'),
+    );
+    expect(name.width, greaterThan(240));
+    expect(location.width, greaterThan(240));
+
+    // Both pills stay visible below the address instead of squeezing it.
+    expect(find.text('Aktif'), findsOneWidget);
+    expect(tester.getRect(find.text('Aktif')).top,
+        greaterThanOrEqualTo(location.bottom));
   });
 }

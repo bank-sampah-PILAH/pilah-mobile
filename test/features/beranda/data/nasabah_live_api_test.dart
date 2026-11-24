@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/errors/error_reporter.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/client/network_utils.dart';
@@ -22,8 +23,11 @@ void main() {
     final tokens = _Tokens();
     when(() => environment.baseUrl).thenReturn(fixture['baseUrl'] as String);
     when(() => tokens.accessToken).thenReturn(fixture['token'] as String);
-    final network =
-        NetworkService(environment: environment, networkUtils: tokens);
+    final network = NetworkService(
+      environment: environment,
+      networkUtils: tokens,
+      errorReporter: const NoopErrorReporter(),
+    );
     // Avoid logging even disposable JWTs in test output.
     network.dio.interceptors.clear();
     addTearDown(() => network.dio.close(force: true));

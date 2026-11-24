@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
+import 'package:pilah_mobile/core/errors/exception_event_scrubber.dart';
 import 'package:pilah_mobile/core/analytics/screen_recorder.dart';
+import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 /// PostHog for the Android and iOS apps.
@@ -53,6 +55,9 @@ class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
 
   @override
   bool get recordsScreen => true;
+
+  @override
+  bool get isRecording => _live;
 
   /// The recorder looks at the app through [PostHogWidget], and only reads the
   /// SDK's settings when it is first built, so it must not exist before
@@ -148,13 +153,20 @@ class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
       ..debug = false
       ..captureApplicationLifecycleEvents = false
       ..sessionReplay = true
-      ..sessionReplayConfig = (PostHogSessionReplayConfig()
-        ..maskAllTexts = true
-        ..maskAllImages = true)
+      ..sessionReplayConfig = maskedReplayConfig()
       ..surveys = false
       ..preloadFeatureFlags = false
       ..capturePushNotificationSubscriptions = false
-      ..capturePushNotificationOpened = false;
+      ..capturePushNotificationOpened = false
+      // The message of an exception can hold what a pengurus typed: it is
+      // cleaned here, whatever put the exception there.
+      ..beforeSend = [scrubExceptionEvent];
+    // Dart errors are reported through ErrorReporter, so the SDK's own capture
+    // of them stays off. Native crashes stay off too: the native SDK sends them
+    // without passing through beforeSend, so their message would not be cleaned.
+    config.errorTrackingConfig
+      ..captureNativeExceptions = false
+      ..captureNativeCrashes = false;
     await _posthog.setup(config);
   }
 

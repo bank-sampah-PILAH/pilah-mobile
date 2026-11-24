@@ -47,6 +47,12 @@ class NasabahMembershipEntity {
   final MembershipStatus status;
   final bool isActive;
 
+  /// Whether the nasabah may actually open this bank. The backend folds four
+  /// conditions into it (membership approved and active, bank active and its
+  /// status active), so the client must not re-derive it from [status] and
+  /// [isActive] alone: those two cannot see a deactivated bank.
+  final bool dapatDibuka;
+
   /// Only non-null when [status] is [MembershipStatus.rejected].
   final String? alasanPenolakan;
 
@@ -63,6 +69,7 @@ class NasabahMembershipEntity {
     this.bankSampahLogoUrl,
     required this.status,
     required this.isActive,
+    this.dapatDibuka = false,
     this.alasanPenolakan,
     this.riwayat = const [],
   });
@@ -81,6 +88,7 @@ class NasabahMembershipEntity {
       bankSampahLogoUrl: bank['foto_logo']?.toString(),
       status: MembershipStatus.values.byName(json['status'] as String),
       isActive: json['is_active'] as bool? ?? false,
+      dapatDibuka: json['dapat_dibuka'] as bool? ?? false,
       alasanPenolakan: json['alasan_penolakan']?.toString(),
       riwayat: riwayat,
     );
@@ -98,6 +106,7 @@ class NasabahMembershipEntity {
         bankSampahLogoUrl: resolvedUrl ?? bankSampahLogoUrl,
         status: status,
         isActive: isActive,
+        dapatDibuka: dapatDibuka,
         alasanPenolakan: alasanPenolakan,
         riwayat: riwayat,
       );
