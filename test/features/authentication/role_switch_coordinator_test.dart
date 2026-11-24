@@ -9,6 +9,25 @@ AuthEntity session(String role) => AuthEntity(
 );
 
 void main() {
+  test('active or unowned roles never request a new session', () async {
+    var requests = 0;
+    final current = session('nasabah');
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => current,
+      requestRole: (role) async {
+        requests++;
+        return RoleSwitchSession(session(role), 'refresh');
+      },
+      persistSession: (_, __) async {},
+      resetRoleState: () {},
+      publishSession: (_) {},
+    );
+    addTearDown(coordinator.dispose);
+    await coordinator.switchTo('nasabah');
+    await coordinator.switchTo('superadmin');
+    expect(requests, 0);
+  });
+
   test('publishes the new role only after persistence and cache reset', () async {
     for (final target in ['nasabah', 'pengelola']) {
       var current = session(target == 'nasabah' ? 'pengelola' : 'nasabah');
@@ -40,3 +59,4 @@ void main() {
     }
   });
 }
+
