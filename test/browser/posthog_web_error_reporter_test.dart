@@ -6,12 +6,10 @@ import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/errors/posthog_web_error_reporter.dart';
 import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
-/// A stand-in for posthog-js that only records the errors it is handed. It is
-/// inline because this file runs through `flutter test`, which serves no
-/// extra files next to the test.
+/// A stand-in for posthog-js that only records the errors it is handed.
 const _fakeLibrary = '''
 window.__exceptions = [];
 window.posthog = {
@@ -40,6 +38,11 @@ List<List<Object?>> _exceptions() {
   ];
 }
 
+PosthogWebErrorReporter _reporter() => PosthogWebErrorReporter(
+      typeName: (error) => 'NamedError',
+      message: (error) => 'cleaned: ${error.runtimeType}',
+    );
+
 /// Declared `void` so it can be handed to JavaScript (`Never` cannot).
 void _brokenLibraryCall() {
   throw StateError('library is broken');
@@ -54,12 +57,12 @@ void main() {
   });
 
   group('PosthogWebErrorReporter', () {
-    test('sends the error with a clean message and a stable name', () async {
+    test('sends the error under the name and message it is given', () async {
       await _loadFakeLibrary();
-      final reporter = PosthogWebErrorReporter();
+      final reporter = _reporter();
 
       reporter.report(
-        StateError('gagal untuk budi@example.com'),
+        StateError('x'),
         StackTrace.fromString('#0 main (app.dart:1:1)'),
         context: {'layar': 'setoran_baru'},
       );
@@ -68,9 +71,9 @@ void main() {
       final error = sent[0]! as JSObject;
       expect(
         error.getProperty<JSString>('message'.toJS).toDart,
-        'Bad state: gagal untuk [email]',
+        'cleaned: StateError',
       );
-      expect(error.getProperty<JSString>('name'.toJS).toDart, 'StateError');
+      expect(error.getProperty<JSString>('name'.toJS).toDart, 'NamedError');
       expect(
         error.getProperty<JSString>('stack'.toJS).toDart,
         contains('app.dart'),
@@ -80,7 +83,7 @@ void main() {
 
     test('says so to the cleaning step when nobody caught the error', () async {
       await _loadFakeLibrary();
-      final reporter = PosthogWebErrorReporter();
+      final reporter = _reporter();
 
       reporter.report(StateError('a'), StackTrace.current, handled: false);
       reporter.report(StateError('b'), StackTrace.current);
@@ -91,7 +94,7 @@ void main() {
     });
 
     test('does nothing while the library is not there', () {
-      final reporter = PosthogWebErrorReporter();
+      final reporter = _reporter();
 
       expect(
         () => reporter.report(StateError('x'), StackTrace.current),
@@ -104,7 +107,7 @@ void main() {
       globalContext
           .getProperty<JSObject>('posthog'.toJS)
           .setProperty('captureException'.toJS, _brokenLibraryCall.toJS);
-      final reporter = PosthogWebErrorReporter();
+      final reporter = _reporter();
 
       expect(
         () => reporter.report(StateError('x'), StackTrace.current),
