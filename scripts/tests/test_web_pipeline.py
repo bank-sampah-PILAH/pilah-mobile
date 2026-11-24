@@ -77,6 +77,9 @@ class WebPipelineTest(unittest.TestCase):
         # The release is the version the app reports, so frames match events.
         self.assertIn("APP_VERSION", steps[build]["run"])
         self.assertIn("$APP_VERSION", steps[upload]["run"])
+        # The project id is a constant, not a secret; only the key is secret.
+        self.assertEqual(steps[upload]["env"]["POSTHOG_CLI_PROJECT_ID"], "693641")
+        self.assertIn("secrets.POSTHOG_CLI_API_KEY", steps[upload]["env"]["POSTHOG_CLI_API_KEY"])
 
     def test_android_builds_keep_symbols_and_upload_them_without_blocking(self):
         for name in ("cd-staging.yml", "cd-production.yml"):
@@ -90,6 +93,7 @@ class WebPipelineTest(unittest.TestCase):
             upload = steps[names.index("Upload debug symbols to PostHog")]
             self.assertEqual(upload["continue-on-error"], "true", name)
             self.assertIn("symbol-sets upload --directory build/symbols", upload["run"], name)
+            self.assertEqual(upload["env"]["POSTHOG_CLI_PROJECT_ID"], "693641", name)
 
     def test_invalid_hosting_configuration_fails_before_cloud_auth(self):
         steps = workflow("deploy-web.yml")["jobs"]["deploy"]["steps"]

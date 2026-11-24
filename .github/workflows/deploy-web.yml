@@ -113,10 +113,11 @@ jobs:
         continue-on-error: true
         env:
           POSTHOG_CLI_API_KEY: ${{ secrets.POSTHOG_CLI_API_KEY }}
-          POSTHOG_CLI_PROJECT_ID: ${{ secrets.POSTHOG_CLI_PROJECT_ID }}
+          # Not a secret: the id of the one PostHog project (it is in its URL).
+          POSTHOG_CLI_PROJECT_ID: "693641"
         run: |
-          if [ -z "$POSTHOG_CLI_API_KEY" ] || [ -z "$POSTHOG_CLI_PROJECT_ID" ]; then
-            echo "::warning::POSTHOG_CLI_API_KEY or POSTHOG_CLI_PROJECT_ID is not set; source maps were not uploaded."
+          if [ -z "$POSTHOG_CLI_API_KEY" ]; then
+            echo "::warning::POSTHOG_CLI_API_KEY is not set; source maps were not uploaded."
             exit 0
           fi
           npx --yes @posthog/cli@0.20.1 --host https://us.posthog.com \
