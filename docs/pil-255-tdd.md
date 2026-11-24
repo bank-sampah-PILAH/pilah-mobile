@@ -36,3 +36,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 14. Switch-back eligibility: RED response lost pengelola ownership. GREEN: coordinator and role mapping, 9 passed.
 
 15. Late data: RED old-role private response delivered. GREEN: stale responses cancelled plus network/HTTP regressions, 17 passed.
+
+16. Credential logs: RED bearer and returned tokens visible in synthetic logs. GREEN: authorization headers and auth bodies redacted; 16 network tests passed.

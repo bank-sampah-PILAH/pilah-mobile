@@ -246,7 +246,7 @@ final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
   if (kDebugMode) {
     Logger().i({
       'api': options.path,
-      'headers': options.headers,
+      'headers': _headersForLog(options.headers),
       'queryParams': options.queryParameters,
     });
   }
@@ -256,7 +256,7 @@ final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
     Logger().i({
       'api': '''
 ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}''',
-      'headers': resp.requestOptions.headers,
+      'headers': _headersForLog(resp.requestOptions.headers),
       'queryParams': resp.requestOptions.queryParameters,
       'body': _requestBodyForLog(resp.requestOptions),
       'response': _responseBodyForLog(resp.requestOptions, resp.data),
@@ -268,12 +268,10 @@ ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}'''
     Logger().e({
       'api': '''
 ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOptions.path}''',
-      'headers': err.requestOptions.headers,
+      'headers': _headersForLog(err.requestOptions.headers),
       'queryParams': err.requestOptions.queryParameters,
       'body': _requestBodyForLog(err.requestOptions),
-      'response': err.requestOptions.path.contains(_deviceTokenPath)
-          ? _redactedLogValue
-          : err.response?.data,
+      'response': _responseBodyForLog(err.requestOptions, err.response?.data),
       'type': err.type,
       // `type` alone can't tell a dropped connection from a parse failure —
       // both arrive as DioExceptionType.unknown. The wrapped error is the only
@@ -292,13 +290,21 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
   return handler.next(err);
 });
 
+Map<String, dynamic> _headersForLog(Map<String, dynamic> headers) => {
+  for (final entry in headers.entries)
+    entry.key: const ['authorization', 'cookie', 'set-cookie'].contains(entry.key.toLowerCase())
+        ? _redactedLogValue : entry.value,
+};
+
 Object? _responseBodyForLog(RequestOptions options, Object? data) {
-  if (options.path.contains(_deviceTokenPath)) return _redactedLogValue;
+  if (options.path.contains(_deviceTokenPath) ||
+      options.path.contains('/auth/')) return _redactedLogValue;
   if (options.responseType == ResponseType.bytes) return 'bytes';
   return data;
 }
 
 Object? _requestBodyForLog(RequestOptions options) {
+  if (options.path.contains('/auth/')) return _redactedLogValue;
   final data = options.data;
   try {
     final body = data is String ? jsonDecode(data) : data;
