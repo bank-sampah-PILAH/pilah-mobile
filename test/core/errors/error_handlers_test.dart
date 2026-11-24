@@ -102,7 +102,7 @@ void main() {
 
     test('a reporter that throws does not break the handlers', () {
       FlutterError.onError = (_) {};
-      ErrorHandlers.install(_ThrowingReporter());
+      ErrorHandlers.install(SafeErrorReporter(_ThrowingReporter()));
 
       expect(
         () => FlutterError.onError!(

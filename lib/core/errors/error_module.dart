@@ -11,13 +11,14 @@ abstract class ErrorModule {
   /// only the ones worth telling the team about. The last link, the one that
   /// talks to a monitoring service, depends on the platform.
   @lazySingleton
-  ErrorReporter errorReporter(AnalyticsClient analytics) =>
-      ConsentGatedErrorReporter(
-        allowed: () => analytics.isRecording,
-        inner: FilteredErrorReporter(
-          inner: ContextualErrorReporter(
-            inner: createPlatformErrorReporter(),
-            currentScreen: _currentScreen,
+  ErrorReporter errorReporter(AnalyticsClient analytics) => SafeErrorReporter(
+        ConsentGatedErrorReporter(
+          allowed: () => analytics.isRecording,
+          inner: FilteredErrorReporter(
+            inner: ContextualErrorReporter(
+              inner: createPlatformErrorReporter(),
+              currentScreen: _currentScreen,
+            ),
           ),
         ),
       );
