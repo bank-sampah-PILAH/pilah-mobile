@@ -12,6 +12,11 @@ import 'package:pilah_mobile/core/errors/error_scrubber.dart';
 /// carries the message of the error, which can hold a name, an address or a
 /// token, so the message of every `$exception` is cleaned here, whatever
 /// put it there. Every other event passes untouched.
+/// The name under which `PosthogWebErrorReporter` tells [scrubWebExceptionEvent]
+/// that nobody caught an error. posthog-js has no way to say so itself, and the
+/// marker is removed before the event is sent.
+const webNotHandledMarker = '__not_handled';
+
 JSAny? scrubWebExceptionEvent(JSAny? captureResult) {
   if (captureResult == null) return null;
   try {
@@ -25,7 +30,11 @@ JSAny? scrubWebExceptionEvent(JSAny? captureResult) {
     // posthog-js calls every error it is handed "handled". The reporter says
     // when nobody caught it, and this is the only place the flag can change.
     final notHandled =
-        properties?.getProperty<JSAny?>('ditangani'.toJS).dartify() == false;
+        properties?.getProperty<JSAny?>(webNotHandledMarker.toJS).dartify() ==
+            false;
+    if (properties != null && properties.has(webNotHandledMarker)) {
+      properties.delete(webNotHandledMarker.toJS);
+    }
     for (final entry in list?.toDart ?? const <JSObject>[]) {
       final value = entry.getProperty<JSAny?>('value'.toJS).dartify();
       if (value is String) {

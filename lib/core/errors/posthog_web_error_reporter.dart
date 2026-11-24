@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 import 'package:pilah_mobile/core/errors/error_reporter.dart';
 import 'package:pilah_mobile/core/errors/error_message.dart';
 import 'package:pilah_mobile/core/errors/error_type_name.dart';
+import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 
 /// Sends errors to PostHog's browser library, which is only there once the
 /// pengurus has agreed to analytics (`PosthogWebClient` loads it on `start`).
@@ -18,6 +19,7 @@ class PosthogWebErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     try {
       if (!globalContext.has('posthog')) return;
@@ -29,10 +31,14 @@ class PosthogWebErrorReporter implements ErrorReporter {
       jsError.setProperty('name'.toJS, ErrorTypeName.of(error).toJS);
       jsError.setProperty('stack'.toJS, stack.toString().toJS);
 
+      final properties = <String, Object?>{
+        ...AnalyticsProps.sanitize(context),
+        if (!handled) webNotHandledMarker: false,
+      };
       posthog.callMethod(
         'captureException'.toJS,
         jsError,
-        AnalyticsProps.sanitize(context).jsify(),
+        properties.jsify(),
       );
     } catch (_) {
       // A failing library must never disturb the app.

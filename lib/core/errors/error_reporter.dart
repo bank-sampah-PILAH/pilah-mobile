@@ -7,12 +7,14 @@ import 'package:pilah_mobile/core/errors/error_flows.dart';
 abstract class ErrorReporter {
   /// Reports [error] with the [stack] it was thrown with. [context] holds
   /// extra facts such as the screen, and may only use names that
-  /// `AnalyticsProps` allows. Never throws: a failure to report must not
-  /// disturb the app.
+  /// `AnalyticsProps` allows. [handled] is false for an error nobody caught,
+  /// which is what the global handlers report. Never throws: a failure to
+  /// report must not disturb the app.
   void report(
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   });
 }
 
@@ -25,6 +27,7 @@ class NoopErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {}
 }
 
@@ -42,9 +45,10 @@ class SafeErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     try {
-      inner.report(error, stack, context: context);
+      inner.report(error, stack, context: context, handled: handled);
     } catch (_) {
       // Nothing left to tell anyone.
     }
@@ -67,6 +71,7 @@ class ContextualErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     final screen = currentScreen();
     final flow = screen == null ? null : ErrorFlows.nameFor(screen);
@@ -78,6 +83,7 @@ class ContextualErrorReporter implements ErrorReporter {
         if (flow != null) 'alur': flow,
         ...context,
       },
+      handled: handled,
     );
   }
 }
@@ -93,9 +99,10 @@ class FilteredErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     if (!ErrorFilter.shouldReport(error)) return;
-    inner.report(error, stack, context: context);
+    inner.report(error, stack, context: context, handled: handled);
   }
 }
 
@@ -114,8 +121,9 @@ class LateErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) =>
-      resolve()?.report(error, stack, context: context);
+      resolve()?.report(error, stack, context: context, handled: handled);
 }
 
 /// Passes an error on only while the pengurus has agreed to analytics.
@@ -136,8 +144,9 @@ class ConsentGatedErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     if (!allowed()) return;
-    inner.report(error, stack, context: context);
+    inner.report(error, stack, context: context, handled: handled);
   }
 }
