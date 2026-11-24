@@ -28,3 +28,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 10. Restart: RED expected new-access, actual legacy-access. GREEN: single-record restore and auth storage/repository regressions, 16 passed.
 
 11. Logout: RED restored new-access after logout. GREEN: switched and legacy session removal, 7 passed.
+
+12. Later login: RED restored switched token rather than login token. GREEN: auth repository/storage regressions, 18 passed.
