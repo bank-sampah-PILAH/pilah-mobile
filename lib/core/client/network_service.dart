@@ -39,6 +39,17 @@ class NetworkService {
         return;
       }
       handler.next(response);
+    }, onError: (error, handler) {
+      final bearer = error.requestOptions.headers['Authorization'];
+      if (bearer != null && bearer != headersRequest()['Authorization']) {
+        handler.next(DioException(
+          requestOptions: error.requestOptions,
+          type: DioExceptionType.cancel,
+          message: 'Session changed while the request was pending',
+        ));
+        return;
+      }
+      handler.next(error);
     }));
     // First, so the id is already on the request when the logger prints it.
     dio.interceptors.add(RequestIdInterceptor());
