@@ -3,7 +3,7 @@ import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
 import 'package:pilah_mobile/core/errors/error_reporter.dart';
-import 'package:pilah_mobile/core/errors/error_scrubber.dart';
+import 'package:pilah_mobile/core/errors/error_message.dart';
 import 'package:pilah_mobile/core/errors/error_type_name.dart';
 
 /// Sends errors to PostHog's browser library, which is only there once the
@@ -25,9 +25,7 @@ class PosthogWebErrorReporter implements ErrorReporter {
 
       final jsError = globalContext
           .getProperty<JSFunction>('Error'.toJS)
-          .callAsConstructor<JSObject>(
-            ErrorScrubber.clean(error.toString()).toJS,
-          );
+          .callAsConstructor<JSObject>(ErrorMessage.of(error).toJS);
       jsError.setProperty('name'.toJS, ErrorTypeName.of(error).toJS);
       jsError.setProperty('stack'.toJS, stack.toString().toJS);
 
