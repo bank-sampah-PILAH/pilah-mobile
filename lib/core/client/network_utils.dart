@@ -10,6 +10,8 @@ class NetworkUtils {
 
   String _accessToken = '';
   String _refreshToken = '';
+  int _sessionRevision = 0;
+  int get sessionRevision => _sessionRevision;
 
   String get accessToken => _accessToken;
 
@@ -25,11 +27,13 @@ class NetworkUtils {
     required String accessToken,
     required String refreshToken,
   }) async {
+    _sessionRevision++;
     _accessToken = accessToken;
     _refreshToken = refreshToken;
   }
 
   Future<void> deleteToken() async {
+    _sessionRevision++;
     _accessToken = '';
     _refreshToken = '';
   }

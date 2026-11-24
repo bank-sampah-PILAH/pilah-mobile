@@ -59,6 +59,9 @@ class RoleSwitchCoordinator extends ChangeNotifier {
         throw const FormatException('Invalid role switch session');
       }
       await persistSession(next.auth.token, next.refreshToken);
+      final afterSave = readSession();
+      if (_disposed || afterSave == null || afterSave.id != current.id ||
+          afterSave.role != current.role || afterSave.token != current.token) return;
       resetRoleState();
       final auth = next.auth.roles.isEmpty
           ? next.auth.withRoles(current.ownedRoles) : next.auth;

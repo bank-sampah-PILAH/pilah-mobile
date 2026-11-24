@@ -48,3 +48,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 20. Navigation observer: RED pending-approval destination missing. GREEN: observer, real switch integration and App session-reset regressions, 4 passed.
 
 21. Failure observer: RED expected one error notification, actual none. GREEN: navigation/error observer and coordinator tests, 9 passed.
+
+22. Keystore/logout race: RED pending save completed after logout. GREEN: session revision invalidates pending write and publication; 15 coordinator/store/integration/observer tests passed.
