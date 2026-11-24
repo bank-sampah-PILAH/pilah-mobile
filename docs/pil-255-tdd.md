@@ -24,3 +24,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 8. HTTP integration: RED switch request unimplemented. GREEN: real HTTP stack POST contract and coordinator regressions, 7 passed.
 
 9. Storage failure: RED expected storage error, operation completed. GREEN: one secure record written before memory changes; coordinator/store suite 7 passed.
+
+10. Restart: RED expected new-access, actual legacy-access. GREEN: single-record restore and auth storage/repository regressions, 16 passed.

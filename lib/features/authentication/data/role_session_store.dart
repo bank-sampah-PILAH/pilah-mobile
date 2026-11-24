@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:pilah_mobile/core/client/network_utils.dart';
+import 'package:pilah_mobile/core/client/session_tokens.dart';
 import 'package:pilah_mobile/core/database/secure_database.dart';
 
 class RoleSessionStore {
   const RoleSessionStore(this.database, this.network);
   final SecureDatabase database;
   final NetworkUtils network;
-  static const key = 'role_session';
+  static const key = SessionTokens.key;
 
   Future<void> save(String access, String refresh) async {
     // One keystore entry prevents an access token from being paired with the

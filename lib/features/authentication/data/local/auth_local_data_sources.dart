@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/core/constants/app_key.dart';
 import 'package:pilah_mobile/core/database/secure_database.dart';
 import 'package:pilah_mobile/core/client/network_utils.dart';
+import 'package:pilah_mobile/core/client/session_tokens.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/model/request/save_token_request.dart';
 import 'package:injectable/injectable.dart';
 import 'package:logger/logger.dart';
@@ -63,9 +64,10 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
   }
 
   @override
-  Future<String?> readAccessToken() => _database.getString(AppKey.token);
+  Future<String?> readAccessToken() async =>
+      (await SessionTokens.read(_database)).access;
 
   @override
-  Future<String?> readRefreshToken() =>
-      _database.getString(AppKey.refreshToken);
+  Future<String?> readRefreshToken() async =>
+      (await SessionTokens.read(_database)).refresh;
 }

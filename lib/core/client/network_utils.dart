@@ -1,4 +1,4 @@
-﻿import 'package:pilah_mobile/core/constants/app_key.dart';
+import 'session_tokens.dart';
 import 'package:pilah_mobile/core/database/secure_database.dart';
 import 'package:injectable/injectable.dart';
 
@@ -16,8 +16,9 @@ class NetworkUtils {
   String get refreshToken => _refreshToken;
 
   Future<void> init() async {
-    _accessToken = await _secureDatabase.getString(AppKey.token) ?? '';
-    _refreshToken = await _secureDatabase.getString(AppKey.refreshToken) ?? '';
+    final tokens = await SessionTokens.read(_secureDatabase);
+    _accessToken = tokens.access ?? '';
+    _refreshToken = tokens.refresh ?? '';
   }
 
   Future<void> setToken({
