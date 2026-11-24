@@ -80,6 +80,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('profile exposes Role saya with the current owned role', (tester) async {
+    await openPage(tester);
+    expect(find.text('Role saya'), findsOneWidget);
+    expect(find.text('Aktif'), findsOneWidget);
+    expect(find.text('Gunakan role ini'), findsNothing);
+  });
+
   group('recording consent', () {
     late FakeAppStorage storage;
     late FakeAnalyticsClient client;
