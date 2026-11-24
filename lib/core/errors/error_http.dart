@@ -19,7 +19,7 @@ abstract final class ErrorHttp {
   static String? pathOf(Object error) {
     final options = _options(error);
     if (options == null) return null;
-    final path = options.uri.path;
+    final path = options.uri.path.replaceAll(RegExp('/{2,}'), '/');
     return path
         .split('/')
         .map((part) =>
