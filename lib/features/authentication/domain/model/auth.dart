@@ -10,6 +10,14 @@ class AuthEntity {
   final String? role;
   final List<String> roles;
 
+  AuthEntity withRoles(List<String> owned) => AuthEntity(
+    id: id, name: name, email: email, photoUrl: photoUrl, token: token,
+    nextStep: nextStep, bankSampahNama: bankSampahNama,
+    bankSampahStatus: bankSampahStatus, role: role,
+    roles: List.unmodifiable(owned), noHp: noHp, jenisKelamin: jenisKelamin,
+    tanggalLahir: tanggalLahir, alamat: alamat,
+  );
+
   List<String> get ownedRoles => roles.isEmpty
       ? [if (role != null) role!]
       : List.unmodifiable(roles);

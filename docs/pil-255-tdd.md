@@ -32,3 +32,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 12. Later login: RED restored switched token rather than login token. GREEN: auth repository/storage regressions, 18 passed.
 
 13. Login roles: RED expected both roles, actual pengelola only. GREEN: login/restore/mapper/HTTP regressions, 6 passed.
+
+14. Switch-back eligibility: RED response lost pengelola ownership. GREEN: coordinator and role mapping, 9 passed.
