@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_sources.dart';
+import 'package:pilah_mobile/features/authentication/data/remote/model/request/save_token_request.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_utils.dart';
 import 'package:pilah_mobile/core/database/secure_database.dart';
@@ -9,6 +10,20 @@ import 'package:pilah_mobile/features/authentication/data/role_session_store.dar
 class Database extends Mock implements SecureDatabase {}
 
 void main() {
+  test('a subsequent login supersedes the switched session on restart', () async {
+    FlutterSecureStorage.setMockInitialValues({});
+    const db = SecureDatabaseImpl();
+    final network = NetworkUtils(db);
+    await RoleSessionStore(db, network).save('switched', 'switched-refresh');
+    final local = AuthLocalDataSourcesImpl(db, network);
+    await local.saveToken(const SaveTokenRequest(
+      accessToken: 'login', refreshToken: 'login-refresh'));
+    final restored = NetworkUtils(db);
+    await restored.init();
+    expect(restored.accessToken, 'login');
+    expect(restored.refreshToken, 'login-refresh');
+  });
+
   test('logout removes the switched session from disk and memory', () async {
     FlutterSecureStorage.setMockInitialValues({});
     const db = SecureDatabaseImpl();
