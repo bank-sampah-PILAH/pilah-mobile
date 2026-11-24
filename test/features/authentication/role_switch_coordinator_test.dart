@@ -10,6 +10,24 @@ AuthEntity session(String role) => AuthEntity(
 );
 
 void main() {
+  test('retaining owned roles preserves the current primary-pengurus flag', () async {
+    const current = AuthEntity(id: 'u1', name: '', email: '', photoUrl: '',
+      token: 'old', role: 'nasabah', roles: ['nasabah', 'pengelola']);
+    AuthEntity? published;
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => current,
+      requestRole: (_) async => const RoleSwitchSession(AuthEntity(
+        id: 'u1', name: '', email: '', photoUrl: '', token: 'new',
+        role: 'pengelola', isPrimaryPengelola: true, nextStep: 'dashboard'), 'refresh'),
+      persistSession: (_, __) async {}, resetRoleState: () {},
+      publishSession: (value) => published = value,
+    );
+    addTearDown(coordinator.dispose);
+    await coordinator.switchTo('pengelola');
+    expect(published!.isPrimaryPengelola, isTrue);
+    expect(published!.ownedRoles, ['nasabah', 'pengelola']);
+  });
+
   test('switch response without roles keeps the account able to switch back', () async {
     var current = session('pengelola');
     const switched = AuthEntity(id: 'u1', name: 'Siti', email: 'siti@example.test',
