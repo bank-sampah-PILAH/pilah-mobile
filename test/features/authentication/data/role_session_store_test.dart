@@ -9,6 +9,21 @@ import 'package:pilah_mobile/features/authentication/data/role_session_store.dar
 class Database extends Mock implements SecureDatabase {}
 
 void main() {
+  test('logout removes the switched session from disk and memory', () async {
+    FlutterSecureStorage.setMockInitialValues({});
+    const db = SecureDatabaseImpl();
+    final network = NetworkUtils(db);
+    await RoleSessionStore(db, network).save('new-access', 'new-refresh');
+    final local = AuthLocalDataSourcesImpl(db, network);
+    await local.clearToken();
+    final restored = NetworkUtils(db);
+    await restored.init();
+    expect(restored.accessToken, isEmpty);
+    expect(restored.refreshToken, isEmpty);
+    expect(network.accessToken, isEmpty);
+    expect(await local.readAccessToken(), isNull);
+  });
+
   test('cold start restores the switched access and refresh tokens together', () async {
     FlutterSecureStorage.setMockInitialValues({
       'token': 'legacy-access', 'refresh_token': 'legacy-refresh',
