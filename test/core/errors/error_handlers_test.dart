@@ -8,14 +8,17 @@ import 'package:pilah_mobile/core/errors/error_reporter.dart';
 
 class _RecordingReporter implements ErrorReporter {
   final reported = <({Object error, StackTrace stack})>[];
+  final contexts = <Map<String, Object?>>[];
 
   @override
   void report(
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
-  }) =>
-      reported.add((error: error, stack: stack));
+  }) {
+    reported.add((error: error, stack: stack));
+    contexts.add(context);
+  }
 }
 
 class _ThrowingReporter implements ErrorReporter {
@@ -71,6 +74,30 @@ void main() {
       PlatformDispatcher.instance.onError!(error, StackTrace.current);
 
       expect(reporter.reported.single.error, error);
+    });
+
+    test('marks what nobody caught as not handled', () async {
+      FlutterError.onError = (_) {};
+      PlatformDispatcher.instance.onError = null;
+      final reporter = _RecordingReporter();
+      ErrorHandlers.install(reporter);
+
+      FlutterError.onError!(FlutterErrorDetails(exception: StateError('a')));
+      PlatformDispatcher.instance.onError!(StateError('b'), StackTrace.current);
+      final done = Completer<void>();
+      ErrorHandlers.runGuarded(reporter, () {
+        Timer(Duration.zero, () {
+          done.complete();
+          throw StateError('c');
+        });
+      });
+      await done.future;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(reporter.contexts, hasLength(3));
+      for (final context in reporter.contexts) {
+        expect(context, {'ditangani': false});
+      }
     });
 
     test('a reporter that throws does not break the handlers', () {
