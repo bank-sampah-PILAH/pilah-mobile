@@ -15,13 +15,26 @@ class PosthogMobileErrorReporter implements ErrorReporter {
     Map<String, Object?> context = const {},
   }) {
     try {
+      // "Not handled" can only be said through the SDK's zone-error call: it
+      // wraps the error with how it was caught. The marker itself is not sent.
+      final handled = context['ditangani'] != false;
+      final properties = AnalyticsProps.sanitize({
+        for (final entry in context.entries)
+          if (entry.key != 'ditangani') entry.key: entry.value,
+      });
+      final posthog = Posthog();
       unawaited(
-        Posthog()
-            .captureException(
-              error: error,
-              stackTrace: stack,
-              properties: AnalyticsProps.sanitize(context),
-            )
+        (handled
+                ? posthog.captureException(
+                    error: error,
+                    stackTrace: stack,
+                    properties: properties,
+                  )
+                : posthog.captureRunZonedGuardedError(
+                    error: error,
+                    stackTrace: stack,
+                    properties: properties,
+                  ))
             // A failing SDK must never disturb the app, not even later on.
             .catchError((Object _) {}),
       );

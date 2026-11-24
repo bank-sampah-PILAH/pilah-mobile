@@ -27,6 +27,7 @@ abstract final class AnalyticsProps {
     'dapat_diulang',
     'dari',
     'dilanjutkan',
+    'ditangani',
     'durasi_detik',
     'durasi_isi_item_detik',
     'durasi_langkah_detik',
