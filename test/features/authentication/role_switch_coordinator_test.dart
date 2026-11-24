@@ -10,6 +10,33 @@ AuthEntity session(String role) => AuthEntity(
 );
 
 void main() {
+  test('invalid switch responses cannot replace the current session', () async {
+    final invalid = [
+      RoleSwitchSession(session('pengelola'), 'refresh'),
+      RoleSwitchSession(session('nasabah'), ''),
+      const RoleSwitchSession(AuthEntity(id: 'other', name: '', email: '',
+        photoUrl: '', token: 'new', role: 'nasabah', nextStep: 'nasabah_dashboard'), 'refresh'),
+      const RoleSwitchSession(AuthEntity(id: 'u1', name: '', email: '',
+        photoUrl: '', token: '', role: 'nasabah', nextStep: 'nasabah_dashboard'), 'refresh'),
+      const RoleSwitchSession(AuthEntity(id: 'u1', name: '', email: '',
+        photoUrl: '', token: 'new', role: 'nasabah', nextStep: 'https://evil.test'), 'refresh'),
+    ];
+    for (final response in invalid) {
+      var mutations = 0;
+      final coordinator = RoleSwitchCoordinator(
+        readSession: () => session('pengelola'),
+        requestRole: (_) async => response,
+        persistSession: (_, __) async { mutations++; },
+        resetRoleState: () { mutations++; },
+        publishSession: (_) { mutations++; },
+      );
+      await coordinator.switchTo('nasabah');
+      expect(mutations, 0, reason: 'invalid response must not mutate a session');
+      expect(coordinator.error, isNotNull);
+      coordinator.dispose();
+    }
+  });
+
   test('failed switch keeps the old session and notifies a retryable error', () async {
     final current = session('pengelola');
     var mutations = 0;
