@@ -64,6 +64,9 @@ class PosthogWebClient implements AnalyticsClient {
   @override
   bool get recordsScreen => recordScreen;
 
+  @override
+  bool get isRecording => _live;
+
   /// Starts the client. Throws a [StateError] when the library cannot be
   /// loaded, so a caller has to handle that. A failed start is not remembered:
   /// the next call tries again.
