@@ -8,6 +8,11 @@ class AuthEntity {
   final String? bankSampahNama;
   final String? bankSampahStatus; // pending | active | rejected | null
   final String? role;
+  final List<String> roles;
+
+  List<String> get ownedRoles => roles.isEmpty
+      ? [if (role != null) role!]
+      : List.unmodifiable(roles);
 
   /// Backend-saved profile fields (empty/null when not yet filled). Lets
   /// complete_profile prefill from the account's actual data — e.g. a
@@ -28,6 +33,7 @@ class AuthEntity {
     this.bankSampahNama,
     this.bankSampahStatus,
     this.role,
+    this.roles = const [],
     this.noHp = '',
     this.jenisKelamin = '',
     this.tanggalLahir,
