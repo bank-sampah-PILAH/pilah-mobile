@@ -25,9 +25,16 @@ class RoleSwitchCoordinator extends ChangeNotifier {
   bool busy = false;
   String? error;
   AuthEntity? completedSession;
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   Future<void> switchTo(String role) async {
-    if (busy) return;
+    if (busy || _disposed) return;
     final current = readSession();
     if (current == null || current.role == role ||
         !current.ownedRoles.contains(role) ||
@@ -38,6 +45,9 @@ class RoleSwitchCoordinator extends ChangeNotifier {
     notifyListeners();
     try {
       final next = await requestRole(role);
+      final live = readSession();
+      if (_disposed || live == null || live.id != current.id ||
+          live.role != current.role || live.token != current.token) return;
       final allowedSteps = role == 'nasabah'
           ? const ['nasabah_dashboard', 'register_nasabah', 'complete_profile']
           : const ['dashboard', 'approval_pending', 'registration_rejected',
@@ -57,7 +67,7 @@ class RoleSwitchCoordinator extends ChangeNotifier {
           'Periksa koneksi dan coba lagi.';
     } finally {
       busy = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 }

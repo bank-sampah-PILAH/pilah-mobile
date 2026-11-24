@@ -18,3 +18,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 5. Connection failure: RED unhandled TimeoutException. GREEN: old session untouched, error observed, coordinator suite 4 passed.
 
 6. Invalid responses: RED expected 0 mutations, actual 3. GREEN: wrong role/account, missing tokens and unsafe routing hints rejected; 5 tests passed.
+
+7. Logout race: RED expected 0 mutations, actual 3. GREEN: late switch response discarded; 6 tests passed.
