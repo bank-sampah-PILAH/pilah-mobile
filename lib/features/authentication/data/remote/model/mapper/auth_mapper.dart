@@ -40,6 +40,7 @@ class AuthMapper {
       bankSampahNama: json['bank_sampah_nama']?.toString(),
       bankSampahStatus: json['bank_sampah_status']?.toString(),
       role: json['role']?.toString(),
+      roles: (json['roles'] as List?)?.whereType<String>().toList() ?? const [],
       noHp: json['no_hp']?.toString() ?? '',
       jenisKelamin: json['jenis_kelamin']?.toString() ?? '',
       tanggalLahir: json['tanggal_lahir']?.toString(),
