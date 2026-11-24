@@ -26,6 +26,10 @@ void main() {
       expect((list[0] as Map)['type'], 'StateError');
     });
 
+    test('drops an exception event whose list is empty', () {
+      expect(scrubExceptionEvent(_exception(<Object?>[])), isNull);
+    });
+
     test('drops an exception that has no type to fall back on', () {
       final event = _exception([
         {'value': 'Budi Santoso menyetor Rp 50.000'},

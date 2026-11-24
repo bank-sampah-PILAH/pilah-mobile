@@ -377,6 +377,24 @@ void main() {
       expect((list.single as Map)['value'], 'StateError');
     });
 
+    test(
+        'are dropped when the event has no properties, no list or an empty one',
+        () async {
+      await _client().start();
+
+      for (final event in [
+        {'event': r'$exception'},
+        {'event': r'$exception', 'properties': <String, Object?>{}},
+        {
+          'event': r'$exception',
+          'properties': {r'$exception_list': <Object?>[]},
+        },
+      ]) {
+        expect(beforeSend().callAsFunction(null, event.jsify()), isNull,
+            reason: '$event');
+      }
+    });
+
     test('are dropped when an exception has no type', () async {
       await _client().start();
 
