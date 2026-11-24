@@ -26,15 +26,19 @@ JSAny? scrubWebExceptionEvent(JSAny? captureResult) {
     final properties = result.getProperty<JSObject?>('properties'.toJS);
     final list =
         properties?.getProperty<JSArray<JSObject>?>(r'$exception_list'.toJS);
+    // An exception event with nothing to reduce (no properties, no list, an
+    // empty one) cannot be told apart from one that hides its message somewhere
+    // else, so it is dropped rather than sent as it is.
+    if (properties == null || list == null || list.toDart.isEmpty) return null;
     // posthog-js calls every error it is handed "handled". The reporter says
     // when nobody caught it, and this is the only place the flag can change.
     final notHandled =
-        properties?.getProperty<JSAny?>(webNotHandledMarker.toJS).dartify() ==
+        properties.getProperty<JSAny?>(webNotHandledMarker.toJS).dartify() ==
             false;
-    if (properties != null && properties.has(webNotHandledMarker)) {
+    if (properties.has(webNotHandledMarker)) {
       properties.delete(webNotHandledMarker.toJS);
     }
-    for (final entry in list?.toDart ?? const <JSObject>[]) {
+    for (final entry in list.toDart) {
       final type = entry.getProperty<JSAny?>('type'.toJS).dartify();
       if (type is! String || type.isEmpty) return null;
       entry.setProperty('value'.toJS, type.toJS);
@@ -44,7 +48,7 @@ JSAny? scrubWebExceptionEvent(JSAny? captureResult) {
       }
     }
     if (notHandled) {
-      properties?.setProperty(r'$exception_handled'.toJS, false.toJS);
+      properties.setProperty(r'$exception_handled'.toJS, false.toJS);
     }
     return captureResult;
   } catch (_) {
