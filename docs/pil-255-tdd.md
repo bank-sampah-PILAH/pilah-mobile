@@ -46,3 +46,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 19. Cache integration: RED old private WhatsApp template visible when new role published. GREEN: real HTTP/store/auth/cache flow and coordinator/storage regressions, 12 passed.
 
 20. Navigation observer: RED pending-approval destination missing. GREEN: observer, real switch integration and App session-reset regressions, 4 passed.
+
+21. Failure observer: RED expected one error notification, actual none. GREEN: navigation/error observer and coordinator tests, 9 passed.
