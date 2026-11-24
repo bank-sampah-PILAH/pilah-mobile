@@ -28,6 +28,29 @@ class NoopErrorReporter implements ErrorReporter {
   }) {}
 }
 
+/// Keeps the promise of [ErrorReporter.report], that it never throws, in one
+/// place: whatever the reporters inside do, a failure to report is not allowed
+/// to turn one error into two. Callers can rely on it instead of each guarding
+/// the call themselves.
+class SafeErrorReporter implements ErrorReporter {
+  SafeErrorReporter(this.inner);
+
+  final ErrorReporter inner;
+
+  @override
+  void report(
+    Object error,
+    StackTrace stack, {
+    Map<String, Object?> context = const {},
+  }) {
+    try {
+      inner.report(error, stack, context: context);
+    } catch (_) {
+      // Nothing left to tell anyone.
+    }
+  }
+}
+
 /// Adds the screen, and the core flow if there is one, to every error, so the
 /// team knows where it happened without anyone listing the screens by hand.
 class ContextualErrorReporter implements ErrorReporter {

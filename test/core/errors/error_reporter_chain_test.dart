@@ -15,6 +15,16 @@ class _RecordingReporter implements ErrorReporter {
       reported.add(error);
 }
 
+class _ThrowingReporter implements ErrorReporter {
+  @override
+  void report(
+    Object error,
+    StackTrace stack, {
+    Map<String, Object?> context = const {},
+  }) =>
+      throw StateError('the monitoring service is down');
+}
+
 void main() {
   group('FilteredErrorReporter', () {
     test('passes on an unexpected error but not a handled one', () {
@@ -32,6 +42,20 @@ void main() {
       reporter.report(unexpected, StackTrace.current);
 
       expect(inner.reported, [unexpected]);
+    });
+  });
+
+  group('SafeErrorReporter', () {
+    test('swallows a failure of the reporter inside, and passes the rest', () {
+      final inner = _RecordingReporter();
+      final safe = SafeErrorReporter(_ThrowingReporter());
+      final fine = SafeErrorReporter(inner);
+      final error = StateError('boom');
+
+      expect(() => safe.report(error, StackTrace.current), returnsNormally);
+      fine.report(error, StackTrace.current);
+
+      expect(inner.reported, [error]);
     });
   });
 
