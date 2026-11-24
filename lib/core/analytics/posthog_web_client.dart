@@ -213,11 +213,22 @@ class PosthogWebClient implements AnalyticsClient {
       final properties = result.getProperty<JSObject?>('properties'.toJS);
       final list =
           properties?.getProperty<JSArray<JSObject>?>(r'$exception_list'.toJS);
+      // posthog-js calls every error it is handed "handled". The reporter says
+      // when nobody caught it, and this is the only place the flag can change.
+      final notHandled =
+          properties?.getProperty<JSAny?>('ditangani'.toJS).dartify() == false;
       for (final entry in list?.toDart ?? const <JSObject>[]) {
         final value = entry.getProperty<JSAny?>('value'.toJS).dartify();
         if (value is String) {
           entry.setProperty('value'.toJS, ErrorScrubber.clean(value).toJS);
         }
+        if (notHandled) {
+          final mechanism = entry.getProperty<JSObject?>('mechanism'.toJS);
+          mechanism?.setProperty('handled'.toJS, false.toJS);
+        }
+      }
+      if (notHandled) {
+        properties?.setProperty(r'$exception_handled'.toJS, false.toJS);
       }
       return captureResult;
     } catch (_) {

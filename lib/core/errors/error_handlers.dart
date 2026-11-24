@@ -43,10 +43,15 @@ abstract final class ErrorHandlers {
   }
 
   /// Reporting is the last thing that may go wrong: whatever the reporter does,
-  /// it must not turn one error into two.
+  /// it must not turn one error into two. Nothing that reaches a handler was
+  /// caught by the code that ran, so it is reported as not handled.
   static void _report(ErrorReporter reporter, Object error, StackTrace? stack) {
     try {
-      reporter.report(error, stack ?? StackTrace.current);
+      reporter.report(
+        error,
+        stack ?? StackTrace.current,
+        context: const {'ditangani': false},
+      );
     } catch (_) {
       // Nothing left to tell anyone.
     }
