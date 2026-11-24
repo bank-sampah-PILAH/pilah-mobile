@@ -27,6 +27,7 @@ class RoleSwitchCoordinator extends ChangeNotifier {
   AuthEntity? completedSession;
 
   Future<void> switchTo(String role) async {
+    if (busy) return;
     final current = readSession();
     if (current == null || current.role == role ||
         !current.ownedRoles.contains(role) ||
