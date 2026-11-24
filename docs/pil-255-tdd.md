@@ -14,3 +14,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 3. Selection guards: RED expected 0 requests, actual 2. GREEN: coordinator suite 2 passed.
 
 4. Duplicate taps: RED expected 1 request, actual 2. GREEN: coordinator suite 3 passed.
+
+5. Connection failure: RED unhandled TimeoutException. GREEN: old session untouched, error observed, coordinator suite 4 passed.

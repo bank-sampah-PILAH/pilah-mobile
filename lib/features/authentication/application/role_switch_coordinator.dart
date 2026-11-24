@@ -36,12 +36,18 @@ class RoleSwitchCoordinator extends ChangeNotifier {
     error = null;
     completedSession = null;
     notifyListeners();
-    final next = await requestRole(role);
-    await persistSession(next.auth.token, next.refreshToken);
-    resetRoleState();
-    publishSession(next.auth);
-    busy = false;
-    completedSession = next.auth;
-    notifyListeners();
+    try {
+      final next = await requestRole(role);
+      await persistSession(next.auth.token, next.refreshToken);
+      resetRoleState();
+      publishSession(next.auth);
+      completedSession = next.auth;
+    } catch (_) {
+      error = 'Gagal mengganti role. Role sebelumnya tetap aktif. '
+          'Periksa koneksi dan coba lagi.';
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
   }
 }
