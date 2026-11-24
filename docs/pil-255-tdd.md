@@ -38,3 +38,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 15. Late data: RED old-role private response delivered. GREEN: stale responses cancelled plus network/HTTP regressions, 17 passed.
 
 16. Credential logs: RED bearer and returned tokens visible in synthetic logs. GREEN: authorization headers and auth bodies redacted; 16 network tests passed.
+
+17. Profile controls: RED Role saya missing. GREEN: both-role widget interactions and coordinator regressions, 8 passed.
