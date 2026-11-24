@@ -55,6 +55,9 @@ class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
   @override
   bool get recordsScreen => true;
 
+  @override
+  bool get isRecording => _live;
+
   /// The recorder looks at the app through [PostHogWidget], and only reads the
   /// SDK's settings when it is first built, so it must not exist before
   /// [start] has set the SDK up. Adding it around the app later would rebuild

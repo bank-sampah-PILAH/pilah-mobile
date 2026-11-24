@@ -10,6 +10,12 @@ abstract class AnalyticsClient {
   /// say so.
   bool get recordsScreen;
 
+  /// Whether the user has agreed and recording is running right now: true
+  /// between [start] and [stop]. Anything else that sends data on the user's
+  /// behalf, such as error reports, follows this instead of keeping its own
+  /// switch.
+  bool get isRecording;
+
   Future<void> start();
 
   /// Stops recording, for example when the user withdraws their consent.
@@ -48,6 +54,9 @@ class NoopAnalyticsClient implements AnalyticsClient {
 
   @override
   bool get recordsScreen => false;
+
+  @override
+  bool get isRecording => false;
 
   @override
   Future<void> start() async {}
