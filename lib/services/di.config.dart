@@ -246,6 +246,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i941.NetworkService>(() => _i941.NetworkService(
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
+          errorReporter: gh<_i1071.ErrorReporter>(),
         ));
     gh.lazySingleton<_i184.AktivitasRepository>(
         () => _i694.AktivitasRepositoryImpl(gh<_i941.NetworkService>()));

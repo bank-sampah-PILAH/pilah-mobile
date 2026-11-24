@@ -25,6 +25,17 @@ class _RecordingReporter implements ErrorReporter {
   }
 }
 
+class _ThrowingReporter implements ErrorReporter {
+  @override
+  void report(
+    Object error,
+    StackTrace stack, {
+    Map<String, Object?> context = const {},
+    bool handled = true,
+  }) =>
+      throw StateError('the monitoring service is down');
+}
+
 Response<dynamic> _response(String path, int status, {String? id}) =>
     Response<dynamic>(
       requestOptions: RequestOptions(
@@ -180,7 +191,7 @@ void main() {
     setUp(() {
       api = StubApi();
       reporter = _RecordingReporter();
-      api.network.dio.interceptors.add(ServerErrorInterceptor(() => reporter));
+      api.network.dio.interceptors.add(ServerErrorInterceptor(reporter));
       api.on('GET', '/boom', status: 500, json: {'detail': 'x'});
       api.on('GET', '/missing', status: 404, json: {'detail': 'x'});
       api.on('GET', '/ok', json: {});
@@ -211,7 +222,7 @@ void main() {
 
     test('a reporter that fails does not disturb the call', () async {
       api.network.dio.interceptors
-          .add(ServerErrorInterceptor(() => throw StateError('no reporter')));
+          .add(ServerErrorInterceptor(SafeErrorReporter(_ThrowingReporter())));
 
       await expectLater(api.network.get('/boom'), throwsA(isA<DioException>()));
     });

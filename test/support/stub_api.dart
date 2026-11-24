@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/errors/error_reporter.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/client/network_utils.dart';
@@ -54,8 +55,10 @@ class StubApi implements HttpClientAdapter {
     if (accessToken.isNotEmpty) {
       utils.setToken(accessToken: accessToken, refreshToken: 'refresh');
     }
-    network =
-        NetworkService(environment: StubEnvironment(), networkUtils: utils);
+    network = NetworkService(
+        environment: StubEnvironment(),
+        networkUtils: utils,
+        errorReporter: const NoopErrorReporter());
     network.dio.httpClientAdapter = this;
   }
 
