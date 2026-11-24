@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/authentication/presentation/widgets/role_switch_observer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
@@ -147,7 +148,9 @@ class App extends StatelessWidget {
             ref.read(authenticationProvider.notifier).logout();
           }
         });
-        return _PendingInviteResumeWatcher(
+        return RoleSwitchObserver(
+          navigate: router.go,
+          child: _PendingInviteResumeWatcher(
           child: _BrowserTitleUpdater(
             router: router,
             enabled: isWeb,
@@ -167,7 +170,7 @@ class App extends StatelessWidget {
               ),
             ),
           ),
-        );
+        ));
       },
     );
     return providerScopeBuilder?.call(app) ?? ProviderScope(child: app);
