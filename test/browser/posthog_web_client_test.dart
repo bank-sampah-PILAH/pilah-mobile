@@ -358,7 +358,7 @@ void main() {
       return result.dartify()! as Map<Object?, Object?>;
     }
 
-    test('are cleaned, whichever way the exception got there', () async {
+    test('keep only the type, whichever way the exception got there', () async {
       await _client().start();
 
       final out = run({
@@ -366,15 +366,33 @@ void main() {
         'properties': {
           r'$exception_list': [
             {
-              'type': 'Error',
-              'value': 'gagal untuk budi@example.com 0812345678'
+              'type': 'StateError',
+              'value': 'Budi Santoso menyetor Rp 50.000 0812345678',
             },
           ],
         },
       });
 
       final list = (out['properties']! as Map)[r'$exception_list']! as List;
-      expect((list.single as Map)['value'], 'gagal untuk [email] [angka]');
+      expect((list.single as Map)['value'], 'StateError');
+    });
+
+    test('are dropped when an exception has no type', () async {
+      await _client().start();
+
+      final out = beforeSend().callAsFunction(
+        null,
+        {
+          'event': r'$exception',
+          'properties': {
+            r'$exception_list': [
+              {'value': 'Budi Santoso menyetor Rp 50.000'},
+            ],
+          },
+        }.jsify(),
+      );
+
+      expect(out, isNull);
     });
 
     test('say the error was not handled when the reporter marked it so',

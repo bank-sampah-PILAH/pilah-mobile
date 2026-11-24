@@ -38,10 +38,8 @@ List<List<Object?>> _exceptions() {
   ];
 }
 
-PosthogWebErrorReporter _reporter() => PosthogWebErrorReporter(
-      typeName: (error) => 'NamedError',
-      message: (error) => 'cleaned: ${error.runtimeType}',
-    );
+PosthogWebErrorReporter _reporter() =>
+    PosthogWebErrorReporter(typeName: (error) => 'NamedError');
 
 /// Declared `void` so it can be handed to JavaScript (`Never` cannot).
 void _brokenLibraryCall() {
@@ -57,7 +55,8 @@ void main() {
   });
 
   group('PosthogWebErrorReporter', () {
-    test('sends the error under the name and message it is given', () async {
+    test('sends the error under its type name, as both name and message',
+        () async {
       await _loadFakeLibrary();
       final reporter = _reporter();
 
@@ -71,7 +70,7 @@ void main() {
       final error = sent[0]! as JSObject;
       expect(
         error.getProperty<JSString>('message'.toJS).toDart,
-        'cleaned: StateError',
+        'NamedError',
       );
       expect(error.getProperty<JSString>('name'.toJS).toDart, 'NamedError');
       expect(
