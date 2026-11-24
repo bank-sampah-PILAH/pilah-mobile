@@ -10,3 +10,5 @@ Logs from each command are ignored `cycle-*-red.log` / `cycle-*-green.log`
 in this worktree. Initial generator/setup failures were not counted as RED.
 
 2. Coordinator ordering: RED expected nasabah, actual pengelola. GREEN: both directions persist -> reset -> publish -> observe; 2 tests passed.
+
+3. Selection guards: RED expected 0 requests, actual 2. GREEN: coordinator suite 2 passed.
