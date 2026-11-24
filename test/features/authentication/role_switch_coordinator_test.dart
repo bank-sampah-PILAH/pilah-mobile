@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/authentication/application/role_switch_coordinator.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -9,6 +10,25 @@ AuthEntity session(String role) => AuthEntity(
 );
 
 void main() {
+  test('repeated taps share one pending switch', () async {
+    var requests = 0;
+    final pending = Completer<RoleSwitchSession>();
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => session('pengelola'),
+      requestRole: (_) { requests++; return pending.future; },
+      persistSession: (_, __) async {}, resetRoleState: () {},
+      publishSession: (_) {},
+    );
+    addTearDown(coordinator.dispose);
+    final first = coordinator.switchTo('nasabah');
+    final second = coordinator.switchTo('nasabah');
+    expect(coordinator.busy, isTrue);
+    final count = requests;
+    pending.complete(RoleSwitchSession(session('nasabah'), 'refresh'));
+    await Future.wait([first, second]);
+    expect(count, 1);
+  });
+
   test('active or unowned roles never request a new session', () async {
     var requests = 0;
     final current = session('nasabah');
