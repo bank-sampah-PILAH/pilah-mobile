@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_sources.dart';
@@ -10,6 +11,31 @@ import 'package:pilah_mobile/features/authentication/data/role_session_store.dar
 class Database extends Mock implements SecureDatabase {}
 
 void main() {
+  test('logout during a keystore write cannot resurrect switched tokens', () async {
+    final db = Database();
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final disk = <String, String>{};
+    when(() => db.write(key: any(named: 'key'), value: any(named: 'value')))
+      .thenAnswer((call) async {
+        entered.complete();
+        await release.future;
+        disk[call.namedArguments[#key] as String] = call.namedArguments[#value] as String;
+      });
+    when(() => db.getString(any())).thenAnswer((call) async => disk[call.positionalArguments.single]);
+    when(() => db.delete(any())).thenAnswer((call) async { disk.remove(call.positionalArguments.single); });
+    final network = NetworkUtils(db);
+    await network.setToken(accessToken: 'old', refreshToken: 'old-refresh');
+    final saving = RoleSessionStore(db, network).save('new', 'new-refresh');
+    await entered.future;
+    await network.deleteToken();
+    release.complete();
+    await expectLater(saving, throwsStateError);
+    expect(network.accessToken, isEmpty);
+    expect(network.refreshToken, isEmpty);
+    expect(disk[RoleSessionStore.key], isNull);
+  });
+
   test('a subsequent login supersedes the switched session on restart', () async {
     FlutterSecureStorage.setMockInitialValues({});
     const db = SecureDatabaseImpl();
