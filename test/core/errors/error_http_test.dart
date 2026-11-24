@@ -88,6 +88,19 @@ void main() {
       expect(ErrorHttp.pathOf(StateError('x')), isNull);
     });
 
+    test('gathers the id, status and endpoint of a failed call', () {
+      expect(
+        ErrorHttp.contextOf(InternalServerErrorException(
+            response: _response('/api/v1/jadwal?page=1', 503, id: 'r-9'))),
+        {
+          'id_permintaan': 'r-9',
+          'http_status': 503,
+          'jalur_api': '/api/v1/jadwal',
+        },
+      );
+      expect(ErrorHttp.contextOf(StateError('x')), isEmpty);
+    });
+
     test('writes a base url that ends in a slash as one slash', () {
       final response = Response<dynamic>(
         requestOptions: RequestOptions(
