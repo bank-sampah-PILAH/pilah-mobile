@@ -162,10 +162,11 @@ class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
       // cleaned here, whatever put the exception there.
       ..beforeSend = [scrubExceptionEvent];
     // Dart errors are reported through ErrorReporter, so the SDK's own capture
-    // of them stays off. A crash in Java or Kotlin code is only seen by the
-    // native SDK, which sends it without passing through beforeSend; it needs
-    // the project's "exception autocapture" setting to be on.
-    config.errorTrackingConfig.captureNativeExceptions = true;
+    // of them stays off. Native crashes stay off too: the native SDK sends them
+    // without passing through beforeSend, so their message would not be cleaned.
+    config.errorTrackingConfig
+      ..captureNativeExceptions = false
+      ..captureNativeCrashes = false;
     await _posthog.setup(config);
   }
 
