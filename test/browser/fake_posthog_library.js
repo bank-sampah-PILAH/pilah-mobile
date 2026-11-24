@@ -4,6 +4,7 @@ window.__calls = [];
 window.__captures = [];
 window.__identified = [];
 window.__registered = [];
+window.__exceptions = [];
 window.posthog = {
   init: function (key, options) {
     window.__calls.push('init');
@@ -28,4 +29,8 @@ window.posthog = {
     window.__registered.push(props);
   },
   reset: function () { window.__calls.push('reset'); },
+  captureException: function (error, props) {
+    window.__calls.push('captureException');
+    window.__exceptions.push([error, props]);
+  },
 };
