@@ -4,7 +4,9 @@ library;
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/errors/error_reporter_factory.dart';
 import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 import 'package:web/web.dart' as web;
@@ -78,6 +80,43 @@ void main() {
 
       final message = sentError().getProperty<JSString>('message'.toJS).toDart;
       expect(message, 'FormatException');
+    });
+  });
+
+  group('a server error whose answer carries personal data', () {
+    Response<dynamic> answer() => Response<dynamic>(
+          requestOptions: RequestOptions(path: '/api/v1/setoran'),
+          statusCode: 500,
+          data: {'error': _message, 'detail': _message},
+        );
+
+    test('is sent as its type, not with what the server said', () {
+      createPlatformErrorReporter().report(
+        InternalServerErrorException(response: answer()),
+        StackTrace.current,
+      );
+
+      final error = sentError();
+      expect(error.getProperty<JSString>('message'.toJS).toDart,
+          'InternalServerErrorException');
+      for (final text in _personal) {
+        expect(error.dartify().toString(), isNot(contains(text)));
+      }
+    });
+
+    test('is sent as its type when it arrives as a raw DioException', () {
+      createPlatformErrorReporter().report(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/setoran'),
+          response: answer(),
+          message: _message,
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.current,
+      );
+
+      final message = sentError().getProperty<JSString>('message'.toJS).toDart;
+      expect(message, 'DioException');
     });
   });
 
