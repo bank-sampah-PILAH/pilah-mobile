@@ -53,6 +53,25 @@ void main() {
       expect(sent.properties, {'layar': 'setoran_baru'});
     });
 
+    test('reports an error nobody caught as not handled, without the marker',
+        () async {
+      final error = StateError('boom');
+
+      PosthogMobileErrorReporter().report(
+        error,
+        StackTrace.current,
+        context: {'layar': 'setoran_baru', 'ditangani': false},
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final sent = platform.captured.single;
+      // The SDK wraps it to say how it was caught: it is the only way to set
+      // the flag, and the wrapper is not exported.
+      expect((sent.error as dynamic).handled, isFalse);
+      expect((sent.error as dynamic).source, error);
+      expect(sent.properties, {'layar': 'setoran_baru'});
+    });
+
     test('a failing SDK never disturbs the app', () async {
       platform.failWith = StateError('the SDK is not set up');
       final uncaught = <Object>[];

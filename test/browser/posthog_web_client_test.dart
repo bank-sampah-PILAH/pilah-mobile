@@ -376,6 +376,53 @@ void main() {
       expect((list.single as Map)['value'], 'gagal untuk [email] [angka]');
     });
 
+    test('say the error was not handled when the reporter marked it so',
+        () async {
+      await _client().start();
+
+      final out = run({
+        'event': r'$exception',
+        'properties': {
+          'ditangani': false,
+          r'$exception_handled': true,
+          r'$exception_list': [
+            {
+              'type': 'Error',
+              'value': 'x',
+              'mechanism': {'handled': true, 'type': 'generic'},
+            },
+          ],
+        },
+      });
+
+      final properties = out['properties']! as Map;
+      final entry = (properties[r'$exception_list']! as List).single as Map;
+      expect((entry['mechanism']! as Map)['handled'], isFalse);
+      expect(properties[r'$exception_handled'], isFalse);
+    });
+
+    test('stay handled when nothing says otherwise', () async {
+      await _client().start();
+
+      final out = run({
+        'event': r'$exception',
+        'properties': {
+          r'$exception_handled': true,
+          r'$exception_list': [
+            {
+              'type': 'Error',
+              'value': 'x',
+              'mechanism': {'handled': true, 'type': 'generic'},
+            },
+          ],
+        },
+      });
+
+      final properties = out['properties']! as Map;
+      final entry = (properties[r'$exception_list']! as List).single as Map;
+      expect((entry['mechanism']! as Map)['handled'], isTrue);
+    });
+
     test('are dropped rather than sent as they are when they cannot be read',
         () async {
       await _client().start();
