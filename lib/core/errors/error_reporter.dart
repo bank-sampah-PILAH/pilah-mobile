@@ -90,18 +90,13 @@ class ContextualErrorReporter implements ErrorReporter {
   }) {
     final screen = currentScreen();
     final flow = screen == null ? null : ErrorFlows.nameFor(screen);
-    final requestId = ErrorRequestId.of(error);
-    final status = ErrorHttp.statusOf(error);
-    final path = ErrorHttp.pathOf(error);
     inner.report(
       error,
       stack,
       context: {
         if (screen != null) 'layar': screen,
         if (flow != null) 'alur': flow,
-        if (requestId != null) 'id_permintaan': requestId,
-        if (status != null) 'http_status': status,
-        if (path != null) 'jalur_api': path,
+        ...ErrorHttp.contextOf(error),
         if (appVersion.isNotEmpty) 'versi_app': appVersion,
         ...context,
       },
