@@ -11,6 +11,32 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/role_s
 import '../../support/auth_support.dart';
 
 void main() {
+  testWidgets('observer reports failures without navigating or signing out', (tester) async {
+    const current = AuthEntity(id: 'u1', name: '', email: '', photoUrl: '',
+      token: 'old', role: 'pengelola', roles: ['nasabah', 'pengelola']);
+    final auth = authNotifierIn(Authenticated(authEntity: current));
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => current,
+      requestRole: (_) => Future.error(StateError('server refused')),
+      persistSession: (_, __) async {}, resetRoleState: () {},
+      publishSession: (_) => fail('failed switch must not publish'),
+    );
+    final errors = <String>[];
+    final destinations = <String>[];
+    await tester.pumpWidget(ProviderScope(overrides: [
+      authenticationProvider.overrideWith(() => auth),
+      roleSwitchProvider.overrideWith((_) => coordinator),
+    ], child: RoleSwitchObserver(navigate: destinations.add, onError: errors.add,
+      child: const MaterialApp(home: Scaffold(body: Text('profile'))))));
+    await coordinator.switchTo('nasabah');
+    await tester.pumpAndSettle();
+    expect(errors, hasLength(1));
+    expect(errors.single, contains('Role sebelumnya tetap aktif'));
+    expect(destinations, isEmpty);
+    expect(find.text('profile'), findsOneWidget);
+    expect(auth.calls, isNot(contains('logout')));
+  });
+
   testWidgets('observer replaces profile navigation using the switched next_step', (tester) async {
     const current = AuthEntity(id: 'u1', name: '', email: '', photoUrl: '',
       token: 'old', role: 'nasabah', roles: ['nasabah', 'pengelola']);
