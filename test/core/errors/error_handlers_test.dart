@@ -78,6 +78,39 @@ void main() {
       expect(reporter.reported.single.error, error);
     });
 
+    test('shows a framework error itself when nothing handled it before', () {
+      FlutterError.onError = null;
+      final reporter = _RecordingReporter();
+      ErrorHandlers.install(reporter);
+
+      expect(
+        () => FlutterError.onError!(
+          FlutterErrorDetails(exception: StateError('x')),
+        ),
+        returnsNormally,
+        reason: 'the framework shows it itself, as it would without us',
+      );
+
+      expect(reporter.reported, hasLength(1));
+    });
+
+    test('answers the platform dispatcher as the old handler did', () {
+      final seen = <Object>[];
+      PlatformDispatcher.instance.onError = (error, stack) {
+        seen.add(error);
+        return true;
+      };
+      final reporter = _RecordingReporter();
+      ErrorHandlers.install(reporter);
+
+      final answer = PlatformDispatcher.instance.onError!(
+          StateError('y'), StackTrace.current);
+
+      expect(answer, isTrue);
+      expect(seen, hasLength(1));
+      expect(reporter.reported, hasLength(1));
+    });
+
     test('marks what nobody caught as not handled', () async {
       FlutterError.onError = (_) {};
       PlatformDispatcher.instance.onError = null;
