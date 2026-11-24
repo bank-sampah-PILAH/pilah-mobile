@@ -8,15 +8,16 @@ import 'package:posthog_flutter/posthog_flutter.dart';
 /// was being handled, and no pattern can tell those from ordinary text. The type
 /// and the stack are what a developer needs, and neither holds such data.
 ///
-/// An exception event in a shape nobody planned for, or one with no type to put
-/// in place of the message, cannot be made safe, so it is dropped (`null`).
+/// An exception event in a shape nobody planned for (no list, an empty one), or
+/// one with no type to put in place of the message, cannot be made safe, so it
+/// is dropped (`null`).
 ///
 /// Native crash capture is kept off (see `PosthogMobileClient`) because those
 /// events would not pass through here.
 PostHogEvent? scrubExceptionEvent(PostHogEvent event) {
   if (event.event != r'$exception') return event;
   final list = event.properties?[r'$exception_list'];
-  if (list is! List) return null;
+  if (list is! List || list.isEmpty) return null;
   for (final entry in list) {
     if (entry is! Map) return null;
     final type = entry['type'];
