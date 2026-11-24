@@ -4,6 +4,9 @@ import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/pengurus_dikeluarkan.dart';
 import 'package:pilah_mobile/core/client/request_id_interceptor.dart';
 import 'package:pilah_mobile/core/client/retry_interceptor.dart';
+import 'package:pilah_mobile/core/client/server_error_interceptor.dart';
+import 'package:pilah_mobile/core/errors/error_reporter.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -33,6 +36,13 @@ class NetworkService {
     // Sees every refusal, so a removed pengurus is noticed on whatever screen
     // they are on.
     dio.interceptors.add(PengurusDikeluarkanInterceptor());
+    // Last, so it sees only the failures nobody retried away. A server failure
+    // is reported here because most screens catch it and show "Coba Lagi".
+    dio.interceptors.add(ServerErrorInterceptor(
+      () => di.isRegistered<ErrorReporter>()
+          ? di<ErrorReporter>()
+          : const NoopErrorReporter(),
+    ));
   }
 
   Map<String, String> headersRequest() {
