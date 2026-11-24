@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
+import 'package:pilah_mobile/core/errors/exception_event_scrubber.dart';
 import 'package:pilah_mobile/core/analytics/screen_recorder.dart';
 import 'package:pilah_mobile/core/analytics/replay_masks.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
@@ -156,7 +157,15 @@ class PosthogMobileClient implements AnalyticsClient, ScreenRecorder {
       ..surveys = false
       ..preloadFeatureFlags = false
       ..capturePushNotificationSubscriptions = false
-      ..capturePushNotificationOpened = false;
+      ..capturePushNotificationOpened = false
+      // The message of an exception can hold what a pengurus typed: it is
+      // cleaned here, whatever put the exception there.
+      ..beforeSend = [scrubExceptionEvent];
+    // Dart errors are reported through ErrorReporter, so the SDK's own capture
+    // of them stays off. A crash in Java or Kotlin code is only seen by the
+    // native SDK, which sends it without passing through beforeSend; it needs
+    // the project's "exception autocapture" setting to be on.
+    config.errorTrackingConfig.captureNativeExceptions = true;
     await _posthog.setup(config);
   }
 
