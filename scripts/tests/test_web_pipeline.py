@@ -56,6 +56,41 @@ class WebPipelineTest(unittest.TestCase):
         self.assertIn("status.url", text)
         self.assertIn("/health", text)
 
+    def test_source_maps_are_uploaded_and_never_deployed(self):
+        steps = workflow("deploy-web.yml")["jobs"]["deploy"]["steps"]
+        names = [step.get("name", "") for step in steps]
+        build = names.index("Build dashboard once")
+        upload = names.index("Upload source maps to PostHog")
+        guard = names.index("Keep source maps out of the deployed files")
+        artifact = names.index("Upload web artifact")
+        # Maps are built, uploaded, removed, and only then does anything leave
+        # the runner (the artifact, the Fly deploy, the production image).
+        self.assertLess(build, upload)
+        self.assertLess(upload, guard)
+        self.assertLess(guard, artifact)
+        self.assertIn("--source-maps", steps[build]["run"])
+        # A failed upload costs readable stack traces, not the deploy, and the
+        # removal runs whatever the upload did.
+        self.assertEqual(steps[upload]["continue-on-error"], "true")
+        self.assertEqual(steps[guard]["if"], "${{ always() }}")
+        self.assertIn("-name '*.map' -delete", steps[guard]["run"])
+        # The release is the version the app reports, so frames match events.
+        self.assertIn("APP_VERSION", steps[build]["run"])
+        self.assertIn("$APP_VERSION", steps[upload]["run"])
+
+    def test_android_builds_keep_symbols_and_upload_them_without_blocking(self):
+        for name in ("cd-staging.yml", "cd-production.yml"):
+            jobs = workflow(name)["jobs"]
+            steps = next(
+                job["steps"]
+                for job in jobs.values()
+                if any("--split-debug-info=build/symbols" in step.get("run", "") for step in job.get("steps", []))
+            )
+            names = [step.get("name", "") for step in steps]
+            upload = steps[names.index("Upload debug symbols to PostHog")]
+            self.assertEqual(upload["continue-on-error"], "true", name)
+            self.assertIn("symbol-sets upload --directory build/symbols", upload["run"], name)
+
     def test_invalid_hosting_configuration_fails_before_cloud_auth(self):
         steps = workflow("deploy-web.yml")["jobs"]["deploy"]["steps"]
         script = next(step["run"] for step in steps if step.get("name") == "Validate hosting configuration")
