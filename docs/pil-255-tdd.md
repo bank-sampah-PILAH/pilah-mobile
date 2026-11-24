@@ -26,3 +26,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 9. Storage failure: RED expected storage error, operation completed. GREEN: one secure record written before memory changes; coordinator/store suite 7 passed.
 
 10. Restart: RED expected new-access, actual legacy-access. GREEN: single-record restore and auth storage/repository regressions, 16 passed.
+
+11. Logout: RED restored new-access after logout. GREEN: switched and legacy session removal, 7 passed.

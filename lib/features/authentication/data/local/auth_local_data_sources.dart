@@ -56,6 +56,7 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
     // keystore delete below throws.
     await _networkUtils.deleteToken();
     try {
+      await _database.delete(SessionTokens.key);
       await _database.delete(AppKey.token);
       await _database.delete(AppKey.refreshToken);
     } catch (e) {
