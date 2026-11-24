@@ -76,6 +76,19 @@ void main() {
       );
       expect(ErrorHttp.pathOf(StateError('x')), isNull);
     });
+
+    test('writes a base url that ends in a slash as one slash', () {
+      final response = Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/api/v1/jadwal',
+          baseUrl: 'http://api.test/',
+        ),
+        statusCode: 500,
+      );
+
+      expect(ErrorHttp.pathOf(InternalServerErrorException(response: response)),
+          '/api/v1/jadwal');
+    });
   });
 
   group('ContextualErrorReporter', () {
