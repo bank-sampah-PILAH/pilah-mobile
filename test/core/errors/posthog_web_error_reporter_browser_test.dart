@@ -6,16 +6,27 @@ import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/errors/posthog_web_error_reporter.dart';
 import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:web/web.dart' as web;
 
-final _fakeLibraryUrl = Uri.base.resolve('fake_posthog_library.js').toString();
+/// A stand-in for posthog-js that only records the errors it is handed. It is
+/// inline because this file runs through `flutter test`, which serves no
+/// extra files next to the test.
+const _fakeLibrary = '''
+window.__exceptions = [];
+window.posthog = {
+  captureException: function (error, props) {
+    window.__exceptions.push([error, props]);
+  },
+};
+''';
 
+/// Declared before `_loadFakeLibrary` so the tests read top to bottom.
 Future<void> _loadFakeLibrary() async {
-  final script = web.HTMLScriptElement()..src = _fakeLibraryUrl;
-  final loaded = web.EventStreamProviders.loadEvent.forElement(script).first;
+  final script = web.HTMLScriptElement()
+    ..id = 'fake-posthog-library'
+    ..text = _fakeLibrary;
   web.document.head!.append(script);
-  await loaded;
 }
 
 List<List<Object?>> _exceptions() {
@@ -36,14 +47,9 @@ void _brokenLibraryCall() {
 
 void main() {
   tearDown(() {
-    final all = web.document.scripts;
-    for (var i = all.length - 1; i >= 0; i--) {
-      final script = all.item(i)! as web.HTMLScriptElement;
-      if (script.src == _fakeLibraryUrl) script.remove();
-    }
+    web.document.getElementById('fake-posthog-library')?.remove();
     globalContext
       ..delete('posthog'.toJS)
-      ..delete('__calls'.toJS)
       ..delete('__exceptions'.toJS);
   });
 
