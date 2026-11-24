@@ -8,3 +8,5 @@ fetch failed with SSH host key verification. No canonical checkout changes.
 
 Logs from each command are ignored `cycle-*-red.log` / `cycle-*-green.log`
 in this worktree. Initial generator/setup failures were not counted as RED.
+
+2. Coordinator ordering: RED expected nasabah, actual pengelola. GREEN: both directions persist -> reset -> publish -> observe; 2 tests passed.

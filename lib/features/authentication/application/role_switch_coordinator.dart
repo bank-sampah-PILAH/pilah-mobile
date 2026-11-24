@@ -26,5 +26,17 @@ class RoleSwitchCoordinator extends ChangeNotifier {
   String? error;
   AuthEntity? completedSession;
 
-  Future<void> switchTo(String role) async {}
+  Future<void> switchTo(String role) async {
+    busy = true;
+    error = null;
+    completedSession = null;
+    notifyListeners();
+    final next = await requestRole(role);
+    await persistSession(next.auth.token, next.refreshToken);
+    resetRoleState();
+    publishSession(next.auth);
+    busy = false;
+    completedSession = next.auth;
+    notifyListeners();
+  }
 }
