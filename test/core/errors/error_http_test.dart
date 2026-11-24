@@ -101,6 +101,30 @@ void main() {
       expect(ErrorHttp.contextOf(StateError('x')), isEmpty);
     });
 
+    test('carries nothing from the body of the response', () {
+      const personal = 'Saldo Budi Santoso Rp 50.000 di Jl. Melati 5';
+      final response = Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/api/v1/setoran/42',
+          baseUrl: 'http://api.test',
+          headers: {requestIdHeader: 'r-1'},
+        ),
+        statusCode: 500,
+        data: {'error': personal, 'detail': personal},
+      );
+
+      final context = ErrorHttp.contextOf(
+        InternalServerErrorException(response: response),
+      );
+
+      expect(context, {
+        'id_permintaan': 'r-1',
+        'http_status': 500,
+        'jalur_api': '/api/v1/setoran/:id',
+      });
+      expect(context.toString(), isNot(contains('Budi')));
+    });
+
     test('writes a base url that ends in a slash as one slash', () {
       final response = Response<dynamic>(
         requestOptions: RequestOptions(
