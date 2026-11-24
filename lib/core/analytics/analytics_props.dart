@@ -44,6 +44,7 @@ abstract final class AnalyticsProps {
     'http_status',
     'id_permintaan',
     'item_ke',
+    'jalur_api',
     'jenis',
     'jenis_aktivitas',
     'jenis_error',

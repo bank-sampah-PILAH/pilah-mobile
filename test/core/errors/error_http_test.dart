@@ -18,6 +18,7 @@ class _RecordingReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     errors.add(error);
     contexts.add(context);
@@ -107,7 +108,8 @@ void main() {
         () {
       final inner = _RecordingReporter();
 
-      build(inner, version: '2.1.0+10').report(StateError('x'), StackTrace.current);
+      build(inner, version: '2.1.0+10')
+          .report(StateError('x'), StackTrace.current);
       build(inner).report(StateError('x'), StackTrace.current);
 
       expect(inner.contexts[0], {'versi_app': '2.1.0+10'});
@@ -123,8 +125,8 @@ void main() {
 
       reporter.report(DioException(requestOptions: response.requestOptions),
           StackTrace.current);
-      reporter.report(InternalServerErrorException(response: response),
-          StackTrace.current);
+      reporter.report(
+          InternalServerErrorException(response: response), StackTrace.current);
       reporter.report(
           InternalServerErrorException(
               response: _response('/x', 500, id: 'r-2')),
@@ -173,8 +175,7 @@ void main() {
 
     test('reports a server failure even though the screen will handle it',
         () async {
-      await expectLater(
-          api.network.get('/boom'), throwsA(isA<DioException>()));
+      await expectLater(api.network.get('/boom'), throwsA(isA<DioException>()));
 
       expect(reporter.errors.single, isA<DioException>());
       expect(ErrorHttp.statusOf(reporter.errors.single), 500);
@@ -199,8 +200,7 @@ void main() {
       api.network.dio.interceptors
           .add(ServerErrorInterceptor(() => throw StateError('no reporter')));
 
-      await expectLater(
-          api.network.get('/boom'), throwsA(isA<DioException>()));
+      await expectLater(api.network.get('/boom'), throwsA(isA<DioException>()));
     });
   });
 }

@@ -15,9 +15,11 @@ abstract class ErrorModule {
         ConsentGatedErrorReporter(
           allowed: () => analytics.isRecording,
           inner: FilteredErrorReporter(
-            inner: ContextualErrorReporter(
-              inner: createPlatformErrorReporter(),
-              currentScreen: _currentScreen,
+            inner: DeduplicatingErrorReporter(
+              inner: ContextualErrorReporter(
+                inner: createPlatformErrorReporter(),
+                currentScreen: _currentScreen,
+              ),
             ),
           ),
         ),
