@@ -34,3 +34,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 13. Login roles: RED expected both roles, actual pengelola only. GREEN: login/restore/mapper/HTTP regressions, 6 passed.
 
 14. Switch-back eligibility: RED response lost pengelola ownership. GREEN: coordinator and role mapping, 9 passed.
+
+15. Late data: RED old-role private response delivered. GREEN: stale responses cancelled plus network/HTTP regressions, 17 passed.

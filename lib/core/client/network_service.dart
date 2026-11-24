@@ -22,6 +22,18 @@ class NetworkService {
     required this.environment,
     required this.networkUtils,
   }) {
+    dio.interceptors.add(InterceptorsWrapper(onResponse: (response, handler) {
+      final bearer = response.requestOptions.headers['Authorization'];
+      if (bearer != null && bearer != headersRequest()['Authorization']) {
+        handler.reject(DioException(
+          requestOptions: response.requestOptions,
+          type: DioExceptionType.cancel,
+          message: 'Session changed while the request was pending',
+        ));
+        return;
+      }
+      handler.next(response);
+    }));
     dio.interceptors.add(interceptors);
     // Added after the logger so a dropped GET is still logged, then quietly
     // retried once before the failure reaches state handling.
