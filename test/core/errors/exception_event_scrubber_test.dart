@@ -9,18 +9,29 @@ PostHogEvent _exception(Object? list) => PostHogEvent(
 
 void main() {
   group('scrubExceptionEvent', () {
-    test('cleans the message of every exception in the list', () {
+    test('replaces the message of every exception with its type', () {
       final event = _exception([
-        {'type': 'StateError', 'value': 'gagal untuk budi@example.com'},
-        {'type': 'FormatException', 'value': 'nomor 081234567890'},
+        {
+          'type': 'StateError',
+          'value': 'Budi Santoso menyetor Rp 50.000 di Jl. Melati 5',
+        },
+        {'type': 'FormatException', 'value': 'nomor 081234567890 untuk Siti'},
       ]);
 
       final out = scrubExceptionEvent(event)!;
 
       final list = out.properties![r'$exception_list']! as List;
-      expect((list[0] as Map)['value'], 'gagal untuk [email]');
-      expect((list[1] as Map)['value'], 'nomor [angka]');
+      expect((list[0] as Map)['value'], 'StateError');
+      expect((list[1] as Map)['value'], 'FormatException');
       expect((list[0] as Map)['type'], 'StateError');
+    });
+
+    test('drops an exception that has no type to fall back on', () {
+      final event = _exception([
+        {'value': 'Budi Santoso menyetor Rp 50.000'},
+      ]);
+
+      expect(scrubExceptionEvent(event), isNull);
     });
 
     test('leaves every other event alone', () {
