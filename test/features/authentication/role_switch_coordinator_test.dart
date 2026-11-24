@@ -10,6 +10,22 @@ AuthEntity session(String role) => AuthEntity(
 );
 
 void main() {
+  test('switch response without roles keeps the account able to switch back', () async {
+    var current = session('pengelola');
+    const switched = AuthEntity(id: 'u1', name: 'Siti', email: 'siti@example.test',
+      photoUrl: '', token: 'new', role: 'nasabah', nextStep: 'nasabah_dashboard');
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => current,
+      requestRole: (_) async => const RoleSwitchSession(switched, 'refresh'),
+      persistSession: (_, __) async {}, resetRoleState: () {},
+      publishSession: (auth) => current = auth,
+    );
+    addTearDown(coordinator.dispose);
+    await coordinator.switchTo('nasabah');
+    expect(current.ownedRoles, ['pengelola', 'nasabah']);
+    expect(current.role, 'nasabah');
+  });
+
   test('a switch response arriving after logout cannot restore the session', () async {
     AuthEntity? current = session('pengelola');
     var mutations = 0;
