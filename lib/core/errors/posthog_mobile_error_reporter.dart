@@ -13,15 +13,12 @@ class PosthogMobileErrorReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     try {
       // "Not handled" can only be said through the SDK's zone-error call: it
-      // wraps the error with how it was caught. The marker itself is not sent.
-      final handled = context['ditangani'] != false;
-      final properties = AnalyticsProps.sanitize({
-        for (final entry in context.entries)
-          if (entry.key != 'ditangani') entry.key: entry.value,
-      });
+      // wraps the error with how it was caught.
+      final properties = AnalyticsProps.sanitize(context);
       final posthog = Posthog();
       unawaited(
         (handled

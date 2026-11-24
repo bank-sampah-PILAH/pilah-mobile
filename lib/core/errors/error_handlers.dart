@@ -49,7 +49,7 @@ abstract final class ErrorHandlers {
     reporter.report(
       error,
       stack ?? StackTrace.current,
-      context: const {'ditangani': false},
+      handled: false,
     );
   }
 }
