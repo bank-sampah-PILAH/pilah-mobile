@@ -47,6 +47,16 @@ void main() {
     });
   });
 
+  group('NoopErrorReporter', () {
+    test('accepts an error and does nothing with it', () {
+      expect(
+        () => const NoopErrorReporter()
+            .report(StateError('x'), StackTrace.current),
+        returnsNormally,
+      );
+    });
+  });
+
   group('SafeErrorReporter', () {
     test('swallows a failure of the reporter inside, and passes the rest', () {
       final inner = _RecordingReporter();

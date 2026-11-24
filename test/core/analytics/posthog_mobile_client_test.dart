@@ -207,6 +207,16 @@ void main() {
     ]);
   });
 
+  test('says whether it is recording: only between start and stop', () async {
+    expect(client.isRecording, isFalse);
+
+    await client.start();
+    expect(client.isRecording, isTrue);
+
+    await client.stop();
+    expect(client.isRecording, isFalse);
+  });
+
   test('stopping opts out and silences everything', () async {
     await client.start();
     await client.stop();

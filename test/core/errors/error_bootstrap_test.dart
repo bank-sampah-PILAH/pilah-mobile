@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/errors/error_bootstrap.dart';
 import 'package:pilah_mobile/core/errors/error_reporter.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 class _RecordingReporter implements ErrorReporter {
   final reported = <Object>[];
@@ -36,6 +37,24 @@ void main() {
       },
       resolve: () => ready,
     );
+    await done.future;
+    await Future<void>.delayed(Duration.zero);
+
+    expect(reporter.reported.single, isA<StateError>());
+  });
+
+  test('finds the reporter in the service graph by default', () async {
+    final reporter = _RecordingReporter();
+    di.registerSingleton<ErrorReporter>(reporter);
+    addTearDown(() => di.unregister<ErrorReporter>());
+    final done = Completer<void>();
+
+    runWithErrorReporting(() {
+      Timer(Duration.zero, () {
+        done.complete();
+        throw StateError('thrown in a timer');
+      });
+    });
     await done.future;
     await Future<void>.delayed(Duration.zero);
 
