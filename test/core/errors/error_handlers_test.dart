@@ -54,7 +54,8 @@ void main() {
 
       final error = StateError('build failed');
       final stack = StackTrace.current;
-      FlutterError.onError!(FlutterErrorDetails(exception: error, stack: stack));
+      FlutterError
+          .onError!(FlutterErrorDetails(exception: error, stack: stack));
 
       expect(reporter.reported.single.error, error);
       expect(reporter.reported.single.stack, stack);
