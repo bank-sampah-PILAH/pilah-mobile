@@ -42,3 +42,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 17. Profile controls: RED Role saya missing. GREEN: both-role widget interactions and coordinator regressions, 8 passed.
 
 18. Profile integration: RED Role saya absent from real profile. GREEN: 65 profile/widget tests passed; excluded existing Windows logo filename mismatch pending baseline confirmation.
+
+19. Cache integration: RED old private WhatsApp template visible when new role published. GREEN: real HTTP/store/auth/cache flow and coordinator/storage regressions, 12 passed.
