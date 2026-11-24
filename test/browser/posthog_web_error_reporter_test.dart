@@ -5,6 +5,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/errors/posthog_web_error_reporter.dart';
+import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
@@ -69,6 +70,18 @@ void main() {
         contains('app.dart'),
       );
       expect(sent[1], {'layar': 'setoran_baru'});
+    });
+
+    test('says so to the cleaning step when nobody caught the error', () async {
+      await _loadFakeLibrary();
+      final reporter = PosthogWebErrorReporter();
+
+      reporter.report(StateError('a'), StackTrace.current, handled: false);
+      reporter.report(StateError('b'), StackTrace.current);
+
+      final sent = _exceptions();
+      expect(sent[0][1], {webNotHandledMarker: false});
+      expect(sent[1][1], <Object?, Object?>{});
     });
 
     test('does nothing while the library is not there', () {

@@ -8,16 +8,17 @@ import 'package:pilah_mobile/core/errors/error_reporter.dart';
 
 class _RecordingReporter implements ErrorReporter {
   final reported = <({Object error, StackTrace stack})>[];
-  final contexts = <Map<String, Object?>>[];
+  final handledFlags = <bool>[];
 
   @override
   void report(
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) {
     reported.add((error: error, stack: stack));
-    contexts.add(context);
+    handledFlags.add(handled);
   }
 }
 
@@ -27,6 +28,7 @@ class _ThrowingReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) =>
       throw StateError('the monitoring service is down');
 }
@@ -94,10 +96,7 @@ void main() {
       await done.future;
       await Future<void>.delayed(Duration.zero);
 
-      expect(reporter.contexts, hasLength(3));
-      for (final context in reporter.contexts) {
-        expect(context, {'ditangani': false});
-      }
+      expect(reporter.handledFlags, [false, false, false]);
     });
 
     test('a reporter that throws does not break the handlers', () {

@@ -11,6 +11,7 @@ class _RecordingReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) =>
       reported.add(error);
 }
@@ -21,6 +22,7 @@ class _ThrowingReporter implements ErrorReporter {
     Object error,
     StackTrace stack, {
     Map<String, Object?> context = const {},
+    bool handled = true,
   }) =>
       throw StateError('the monitoring service is down');
 }

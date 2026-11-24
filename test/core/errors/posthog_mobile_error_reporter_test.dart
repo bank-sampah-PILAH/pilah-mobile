@@ -60,7 +60,8 @@ void main() {
       PosthogMobileErrorReporter().report(
         error,
         StackTrace.current,
-        context: {'layar': 'setoran_baru', 'ditangani': false},
+        context: {'layar': 'setoran_baru'},
+        handled: false,
       );
       await Future<void>.delayed(Duration.zero);
 

@@ -5,6 +5,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/posthog_web_client.dart';
+import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
@@ -383,7 +384,7 @@ void main() {
       final out = run({
         'event': r'$exception',
         'properties': {
-          'ditangani': false,
+          webNotHandledMarker: false,
           r'$exception_handled': true,
           r'$exception_list': [
             {
@@ -399,6 +400,8 @@ void main() {
       final entry = (properties[r'$exception_list']! as List).single as Map;
       expect((entry['mechanism']! as Map)['handled'], isFalse);
       expect(properties[r'$exception_handled'], isFalse);
+      expect(properties.containsKey(webNotHandledMarker), isFalse,
+          reason: 'the marker is internal and is not sent');
     });
 
     test('stay handled when nothing says otherwise', () async {
