@@ -30,3 +30,5 @@ in this worktree. Initial generator/setup failures were not counted as RED.
 11. Logout: RED restored new-access after logout. GREEN: switched and legacy session removal, 7 passed.
 
 12. Later login: RED restored switched token rather than login token. GREEN: auth repository/storage regressions, 18 passed.
+
+13. Login roles: RED expected both roles, actual pengelola only. GREEN: login/restore/mapper/HTTP regressions, 6 passed.

@@ -15,6 +15,7 @@ class AuthMapper {
       bankSampahNama: response.user.bankSampahNama,
       bankSampahStatus: response.user.bankSampahStatus,
       role: response.user.role,
+      roles: response.user.roles,
       noHp: response.user.noHp,
       jenisKelamin: response.user.jenisKelamin,
       tanggalLahir: response.user.tanggalLahir,

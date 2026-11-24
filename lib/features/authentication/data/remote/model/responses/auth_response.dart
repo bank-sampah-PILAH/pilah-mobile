@@ -35,6 +35,7 @@ abstract class UserResponse with _$UserResponse {
     @JsonKey(name: 'tanggal_lahir') String? tanggalLahir,
     @Default('') String alamat,
     required String role,
+    @Default([]) List<String> roles,
     @JsonKey(name: 'bank_sampah_id') String? bankSampahId,
     @JsonKey(name: 'bank_sampah_nama') String? bankSampahNama,
     @JsonKey(name: 'bank_sampah_status') String? bankSampahStatus,
