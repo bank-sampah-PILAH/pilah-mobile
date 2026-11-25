@@ -209,4 +209,30 @@ void main() {
     expect(find.textContaining('Data hanya dilihat tim PILAH'), findsNothing);
     expect(find.textContaining('jadwal dibuat'), findsNothing);
   });
+
+  testWidgets(
+      'where the screen is recorded, says where taps are noted and that the '
+      'page is named by its route pattern, not its address', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () =>
+                  showAnalyticsConsentDialog(context, recordsScreen: true),
+              child: const Text('buka'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('posisi ketukan dan gerakan kursor'),
+        findsOneWidget);
+    expect(find.textContaining('tanpa angka atau nama sebenarnya'),
+        findsOneWidget);
+    expect(find.textContaining('Rute halaman tidak dikirim'), findsNothing);
+  });
 }
