@@ -12,12 +12,19 @@ class HeatmapUrlSanitizer {
     final uri = Uri.parse(url);
     final path = uri.fragment.split('?').first;
     final segments = _segments(path);
+    String? best;
+    var bestFixed = -1;
     for (final pattern in patterns) {
-      if (_matches(_segments(pattern), segments)) {
-        return '${uri.origin}/#$pattern';
+      final parts = _segments(pattern);
+      if (!_matches(parts, segments)) continue;
+      // `/nasabah/new` is a screen of its own, not a nasabah called "new".
+      final fixed = parts.where((s) => !s.startsWith(':')).length;
+      if (fixed > bestFixed) {
+        best = pattern;
+        bestFixed = fixed;
       }
     }
-    return null;
+    return best == null ? null : '${uri.origin}/#$best';
   }
 
   static List<String> _segments(String path) =>
