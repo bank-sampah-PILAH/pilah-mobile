@@ -33,8 +33,8 @@ class HeatmapUrlSanitizer {
   static bool _matches(List<String> pattern, List<String> segments) {
     if (pattern.length != segments.length) return false;
     for (var i = 0; i < pattern.length; i++) {
-      if (!pattern[i].startsWith(':') && pattern[i] != segments[i])
-        return false;
+      final isValue = pattern[i].startsWith(':');
+      if (!isValue && pattern[i] != segments[i]) return false;
     }
     return true;
   }
