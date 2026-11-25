@@ -15,65 +15,50 @@ class ConnectedRoleSwitcher extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(authenticationProvider);
     if (state is! Authenticated ||
-        !const ['pengelola', 'nasabah'].contains(state.authEntity.role)) {
+        !RoleSwitcher.isAvailableFor(state.authEntity)) {
       return const SizedBox.shrink();
     }
-    final auth = state.authEntity;
     return RoleSwitcher(
-        auth: auth,
-        coordinator:
-            auth.ownedRoles.length > 1 ? ref.watch(roleSwitchProvider) : null);
+        auth: state.authEntity, coordinator: ref.watch(roleSwitchProvider));
   }
 }
 
 class RoleSwitcher extends StatelessWidget {
-  const RoleSwitcher({super.key, required this.auth, this.coordinator});
+  const RoleSwitcher(
+      {super.key, required this.auth, required this.coordinator});
   final AuthEntity auth;
-  final RoleSwitchCoordinator? coordinator;
+  final RoleSwitchCoordinator coordinator;
 
   @override
-  Widget build(BuildContext context) {
-    final controller = coordinator;
-    return controller == null
-        ? _content(context)
-        : AnimatedBuilder(
-            animation: controller, builder: (context, _) => _content(context));
-  }
+  Widget build(BuildContext context) => AnimatedBuilder(
+      animation: coordinator, builder: (context, _) => _content(context));
 
-  Widget _content(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Role saya', style: Theme.of(context).textTheme.titleMedium),
-            for (final role in const ['pengelola', 'nasabah']
-                .where(auth.ownedRoles.contains))
-              _roleTile(role),
-            if (coordinator?.busy == true)
-              const LinearProgressIndicator(semanticsLabel: 'Mengganti role'),
-            if (coordinator?.error != null)
-              Text(coordinator!.error!, semanticsLabel: coordinator!.error),
-          ]),
+  static bool isAvailableFor(AuthEntity? auth) =>
+      auth != null &&
+      const ['pengelola', 'nasabah'].contains(auth.role) &&
+      auth.ownedRoles.length > 1;
+
+  Widget _content(BuildContext context) {
+    final target = auth.role == 'pengelola' ? 'nasabah' : 'pengelola';
+    final label = target == 'nasabah' ? 'Nasabah' : 'Pengurus';
+    final controller = coordinator;
+    final error = controller.error;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppButton(
+          label: 'Pindah Role ke $label',
+          icon: Icons.swap_horiz,
+          isLoading: controller.busy,
+          onPressed: controller.busy ? null : () => controller.switchTo(target),
         ),
-      );
-
-  Widget _roleTile(String role) {
-    final active = role == auth.role;
-    final controller = coordinator;
-    final VoidCallback? onSwitch = controller == null || controller.busy
-        ? null
-        : () => controller.switchTo(role);
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(role == 'nasabah' ? 'Nasabah' : 'Pengurus'),
-      subtitle: active ? const Text('Aktif') : null,
-      trailing: active
-          ? const Icon(Icons.check_circle_outline)
-          : AppButton(
-              label: 'Gunakan role ini',
-              expand: false,
-              variant: AppButtonVariant.outlined,
-              onPressed: onSwitch),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            child: Text(error, semanticsLabel: error),
+          ),
+      ],
     );
   }
 }

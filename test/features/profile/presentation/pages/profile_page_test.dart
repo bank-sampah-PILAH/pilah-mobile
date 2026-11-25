@@ -81,12 +81,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('profile exposes Role saya with the current owned role',
-      (tester) async {
+  testWidgets('single-role staff has no role switch action', (tester) async {
     await openPage(tester);
-    expect(find.text('Role saya'), findsOneWidget);
-    expect(find.text('Aktif'), findsOneWidget);
-    expect(find.text('Gunakan role ini'), findsNothing);
+    expect(find.text('Role saya'), findsNothing);
+    expect(find.text('Pindah Role ke Nasabah'), findsNothing);
   });
 
   group('recording consent', () {

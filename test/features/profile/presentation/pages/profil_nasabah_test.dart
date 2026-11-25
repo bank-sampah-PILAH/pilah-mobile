@@ -93,14 +93,11 @@ void main() {
   }
 
   group('PIL-226 profil nasabah — proposed RED slice', () {
-    testWidgets('Role saya remains reachable below the personal profile',
+    testWidgets('single-role customer has no role switch action',
         (tester) async {
       await openProfile(tester);
-      await tester.scrollUntilVisible(find.text('Role saya'), 200);
-      await tester.pumpAndSettle();
-      expect(find.text('Role saya'), findsOneWidget);
-      expect(find.text('Aktif'), findsOneWidget);
-      expect(find.text('Gunakan role ini'), findsNothing);
+      expect(find.text('Role saya'), findsNothing);
+      expect(find.text('Pindah Role ke Pengurus'), findsNothing);
     });
 
     testWidgets(

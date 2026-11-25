@@ -29,25 +29,25 @@ void main() {
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(
             body: RoleSwitcher(auth: auth, coordinator: coordinator))));
-    await tester.tap(find.text('Gunakan role ini'));
+    await tester.tap(find.text('Pindah Role ke Nasabah'));
     await tester.pump();
-    expect(find.bySemanticsLabel(RegExp('Mengganti role')), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Pindah Role ke Nasabah')),
+        findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(tester.widget<AppButton>(find.byType(AppButton)).onPressed, isNull);
     pending.completeError(StateError('connection lost'));
     await tester.pumpAndSettle();
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.textContaining('Role sebelumnya tetap aktif'), findsOneWidget);
     expect(
         tester.widget<AppButton>(find.byType(AppButton)).onPressed, isNotNull);
-    expect(find.text('Aktif'), findsOneWidget);
+    expect(find.text('Pindah Role ke Nasabah'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     semantics.dispose();
     coordinator.dispose();
   });
 
-  testWidgets(
-      'Role saya shows owned roles and switches through the coordinator',
+  testWidgets('one green button switches directly to the other owned role',
       (tester) async {
     for (final role in ['pengelola', 'nasabah']) {
       final auth = AuthEntity(
@@ -83,11 +83,15 @@ void main() {
       await tester.pumpWidget(MaterialApp(
           home: Scaffold(
               body: RoleSwitcher(auth: auth, coordinator: coordinator))));
-      expect(find.text('Role saya'), findsOneWidget);
-      expect(find.text('Nasabah'), findsOneWidget);
-      expect(find.text('Pengurus'), findsOneWidget);
-      expect(find.text('Aktif'), findsOneWidget);
-      await tester.tap(find.text('Gunakan role ini'));
+      final label =
+          'Pindah Role ke ${target == 'nasabah' ? 'Nasabah' : 'Pengurus'}';
+      expect(find.byType(AppButton), findsOneWidget);
+      expect(find.byType(Card), findsNothing);
+      expect(find.text('Role saya'), findsNothing);
+      expect(find.text('Aktif'), findsNothing);
+      expect(tester.widget<AppButton>(find.byType(AppButton)).variant,
+          AppButtonVariant.primary);
+      await tester.tap(find.text(label));
       await tester.pumpAndSettle();
       expect(requested, target);
       await tester.pumpWidget(const SizedBox.shrink());
