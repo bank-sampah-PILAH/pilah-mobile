@@ -126,7 +126,7 @@ jobs:
             "$NUCLEI_IMAGE" -R a+rX /root/nuclei-templates
 
       # A curated list, not -tags: tags pull in ~3,300 templates (~7,700 requests, over
-      # an hour at a polite rate). These 15 http + 8 ssl templates make ~200 requests and
+      # an hour at a polite rate). These 16 http + 8 ssl templates make ~200 requests and
       # finish in about a minute.
       - name: Scan
         run: |
@@ -142,6 +142,7 @@ jobs:
             http/exposures/configs/firebase-config-exposure \
             http/exposures/configs/javascript-env-config \
             http/vulnerabilities/generic/generic-env \
+            http/miscellaneous/http-trace \
             http/exposures/configs/exposed-gitignore \
             http/exposures/configs/git-config \
             http/exposures/configs/exposed-vscode \
