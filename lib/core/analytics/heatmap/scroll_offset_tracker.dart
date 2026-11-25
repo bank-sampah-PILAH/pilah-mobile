@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:pilah_mobile/core/analytics/heatmap/scroll_position_source.dart';
 
 /// Watches how far the app's lists are scrolled, so a heatmap can tell where on
 /// the page a tap landed.
@@ -6,17 +7,19 @@ import 'package:flutter/widgets.dart';
 /// Flutter draws everything on one canvas and scrolls inside it, so the browser
 /// never sees the page scroll. A tap's position on the screen alone would put
 /// every tap on the first screenful.
-class ScrollOffsetTracker {
+class ScrollOffsetTracker implements ScrollPositionSource {
   /// The last vertical offset each scrollable reported.
   final Map<BuildContext, double> _offsets = {};
   double _tapOffset = 0;
 
   /// How far the list under the last tap was scrolled, or 0 when the tap landed
   /// on something that does not scroll (a bar, a dialog).
+  @override
   double get tapOffset => _tapOffset;
 
   /// How far the main list of the screen (the largest one) is scrolled right
   /// now: what a heatmap overlay has to follow while the page scrolls.
+  @override
   double get liveOffset {
     var offset = 0.0;
     var biggest = 0.0;
