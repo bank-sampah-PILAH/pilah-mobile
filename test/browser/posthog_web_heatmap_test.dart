@@ -68,4 +68,30 @@ void main() {
     expect(seenByLibrary, 120);
     expect(_scrollY(posthog), 480);
   });
+
+  test('the page is never scrolled sideways', () {
+    final posthog = _fakePosthog();
+    heatmap = _heatmap(_Scroll())..install(posthog);
+
+    final manager = posthog.getProperty<JSObject>('scrollManager'.toJS);
+
+    expect(manager.callMethod<JSNumber>('scrollX'.toJS).toDartDouble, 0);
+  });
+
+  test('after dispose a click no longer changes what the library reads',
+      () async {
+    final posthog = _fakePosthog();
+    heatmap = _heatmap(_Scroll())..install(posthog);
+    heatmap.dispose();
+    double? seen;
+    final listener = ((web.Event _) => seen = _scrollY(posthog)).toJS;
+    web.document.addEventListener('click', listener);
+    addTearDown(() => web.document.removeEventListener('click', listener));
+
+    web.document.body!.dispatchEvent(
+        web.MouseEvent('click', web.MouseEventInit(bubbles: true)));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(seen, 480);
+  });
 }
