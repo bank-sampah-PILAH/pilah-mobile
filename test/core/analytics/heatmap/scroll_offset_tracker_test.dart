@@ -48,4 +48,19 @@ void main() {
     expect(controller.offset, greaterThan(400));
     expect(tracker.tapOffset, 0);
   });
+
+  testWidgets('the live offset follows the main list while nothing is tapped', (
+    tester,
+  ) async {
+    final tracker = ScrollOffsetTracker();
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_screen(tracker, _list(controller)));
+    expect(tracker.liveOffset, 0);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    expect(tracker.liveOffset, controller.offset);
+  });
 }
