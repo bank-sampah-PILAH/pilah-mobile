@@ -1090,7 +1090,7 @@ void main() {
       (tester) async {
     await openPage(tester);
 
-    expect(find.text('Pengurus'), findsNWidgets(2));
+    expect(find.text('Pengurus'), findsOneWidget);
     expect(find.text('Pengelola'), findsNothing);
   });
 

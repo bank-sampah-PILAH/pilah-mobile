@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
+import 'package:pilah_mobile/features/authentication/application/role_switch_coordinator.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/role_switch_provider.dart';
 
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -49,6 +53,7 @@ void main() {
     bool membershipActive = true,
     TestAuthenticationNotifier? authNotifier,
     NasabahRepository? repository,
+    RoleSwitchCoordinator? coordinator,
   }) async {
     final auth = authNotifier ??
         authNotifierIn(Authenticated(
@@ -81,6 +86,8 @@ void main() {
     router.go(route);
     await tester.pumpWidget(ProviderScope(
       overrides: [
+        if (coordinator != null)
+          roleSwitchProvider.overrideWith((_) => coordinator),
         nasabahApprovalProvider.overrideWith(() => approval),
         authenticationProvider.overrideWith(() => auth),
         // The shell watches the profile for its logo; no data source here.
@@ -90,6 +97,50 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  }
+
+  for (final size in [const Size(390, 844), const Size(1440, 900)]) {
+    testWidgets(
+        'customer switch sits below role badge inside the identity card ($size)',
+        (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const account = AuthEntity(
+          id: 'dual-customer',
+          name: 'Siti Aminah',
+          email: 'siti@example.test',
+          photoUrl: '',
+          token: 'test-token',
+          role: 'nasabah',
+          roles: ['nasabah', 'pengelola'],
+          nextStep: 'dashboard',
+          bankSampahStatus: 'active');
+      final coordinator = RoleSwitchCoordinator(
+          readSession: () => account,
+          requestRole: (_) => throw StateError('not used'),
+          persistSession: (_, __) async {},
+          resetRoleState: () {},
+          publishSession: (_) {});
+      await openProfile(tester,
+          authNotifier: authNotifierIn(Authenticated(authEntity: account)),
+          coordinator: coordinator);
+      final action = find.widgetWithText(AppButton, 'Pindah Role ke Pengurus');
+      expect(action, findsOneWidget);
+      final identityCard =
+          find.ancestor(of: action, matching: find.byType(NasabahCard));
+      expect(identityCard, findsOneWidget);
+      final role =
+          find.descendant(of: identityCard, matching: find.text('Nasabah'));
+      expect(role, findsOneWidget);
+      expect(tester.getTopLeft(action).dy,
+          greaterThan(tester.getBottomLeft(role).dy));
+      expect(
+          tester.getRect(identityCard).contains(tester.getBottomRight(action)),
+          isTrue);
+      expect(tester.takeException(), isNull);
+    });
   }
 
   group('PIL-226 profil nasabah — proposed RED slice', () {
