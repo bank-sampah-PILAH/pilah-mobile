@@ -32,8 +32,11 @@ def run_step(name, env, workdir):
     )
 
 
+OWN_REPOSITORY = "bank-sampah-PILAH/pilah-mobile"
+
+
 class NucleiScanTargetTest(unittest.TestCase):
-    def resolve(self, url, target_url="", environment="staging"):
+    def resolve(self, url, target_url="", environment="staging", repository=OWN_REPOSITORY):
         with tempfile.TemporaryDirectory() as directory:
             github_env = pathlib.Path(directory) / "github_env"
             github_env.write_text("")
@@ -45,20 +48,22 @@ class NucleiScanTargetTest(unittest.TestCase):
                     "STAGING_WEB_URL": url,
                     "PRODUCTION_WEB_URL": "",
                     "GITHUB_ENV": str(github_env),
+                    "GITHUB_REPOSITORY": repository,
                 },
                 directory,
             )
+            # Splitting on the first "=" of each line mirrors how GitHub reads the file, so
+            # an injected line shows up here as an extra key.
             return result, dict(
                 line.split("=", 1) for line in github_env.read_text().splitlines()
             )
 
     def test_targets_are_reduced_to_host_and_port(self):
-        # A trailing slash, a path and an explicit :443 must not leak into the TLS
-        # target (host:443:443).
+        # A trailing slash and an explicit :443 must not leak into the TLS target
+        # (host:443:443).
         for url in (
             "https://web.example",
             "https://web.example/",
-            "https://web.example/path?q=1",
             "https://web.example:443",
         ):
             with self.subTest(url=url):
@@ -88,6 +93,48 @@ class NucleiScanTargetTest(unittest.TestCase):
         ):
             with self.subTest(url=url):
                 result, resolved = self.resolve(url)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("::error::", result.stdout + result.stderr)
+                self.assertEqual(resolved, {})
+
+    def test_urls_that_would_change_the_scan_scope_are_rejected(self):
+        # STAGING_WEB_URL=https://host/app used to scan https://host without a word.
+        for url in (
+            "https://web.example/app",
+            "https://web.example/path?q=1",
+            "https://web.example?q=1",
+            "https://web.example#frag",
+        ):
+            with self.subTest(url=url):
+                result, resolved = self.resolve(url)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("::error::", result.stdout + result.stderr)
+                self.assertEqual(resolved, {})
+
+    def test_a_target_cannot_smuggle_environment_variables(self):
+        # The target is appended to $GITHUB_ENV one KEY=value per line, so a newline in a
+        # caller-supplied target_url would define any variable for the later steps.
+        for url in (
+            "https://ok.example\nEVIL=injected",
+            "https://ok.example\r\nEVIL=injected",
+            "https://ok.example EVIL=injected",
+        ):
+            with self.subTest(url=repr(url)):
+                result, resolved = self.resolve("", target_url=url)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("::error::", result.stdout + result.stderr)
+                self.assertEqual(resolved, {})
+                self.assertNotIn("EVIL=injected", result.stdout + result.stderr)
+
+    def test_only_this_repository_can_use_the_scan(self):
+        # The workflow is reusable from a public repository, and both target_url and the
+        # variables resolve in the caller's repository.
+        for kwargs in (
+            {"url": "", "target_url": "https://deployed.run.app"},
+            {"url": "https://web.example"},
+        ):
+            with self.subTest(**kwargs):
+                result, resolved = self.resolve(repository="someone/else", **kwargs)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("::error::", result.stdout + result.stderr)
                 self.assertEqual(resolved, {})
@@ -142,8 +189,31 @@ class NucleiScanWiringTest(unittest.TestCase):
         job = workflow("ci.yml")["jobs"]["nuclei_post_deploy"]
         self.assertEqual(job["needs"], "deploy_web_staging")
         self.assertIn("refs/heads/staging", job["if"])
-        self.assertEqual(job["with"], {"environment": "staging"})
+        # The scan targets the URL the staging deploy just used, not a repository variable
+        # that can drift or be mistyped while /health still answers 200 somewhere else.
+        self.assertEqual(
+            job["with"],
+            {
+                "environment": "staging",
+                "target_url": "${{ needs.deploy_web_staging.outputs.url }}",
+            },
+        )
         self.assertNotIn("continue-on-error", job)
+
+    def test_staging_deploy_reports_the_url_it_deployed(self):
+        deploy = workflow("deploy-web.yml")
+        self.assertEqual(
+            deploy["jobs"]["deploy"]["outputs"]["url"],
+            "${{ steps.deploy_staging.outputs.url || steps.deploy_production.outputs.url }}",
+        )
+        reporter = next(
+            step
+            for step in deploy["jobs"]["deploy"]["steps"]
+            if step.get("id") == "deploy_staging"
+        )
+        self.assertEqual(reporter["if"], "inputs.flavor == 'staging'")
+        self.assertIn("url=https://pilah-web-staging.fly.dev", reporter["run"])
+        self.assertIn('echo "url=$url" >> "$GITHUB_OUTPUT"', reporter["run"])
 
     def test_production_scan_scans_the_url_the_deploy_reported(self):
         deploy = workflow("deploy-web.yml")
