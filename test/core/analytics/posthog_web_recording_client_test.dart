@@ -110,4 +110,33 @@ void main() {
     expect(broken.wrapApp(app), same(app));
     expect(platform.config, isNull);
   });
+
+  testWidgets('heatmaps follow the scroll of the app it records', (
+    tester,
+  ) async {
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.runAsync(client.start);
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: client.wrapApp(
+          ListView(
+            controller: controller,
+            children: [
+              for (var i = 0; i < 40; i++) const SizedBox(height: 100)
+            ],
+          ),
+        ),
+      ),
+    );
+    controller.jumpTo(300);
+    await tester.pump();
+
+    final manager = globalContext
+        .getProperty<JSObject>('posthog'.toJS)
+        .getProperty<JSObject>('scrollManager'.toJS);
+    expect(manager.callMethod<JSNumber>('scrollY'.toJS).toDartDouble, 300);
+  });
 }
