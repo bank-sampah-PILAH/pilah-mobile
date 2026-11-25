@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "public": "deploy/web/firebase-public",
+    "ignore": ["**/.*"],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "pilah-web",
+          "region": "asia-southeast2"
+        }
+      }
+    ]
+  }
+}
