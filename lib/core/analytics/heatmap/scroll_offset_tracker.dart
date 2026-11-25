@@ -31,21 +31,34 @@ class ScrollOffsetTracker {
   }
 
   /// Wraps [child] so that scrolls and taps below it are seen.
-  Widget track(Widget child) => NotificationListener<ScrollNotification>(
-        onNotification: _onScroll,
-        child: Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: _onPointerDown,
-          child: child,
+  Widget track(Widget child) => NotificationListener<ScrollMetricsNotification>(
+        onNotification: _onMetrics,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: _onPointerDown,
+            child: child,
+          ),
         ),
       );
 
-  bool _onScroll(ScrollNotification notification) {
-    final context = notification.context;
-    if (context != null && notification.metrics.axis == Axis.vertical) {
-      _offsets[context] = notification.metrics.pixels;
-    }
+  /// A scrollable announces itself when it is laid out, so one that has not
+  /// been scrolled yet is known too, at offset 0.
+  bool _onMetrics(ScrollMetricsNotification notification) {
+    _remember(notification.context, notification.metrics);
     return false;
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    _remember(notification.context, notification.metrics);
+    return false;
+  }
+
+  void _remember(BuildContext? context, ScrollMetrics metrics) {
+    if (context != null && metrics.axis == Axis.vertical) {
+      _offsets[context] = metrics.pixels;
+    }
   }
 
   void _onPointerDown(PointerDownEvent event) {
