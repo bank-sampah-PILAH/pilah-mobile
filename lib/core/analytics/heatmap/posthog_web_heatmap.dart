@@ -5,6 +5,12 @@ import 'package:pilah_mobile/core/analytics/heatmap/heatmap_url_sanitizer.dart';
 import 'package:pilah_mobile/core/analytics/heatmap/scroll_position_source.dart';
 import 'package:web/web.dart' as web;
 
+/// Where `web/index.html` leaves the state of a toolbar launch link
+/// (`#__posthog=...`) for [PosthogWebHeatmap.openToolbarIfLaunched]. It has to
+/// be taken out of the address before the router starts, which is earlier than
+/// any Dart code runs.
+const toolbarLaunchStateKey = '__phToolbarState';
+
 /// Makes posthog-js's heatmaps work for an app that scrolls inside a canvas.
 ///
 /// posthog-js records a click at `clientY + the document's scroll`. Flutter
@@ -42,6 +48,14 @@ class PosthogWebHeatmap {
     );
     // Flutter pages here scroll up and down only.
     manager.setProperty('scrollX'.toJS, (() => 0.toJS).toJS);
+  }
+
+  /// Opens PostHog's toolbar when the page was opened from its launch link, and
+  /// does nothing on an ordinary visit.
+  void openToolbarIfLaunched(JSObject posthog) {
+    final state = globalContext.getProperty<JSAny?>(toolbarLaunchStateKey.toJS);
+    if (state.isUndefinedOrNull) return;
+    posthog.callMethod('loadToolbar'.toJS, state);
   }
 
   /// The `before_send` step for a heatmap event: its clicks are filed under the
