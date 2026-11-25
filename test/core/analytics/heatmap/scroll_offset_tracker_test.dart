@@ -32,4 +32,20 @@ void main() {
     expect(controller.offset, greaterThan(400));
     expect(tracker.tapOffset, controller.offset);
   });
+
+  testWidgets('a tap on the fixed bar reports 0 even when the list is scrolled', (
+    tester,
+  ) async {
+    final tracker = ScrollOffsetTracker();
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_screen(tracker, _list(controller)));
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('bar'));
+
+    expect(controller.offset, greaterThan(400));
+    expect(tracker.tapOffset, 0);
+  });
 }
