@@ -8,6 +8,8 @@ import 'package:pilah_mobile/core/analytics/analytics_client.dart'
     show AnalyticsClient;
 import 'package:pilah_mobile/core/analytics/analytics_consent_store.dart'
     show AnalyticsConsentStore;
+import 'package:pilah_mobile/core/errors/error_reporter.dart'
+    show ErrorReporter;
 import 'package:pilah_mobile/core/client/app_environment.dart'
     show AppEnvironment;
 import 'package:pilah_mobile/core/client/network_service.dart'
@@ -184,6 +186,7 @@ final diRegistrations = <(String, String?, Object Function())>[
     () => di<AppStorage>(instanceName: 'shared_preferences')
   ),
   ('AnalyticsClient', null, () => di<AnalyticsClient>()),
+  ('ErrorReporter', null, () => di<ErrorReporter>()),
   ('AnalyticsConsentStore', null, () => di<AnalyticsConsentStore>()),
   ('SecureDatabase', null, () => di<SecureDatabase>()),
   ('NetworkUtils', null, () => di<NetworkUtils>()),

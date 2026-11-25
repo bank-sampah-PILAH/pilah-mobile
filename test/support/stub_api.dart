@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/errors/error_reporter.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/client/network_utils.dart';
@@ -54,8 +55,10 @@ class StubApi implements HttpClientAdapter {
     if (accessToken.isNotEmpty) {
       utils.setToken(accessToken: accessToken, refreshToken: 'refresh');
     }
-    network =
-        NetworkService(environment: StubEnvironment(), networkUtils: utils);
+    network = NetworkService(
+        environment: StubEnvironment(),
+        networkUtils: utils,
+        errorReporter: const NoopErrorReporter());
     network.dio.httpClientAdapter = this;
   }
 
@@ -67,6 +70,13 @@ class StubApi implements HttpClientAdapter {
   /// When set, every answer takes this long to arrive, so a test can observe
   /// the loading frames a real network would produce.
   Duration? latency;
+
+  final _routeLatency = <String, Duration>{};
+
+  /// Makes `METHOD path` alone take this long, overriding [latency], so a test
+  /// can have one request overtake another.
+  void delay(String method, String path, Duration duration) =>
+      _routeLatency['${method.toUpperCase()} $path'] = duration;
 
   RecordedRequest get last => requests.last;
 
@@ -141,7 +151,9 @@ class StubApi implements HttpClientAdapter {
       options.data,
       Map<String, dynamic>.from(options.headers),
     ));
-    if (latency != null) await Future<void>.delayed(latency!);
+    final wait =
+        _routeLatency['${options.method} ${options.uri.path}'] ?? latency;
+    if (wait != null) await Future<void>.delayed(wait);
     final route = _routes['${options.method} ${options.uri.path}'];
     if (route == null) {
       return ResponseBody.fromString(
