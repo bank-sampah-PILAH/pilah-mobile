@@ -180,6 +180,41 @@ void main() {
       expect(result, isNull);
     });
 
+    test('dead clicks are dropped: on a canvas every click looks dead', () {
+      final result = scrub({
+        'event': r'$$heatmap',
+        'properties': {
+          r'$heatmap_data': {
+            '$origin/#/nasabah/1': [
+              {'x': 1, 'y': 2, 'type': 'click'},
+              {'x': 1, 'y': 2, 'type': 'deadclick'},
+              {'x': 5, 'y': 6, 'type': 'rageclick'},
+              {'x': 7, 'y': 8, 'type': 'mousemove'},
+            ],
+          },
+        },
+      });
+
+      final kept = sentData(result)['$origin/#/nasabah/:id'] as List;
+      expect(kept.map((c) => (c as Map)['type']),
+          ['click', 'rageclick', 'mousemove']);
+    });
+
+    test('an event with only dead clicks is dropped', () {
+      final result = scrub({
+        'event': r'$$heatmap',
+        'properties': {
+          r'$heatmap_data': {
+            '$origin/#/nasabah/1': [
+              {'x': 1, 'y': 2, 'type': 'deadclick'},
+            ],
+          },
+        },
+      });
+
+      expect(result, isNull);
+    });
+
     test('an event that is not a heatmap passes untouched', () {
       final event = {
         'event': 'setoran_disimpan',
