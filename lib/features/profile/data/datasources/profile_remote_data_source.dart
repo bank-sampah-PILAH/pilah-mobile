@@ -33,6 +33,13 @@ abstract class ProfileRemoteDataSource {
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
   Future<List<TeamMember>> getTeam();
+
+  /// Hands the Pengurus Utama role to the pengurus [id]; answers the roster as
+  /// it stands afterwards.
+  Future<List<TeamMember>> transferPrimary(String id);
+
+  /// Removes the pengurus [id] from the bank sampah.
+  Future<void> removeMember(String id);
   Future<TeamInvite?> getTeamInvite();
   Future<TeamInvite> createTeamInvite();
 }
@@ -136,7 +143,22 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<List<TeamMember>> getTeam() async {
     final response = await networkService.get(Endpoints.team);
-    final data = response.data;
+    return _mapTeam(response.data);
+  }
+
+  @override
+  Future<List<TeamMember>> transferPrimary(String id) async {
+    final response =
+        await networkService.post(Endpoints.teamTransfer, data: {'id': id});
+    return _mapTeam(response.data);
+  }
+
+  @override
+  Future<void> removeMember(String id) async {
+    await networkService.delete(Endpoints.teamMember(id));
+  }
+
+  List<TeamMember> _mapTeam(dynamic data) {
     final List<dynamic> members = data is Map<String, dynamic>
         ? (data['members'] as List? ?? [])
         : (data as List? ?? []);

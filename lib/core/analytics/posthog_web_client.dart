@@ -4,6 +4,7 @@ import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
+import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 import 'package:web/web.dart' as web;
 
 /// Loads PostHog's browser library only when [start] is called, so nothing
@@ -63,6 +64,9 @@ class PosthogWebClient implements AnalyticsClient {
 
   @override
   bool get recordsScreen => recordScreen;
+
+  @override
+  bool get isRecording => _live;
 
   /// Starts the client. Throws a [StateError] when the library cannot be
   /// loaded, so a caller has to handle that. A failed start is not remembered:
@@ -184,6 +188,7 @@ class PosthogWebClient implements AnalyticsClient {
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     final options = _options().jsify() as JSObject;
+    options.setProperty('before_send'.toJS, scrubWebExceptionEvent.toJS);
     if (recordScreen) _addRecording(options);
     posthog.callMethod('init'.toJS, apiKey.toJS, options);
     _ready = true;
@@ -279,6 +284,11 @@ class PosthogWebClient implements AnalyticsClient {
         'save_referrer': false,
         'save_campaign_params': false,
         'capture_performance': true,
+        // Uncaught errors are reported through ErrorReporter, which cleans the
+        // message first. The library's own capture would send it as it is, and
+        // the project setting "exception autocapture" would switch that on for
+        // every client at once, so it is switched off here, at init.
+        'capture_exceptions': false,
         if (recordScreen)
           'session_recording': {
             'maskAllInputs': true,

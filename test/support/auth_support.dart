@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/repository/auth_repository.dart';
@@ -105,8 +106,15 @@ class TestAuthenticationNotifier extends AuthenticationNotifier {
   /// backend refusal to delete the account (UAT 2026-11).
   String? discardFailure;
 
+  /// What [refreshUser] does besides being recorded: a server that now reports
+  /// something else about the signed-in user.
+  void Function()? onRefreshUser;
+
   @override
-  Future<void> refreshUser() async => calls.add('refreshUser');
+  Future<void> refreshUser() async {
+    calls.add('refreshUser');
+    onRefreshUser?.call();
+  }
 }
 
 class _NoopAuthenticationUseCases implements AuthenticationUseCases {
@@ -202,9 +210,13 @@ TestAuthenticationNotifier authNotifierIn(AuthenticationStates state) =>
 
 Widget withAuthenticationProvider(
   TestAuthenticationNotifier notifier,
-  Widget child,
-) =>
+  Widget child, {
+  List<Override> overrides = const [],
+}) =>
     ProviderScope(
-      overrides: [authenticationProvider.overrideWith(() => notifier)],
+      overrides: [
+        authenticationProvider.overrideWith(() => notifier),
+        ...overrides,
+      ],
       child: child,
     );

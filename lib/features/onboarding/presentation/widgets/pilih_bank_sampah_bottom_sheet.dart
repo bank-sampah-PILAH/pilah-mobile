@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -15,11 +16,12 @@ import 'package:pilah_mobile/design/constants/font_weight.dart';
 /// Lets a calon nasabah pick a bank sampah to apply to (PIL-204), searching
 /// the list [OnboardingNotifier.loadBankSampahDirectory] fetches on open.
 class PilihBankSampahBottomSheet extends ConsumerStatefulWidget {
-  /// Bank sampah ids to hide from the list, e.g. ones already joined.
-  final Set<String> excludedBankIds;
+  /// Banks the account already has a membership with, by id, each with the
+  /// label shown in place of its address (PIL-539). They stay in the list,
+  /// so the nasabah sees why they cannot apply again, but cannot be picked.
+  final Map<String, String> joinedBanks;
 
-  const PilihBankSampahBottomSheet(
-      {super.key, this.excludedBankIds = const {}});
+  const PilihBankSampahBottomSheet({super.key, this.joinedBanks = const {}});
 
   @override
   ConsumerState<PilihBankSampahBottomSheet> createState() =>
@@ -55,14 +57,9 @@ class _PilihBankSampahBottomSheetState
       });
       return;
     }
-    final banks = result ?? const [];
     setState(() {
       _loadState = _LoadState.loaded;
-      _banks = widget.excludedBankIds.isEmpty
-          ? banks
-          : banks
-              .where((bank) => !widget.excludedBankIds.contains(bank.id))
-              .toList();
+      _banks = result ?? const [];
     });
   }
 
@@ -160,8 +157,10 @@ class _PilihBankSampahBottomSheetState
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final bank = filtered[index];
+        final joinedLabel = widget.joinedBanks[bank.id];
         return InkWell(
-          onTap: () => context.pop(bank),
+          // A bank already joined is shown but not offered again.
+          onTap: joinedLabel == null ? () => context.pop(bank) : null,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -186,22 +185,31 @@ class _PilihBankSampahBottomSheetState
                       Text(
                         bank.nama,
                         style: AppTextStyle.title1.copyWith(
-                          color: AppColors.black,
+                          color: joinedLabel == null
+                              ? AppColors.black
+                              : AppColors.grey100,
                           fontWeight: AppFontWeight.bold,
                           fontSize: AppFontSize.lg,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        [bank.kota, bank.alamat]
-                            .where((part) => part.trim().isNotEmpty)
-                            .join(' · '),
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.grey100,
+                      if (joinedLabel != null)
+                        CustomStatusBadge(
+                          statusText: joinedLabel,
+                          backgroundColor: AppColors.fill,
+                          textColor: AppColors.inkSoft,
+                        )
+                      else
+                        Text(
+                          [bank.kota, bank.alamat]
+                              .where((part) => part.trim().isNotEmpty)
+                              .join(' · '),
+                          style: AppTextStyle.small.copyWith(
+                            color: AppColors.grey100,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     ],
                   ),
                 ),

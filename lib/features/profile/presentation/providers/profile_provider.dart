@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
@@ -35,6 +38,11 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// the state of the next signed-in user.
   int _session = 0;
 
+  /// Bumped when a hand-over begins and again when it ends. A [load] whose
+  /// requests straddle either moment holds a roster from before the hand-over
+  /// and must not be applied.
+  int _teamEpoch = 0;
+
   @override
   ProfileState build() => const ProfileState();
 
@@ -48,20 +56,21 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// [silent] only applies when there is a loaded profile to keep: otherwise
   /// the page has nothing to render, so a real loading state is emitted.
   Future<void> load({bool silent = false}) async {
+    final snapshot = (_session, _teamEpoch);
     if (!silent || state.status != ProfileStatus.loaded) {
-      state = const ProfileState(
+      state = ProfileState(
         status: ProfileStatus.loading,
         isLoadingInvite: true,
+        isChangingTeam: state.isChangingTeam,
       );
     }
 
-    final session = _session;
     final bankEither = await apiCall<BankSampahProfile>(
       func: _dataSource.getBankSampah(),
       mapper: (value) => value as BankSampahProfile,
     );
 
-    if (!ref.mounted || session != _session) return;
+    if (!ref.mounted || snapshot != (_session, _teamEpoch)) return;
     await bankEither.fold(
       (error) async => state = ProfileState(
           status: ProfileStatus.error, error: error.displayMessage),
@@ -87,7 +96,8 @@ class ProfileNotifier extends Notifier<ProfileState> {
           inviteError =
               inviteEither.fold((error) => error.displayMessage, (_) => null);
         }
-        if (!ref.mounted || session != _session) return;
+        // Both a session reset and a hand-over can invalidate this response.
+        if (!ref.mounted || snapshot != (_session, _teamEpoch)) return;
         state = ProfileState(
           status: ProfileStatus.loaded,
           bankSampah: bank,
@@ -95,6 +105,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
           team: team,
           invite: invite,
           inviteError: inviteError,
+          isChangingTeam: state.isChangingTeam,
         );
       },
     );
@@ -260,6 +271,75 @@ class ProfileNotifier extends Notifier<ProfileState> {
   void reset() {
     _session++;
     state = const ProfileState();
+  }
+
+  /// Hands the Pengurus Utama role to the pengurus [id]. The roster in the
+  /// answer replaces the one on screen, so who may invite and who may be acted
+  /// on follows at once; the invitation link goes with it, as only the Pengurus
+  /// Utama may see or create one. Returns `null` on success, otherwise the
+  /// [NetworkException].
+  Future<NetworkException?> transferPrimary(String id) async {
+    if (state.isChangingTeam) return null;
+    _teamEpoch++;
+    state = state.copyWith(isChangingTeam: true);
+    final either = await apiCall<List<TeamMember>>(
+      func: _dataSource.transferPrimary(id),
+      mapper: (value) => value as List<TeamMember>,
+    );
+    if (!ref.mounted) return null;
+    _teamEpoch++;
+    final error = either.fold<NetworkException?>(
+      (error) => error,
+      (team) {
+        state = state.copyWith(
+          isChangingTeam: false,
+          team: team,
+          clearInvite: true,
+          clearInviteError: true,
+        );
+        return null;
+      },
+    );
+    if (error != null) {
+      state = state.copyWith(isChangingTeam: false);
+      // The refusal may mean the role moved elsewhere; read the roster again
+      // so the screen stops offering an action that can only be refused.
+      unawaited(load(silent: true));
+      return error;
+    }
+    // The marker on the signed-in user changed with the roster, so the session
+    // is read again rather than left saying the opposite.
+    await ref.read(authenticationProvider.notifier).refreshUser();
+    return null;
+  }
+
+  /// Removes the pengurus [id] from the bank sampah. The answer carries no
+  /// roster, so the row simply leaves the one on screen. The server rotates the
+  /// invitation token with every removal, so the link on screen goes with it. A
+  /// pengurus the server no longer knows is already gone and counts as removed.
+  /// Returns `null` on success, otherwise the [NetworkException].
+  Future<NetworkException?> removeMember(String id) async {
+    state = state.copyWith(isChangingTeam: true);
+    final either = await apiCall<void>(
+      func: _dataSource.removeMember(id),
+      mapper: (_) {},
+    );
+    if (!ref.mounted) return null;
+    final error = either.fold((error) => error, (_) => null);
+    if (error != null && error is! NotFoundException) {
+      state = state.copyWith(isChangingTeam: false);
+      return error;
+    }
+    state = state.copyWith(
+      isChangingTeam: false,
+      team: [
+        for (final member in state.team)
+          if (member.id != id) member,
+      ],
+      clearInvite: true,
+      clearInviteError: true,
+    );
+    return null;
   }
 
   /// Explicitly creates or replaces the team's invitation link.

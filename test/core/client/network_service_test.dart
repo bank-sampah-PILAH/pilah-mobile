@@ -29,6 +29,15 @@ void main() {
     expect(api.last.headers['Accept'], 'application/json');
   });
 
+  test('every call carries its own X-Request-Id', () async {
+    await api.network.get('/ping');
+    final first = api.last.headers['X-Request-Id'];
+    await api.network.get('/ping');
+
+    expect(first, isA<String>());
+    expect(api.last.headers['X-Request-Id'], isNot(first));
+  });
+
   test('omits the Authorization header when signed out', () async {
     final anon = StubApi(accessToken: '');
     anon.on('GET', '/ping', json: {});

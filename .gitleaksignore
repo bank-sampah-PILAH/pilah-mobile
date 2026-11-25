@@ -1,0 +1,4 @@
+# False positives: a test assertion compares an encryption key object's
+# sourceName to a long fixture string; no credential is stored.
+aac85ef246a18c3adac65c9d4753e7b3579b5b0f:test/features/riwayat/nasabah_pdf_preview_page_test.dart:generic-api-key:72
+474266fd420a3968483d85f475dd61c726a67513:test/features/riwayat/nasabah_pdf_preview_page_test.dart:generic-api-key:72

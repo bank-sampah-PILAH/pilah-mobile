@@ -428,6 +428,10 @@ void main() {
       await visit(tester, router, '/approval-bank-sampah');
       expect(find.byType(ApprovalBankSampahListPage), findsOneWidget);
 
+      // PIL-539: applying to another bank sampah from Bank sampah saya.
+      await visit(tester, router, '/ajukan-bank-sampah');
+      expect(find.text('Ajukan bank sampah baru'), findsOneWidget);
+
       di.registerFactory<AppealMembershipUseCase>(() => _MockAppeal());
       addTearDown(() => di.unregister<AppealMembershipUseCase>());
       router.go(

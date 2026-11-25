@@ -24,6 +24,9 @@ class FakeAnalyticsClient implements AnalyticsClient {
   @override
   final bool recordsScreen;
 
+  @override
+  bool get isRecording => _live;
+
   /// Only `start` and `stop`, in order.
   final calls = <String>[];
 
