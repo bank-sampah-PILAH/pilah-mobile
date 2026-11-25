@@ -191,4 +191,37 @@ void main() {
       expect(identical(heatmap.scrub(event), event), isTrue);
     });
   });
+
+  group('opening the toolbar from the link PostHog gives', () {
+    JSObject posthogThatRemembersToolbar(List<JSAny?> opened) => _fakePosthog()
+      ..setProperty(
+        'loadToolbar'.toJS,
+        ((JSAny? state) {
+          opened.add(state);
+          return true.toJS;
+        }).toJS,
+      );
+
+    tearDown(() => globalContext.delete(toolbarLaunchStateKey.toJS));
+
+    test('a launch link hands its state to the library', () {
+      final opened = <JSAny?>[];
+      final state = {'token': 'abc', 'action': 'ph_authorize'}.jsify();
+      globalContext.setProperty(toolbarLaunchStateKey.toJS, state);
+      heatmap = _heatmap(_Scroll());
+
+      heatmap.openToolbarIfLaunched(posthogThatRemembersToolbar(opened));
+
+      expect(opened, [state]);
+    });
+
+    test('an ordinary visit opens nothing', () {
+      final opened = <JSAny?>[];
+      heatmap = _heatmap(_Scroll());
+
+      heatmap.openToolbarIfLaunched(posthogThatRemembersToolbar(opened));
+
+      expect(opened, isEmpty);
+    });
+  });
 }
