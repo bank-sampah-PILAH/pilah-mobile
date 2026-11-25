@@ -67,17 +67,25 @@ void main() {
       ..delete('__optInOptions'.toJS);
   });
 
-  test('records the screen, and the recorder waits for the library', () async {
+  testWidgets('records the screen, and the recorder waits for the library', (
+    tester,
+  ) async {
     const app = SizedBox();
 
     expect(client.recordsScreen, isTrue);
     expect(client.wrapApp(app), same(app));
 
-    await client.start();
+    await tester.runAsync(client.start);
 
-    final wrapped = client.wrapApp(app);
-    expect(wrapped, isA<PostHogWidget>());
-    expect((wrapped as PostHogWidget).child, same(app));
+    await tester.pumpWidget(
+      Directionality(
+          textDirection: TextDirection.ltr, child: client.wrapApp(app)),
+    );
+    expect(find.byType(PostHogWidget), findsOneWidget);
+    expect(
+      tester.widget<PostHogWidget>(find.byType(PostHogWidget)).child,
+      same(app),
+    );
   });
 
   test('hands the plugin the library only after it is set up, masked',
