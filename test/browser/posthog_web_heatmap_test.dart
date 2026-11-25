@@ -94,4 +94,39 @@ void main() {
 
     expect(seen, 480);
   });
+
+  group('scrub, the last step before a heatmap event is sent', () {
+    const origin = 'https://app.example.com';
+
+    JSAny? scrub(Map<String, Object?> event) {
+      heatmap = _heatmap(_Scroll());
+      return heatmap.scrub(event.jsify());
+    }
+
+    Map<Object?, Object?> sentData(JSAny? result) {
+      final properties =
+          (result! as JSObject).getProperty<JSAny?>('properties'.toJS);
+      return ((properties.dartify()! as Map)[r'$heatmap_data'] as Map)
+          .cast<Object?, Object?>();
+    }
+
+    test('the address of a click is replaced by its route pattern', () {
+      final result = scrub({
+        'event': r'$$heatmap',
+        'properties': {
+          r'$heatmap_data': {
+            '$origin/#/nasabah/8f14e45f': [
+              {'x': 10, 'y': 20, 'type': 'click'},
+            ],
+          },
+        },
+      });
+
+      expect(sentData(result).keys, ['$origin/#/nasabah/:id']);
+      expect(
+        (sentData(result)['$origin/#/nasabah/:id'] as List).single,
+        {'x': 10, 'y': 20, 'type': 'click'},
+      );
+    });
+  });
 }
