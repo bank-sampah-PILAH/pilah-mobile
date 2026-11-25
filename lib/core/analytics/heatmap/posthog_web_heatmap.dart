@@ -44,6 +44,29 @@ class PosthogWebHeatmap {
     manager.setProperty('scrollX'.toJS, (() => 0.toJS).toJS);
   }
 
+  /// The `before_send` step for a heatmap event: its clicks are filed under the
+  /// address they happened on, which can hold an id, so each address is
+  /// replaced by the route pattern of its screen.
+  JSAny? scrub(JSAny? captureResult) {
+    final result = captureResult as JSObject;
+    final properties = result.getProperty<JSObject>('properties'.toJS);
+    final data = properties.getProperty<JSObject>(r'$heatmap_data'.toJS);
+    final clean = JSObject();
+    for (final key in _keysOf(data)) {
+      final pattern = urls.sanitize(key);
+      clean.setProperty(pattern!.toJS, data.getProperty<JSAny?>(key.toJS));
+    }
+    properties.setProperty(r'$heatmap_data'.toJS, clean);
+    return captureResult;
+  }
+
+  static List<String> _keysOf(JSObject object) => globalContext
+      .getProperty<JSObject>('Object'.toJS)
+      .callMethod<JSArray<JSString>>('keys'.toJS, object)
+      .toDart
+      .map((key) => key.toDart)
+      .toList();
+
   void dispose() {
     web.window.removeEventListener('click', _onClick, true.toJS);
   }
