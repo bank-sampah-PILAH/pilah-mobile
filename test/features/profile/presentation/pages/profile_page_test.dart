@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/features/authentication/application/role_switch_coordinator.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/role_switch_provider.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -86,6 +89,85 @@ void main() {
     expect(find.text('Role saya'), findsNothing);
     expect(find.text('Pindah Role ke Nasabah'), findsNothing);
   });
+
+  testWidgets(
+      'dual-role desktop actions fill two columns below account identity',
+      (tester) async {
+    const account = AuthEntity(
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'old',
+        role: 'pengelola',
+        roles: ['pengelola', 'nasabah']);
+    final coordinator = RoleSwitchCoordinator(
+        readSession: () => account,
+        requestRole: (_) => throw StateError('not used'),
+        persistSession: (_, __) async {},
+        resetRoleState: () {},
+        publishSession: (_) {});
+    await openPage(tester,
+        size: const Size(1440, 900),
+        isWeb: true,
+        authNotifier: authNotifierIn(Authenticated(authEntity: account)),
+        extraOverrides: [roleSwitchProvider.overrideWith((_) => coordinator)]);
+    final switchAction =
+        find.widgetWithText(AppButton, 'Pindah Role ke Nasabah');
+    final logout = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
+    expect(logout, findsOneWidget);
+    final switchRect = tester.getRect(switchAction);
+    final logoutRect = tester.getRect(logout);
+    expect(switchRect.top,
+        greaterThan(tester.getBottomLeft(find.text('siti@example.test')).dy));
+    expect(switchRect.top, logoutRect.top);
+    expect(switchRect.width, logoutRect.width);
+    expect(switchRect.width, greaterThan(400));
+    expect(logoutRect.left - switchRect.right, AppSpacing.md);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final web in [true, false]) {
+    testWidgets(
+        'dual-role phone stacks full-width switch above logout (web: $web)',
+        (tester) async {
+      const account = AuthEntity(
+          name: 'Siti',
+          email: 'siti@example.test',
+          photoUrl: '',
+          token: 'old',
+          role: 'pengelola',
+          roles: ['pengelola', 'nasabah']);
+      final coordinator = RoleSwitchCoordinator(
+          readSession: () => account,
+          requestRole: (_) => throw StateError('not used'),
+          persistSession: (_, __) async {},
+          resetRoleState: () {},
+          publishSession: (_) {});
+      await openPage(tester,
+          size: const Size(390, 844),
+          isWeb: web,
+          authNotifier: authNotifierIn(Authenticated(authEntity: account)),
+          extraOverrides: [
+            roleSwitchProvider.overrideWith((_) => coordinator)
+          ]);
+      final switchAction =
+          find.widgetWithText(AppButton, 'Pindah Role ke Nasabah');
+      final logout = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
+      expect(switchAction, findsOneWidget);
+      expect(logout, findsOneWidget);
+      final switchRect = tester.getRect(switchAction);
+      final logoutRect = tester.getRect(logout);
+      expect(logoutRect.top, greaterThan(switchRect.bottom));
+      expect(switchRect.left, logoutRect.left);
+      expect(switchRect.width, logoutRect.width);
+      expect(switchRect.width, greaterThan(280));
+      expect(switchRect.top,
+          greaterThan(tester.getBottomLeft(find.text('siti@example.test')).dy));
+      expect(logoutRect.bottom,
+          lessThan(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dy));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   group('recording consent', () {
     late FakeAppStorage storage;

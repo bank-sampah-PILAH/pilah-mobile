@@ -601,11 +601,6 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       ),
               ),
 
-              ContentInset(
-                  child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: _gutter),
-                child: const ConnectedRoleSwitcher(),
-              )),
               // Tab Bar
               ContentInset(
                 child: Container(
@@ -825,30 +820,58 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.border),
           ),
-          child: compactWeb
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    identity,
-                    const SizedBox(height: AppSpacing.md),
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: logoutButton,
-                    ),
-                  ],
-                )
-              : Row(
-                  children: [
-                    Expanded(child: identity),
-                    if (_webShell) ...[
-                      const SizedBox(width: AppSpacing.lg),
-                      logoutButton,
-                    ],
-                  ],
-                ),
+          child: RoleSwitcher.isAvailableFor(auth)
+              ? _buildRoleAccountContent(identity, constraints.maxWidth)
+              : _buildSingleRoleAccountContent(
+                  identity, logoutButton, compactWeb),
         );
       },
     );
+  }
+
+  Widget _buildRoleAccountContent(Widget identity, double width) {
+    final logout = _buildLogoutButton();
+    final actions = width >= LayoutBreakpoint.mediumMinWidth
+        ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Expanded(child: ConnectedRoleSwitcher()),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: logout),
+          ])
+        : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const ConnectedRoleSwitcher(),
+            const SizedBox(height: AppSpacing.md),
+            logout,
+          ]);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      identity,
+      const SizedBox(height: AppSpacing.lg),
+      actions,
+    ]);
+  }
+
+  Widget _buildSingleRoleAccountContent(
+      Widget identity, Widget logoutButton, bool compactWeb) {
+    return compactWeb
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              identity,
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: logoutButton,
+              ),
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(child: identity),
+              if (_webShell) ...[
+                const SizedBox(width: AppSpacing.lg),
+                logoutButton,
+              ],
+            ],
+          );
   }
 
   /// Keluar di aplikasi, di paling bawah isi halaman: aksi akun yang jarang
@@ -962,7 +985,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       const SizedBox(height: 32),
                       const AnalyticsConsentCard(),
                     ],
-                    if (!_webShell) ...[
+                    if (!_webShell && !RoleSwitcher.isAvailableFor(auth)) ...[
                       const SizedBox(height: 32),
                       _buildLogoutButton(),
                     ],
