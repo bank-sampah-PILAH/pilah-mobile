@@ -13,6 +13,20 @@
   <title>PILAH | Beranda</title>
 </head>
 <body>
+  <script>
+    // PostHog opens its toolbar with a link like `/#__posthog={...}`. Flutter's
+    // router would read that as a route, so the state is taken out of the
+    // address before Flutter starts and PosthogWebHeatmap hands it to the
+    // library later.
+    (function () {
+      var launch = (location.hash || '').match(/__posthog=([^&]*)/);
+      if (!launch) return;
+      try {
+        window.__phToolbarState = JSON.parse(decodeURIComponent(launch[1]));
+      } catch (e) {}
+      history.replaceState(null, '', location.pathname + location.search + '#/');
+    })();
+  </script>
   <!-- Required by automatic Passkeys plugin registration, before Flutter starts. -->
   <script src="vendor/passkeys-2.4.0/bundle.js"></script>
   <script>
