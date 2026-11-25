@@ -178,6 +178,12 @@ class NucleiScanGateTest(unittest.TestCase):
         self.assertNotEqual(csp.returncode, 0)
         self.assertIn("content-security-policy", csp.stdout + csp.stderr)
 
+    def test_an_enabled_trace_method_fails(self):
+        trace = self.finding("http-trace", "trace-request")
+        result = self.gate([trace])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("http-trace", result.stdout + result.stderr)
+
     def test_a_leaked_build_file_fails_and_no_results_fail(self):
         leaked = self.finding("pubspec-config", matched="https://web.example/pubspec.yaml")
         self.assertNotEqual(self.gate([leaked]).returncode, 0)
@@ -237,7 +243,8 @@ class NucleiScanTemplatesTest(unittest.TestCase):
         # Nuclei only prints [ERR] for a missing template and scans with the rest, which
         # narrows coverage without a red run; and with none it dies on a confusing error.
         paths = template_paths()
-        self.assertEqual(len(paths), 23)
+        self.assertEqual(len(paths), 24)
+        self.assertIn("http/miscellaneous/http-trace", paths)
         complete = self.scan(paths)
         self.assertEqual(complete.returncode, 0, complete.stdout + complete.stderr)
         for absent in (paths[0], paths[-1]):
