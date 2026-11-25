@@ -838,6 +838,28 @@ void main() {
       );
     });
 
+    test('clicks on a screen the app does not know are not sent at all',
+        () async {
+      await withHeatmap().start();
+      final beforeSend =
+          initOptions().getProperty<JSFunction>('before_send'.toJS);
+
+      final sent = beforeSend.callAsFunction(
+          null,
+          {
+            'event': r'$$heatmap',
+            'properties': {
+              r'$heatmap_data': {
+                'https://app.example.com/#/rahasia/budi': [
+                  {'x': 1, 'y': 2, 'type': 'click'},
+                ],
+              },
+            },
+          }.jsify());
+
+      expect(sent, isNull);
+    });
+
     test('a launch link opens the toolbar once the library is up', () async {
       globalContext.setProperty(
         toolbarLaunchStateKey.toJS,

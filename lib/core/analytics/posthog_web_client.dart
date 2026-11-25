@@ -4,6 +4,7 @@ import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/analytics_client.dart';
 import 'package:pilah_mobile/core/analytics/analytics_props.dart';
+import 'package:pilah_mobile/core/analytics/heatmap/posthog_web_heatmap.dart';
 import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 import 'package:web/web.dart' as web;
 
@@ -22,6 +23,7 @@ class PosthogWebClient implements AnalyticsClient {
     required this.host,
     this.environment,
     this.recordScreen = false,
+    this.heatmap,
     String? libraryUrl,
     this.loadTimeout = const Duration(seconds: 15),
   }) : libraryUrl = libraryUrl ?? _libraryUrlFor(host);
@@ -38,6 +40,12 @@ class PosthogWebClient implements AnalyticsClient {
   /// with the masks `PosthogWebRecordingClient` supplies, and until those are
   /// in place every frame is skipped.
   final bool recordScreen;
+
+  /// Tells the library where the app's page is scrolled to, and keeps an
+  /// address out of what it sends. Heatmaps are on only when there is one: a
+  /// heatmap that cannot tell where the page is scrolled puts every click on
+  /// the first screenful.
+  final PosthogWebHeatmap? heatmap;
   final String libraryUrl;
   final Duration loadTimeout;
 
@@ -188,10 +196,13 @@ class PosthogWebClient implements AnalyticsClient {
     }
     final posthog = globalContext.getProperty<JSObject>('posthog'.toJS);
     final options = _options().jsify() as JSObject;
-    options.setProperty('before_send'.toJS, scrubWebExceptionEvent.toJS);
+    options.setProperty('before_send'.toJS, _beforeSend.toJS);
     if (recordScreen) _addRecording(options);
     posthog.callMethod('init'.toJS, apiKey.toJS, options);
     _ready = true;
+    heatmap
+      ?..install(posthog)
+      ..openToolbarIfLaunched(posthog);
     // PostHog keeps an opt-out across page reloads, so one made on an earlier
     // visit would still be in force. start() is only called once the pengurus
     // has agreed, so switch capturing on.
@@ -229,6 +240,15 @@ class PosthogWebClient implements AnalyticsClient {
   /// PostHog without passing the sanitizer.
   static const _optInOptions = {'captureEventName': false};
 
+  /// What posthog-js is about to send: an error reduced to its type, a heatmap
+  /// event filed under route patterns instead of addresses.
+  JSAny? _beforeSend(JSAny? captureResult) {
+    final scrubbed = scrubWebExceptionEvent(captureResult);
+    // Null is an event to drop, which a later step must not bring back.
+    final heatmap = this.heatmap;
+    return heatmap == null ? scrubbed : heatmap.scrub(scrubbed);
+  }
+
   /// What the recording may see. The canvas is sent as pictures with the
   /// rectangles to cover; until the app has said which, the function below
   /// answers null, which skips the frame instead of sending it uncovered.
@@ -251,16 +271,18 @@ class PosthogWebClient implements AnalyticsClient {
 
   Map<String, Object> _options() => {
         'api_host': host,
-        // Only usage events are sent: no screen recording, no automatic
-        // capture of clicks or page views, no heatmaps. Load time is the one
-        // automatic measurement kept, to see how slow the app is to open.
+        // Only usage events are sent: no automatic capture of clicks or page
+        // views. Load time is the one automatic measurement kept, to see how
+        // slow the app is to open.
         'disable_session_recording': !recordScreen,
         // The recording never carries the browser console: a debug build prints
         // what the server answered there, and that holds names.
         if (recordScreen) 'enable_recording_console_log': false,
         'autocapture': false,
         'capture_pageview': false,
-        'enable_heatmaps': false,
+        // Where on a screen people click, under the route pattern of the
+        // screen, never its address: see PosthogWebHeatmap.
+        'enable_heatmaps': heatmap != null,
         // posthog-js adds the address and referrer to every event by itself.
         // A route can carry an id, which the sanitizer never sees, so none of
         // them may leave the app.
