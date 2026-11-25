@@ -46,19 +46,44 @@ class PosthogWebHeatmap {
 
   /// The `before_send` step for a heatmap event: its clicks are filed under the
   /// address they happened on, which can hold an id, so each address is
-  /// replaced by the route pattern of its screen.
+  /// replaced by the route pattern of its screen. Clicks on a screen the app
+  /// does not know are dropped, and so is an event left with none. Every other
+  /// event passes untouched.
   JSAny? scrub(JSAny? captureResult) {
-    final result = captureResult as JSObject;
-    final properties = result.getProperty<JSObject>('properties'.toJS);
-    final data = properties.getProperty<JSObject>(r'$heatmap_data'.toJS);
-    final clean = JSObject();
-    for (final key in _keysOf(data)) {
-      final pattern = urls.sanitize(key);
-      clean.setProperty(pattern!.toJS, data.getProperty<JSAny?>(key.toJS));
+    if (captureResult == null) return null;
+    try {
+      final result = captureResult as JSObject;
+      if (result.getProperty<JSAny?>('event'.toJS).dartify() != _heatmapEvent) {
+        return captureResult;
+      }
+      final properties = result.getProperty<JSObject?>('properties'.toJS);
+      final data = properties?.getProperty<JSObject?>(_dataKey.toJS);
+      if (properties == null || data == null) return null;
+
+      final byPattern = <String, List<JSAny?>>{};
+      for (final address in _keysOf(data)) {
+        final pattern = urls.sanitize(address);
+        if (pattern == null) continue;
+        final clicks = data.getProperty<JSArray<JSAny?>>(address.toJS);
+        byPattern.putIfAbsent(pattern, () => []).addAll(clicks.toDart);
+      }
+      if (byPattern.isEmpty) return null;
+
+      final clean = JSObject();
+      byPattern.forEach(
+        (pattern, clicks) => clean.setProperty(pattern.toJS, clicks.toJS),
+      );
+      properties.setProperty(_dataKey.toJS, clean);
+      return captureResult;
+    } catch (_) {
+      // A heatmap event in a shape nobody planned for may still carry an
+      // address, so it is dropped rather than sent as it is.
+      return null;
     }
-    properties.setProperty(r'$heatmap_data'.toJS, clean);
-    return captureResult;
   }
+
+  static const _heatmapEvent = r'$$heatmap';
+  static const _dataKey = r'$heatmap_data';
 
   static List<String> _keysOf(JSObject object) => globalContext
       .getProperty<JSObject>('Object'.toJS)
