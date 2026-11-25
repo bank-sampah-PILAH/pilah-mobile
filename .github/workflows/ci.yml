@@ -157,6 +157,7 @@ jobs:
           --coverage-path=coverage/browser.lcov.info
           test/browser/file_downloader_test.dart
           test/browser/posthog_web_client_test.dart
+          test/browser/posthog_web_heatmap_test.dart
           test/core/analytics/analytics_props_test.dart
 
       # The factory builds the recording client, which draws on Flutter, so
