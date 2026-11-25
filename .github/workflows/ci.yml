@@ -435,6 +435,7 @@ jobs:
   # Read-only exposure scan of the just-deployed staging web dashboard. Runs only when
   # verify and deploy_web_staging succeeded (skipped otherwise). It does not undo the
   # deploy; a finding outside KNOWN_NOISE makes this job, and so the commit's CI run, red.
+  # It scans the URL the deploy just used, so no STAGING_WEB_URL variable is needed here.
   nuclei_post_deploy:
     name: Exposure scan (Nuclei, staging web)
     needs: deploy_web_staging
@@ -442,6 +443,7 @@ jobs:
     uses: ./.github/workflows/nuclei-scan.yml
     with:
       environment: staging
+      target_url: ${{ needs.deploy_web_staging.outputs.url }}
     permissions:
       contents: read
 

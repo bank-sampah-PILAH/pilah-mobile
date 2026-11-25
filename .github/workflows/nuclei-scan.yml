@@ -10,10 +10,11 @@
 # no PR and never rolls back a deploy; it only flags the commit.
 #
 # Passive GET requests only. The target is a fixed choice, not a free URL. Only a workflow
-# in this repo can pass target_url (the production deploy does, with the URL it just read
-# from Cloud Run). Otherwise URLs come from repository variables
+# in this repo can use this one at all, and only those can pass target_url: the staging
+# deploy passes its own URL and the production deploy the URL it just read from Cloud Run.
+# Cron and manual runs read repository variables
 # (Settings -> Secrets and variables -> Actions -> Variables):
-#   STAGING_WEB_URL      (required for staging)
+#   STAGING_WEB_URL      (staging cron and manual runs)
 #   PRODUCTION_WEB_URL   (production cron and manual runs; the Cloud Run URL is
 #                         generated, read it from the deploy job summary, never guess)
 name: Nuclei scan
@@ -29,7 +30,7 @@ on:
         type: string
         default: staging
       target_url:
-        description: HTTPS URL to scan; overrides the repository variable (the production deploy passes the URL it just deployed)
+        description: HTTPS URL to scan; overrides the repository variable (the deploys pass the URL they just deployed)
         type: string
         default: ""
   workflow_dispatch:
@@ -65,24 +66,31 @@ jobs:
     steps:
       - name: Resolve target
         run: |
+          # This workflow is reusable from a public repository. The target_url input and
+          # the repository variables both resolve in the caller's repository, so any other
+          # repository could point the scan at a host of its choosing.
+          if [ "$GITHUB_REPOSITORY" != "bank-sampah-PILAH/pilah-mobile" ]; then
+            echo "::error::This scan only runs from bank-sampah-PILAH/pilah-mobile, not '$GITHUB_REPOSITORY'."; exit 1
+          fi
           case "$ENVIRONMENT" in
             staging) url="$STAGING_WEB_URL" ;;
             production) url="$PRODUCTION_WEB_URL" ;;
             *) echo "::error::environment must be staging or production, got '$ENVIRONMENT'."; exit 1 ;;
           esac
-          # A caller (the production deploy) can pass the URL it just deployed.
+          # A caller (the staging and production deploys) passes the URL it just deployed.
           url="${TARGET_URL_INPUT:-$url}"
-          case "$url" in
-            https://*) ;;
-            *) echo "::error::Missing or non-HTTPS web URL for $ENVIRONMENT; set the ${ENVIRONMENT^^}_WEB_URL repository variable."; exit 1 ;;
-          esac
-          # Reduce the URL to host[:port]: a trailing slash, a path or an explicit port
-          # must not leak into the TLS target (host:443:443) or the result file names.
+          # Exactly https://host[:port] with an optional trailing slash. The result is written
+          # to $GITHUB_ENV one KEY=value per line, so a newline (or any other character
+          # outside this shape) must not get through, and a path or query is rejected rather
+          # than silently dropped, which would change what gets scanned. The value is not
+          # echoed back: it is untrusted and could carry workflow commands.
+          if ! [[ "$url" =~ ^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/?$ ]]; then
+            echo "::error::Missing or unsupported web URL for $ENVIRONMENT: expected https://host[:port] with no path, query, userinfo or IPv6 literal (repository variable ${ENVIRONMENT^^}_WEB_URL)."; exit 1
+          fi
+          # Reduce the URL to host[:port]: a trailing slash or an explicit port must not
+          # leak into the TLS target (host:443:443) or the result file names.
           hostport="${url#https://}"
-          hostport="${hostport%%[/?#]*}"
-          case "$hostport" in
-            ""|*@*|*\[*) echo "::error::Unsupported web URL '$url' (userinfo and IPv6 literals are not allowed)."; exit 1 ;;
-          esac
+          hostport="${hostport%/}"
           host="${hostport%%:*}"
           port=443
           case "$hostport" in *:*) port="${hostport#*:}" ;; esac
