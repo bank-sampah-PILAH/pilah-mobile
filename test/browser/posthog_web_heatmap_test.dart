@@ -49,4 +49,23 @@ void main() {
 
     expect(_scrollY(posthog), 480);
   });
+
+  test(
+      'while a click is handled, the page is where the tapped list is scrolled',
+      () async {
+    final posthog = _fakePosthog();
+    heatmap = _heatmap(_Scroll())..install(posthog);
+    double? seenByLibrary;
+    // posthog-js listens on the document; this runs there, after the window.
+    final listener = ((web.Event _) => seenByLibrary = _scrollY(posthog)).toJS;
+    web.document.addEventListener('click', listener);
+    addTearDown(() => web.document.removeEventListener('click', listener));
+
+    web.document.body!.dispatchEvent(
+        web.MouseEvent('click', web.MouseEventInit(bubbles: true)));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(seenByLibrary, 120);
+    expect(_scrollY(posthog), 480);
+  });
 }
