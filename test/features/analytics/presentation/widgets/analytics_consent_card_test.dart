@@ -71,6 +71,8 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.textContaining('Posisi ketukan dan gerakan kursor ikut dicatat'),
+        findsOneWidget);
     expect(find.textContaining('semua tulisan'), findsNothing);
     expect(find.textContaining('Isi layar'), findsNothing);
   });

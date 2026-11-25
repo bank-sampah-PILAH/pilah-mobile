@@ -106,7 +106,8 @@ void main() {
 
   testWidgets(
       'where the screen is recorded, says the site address and its files are '
-      'part of the recording while the page route is not sent', (tester) async {
+      'part of the recording while the page is named by its pattern only',
+      (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -123,7 +124,8 @@ void main() {
     await tester.tap(find.text('buka'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Rute halaman tidak dikirim'), findsOneWidget);
+    expect(find.textContaining('Halaman hanya disebut dengan pola rutenya'),
+        findsOneWidget);
     expect(find.textContaining('Di web, alamat situs dan berkas bawaannya'),
         findsOneWidget);
     expect(find.textContaining('Alamat halaman tidak dikirim'), findsNothing);
