@@ -1,5 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/nasabah_pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/pengumuman_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/client/network_utils.dart';
 import 'package:pilah_mobile/core/database/secure_database.dart';
@@ -16,6 +28,14 @@ import '../../support/auth_support.dart';
 import '../../support/auth_data_support.dart';
 import '../../support/profile_support.dart';
 import '../../support/stub_api.dart';
+import '../../support/pengumuman_support.dart';
+import '../../support/transaksi_support.dart';
+
+class _UnusedOnboardingSource implements OnboardingRemoteDataSource {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnsupportedError('Only the local profile draft is used');
+}
 
 void main() {
   tearDown(() => di.reset());
@@ -85,6 +105,44 @@ void main() {
       () async {
     final api = StubApi();
     final stack = AuthStack(api);
+    final announcementPage = {
+      'count': 1,
+      'next': null,
+      'results': [
+        {
+          'id': 'old-announcement',
+          'bank_sampah_id': 'old-bank',
+          'judul': 'Private old announcement',
+          'isi': 'Old role information',
+          'status': 'terbit',
+        }
+      ],
+    };
+    api.on('GET', '/api/v1/pengumuman', json: announcementPage);
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: announcementPage);
+    final transaction = {
+      'id': 'old-transaction',
+      'nasabah_nama': 'Old role customer',
+      'total_berat_kg': '1.5',
+      'total_nilai': 1000,
+    };
+    api.on('GET', '/api/v1/transaksi', json: {
+      'results': [transaction]
+    });
+    api.on('GET', '/api/v1/aktivitas', json: {
+      'count': 1,
+      'next': null,
+      'results': [
+        {'tipe': 'setoran', 'data': transaction}
+      ],
+      'summary': {
+        'jumlah_transaksi': 1,
+        'total_berat': '1.5',
+        'total_setoran': 1000,
+        'total_pencairan': 0,
+        'saldo': 1000
+      },
+    });
     api.on('POST', '/api/v1/auth/switch-role',
         json: authPayload(role: 'nasabah', nextStep: 'nasabah_dashboard'));
     di.registerSingleton<NetworkService>(api.network);
@@ -103,8 +161,53 @@ void main() {
     final container = ProviderContainer(overrides: [
       authenticationProvider.overrideWith(() => auth),
       profileProvider.overrideWith(() => profile),
+      pengumumanProvider.overrideWith(
+          () => PengumumanNotifier(buildPengumumanRepository(api))),
+      nasabahPengumumanProvider.overrideWith(() =>
+          NasabahPengumumanNotifier(NasabahPengumumanRepository(api.network))),
+      transaksiProvider.overrideWith(() => buildTransaksiNotifier(api)),
+      riwayatAktivitasProvider
+          .overrideWith(() => buildRiwayatAktivitasNotifier(api)),
+      onboardingProvider
+          .overrideWith(() => OnboardingNotifier(_UnusedOnboardingSource())),
     ]);
     addTearDown(container.dispose);
+    final announcements = container.listen(pengumumanProvider, (_, __) {});
+    final customerAnnouncements =
+        container.listen(nasabahPengumumanProvider, (_, __) {});
+    addTearDown(announcements.close);
+    addTearDown(customerAnnouncements.close);
+    await Future.wait([
+      container.read(pengumumanProvider.notifier).loadPengumuman(),
+      container.read(nasabahPengumumanProvider.notifier).load(),
+      container.read(transaksiProvider.notifier).loadTransaksi(),
+      container.read(riwayatAktivitasProvider.notifier).load(),
+    ]);
+    container.read(onboardingProvider.notifier).saveProfileDraft(
+        const CompleteProfileRequest(
+            nama: 'Old profile draft',
+            jenisKelamin: 'perempuan',
+            tanggalLahir: '1990-04-17',
+            noHp: '81234567890'));
+    expect(
+        (container.read(pengumumanProvider) as PengumumanLoaded)
+            .items
+            .single
+            .judul,
+        'Private old announcement');
+    expect(container.read(nasabahPengumumanProvider).items.single.id,
+        'old-announcement');
+    expect(
+        (container.read(transaksiProvider) as TransaksiLoaded)
+            .transaksiList
+            .single
+            .transactions
+            .single
+            .id,
+        'old-transaction');
+    expect(container.read(riwayatAktivitasProvider).items.single.title,
+        'Old role customer');
+    expect(container.read(onboardingProvider.notifier).hasProfileDraft, isTrue);
     container.read(profileProvider);
     profile.setStateForTest(const ProfileState(
         status: ProfileStatus.loaded,
@@ -118,6 +221,14 @@ void main() {
         published = true;
         expect(container.read(profileProvider).waTemplate, isNull);
         expect(container.read(aktivitasSelectionProvider), isNull);
+        expect(container.read(pengumumanProvider), isA<PengumumanInitial>());
+        expect(container.read(nasabahPengumumanProvider),
+            const NasabahPengumumanState());
+        expect(container.read(transaksiProvider), isA<TransaksiInitial>());
+        expect(container.read(riwayatAktivitasProvider),
+            const RiwayatAktivitasState());
+        expect(container.read(onboardingProvider.notifier).hasProfileDraft,
+            isFalse);
         expect(api.utils.accessToken, 'access-1');
         expect(api.utils.refreshToken, 'refresh-1');
       }
