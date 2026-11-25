@@ -61,8 +61,8 @@ class PosthogWebHeatmap {
   /// The `before_send` step for a heatmap event: its clicks are filed under the
   /// address they happened on, which can hold an id, so each address is
   /// replaced by the route pattern of its screen. Clicks on a screen the app
-  /// does not know are dropped, and so is an event left with none. Every other
-  /// event passes untouched.
+  /// does not know are dropped, and so are dead clicks, and so is an event left
+  /// with nothing. Every other event passes untouched.
   JSAny? scrub(JSAny? captureResult) {
     if (captureResult == null) return null;
     try {
@@ -78,9 +78,10 @@ class PosthogWebHeatmap {
       for (final address in _keysOf(data)) {
         final pattern = urls.sanitize(address);
         if (pattern == null) continue;
-        final clicks = data.getProperty<JSArray<JSAny?>>(address.toJS);
-        byPattern.putIfAbsent(pattern, () => []).addAll(clicks.toDart);
+        final points = data.getProperty<JSArray<JSAny?>>(address.toJS).toDart;
+        byPattern.putIfAbsent(pattern, () => []).addAll(points.where(_isKept));
       }
+      byPattern.removeWhere((_, points) => points.isEmpty);
       if (byPattern.isEmpty) return null;
 
       final clean = JSObject();
@@ -95,6 +96,12 @@ class PosthogWebHeatmap {
       return null;
     }
   }
+
+  /// A canvas has no page changes for the library to watch, so it takes every
+  /// click for a dead one and its dead clicks say nothing.
+  static bool _isKept(JSAny? point) =>
+      (point as JSObject?)?.getProperty<JSAny?>('type'.toJS).dartify() !=
+      'deadclick';
 
   static const _heatmapEvent = r'$$heatmap';
   static const _dataKey = r'$heatmap_data';
