@@ -4,6 +4,9 @@ library;
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
+import 'package:pilah_mobile/core/analytics/heatmap/heatmap_url_sanitizer.dart';
+import 'package:pilah_mobile/core/analytics/heatmap/posthog_web_heatmap.dart';
+import 'package:pilah_mobile/core/analytics/heatmap/scroll_position_source.dart';
 import 'package:pilah_mobile/core/analytics/posthog_web_client.dart';
 import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 import 'package:test/test.dart';
@@ -71,6 +74,8 @@ void main() {
       ..delete('__initCalls'.toJS)
       ..delete('__initArgs'.toJS)
       ..delete('__optInOptions'.toJS)
+      ..delete('__toolbarState'.toJS)
+      ..delete(toolbarLaunchStateKey.toJS)
       ..delete('__emptyLibraryLoaded'.toJS);
   });
 
@@ -755,4 +760,105 @@ void main() {
     expect(PosthogWebClient.screenClassFor(1023.9), 'tablet');
     expect(PosthogWebClient.screenClassFor(5000), 'desktop');
   });
+
+  group('heatmaps', () {
+    PosthogWebClient withHeatmap() => PosthogWebClient(
+          apiKey: 'phc_test_key',
+          host: 'https://us.i.posthog.com',
+          libraryUrl: _fakeLibraryUrl,
+          heatmap: PosthogWebHeatmap(
+            scroll: _FixedScroll(),
+            urls: HeatmapUrlSanitizer(const ['/nasabah/:id']),
+          ),
+        );
+
+    JSObject initOptions() => globalContext
+        .getProperty<JSObject>('__initArgs'.toJS)
+        .getProperty<JSObject>(1.toJS);
+
+    test('are switched on only when the app can say where its page is scrolled',
+        () async {
+      await withHeatmap().start();
+
+      final options = initOptions().dartify()! as Map<Object?, Object?>;
+      expect(options['enable_heatmaps'], isTrue);
+    });
+
+    test('the library reads the scroll position of the app', () async {
+      await withHeatmap().start();
+
+      final manager = globalContext
+          .getProperty<JSObject>('posthog'.toJS)
+          .getProperty<JSObject>('scrollManager'.toJS);
+      expect(manager.callMethod<JSNumber>('scrollY'.toJS).toDartDouble, 480);
+    });
+
+    test('a heatmap event is sent under its route pattern, an error as before',
+        () async {
+      await withHeatmap().start();
+      final beforeSend =
+          initOptions().getProperty<JSFunction>('before_send'.toJS);
+
+      final heatmap = beforeSend.callAsFunction(
+          null,
+          {
+            'event': r'$$heatmap',
+            'properties': {
+              r'$heatmap_data': {
+                'https://app.example.com/#/nasabah/77': [
+                  {'x': 1, 'y': 2, 'type': 'click'},
+                ],
+              },
+            },
+          }.jsify())! as JSObject;
+      final error = beforeSend.callAsFunction(
+          null,
+          {
+            'event': r'$exception',
+            'properties': {
+              r'$exception_list': [
+                {'type': 'StateError', 'value': 'Budi Santoso'},
+              ],
+            },
+          }.jsify())! as JSObject;
+
+      expect(
+        ((heatmap.dartify()! as Map)['properties'] as Map)[r'$heatmap_data'],
+        {
+          'https://app.example.com/#/nasabah/:id': [
+            {'x': 1, 'y': 2, 'type': 'click'},
+          ],
+        },
+      );
+      expect(
+        (((error.dartify()! as Map)['properties'] as Map)[r'$exception_list']
+                as List)
+            .single,
+        {'type': 'StateError', 'value': 'StateError'},
+      );
+    });
+
+    test('a launch link opens the toolbar once the library is up', () async {
+      globalContext.setProperty(
+        toolbarLaunchStateKey.toJS,
+        {'token': 'abc'}.jsify(),
+      );
+
+      await withHeatmap().start();
+
+      expect(_libraryCalls(), contains('loadToolbar'));
+      expect(
+        globalContext.getProperty<JSAny?>('__toolbarState'.toJS).dartify(),
+        {'token': 'abc'},
+      );
+    });
+  });
+}
+
+class _FixedScroll implements ScrollPositionSource {
+  @override
+  double get tapOffset => 120;
+
+  @override
+  double get liveOffset => 480;
 }

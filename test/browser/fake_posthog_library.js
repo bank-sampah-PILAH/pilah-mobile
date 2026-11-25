@@ -28,4 +28,11 @@ window.posthog = {
     window.__registered.push(props);
   },
   reset: function () { window.__calls.push('reset'); },
+  // What the heatmap bridge replaces and calls.
+  scrollManager: { scrollY: function () { return 0; }, scrollX: function () { return 7; } },
+  loadToolbar: function (state) {
+    window.__calls.push('loadToolbar');
+    window.__toolbarState = state;
+    return true;
+  },
 };
