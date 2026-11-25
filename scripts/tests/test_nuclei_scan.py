@@ -2,6 +2,7 @@
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import tempfile
@@ -184,7 +185,72 @@ class NucleiScanGateTest(unittest.TestCase):
             self.assertNotEqual(run_step("Gate", {}, directory).returncode, 0)
 
 
+def template_paths():
+    script = steps()["Scan"]["run"]
+    http = re.findall(r"^\s+(http/[\w/-]+)(?: \\|; do)$", script, re.MULTILINE)
+    ssl_block = re.search(r"for t in (expired-ssl.*?); do", script, re.DOTALL)
+    ssl = [f"ssl/{name}" for name in ssl_block.group(1).replace("\\", " ").split()]
+    return [*http, *ssl]
+
+
+class NucleiScanTemplatesTest(unittest.TestCase):
+    def scan(self, present):
+        with tempfile.TemporaryDirectory() as directory:
+            work = pathlib.Path(directory)
+            (work / "bin").mkdir()
+            fake_docker = work / "bin" / "docker"
+            fake_docker.write_text("#!/bin/sh\nexit 0\n")
+            fake_docker.chmod(0o700)
+            for template in present:
+                path = work / "nuclei-templates" / f"{template}.yaml"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("id: x\n")
+            return run_step(
+                "Scan",
+                {
+                    "NUCLEI_IMAGE": "nuclei:test",
+                    "TARGET": "https://web.example",
+                    "TLS_TARGET": "web.example:443",
+                    "RESULT_NAME": "web.example-443",
+                    "PATH": f"{work / 'bin'}:{os.environ['PATH']}",
+                },
+                directory,
+            )
+
+    def test_templates_are_downloaded_with_the_update_check_left_on(self):
+        # With -duc, `-update-templates` downloads nothing into an empty directory and
+        # still exits 0, so on a fresh runner the scan would start with no templates.
+        script = steps()["Fetch templates"]["run"]
+        self.assertIn("-update-templates", script)
+        self.assertNotIn("-duc", script)
+
+    def test_scan_stops_when_a_template_it_needs_is_missing(self):
+        # Nuclei only prints [ERR] for a missing template and scans with the rest, which
+        # narrows coverage without a red run; and with none it dies on a confusing error.
+        paths = template_paths()
+        self.assertEqual(len(paths), 23)
+        complete = self.scan(paths)
+        self.assertEqual(complete.returncode, 0, complete.stdout + complete.stderr)
+        for absent in (paths[0], paths[-1]):
+            with self.subTest(absent=absent):
+                partial = self.scan([p for p in paths if p != absent])
+                self.assertNotEqual(partial.returncode, 0)
+                self.assertIn(absent, partial.stdout + partial.stderr)
+        self.assertNotEqual(self.scan([]).returncode, 0)
+
+
 class NucleiScanWiringTest(unittest.TestCase):
+    def test_third_party_code_is_pinned_to_an_immutable_reference(self):
+        # A tag (v4, v3.11.0) can be moved by its owner, so the scan would start running
+        # different code with no commit here. A commit SHA or an image digest cannot move.
+        job = workflow("nuclei-scan.yml")["jobs"]["nuclei-scan"]
+        self.assertRegex(job["env"]["NUCLEI_IMAGE"], r"@sha256:[0-9a-f]{64}$")
+        used = [step["uses"] for step in job["steps"] if "uses" in step]
+        self.assertTrue(used)
+        for action in used:
+            with self.subTest(action=action):
+                self.assertRegex(action, r"@[0-9a-f]{40}$")
+
     def test_staging_scan_follows_the_staging_web_deploy(self):
         job = workflow("ci.yml")["jobs"]["nuclei_post_deploy"]
         self.assertEqual(job["needs"], "deploy_web_staging")
