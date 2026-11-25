@@ -5,7 +5,11 @@ import 'package:pilah_mobile/core/analytics/posthog_mobile_client.dart';
 
 /// On Android and iOS a configured build sends events through PostHog's native
 /// SDK; on any other platform analytics stays off.
-AnalyticsClient createAnalyticsClient(AnalyticsConfig? config) {
+/// [routePatterns] are for the web client, which files heatmaps under them.
+AnalyticsClient createAnalyticsClient(
+  AnalyticsConfig? config, {
+  List<String> routePatterns = const [],
+}) {
   final native = defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS;
   if (config == null || !native) return const NoopAnalyticsClient();

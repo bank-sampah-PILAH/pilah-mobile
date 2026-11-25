@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/route_patterns.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/locked_routes.dart';
@@ -449,6 +450,10 @@ class AppRouterConfig {
   );
 
   static GoRouter getRouter() => _router;
+
+  /// The route patterns of every screen, such as `/nasabah/:id`.
+  static List<String> routePatterns() =>
+      routePatternsOf(_router.configuration.routes);
 
   /// The route pattern of the screen showing now, such as `/nasabah/:id`, or
   /// null before the router has a page.
