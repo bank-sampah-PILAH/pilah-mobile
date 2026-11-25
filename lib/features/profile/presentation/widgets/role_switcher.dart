@@ -46,22 +46,9 @@ class RoleSwitcher extends StatelessWidget {
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('Role saya', style: Theme.of(context).textTheme.titleMedium),
-            for (final role in const ['pengelola', 'nasabah'])
-              if (auth.ownedRoles.contains(role))
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(role == 'nasabah' ? 'Nasabah' : 'Pengurus'),
-                  subtitle: role == auth.role ? const Text('Aktif') : null,
-                  trailing: role == auth.role
-                      ? const Icon(Icons.check_circle_outline)
-                      : AppButton(
-                          label: 'Gunakan role ini',
-                          expand: false,
-                          variant: AppButtonVariant.outlined,
-                          onPressed: coordinator == null || coordinator!.busy
-                              ? null
-                              : () => coordinator!.switchTo(role)),
-                ),
+            for (final role in const ['pengelola', 'nasabah']
+                .where(auth.ownedRoles.contains))
+              _roleTile(role),
             if (coordinator?.busy == true)
               const LinearProgressIndicator(semanticsLabel: 'Mengganti role'),
             if (coordinator?.error != null)
@@ -69,4 +56,22 @@ class RoleSwitcher extends StatelessWidget {
           ]),
         ),
       );
+
+  Widget _roleTile(String role) {
+    final active = role == auth.role;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(role == 'nasabah' ? 'Nasabah' : 'Pengurus'),
+      subtitle: active ? const Text('Aktif') : null,
+      trailing: active
+          ? const Icon(Icons.check_circle_outline)
+          : AppButton(
+              label: 'Gunakan role ini',
+              expand: false,
+              variant: AppButtonVariant.outlined,
+              onPressed: coordinator == null || coordinator!.busy
+                  ? null
+                  : () => coordinator!.switchTo(role)),
+    );
+  }
 }
