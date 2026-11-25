@@ -147,4 +147,38 @@ void main() {
         .getProperty<JSObject>('scrollManager'.toJS);
     expect(manager.callMethod<JSNumber>('scrollY'.toJS).toDartDouble, 300);
   });
+
+  test('files a heatmap under the route patterns it was given', () async {
+    final withRoutes = PosthogWebRecordingClient(
+      apiKey: 'phc_test',
+      host: 'https://us.i.posthog.com',
+      libraryUrl: _fakeLibraryUrl,
+      routePatterns: const ['/nasabah/:id'],
+    );
+    await withRoutes.start();
+    final options = globalContext
+        .getProperty<JSObject>('__initArgs'.toJS)
+        .getProperty<JSObject>(1.toJS);
+
+    final sent =
+        options.getProperty<JSFunction>('before_send'.toJS).callAsFunction(
+              null,
+              {
+                'event': r'$$heatmap',
+                'properties': {
+                  r'$heatmap_data': {
+                    'https://app.example.com/#/nasabah/77': [
+                      {'x': 1, 'y': 2, 'type': 'click'},
+                    ],
+                  },
+                },
+              }.jsify(),
+            )! as JSObject;
+
+    expect(
+      (((sent.dartify()! as Map)['properties'] as Map)[r'$heatmap_data'] as Map)
+          .keys,
+      ['https://app.example.com/#/nasabah/:id'],
+    );
+  });
 }
