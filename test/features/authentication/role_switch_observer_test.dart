@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/authentication/application/role_switch_coordinator.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
@@ -11,6 +12,54 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/role_s
 import '../../support/auth_support.dart';
 
 void main() {
+  testWidgets('default error feedback stays visible on the current profile',
+      (tester) async {
+    const current = AuthEntity(
+        id: 'u1',
+        name: '',
+        email: '',
+        photoUrl: '',
+        token: 'old',
+        role: 'pengelola',
+        roles: ['nasabah', 'pengelola']);
+    final auth = authNotifierIn(Authenticated(authEntity: current));
+    final destinations = <String>[];
+    final coordinator = RoleSwitchCoordinator(
+      readSession: () => current,
+      requestRole: (_) => Future.error(StateError('server refused')),
+      persistSession: (_, __) async {},
+      resetRoleState: () {},
+      publishSession: (_) => fail('failed switch must not publish'),
+    );
+    final container = ProviderContainer(overrides: [
+      authenticationProvider.overrideWith(() => auth),
+      roleSwitchProvider.overrideWith((_) => coordinator),
+    ]);
+    addTearDown(container.dispose);
+    final before = container.read(authenticationProvider);
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: RoleSwitchObserver(
+        navigate: destinations.add,
+        child: MaterialApp(
+            navigatorKey: rootNavigatorKey,
+            home: const Scaffold(body: Text('current profile'))),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(rootNavigatorKey.currentContext, isNotNull);
+    await coordinator.switchTo('nasabah');
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Gagal mengganti role'), findsOneWidget);
+    expect(find.textContaining('Role sebelumnya tetap aktif'), findsOneWidget);
+    expect(find.text('current profile'), findsOneWidget);
+    expect(container.read(authenticationProvider), same(before));
+    expect(destinations, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('observer reports failures without navigating or signing out',
       (tester) async {
     const current = AuthEntity(
