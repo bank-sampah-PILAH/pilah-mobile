@@ -40,6 +40,8 @@ class PosthogWebHeatmap {
       'scrollY'.toJS,
       (() => (_clicking ? scroll.tapOffset : scroll.liveOffset).toJS).toJS,
     );
+    // Flutter pages here scroll up and down only.
+    manager.setProperty('scrollX'.toJS, (() => 0.toJS).toJS);
   }
 
   void dispose() {
