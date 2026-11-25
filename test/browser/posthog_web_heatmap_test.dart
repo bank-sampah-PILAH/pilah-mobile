@@ -128,5 +128,67 @@ void main() {
         {'x': 10, 'y': 20, 'type': 'click'},
       );
     });
+
+    test('two addresses of one pattern are filed together', () {
+      final result = scrub({
+        'event': r'$$heatmap',
+        'properties': {
+          r'$heatmap_data': {
+            '$origin/#/nasabah/1': [
+              {'x': 1, 'y': 2, 'type': 'click'},
+            ],
+            '$origin/#/nasabah/2': [
+              {'x': 3, 'y': 4, 'type': 'click'},
+            ],
+          },
+        },
+      });
+
+      expect(sentData(result)['$origin/#/nasabah/:id'] as List, hasLength(2));
+    });
+
+    test('clicks on a screen the app does not know are not sent', () {
+      final result = scrub({
+        'event': r'$$heatmap',
+        'properties': {
+          r'$heatmap_data': {
+            '$origin/#/rahasia/budi': [
+              {'x': 1, 'y': 2, 'type': 'click'},
+            ],
+            '$origin/#/nasabah/1': [
+              {'x': 3, 'y': 4, 'type': 'click'},
+            ],
+          },
+        },
+      });
+
+      expect(sentData(result).keys, ['$origin/#/nasabah/:id']);
+    });
+
+    test('an event left with no clicks is dropped', () {
+      final result = scrub({
+        'event': r'$$heatmap',
+        'properties': {
+          r'$heatmap_data': {
+            '$origin/#/rahasia/budi': [
+              {'x': 1, 'y': 2, 'type': 'click'},
+            ],
+          },
+        },
+      });
+
+      expect(result, isNull);
+    });
+
+    test('an event that is not a heatmap passes untouched', () {
+      final event = {
+        'event': 'setoran_disimpan',
+        'properties': {'jumlah_item': 2},
+      }.jsify();
+
+      heatmap = _heatmap(_Scroll());
+
+      expect(identical(heatmap.scrub(event), event), isTrue);
+    });
   });
 }
