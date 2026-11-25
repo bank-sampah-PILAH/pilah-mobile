@@ -59,6 +59,10 @@ class RoleSwitcher extends StatelessWidget {
 
   Widget _roleTile(String role) {
     final active = role == auth.role;
+    final controller = coordinator;
+    final VoidCallback? onSwitch = controller == null || controller.busy
+        ? null
+        : () => controller.switchTo(role);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(role == 'nasabah' ? 'Nasabah' : 'Pengurus'),
@@ -69,9 +73,7 @@ class RoleSwitcher extends StatelessWidget {
               label: 'Gunakan role ini',
               expand: false,
               variant: AppButtonVariant.outlined,
-              onPressed: coordinator == null || coordinator!.busy
-                  ? null
-                  : () => coordinator!.switchTo(role)),
+              onPressed: onSwitch),
     );
   }
 }
