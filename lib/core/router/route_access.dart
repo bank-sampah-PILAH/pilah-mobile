@@ -15,6 +15,7 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 /// `/nasabah` the way a plain string prefix would have it.
 const _access = <String, Set<String>>{
   '/transaksi-baru': {'pengelola'},
+  superadminDashboardLocation: {'superadmin'},
 };
 
 /// Where a refused [role] is sent. Its own home, so the bounce lands somewhere
