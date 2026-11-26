@@ -13,7 +13,18 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 /// segments. `/transaksi-baru/panel` and `/jadwal/:id` therefore need no entry
 /// of their own, while `/nasabah-dashboard` is not treated as a child of
 /// `/nasabah` the way a plain string prefix would have it.
+/// Listed with no roles: open to any session. Whether there is a session at
+/// all is settled before the role is ever consulted, by [sessionRestoreRedirect]
+/// and [signedOutRedirect].
+const _anyRole = <String>{};
+
 const _access = <String, Set<String>>{
+  '/splash': _anyRole,
+  '/login': _anyRole,
+  '/choose-role': _anyRole,
+  '/forgot_password': _anyRole,
+  '/invite': _anyRole,
+  '/legal': _anyRole,
   '/transaksi-baru': {'pengelola'},
   superadminDashboardLocation: {'superadmin'},
 };
@@ -40,6 +51,7 @@ Set<String>? _entryFor(String path) {
 /// `null` when [role] may open [path], otherwise where to send it instead.
 String? roleRouteRedirect({required String path, required String? role}) {
   final allowed = _entryFor(path);
-  if (allowed != null && role != null && allowed.contains(role)) return null;
-  return _homeFor(role);
+  if (allowed == null) return _homeFor(role);
+  if (allowed.isEmpty) return null;
+  return role != null && allowed.contains(role) ? null : _homeFor(role);
 }
