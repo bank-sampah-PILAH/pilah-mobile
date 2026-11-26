@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/profile/presentation/widgets/role_switcher.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -137,37 +138,45 @@ class _ProfilNasabahBodyState extends State<_ProfilNasabahBody> {
   }
 }
 
-class _IdentityCard extends StatelessWidget {
+class _IdentityCard extends ConsumerWidget {
   const _IdentityCard({required this.name});
   final String name;
   @override
-  Widget build(BuildContext context) => NasabahCard(
-      padding: 24,
-      radius: 24,
-      child: Column(children: [
-        CircleAvatar(
-            radius: 36,
-            backgroundColor: NasabahStyle.emeraldLight,
-            child: Text(
-                name.isEmpty ? 'N' : name.characters.first.toUpperCase(),
-                style: NasabahStyle.text(28,
-                    weight: AppFontWeight.bold,
-                    color: NasabahStyle.emeraldDark))),
-        const SizedBox(height: 16),
-        Text(name.isEmpty ? 'Nama belum tersedia' : name,
-            textAlign: TextAlign.center,
-            style: NasabahStyle.text(20, weight: AppFontWeight.bold)),
-        const SizedBox(height: 12),
-        Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-                color: NasabahStyle.emeraldLight,
-                borderRadius: BorderRadius.circular(AppRadius.sm)),
-            child: Text('Nasabah',
-                style: NasabahStyle.text(13,
-                    weight: AppFontWeight.semibold,
-                    color: NasabahStyle.emeraldDark))),
-      ]));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    final auth = state is Authenticated ? state.authEntity : null;
+    return NasabahCard(
+        padding: 24,
+        radius: 24,
+        child: Column(children: [
+          CircleAvatar(
+              radius: 36,
+              backgroundColor: NasabahStyle.emeraldLight,
+              child: Text(
+                  name.isEmpty ? 'N' : name.characters.first.toUpperCase(),
+                  style: NasabahStyle.text(28,
+                      weight: AppFontWeight.bold,
+                      color: NasabahStyle.emeraldDark))),
+          const SizedBox(height: 16),
+          Text(name.isEmpty ? 'Nama belum tersedia' : name,
+              textAlign: TextAlign.center,
+              style: NasabahStyle.text(20, weight: AppFontWeight.bold)),
+          const SizedBox(height: 12),
+          Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                  color: NasabahStyle.emeraldLight,
+                  borderRadius: BorderRadius.circular(AppRadius.sm)),
+              child: Text('Nasabah',
+                  style: NasabahStyle.text(13,
+                      weight: AppFontWeight.semibold,
+                      color: NasabahStyle.emeraldDark))),
+          if (RoleSwitcher.isAvailableFor(auth)) ...[
+            const SizedBox(height: AppSpacing.lg),
+            const ConnectedRoleSwitcher(),
+          ],
+        ]));
+  }
 }
 
 class _AccountCard extends StatelessWidget {

@@ -1,6 +1,8 @@
 import 'package:pilah_mobile/core/constants/app_key.dart';
 import 'package:pilah_mobile/core/database/secure_database.dart';
 import 'package:pilah_mobile/core/client/network_utils.dart';
+import 'package:pilah_mobile/core/client/session_tokens.dart';
+import 'dart:convert';
 import 'package:pilah_mobile/features/authentication/data/remote/model/request/save_token_request.dart';
 import 'package:injectable/injectable.dart';
 import 'package:logger/logger.dart';
@@ -40,6 +42,12 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
     // into a failure or leave the signed-in user unable to make authenticated
     // calls: they can finish onboarding now and re-authenticate next launch.
     try {
+      await _database.write(
+          key: SessionTokens.key,
+          value: jsonEncode({
+            'access_token': request.accessToken,
+            'refresh_token': request.refreshToken,
+          }));
       await _database.write(key: AppKey.token, value: request.accessToken);
       await _database.write(
           key: AppKey.refreshToken, value: request.refreshToken);
@@ -55,6 +63,7 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
     // keystore delete below throws.
     await _networkUtils.deleteToken();
     try {
+      await _database.delete(SessionTokens.key);
       await _database.delete(AppKey.token);
       await _database.delete(AppKey.refreshToken);
     } catch (e) {
@@ -63,9 +72,10 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
   }
 
   @override
-  Future<String?> readAccessToken() => _database.getString(AppKey.token);
+  Future<String?> readAccessToken() async =>
+      (await SessionTokens.read(_database)).access;
 
   @override
-  Future<String?> readRefreshToken() =>
-      _database.getString(AppKey.refreshToken);
+  Future<String?> readRefreshToken() async =>
+      (await SessionTokens.read(_database)).refresh;
 }

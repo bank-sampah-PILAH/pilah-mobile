@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/authentication/presentation/widgets/role_switch_observer.dart';
 import 'dart:async';
 import 'package:pilah_mobile/core/client/pengurus_dikeluarkan.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -149,30 +150,33 @@ class App extends StatelessWidget {
             ref.read(authenticationProvider.notifier).logout();
           }
         });
-        return _PendingInviteResumeWatcher(
-          child: _PengurusDikeluarkanWatcher(
-            router: router,
-            child: _BrowserTitleUpdater(
-              router: router,
-              enabled: isWeb,
-              child: AnalyticsRecordingRoot(
-                child: MaterialApp.router(
-                  // The banner is drawn over the whole screen, so it would be in
-                  // every frame of the recording of a debug build.
-                  debugShowCheckedModeBanner: false,
-                  title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
-                  theme: AppTheme.light,
-                  // Material widgets (date pickers, dialog buttons) in
-                  // Indonesian.
-                  locale: const Locale('id'),
-                  supportedLocales: const [Locale('id')],
-                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                  routerConfig: router,
+        return RoleSwitchObserver(
+            navigate: router.go,
+            child: _PendingInviteResumeWatcher(
+              child: _PengurusDikeluarkanWatcher(
+                router: router,
+                child: _BrowserTitleUpdater(
+                  router: router,
+                  enabled: isWeb,
+                  child: AnalyticsRecordingRoot(
+                    child: MaterialApp.router(
+                      // The banner is drawn over the whole screen, so it would be in
+                      // every frame of the recording of a debug build.
+                      debugShowCheckedModeBanner: false,
+                      title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+                      theme: AppTheme.light,
+                      // Material widgets (date pickers, dialog buttons) in
+                      // Indonesian.
+                      locale: const Locale('id'),
+                      supportedLocales: const [Locale('id')],
+                      localizationsDelegates:
+                          GlobalMaterialLocalizations.delegates,
+                      routerConfig: router,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        );
+            ));
       },
     );
     return providerScopeBuilder?.call(app) ?? ProviderScope(child: app);
