@@ -24,4 +24,27 @@ void main() {
       );
     }
   });
+
+  test('a path with no role gate is never refused', () {
+    for (final path in const [
+      '/login',
+      '/splash',
+      '/choose-role',
+      '/forgot_password',
+      '/invite',
+      '/invite/web-token-9',
+      '/legal',
+      '/legal/privacy',
+    ]) {
+      for (final role in const [
+        'nasabah',
+        'pengelola',
+        'superadmin',
+        'tamu',
+      ]) {
+        expect(roleRouteRedirect(path: path, role: role), isNull,
+            reason: '$role $path');
+      }
+    }
+  });
 }
