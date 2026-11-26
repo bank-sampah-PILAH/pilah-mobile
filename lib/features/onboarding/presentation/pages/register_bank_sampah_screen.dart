@@ -17,10 +17,10 @@ import 'package:pilah_mobile/features/onboarding/presentation/providers/onboardi
 import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
-import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/titik_lokasi_field.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 
 class RegisterBankSampahScreen extends ConsumerStatefulWidget {
@@ -56,9 +56,11 @@ class _RegisterBankSampahScreenState
   bool _isLoading = false;
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
-  // A point picked on the map. Optional (PIL-326): skipping leaves the bank
-  // without coordinates, the same as a legacy bank.
-  ({double latitude, double longitude})? _lokasi;
+
+  /// The coordinate section's answer, optional (PIL-326): skipping it leaves
+  /// the bank without coordinates, the same as a legacy bank.
+  TitikLokasiBank? _lokasi;
+
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -142,90 +144,15 @@ class _RegisterBankSampahScreenState
     }
   }
 
-  /// Opens the map picker and keeps the result until submit. A pop without a
-  /// result (back) leaves the current selection untouched.
-  Future<void> _pickLokasi() async {
-    final picked = await Navigator.of(context, rootNavigator: true)
-        .push<({double latitude, double longitude, double radiusKm})>(
-      MaterialPageRoute(
-        builder: (pickerContext) => widget.tileLayerBuilder == null
-            ? const MapPickerPage()
-            : MapPickerPage(tileLayerBuilder: widget.tileLayerBuilder!),
-      ),
-    );
-    if (picked != null && mounted) {
-      // The picker always returns the cari-bank trio; registration stores
-      // just the coordinate pair.
-      setState(
-        () =>
-            _lokasi = (latitude: picked.latitude, longitude: picked.longitude),
+  /// The coordinate section owns its own state and lookups (PIL-326); this
+  /// screen only keeps the answer for the submit.
+  Widget _buildLokasiField() => TitikLokasiField(
+        alamat: () => _alamatController.text,
+        initial: _lokasi,
+        tileLayerBuilder: widget.tileLayerBuilder,
+        onChanged: (titik) => setState(() => _lokasi = titik),
       );
-    }
-  }
 
-  /// Optional coordinate section (PIL-326): shows the picked point and
-  /// lets the penguru change or leave it empty.
-  Widget _buildLokasiField() {
-    return OnboardingFormField(
-      label: 'TITIK LOKASI (OPSIONAL)',
-      description:
-          'Pilih titik bank sampah di peta agar dapat ditemukan pencari. '
-          'Lewati bila tidak tersedia.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: _pickLokasi,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.grey200),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    color: _lokasi != null
-                        ? AppColors.greenDark
-                        : AppColors.grey200,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _lokasi != null
-                          ? '${_lokasi!.latitude.toStringAsFixed(6)}, '
-                              '${_lokasi!.longitude.toStringAsFixed(6)}'
-                          : 'Pilih di peta',
-                      style: TextStyle(
-                        color: _lokasi != null
-                            ? AppColors.black
-                            : AppColors.grey200,
-                      ),
-                    ),
-                  ),
-                  if (_lokasi != null)
-                    AppTapTarget(
-                      label: 'Hapus titik',
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                      onTap: () => setState(() => _lokasi = null),
-                      child: const Icon(Icons.close,
-                          color: AppColors.grey200, size: 16),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// The notice shown at the top of the form when re-applying after a rejection.
-  /// The backend does not surface a rejection reason to the pengelola, so the
-  /// copy is the fixed guidance text.
   Widget _buildRejectionBanner() {
     return Container(
       width: double.infinity,

@@ -18,6 +18,7 @@ import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_sta
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/widgets/peta_bank_view.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/tile_health.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -50,6 +51,7 @@ class CariBankView extends StatefulWidget {
 class _CariBankViewState extends State<CariBankView> {
   /// Daftar first: the map is the fancy view, not the default reading flow.
   String _mode = 'Daftar';
+
   @override
   void initState() {
     super.initState();
@@ -57,42 +59,94 @@ class _CariBankViewState extends State<CariBankView> {
     // manual pick from local storage, else the device fix.
     context.read<CariBankCubit>().load();
     context.read<CariBankCubit>().muatLokasiAwal();
+    TileHealth.instance.addListener(_petaBerubah);
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<CariBankCubit, CariBankState>(
-        builder: (context, state) => Scaffold(
-          backgroundColor: Colors.white,
-          body: Column(
-            children: [
-              const AppBackHeader(
-                title: 'Cari Bank Sampah',
-                backKey: Key('cari_bank_kembali'),
+  void dispose() {
+    TileHealth.instance.removeListener(_petaBerubah);
+    super.dispose();
+  }
+
+  /// PIL-326: when the tiles stop answering, the map mode leaves the screen
+  /// instead of showing an empty grid. The list is already nearest-first, so
+  /// losing the map costs no information.
+  void _petaBerubah() {
+    if (!mounted) return;
+    setState(() {
+      if (TileHealth.instance.buruk) _mode = 'Daftar';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final petaTersedia = !TileHealth.instance.buruk;
+    return BlocBuilder<CariBankCubit, CariBankState>(
+      builder: (context, state) => Scaffold(
+        backgroundColor: Colors.white,
+        body: Column(
+          children: [
+            const AppBackHeader(
+              title: 'Cari Bank Sampah',
+              backKey: Key('cari_bank_kembali'),
+            ),
+            if (!petaTersedia) const _PetaTidakTersedia(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: CustomSearchField(
+                key: const Key('cari_bank_kata_kunci'),
+                hintText: 'Cari nama, alamat, atau kota...',
+                onChanged: context.read<CariBankCubit>().ketikKataKunci,
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: CustomSearchField(
-                  key: const Key('cari_bank_kata_kunci'),
-                  hintText: 'Cari nama, alamat, atau kota...',
-                  onChanged: context.read<CariBankCubit>().ketikKataKunci,
-                ),
+            ),
+            // Satu kolom pencarian: q mencocokkan nama + alamat + kota
+            // di backend, jadi kolom kota terpisah tidak diperlukan.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: _ModeSwitch(
+                key: const Key('cari_bank_mode'),
+                mode: _mode,
+                petaTersedia: petaTersedia,
+                pilihDiPeta: () =>
+                    _pilihDiPeta(context, widget.tileLayerBuilder),
+                onPilih: (mode) => setState(() => _mode = mode),
               ),
-              // Satu kolom pencarian: q mencocokkan nama + alamat + kota
-              // di backend, jadi kolom kota terpisah tidak diperlukan.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: _ModeSwitch(
-                  key: const Key('cari_bank_mode'),
-                  mode: _mode,
-                  pilihDiPeta: () =>
-                      _pilihDiPeta(context, widget.tileLayerBuilder),
-                  onPilih: (mode) => setState(() => _mode = mode),
-                ),
+            ),
+            Expanded(child: _CariBankBody(state: state)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Inline notice that the map screens are down (PIL-326). Sits with the search
+/// bar so the reason the Peta tab vanished is visible, not just absent.
+class _PetaTidakTersedia extends StatelessWidget {
+  const _PetaTidakTersedia();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const Key('cari_bank_peta_galat'),
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.warningLight,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.map_outlined, size: 18, color: AppColors.warning),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Peta sedang tidak tersedia. Menampilkan bank terdekat '
+                'dalam daftar.',
+                style: NasabahStyle.text(12, color: AppColors.warning),
               ),
-              Expanded(child: _CariBankBody(state: state)),
-            ],
-          ),
+            ),
+          ],
         ),
       );
 }
@@ -336,11 +390,15 @@ class _ModeSwitch extends StatelessWidget {
   final ValueChanged<String> onPilih;
   final VoidCallback pilihDiPeta;
 
+  /// False while the tile sources are down: an empty grid is not a map view.
+  final bool petaTersedia;
+
   const _ModeSwitch({
     super.key,
     required this.mode,
     required this.onPilih,
     required this.pilihDiPeta,
+    this.petaTersedia = true,
   });
 
   @override
@@ -354,15 +412,17 @@ class _ModeSwitch extends StatelessWidget {
               onTap: () => onPilih('Daftar'),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ModePill(
-              label: 'Peta',
-              icon: Icons.map_outlined,
-              dipilih: mode == 'Peta',
-              onTap: () => onPilih('Peta'),
+          if (petaTersedia) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ModePill(
+                label: 'Peta',
+                icon: Icons.map_outlined,
+                dipilih: mode == 'Peta',
+                onTap: () => onPilih('Peta'),
+              ),
             ),
-          ),
+          ],
           const SizedBox(width: 8),
           _IkonAksi(
             key: const Key('cari_bank_pilih_di_peta'),

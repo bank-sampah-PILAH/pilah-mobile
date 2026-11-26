@@ -23,8 +23,7 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  RegisterBankSampahRequest bankRequest(
-          {({double latitude, double longitude})? lokasi}) =>
+  RegisterBankSampahRequest bankRequest({TitikLokasiBank? lokasi}) =>
       RegisterBankSampahRequest(
         nama: 'Bank Melati',
         alamat: 'Jl. Melati 1',
@@ -40,7 +39,11 @@ void main() {
     await container
         .read(onboardingProvider.notifier)
         .submitRegistration(bankRequest(
-          lokasi: (latitude: -6.362829, longitude: 106.828655),
+          lokasi: const TitikLokasiBank(
+            latitude: -6.362829,
+            longitude: 106.828655,
+            sumber: 'manual',
+          ),
         ));
 
     final form = api.last.body as dynamic;
@@ -50,6 +53,7 @@ void main() {
     };
     expect(fields['latitude'], '-6.362829');
     expect(fields['longitude'], '106.828655');
+    expect(fields['koordinat_sumber'], 'manual');
   });
 
   test('skipping the picker sends no coordinates at all', () async {

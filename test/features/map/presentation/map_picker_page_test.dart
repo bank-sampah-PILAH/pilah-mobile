@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/tile_health.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _FakeLocationService extends Mock implements LocationService {}
@@ -535,5 +536,18 @@ void main() {
           .text,
       isEmpty,
     );
+  });
+
+  testWidgets('a tiles-down picker says what still works', (tester) async {
+    for (var i = 0; i < TileHealth.instance.ambang; i++) {
+      TileHealth.instance.catatGalat();
+    }
+    addTearDown(TileHealth.instance.pulihkan);
+
+    await openOverHost(tester);
+
+    expect(find.byKey(const Key('peta_galat_banner')), findsOneWidget);
+    // The manual fields stay the last resort, so they must still be there.
+    expect(find.byKey(const Key('latitude_field')), findsOneWidget);
   });
 }

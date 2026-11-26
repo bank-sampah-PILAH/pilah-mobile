@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_lokasi_map_page.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/tile_health.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -29,6 +31,9 @@ void main() {
     when(() => launcher.supportsCloseForMode(any()))
         .thenAnswer((_) async => false);
     when(() => launcher.launchUrl(any(), any())).thenAnswer((_) async => true);
+    // Shared across the app: never let one degraded test bleed into the next.
+    TileHealth.instance.pulihkan();
+    addTearDown(TileHealth.instance.pulihkan);
   });
 
   Future<void> pump(WidgetTester tester) async {
@@ -79,5 +84,41 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('detail_bank_buka_di_maps')), findsOneWidget);
+  });
+
+  group('tiles down (PIL-326)', () {
+    void petaMati() {
+      for (var i = 0; i < TileHealth.instance.ambang; i++) {
+        TileHealth.instance.catatGalat();
+      }
+    }
+
+    testWidgets('the coordinate replaces the map, and the maps link stays',
+        (tester) async {
+      petaMati();
+
+      await pump(tester);
+
+      expect(find.byKey(const Key('detail_bank_peta_galat')), findsOneWidget);
+      expect(
+        find.textContaining('-6.362829, 106.828655'),
+        findsOneWidget,
+        reason: 'the coordinate is all a nasabah needs to find the bank',
+      );
+      expect(find.byType(FlutterMap), findsNothing);
+      expect(find.byKey(const Key('detail_bank_buka_di_maps')), findsOneWidget);
+    });
+
+    testWidgets('an outage that starts while the map is open swaps it out',
+        (tester) async {
+      await pump(tester);
+      expect(find.byType(FlutterMap), findsOneWidget);
+
+      petaMati();
+      await tester.pump();
+
+      expect(find.byType(FlutterMap), findsNothing);
+      expect(find.byKey(const Key('detail_bank_peta_galat')), findsOneWidget);
+    });
   });
 }
