@@ -19,7 +19,7 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 const _anyRole = <String>{};
 
 /// Both app roles. Superadmin keeps its own dashboard and is refused these.
-const _onboarding = <String>{'nasabah', 'pengelola'};
+const _appRoles = <String>{'nasabah', 'pengelola'};
 
 const _access = <String, Set<String>>{
   '/splash': _anyRole,
@@ -32,17 +32,17 @@ const _access = <String, Set<String>>{
   // server reports decides which one a session is sent to, and the second-role
   // flows (PIL-541, PIL-542) walk a Nasabah through bank registration and an
   // invite, so gating these by role would shut the door on them.
-  '/complete-profile': _onboarding,
-  '/register-nasabah': _onboarding,
-  '/ajukan-bank-sampah': _onboarding,
-  '/register-bank-sampah': _onboarding,
-  '/pending-approval': _onboarding,
-  '/invite-processing': _onboarding,
-  '/nasabah-dashboard': _onboarding,
+  '/complete-profile': _appRoles,
+  '/register-nasabah': _appRoles,
+  '/ajukan-bank-sampah': _appRoles,
+  '/register-bank-sampah': _appRoles,
+  '/pending-approval': _appRoles,
+  '/invite-processing': _appRoles,
+  '/nasabah-dashboard': _appRoles,
   // Shared shell.
-  AppLocations.dashboard: _onboarding,
-  AppLocations.profile: _onboarding,
-  '/jadwal': _onboarding,
+  AppLocations.dashboard: _appRoles,
+  AppLocations.profile: _appRoles,
+  '/jadwal': _appRoles,
   // Staff.
   '/nasabah': {'pengelola'},
   '/harga': {'pengelola'},
