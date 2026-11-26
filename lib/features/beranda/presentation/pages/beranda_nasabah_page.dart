@@ -266,7 +266,7 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
                           const SizedBox(height: AppSpacing.xl),
                         ],
                         _HomeGreeting(name: widget.name),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: AppButton(

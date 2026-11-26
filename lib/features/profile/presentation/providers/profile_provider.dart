@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
@@ -33,6 +34,10 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   final bool _isWeb;
 
+  /// Bumped by [reset]; a response from an earlier session must never reach
+  /// the state of the next signed-in user.
+  int _session = 0;
+
   /// Bumped when a hand-over begins and again when it ends. A [load] whose
   /// requests straddle either moment holds a roster from before the hand-over
   /// and must not be applied.
@@ -51,7 +56,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
   /// [silent] only applies when there is a loaded profile to keep: otherwise
   /// the page has nothing to render, so a real loading state is emitted.
   Future<void> load({bool silent = false}) async {
-    final epoch = _teamEpoch;
+    final snapshot = (_session, _teamEpoch);
     if (!silent || state.status != ProfileStatus.loaded) {
       state = ProfileState(
         status: ProfileStatus.loading,
@@ -65,7 +70,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
       mapper: (value) => value as BankSampahProfile,
     );
 
-    if (!ref.mounted || epoch != _teamEpoch) return;
+    if (!ref.mounted || snapshot != (_session, _teamEpoch)) return;
     await bankEither.fold(
       (error) async => state = ProfileState(
           status: ProfileStatus.error, error: error.displayMessage),
@@ -91,9 +96,8 @@ class ProfileNotifier extends Notifier<ProfileState> {
           inviteError =
               inviteEither.fold((error) => error.displayMessage, (_) => null);
         }
-        // A hand-over that began or ended while these requests were out makes
-        // the roster they brought a snapshot from before it.
-        if (!ref.mounted || epoch != _teamEpoch) return;
+        // Both a session reset and a hand-over can invalidate this response.
+        if (!ref.mounted || snapshot != (_session, _teamEpoch)) return;
         state = ProfileState(
           status: ProfileStatus.loaded,
           bankSampah: bank,
@@ -204,11 +208,13 @@ class ProfileNotifier extends Notifier<ProfileState> {
   ///
   /// Carries the pending logo when there is one. It is only released once the
   /// response is in hand — a failed save keeps the pick, so the user can retry
-  /// without hunting through the gallery again.
+  /// without hunting through the gallery again. [lokasi] goes out whenever the
+  /// caller passes one; omitting it leaves the stored coordinates untouched.
   Future<NetworkException?> updateBankSampah({
     required String nama,
     required String alamat,
     required String noHpPic,
+    Lokasi? lokasi,
   }) async {
     try {
       final updated = await _dataSource.updateBankSampah(
@@ -218,6 +224,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
         noHpPic: noHpPic,
         fotoLogoBytes: state.selectedLogoBytes,
         fotoLogoFilename: state.selectedLogoFilename,
+        lokasi: lokasi,
       );
       if (!ref.mounted) return null;
       state = state.copyWith(bankSampah: updated, clearSelectedLogo: true);
@@ -227,11 +234,44 @@ class ProfileNotifier extends Notifier<ProfileState> {
     }
   }
 
+  /// The bank profile for background callers (the dashboard's coordinate
+  /// prompt), without the template/team fetches a full [load] performs.
+  ///
+  /// Returns the cached profile when there is one; otherwise a single
+  /// `bank-sampah/me` call, folded into the current state rather than a fresh
+  /// emit, so it cannot clobber a concurrent save or the WA template already
+  /// held here. Null means the fetch failed or the session has no bank —
+  /// a background prompt must never surface an error for that.
+  Future<BankSampahProfile?> ensureBank() async {
+    final cached = state.bankSampah;
+    if (cached != null) return cached;
+    final session = _session;
+    final either = await apiCall<BankSampahProfile>(
+      func: _dataSource.getBankSampah(),
+      mapper: (value) => value as BankSampahProfile,
+    );
+    return either.fold(
+      (_) => null,
+      (bank) {
+        if (!ref.mounted || session != _session) return null;
+        // Cached for the next caller (ProfilePage itself uses [load] and a
+        // fresh GET, so a stale window is possible but harmless for display).
+        state = state.copyWith(bankSampah: bank);
+        return bank;
+      },
+    );
+  }
+
   /// Clears cached data and returns to the initial state (used on logout, since
   /// this notifier is an app-scoped singleton that outlives a session).
   ///
-  /// Pending logo bytes must not be uploaded by the next signed-in user.
-  void reset() => state = const ProfileState();
+  /// Pending logo bytes must not be uploaded by the next signed-in user, and
+  /// in-flight responses from the closing session are discarded by the
+  /// generation bump.
+  void reset() {
+    _session++;
+    state = const ProfileState();
+  }
 
   /// Hands the Pengurus Utama role to the pengurus [id]. The roster in the
   /// answer replaces the one on screen, so who may invite and who may be acted

@@ -1,4 +1,7 @@
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/cari_bank_page.dart';
+import 'package:pilah_mobile/features/perbandingan_harga/presentation/pages/perbandingan_harga_page.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
@@ -217,6 +220,28 @@ class AppRouterConfig {
       // Both pages take their pencairan as extra, which a refreshed web tab
       // or a pasted link doesn't carry; those go back to the laporan, where
       // the pencairan is picked from the activity list.
+      GoRoute(
+        path: BankSampahDetailPage.route,
+        name: BankSampahDetailPage.route,
+        builder: (context, state) => BankSampahDetailPage(
+          bankSampahId: state.extra! as String,
+        ),
+      ),
+      // PIL-309: reached via the detail page's "Bandingkan Harga"; the seed
+      // (jenis id + asal bank) travels as an extra record.
+      GoRoute(
+        path: PerbandinganHargaPage.route,
+        name: PerbandinganHargaPage.route,
+        builder: (context, state) {
+          final seed = state.extra! as PerbandinganSeed;
+          return PerbandinganHargaPage(
+            jenisSampahId: seed.jenisSampahId,
+            bankAsalId: seed.bankAsalId,
+            bankAsalNama: seed.bankAsalNama,
+            layananAsal: seed.layananAsal,
+          );
+        },
+      ),
       GoRoute(
         path: EditPencairanPage.route,
         name: EditPencairanPage.route,
@@ -442,6 +467,14 @@ class AppRouterConfig {
                 path: ProfilePage.route,
                 name: ProfilePage.route,
                 builder: (_, __) => const ProfilePage()),
+          ]),
+          // Branch 8 — Cari Bank Sampah: nasabah's bottom-nav tab (replaces
+          // the old Beranda button entry).
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: CariBankPage.route,
+                name: CariBankPage.route,
+                builder: (_, __) => const CariBankPage()),
           ]),
         ],
       ),

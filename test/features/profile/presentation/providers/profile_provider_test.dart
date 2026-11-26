@@ -369,6 +369,30 @@ void main() {
     expect(container.read(profileProvider), const ProfileState());
   });
 
+  test('a load pending across reset cannot cache the old session', () async {
+    stubProfile(api);
+    api.latency = const Duration(milliseconds: 100);
+
+    final pending = notifier.load();
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    notifier.reset();
+    await pending;
+
+    expect(container.read(profileProvider), const ProfileState());
+  });
+
+  test('ensureBank discards a response that started before reset', () async {
+    stubProfile(api);
+    api.latency = const Duration(milliseconds: 100);
+
+    final pending = notifier.ensureBank();
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    notifier.reset();
+
+    expect(await pending, isNull);
+    expect(container.read(profileProvider).bankSampah, isNull);
+  });
+
   test('copyWith on a template keeps its preview and variables', () {
     const template = WaTemplate(template: 'a', preview: 'p', variables: ['v']);
 

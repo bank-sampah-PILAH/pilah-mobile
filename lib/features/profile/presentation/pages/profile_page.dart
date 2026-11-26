@@ -7,6 +7,9 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/mini_lokasi_map.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -15,6 +18,7 @@ import 'package:intl/intl.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -93,6 +97,9 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
   bool _bankSeeded = false;
   // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
+  // A point picked on the map since the last save. Held here rather than in the
+  // cubit: like a form field it belongs to this screen until the user saves.
+  Lokasi? _pendingLokasi;
   Timer? _inviteCountdownTimer;
   Timer? _inviteExpiryTimer;
   String? _expiredInviteUrl;
@@ -288,6 +295,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
       nama: _namaBankController.text.trim(),
       alamat: _alamatBankController.text.trim(),
       noHpPic: _hpBankController.text.trim(),
+      lokasi: _pendingLokasi,
     );
     if (!mounted) return;
     if (bankErr != null) {
@@ -295,6 +303,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
       _snack(bankErr.displayMessage, error: true);
       return;
     }
+    // The save is in; the coordinate row falls back to the stored entity.
+    _pendingLokasi = null;
 
     // Writes whatever the field shows, which is the point of a WYSIWYG editor —
     // an emptied field is a deliberate "drop my custom template", and the
@@ -905,6 +915,8 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   iconColor: AppColors.inkSoft,
                   validator: _validateNomorHpPic,
                 ),
+                const SizedBox(height: 24),
+                _buildLokasiRow(state),
               ],
             ),
           ),
@@ -968,6 +980,123 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         );
       },
     );
+  }
+
+  /// The bank's map location (PIL-326): what is saved on the record, plus the
+  /// control that opens the picker.
+  ///
+  /// A picked-but-unsaved point wins over the stored one — same rule as
+  /// [_buildLogoPicker], so "what will this be" answers immediately. Saving
+  /// applies it (see [_onSaveSettings]) and the row falls back to the entity.
+  Widget _buildLokasiRow(ProfileState state) {
+    final pending = _pendingLokasi;
+    final stored = state.bankSampah?.lokasi;
+    final lokasi = pending ?? stored;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'LOKASI DI PETA',
+          style: AppTextStyle.extraSmall.copyWith(
+            color: AppColors.grey100,
+            fontWeight: AppFontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Mini-map (Marketplace-style): a small real map with the pin on it;
+        // tapping anywhere opens the full picker. Coordinates live in the
+        // picker, not on this form.
+        GestureDetector(
+          key: const Key('pilih_lokasi_peta'),
+          onTap: _openMapPicker,
+          // The map's own recognizers never lose a tap to the wrapper in the
+          // arena; IgnorePointer routes every touch straight to this onTap.
+          child: IgnorePointer(
+            child: lokasi == null
+                ? Container(
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: AppColors.grey100,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.grey100),
+                    ),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.map_outlined,
+                          size: 28,
+                          color: AppColors.greenDark,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Belum diatur — ketuk untuk memilih di peta',
+                          style: AppTextStyle.extraSmall.copyWith(
+                            color: AppColors.grey100,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: MiniLokasiMap(
+                      titik: LatLng(lokasi.latitude, lokasi.longitude),
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Explicit Edit button — some platform channel plumbing inside the
+        // map keeps winning the gesture arena, so the tap goes to a button.
+        SizedBox(
+          width: double.infinity,
+          child: AppButton(
+            key: const Key('edit_lokasi_peta'),
+            label: pending != null ? 'Edit lokasi belum disimpan' : 'Edit',
+            variant: AppButtonVariant.outlined,
+            size: AppButtonSize.compact,
+            trailingIcon: Icons.edit_location_alt_outlined,
+            onPressed: _openMapPicker,
+          ),
+        ),
+        if (pending != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Tekan Simpan Pengaturan untuk menerapkan lokasi.',
+              style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Opens the picker seeded from the point that will currently be saved, so
+  /// opening it to tweak a pending pick does not start from the default center.
+  Future<void> _openMapPicker() async {
+    final bank = ref.read(profileProvider).bankSampah?.lokasi;
+    final initial = _pendingLokasi ?? bank;
+    final picked = await Navigator.of(context, rootNavigator: true)
+        .push<({double latitude, double longitude, double radiusKm})>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(
+          initialCenter: initial == null
+              ? null
+              : LatLng(initial.latitude, initial.longitude),
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      // The picker always returns the cari-bank trio; a stored bank
+      // coordinate is just the pair.
+      setState(
+        () => _pendingLokasi =
+            (latitude: picked.latitude, longitude: picked.longitude),
+      );
+    }
   }
 
   String? _validateNamaBank(String? value) =>
