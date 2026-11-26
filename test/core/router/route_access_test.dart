@@ -126,8 +126,8 @@ void main() {
 
     refused.forEach((role, paths) {
       for (final path in paths) {
-        expect(roleRouteRedirect(path: path, role: role),
-            AppLocations.dashboard,
+        expect(
+            roleRouteRedirect(path: path, role: role), AppLocations.dashboard,
             reason: '$role $path');
       }
     });
@@ -152,8 +152,8 @@ void main() {
     // `/nasabah-dashboard` shares a string prefix with the staff `/nasabah`
     // but not a path segment, so a nasabah keeps its alias and does not
     // inherit the staff entry.
-    expect(roleRouteRedirect(path: '/nasabah-dashboard', role: 'nasabah'),
-        isNull);
+    expect(
+        roleRouteRedirect(path: '/nasabah-dashboard', role: 'nasabah'), isNull);
     expect(roleRouteRedirect(path: '/nasabah', role: 'nasabah'),
         AppLocations.dashboard);
   });
