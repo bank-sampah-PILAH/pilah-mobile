@@ -18,6 +18,9 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 /// and [signedOutRedirect].
 const _anyRole = <String>{};
 
+/// Both app roles. Superadmin keeps its own dashboard and is refused these.
+const _onboarding = <String>{'nasabah', 'pengelola'};
+
 const _access = <String, Set<String>>{
   '/splash': _anyRole,
   '/login': _anyRole,
@@ -25,7 +28,37 @@ const _access = <String, Set<String>>{
   '/forgot_password': _anyRole,
   '/invite': _anyRole,
   '/legal': _anyRole,
+  // Onboarding and invite redemption stay open to both app roles. The step the
+  // server reports decides which one a session is sent to, and the second-role
+  // flows (PIL-541, PIL-542) walk a Nasabah through bank registration and an
+  // invite, so gating these by role would shut the door on them.
+  '/complete-profile': _onboarding,
+  '/register-nasabah': _onboarding,
+  '/ajukan-bank-sampah': _onboarding,
+  '/register-bank-sampah': _onboarding,
+  '/pending-approval': _onboarding,
+  '/invite-processing': _onboarding,
+  '/nasabah-dashboard': _onboarding,
+  // Shared shell.
+  AppLocations.dashboard: _onboarding,
+  AppLocations.profile: _onboarding,
+  '/jadwal': _onboarding,
+  // Staff.
+  '/nasabah': {'pengelola'},
+  '/harga': {'pengelola'},
+  '/riwayat-harga': {'pengelola'},
+  '/laporan': {'pengelola'},
   '/transaksi-baru': {'pengelola'},
+  '/edit-pencairan': {'pengelola'},
+  '/riwayat-perubahan-pencairan': {'pengelola'},
+  '/draft-pencairan': {'pengelola'},
+  '/pengumuman/kelola': {'pengelola'},
+  // Customer. `/pengumuman` is the nasabah's own list; its `kelola` subtree
+  // above is the staff side and outranks it, being the longer match.
+  AppLocations.history: {'nasabah'},
+  AppLocations.customerBank: {'nasabah'},
+  '/approval-bank-sampah': {'nasabah'},
+  '/pengumuman': {'nasabah'},
   superadminDashboardLocation: {'superadmin'},
 };
 
