@@ -3,11 +3,13 @@ import '../../support/stub_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
@@ -30,11 +32,20 @@ void main() {
       di.unregister<InviteTokenStore>();
     }
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
+    // A refused role is now sent to the login page, which reads the
+    // environment for its sign-in button.
+    if (di.isRegistered<AppEnvironment>()) {
+      di.unregister<AppEnvironment>();
+    }
+    di.registerSingleton<AppEnvironment>(StubEnvironment());
   });
 
   tearDown(() {
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
+    }
+    if (di.isRegistered<AppEnvironment>()) {
+      di.unregister<AppEnvironment>();
     }
   });
 
@@ -134,7 +145,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
+      // The jadwal route itself now refuses an unrecognised role, so the
+      // session leaves it for the login page instead of resting on the
+      // shell's own fail-closed message. That message is still the shell's
+      // answer for a role with no navigation, covered directly in
+      // `test/features/main/role_navigation_test.dart`.
+      expect(
+        router.routerDelegate.currentConfiguration.uri.path,
+        LoginPage.route,
+      );
       expect(find.text('Jadwal Bank Sampah'), findsNothing);
       expect(find.byType(FloatingActionButton), findsNothing);
       expect(find.text('Batalkan'), findsNothing);
