@@ -4,14 +4,19 @@ import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 
 abstract class JadwalRemoteDataSource {
-  Future<JadwalModel> getDetail(String id);
+  Future<JadwalModel> getDetail(String id, {String? membershipId});
 
   Future<JadwalPageModel> getJadwal({
     required int page,
     DateTime? date,
     DateTime? dateTo,
+    String? membershipId,
   });
-  Future<Set<DateTime>> getCalendarDates(DateTime startDate, DateTime endDate);
+  Future<Set<DateTime>> getCalendarDates(
+    DateTime startDate,
+    DateTime endDate, {
+    String? membershipId,
+  });
   Future<JadwalModel> createJadwal(JadwalModel jadwal);
   Future<JadwalModel> updateJadwal(JadwalModel jadwal);
   Future<JadwalModel> transition(String id, String action);
@@ -24,9 +29,16 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   JadwalRemoteDataSourceImpl(this.networkService);
 
   @override
-  Future<JadwalModel> getDetail(String id) async {
-    final response =
-        await networkService.get('/api/v1/jadwal/${Uri.encodeComponent(id)}');
+  Future<JadwalModel> getDetail(String id, {String? membershipId}) async {
+    final path = '/api/v1/jadwal/${Uri.encodeComponent(id)}';
+    // The parameter is left out rather than sent empty when no bank is known,
+    // so a pengurus request stays exactly what it was.
+    final response = membershipId == null
+        ? await networkService.get(path)
+        : await networkService.get(
+            path,
+            queryParams: {'keanggotaan_id': membershipId},
+          );
     return JadwalModel.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -35,6 +47,7 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
     required int page,
     DateTime? date,
     DateTime? dateTo,
+    String? membershipId,
   }) async {
     // Dengan [dateTo], [date] menjadi awal rentang (`date_from`); tanpa itu satu
     // hari saja (`date`).
@@ -48,6 +61,7 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
           'date_to': _formatDate(dateTo),
         } else if (date != null)
           'date': _formatDate(date),
+        if (membershipId != null) 'keanggotaan_id': membershipId,
       },
     );
     return JadwalPageModel.fromJson(response.data as Map<String, dynamic>);
@@ -56,13 +70,15 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   @override
   Future<Set<DateTime>> getCalendarDates(
     DateTime startDate,
-    DateTime endDate,
-  ) async {
+    DateTime endDate, {
+    String? membershipId,
+  }) async {
     final response = await networkService.get(
       '/api/v1/jadwal/calendar-dates',
       queryParams: {
         'start_date': _formatDate(startDate),
         'end_date': _formatDate(endDate),
+        if (membershipId != null) 'keanggotaan_id': membershipId,
       },
     );
     final data = response.data as Map<String, dynamic>;

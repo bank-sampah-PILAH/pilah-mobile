@@ -23,6 +23,9 @@ class TestJadwalNotifier extends JadwalNotifier {
 
   final JadwalState _initialState;
 
+  /// Banks the page asked this notifier to read, in order.
+  final membershipCalls = <String?>[];
+
   /// Another status change or a save is already running.
   final bool busy;
   final Future<void> Function({
@@ -42,6 +45,12 @@ class TestJadwalNotifier extends JadwalNotifier {
 
   @override
   JadwalState build() => _initialState;
+
+  @override
+  void useMembership(String? membershipId) {
+    membershipCalls.add(membershipId);
+    super.useMembership(membershipId);
+  }
 
   @override
   Future<void> loadJadwal({

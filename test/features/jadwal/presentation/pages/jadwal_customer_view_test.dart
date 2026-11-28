@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -148,7 +149,76 @@ void main() {
     expect(find.text('Buat Jadwal'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
   });
+  testWidgets('the schedules are read for the bank the page was given',
+      (tester) async {
+    final notifier = await _pumpCustomer(
+      tester,
+      const JadwalLoaded([]),
+      membershipId: 'membership-a',
+    );
+
+    // Told before the first load, so the list and the calendar dots are asked
+    // for the same bank from the start rather than after a correction.
+    expect(notifier.membershipCalls, ['membership-a']);
+  });
+
+  testWidgets('opening a schedule keeps the bank it was read for',
+      (tester) async {
+    final schedule = _schedule(
+      id: 'schedule-1',
+      location: 'Balai RW 03',
+      status: 'diterbitkan',
+    );
+    await _pumpCustomer(
+      tester,
+      JadwalLoaded([schedule]),
+      membershipId: 'membership-a',
+    );
+
+    await tester.tap(find.text('Balai RW 03'));
+    await tester.pumpAndSettle();
+
+    // The backend resolves a membership for the detail as well, so a card that
+    // forgets the bank sends a nasabah with two banks to a 422.
+    expect(_lastLocation, contains('keanggotaan_id=membership-a'));
+  });
+
+  testWidgets('a bank the nasabah may not open is not offered a retry',
+      (tester) async {
+    await _pumpCustomer(
+      tester,
+      const JadwalLocked('Keanggotaan dan bank sampah harus aktif.'),
+      membershipId: 'membership-a',
+    );
+
+    expect(
+        find.text('Keanggotaan dan bank sampah harus aktif.'), findsOneWidget);
+    // Reloading cannot help; picking another bank can.
+    expect(find.text('Coba Lagi'), findsNothing);
+    expect(find.text('Bank sampah saya'), findsOneWidget);
+  });
+
+  testWidgets('the locked screen leads to the banks the nasabah does have',
+      (tester) async {
+    await _pumpCustomer(
+      tester,
+      const JadwalLocked('Keanggotaan dan bank sampah harus aktif.'),
+      membershipId: 'membership-a',
+    );
+
+    await tester.tap(find.text('Bank sampah saya'));
+    await tester.pumpAndSettle();
+
+    // The only way out of a bank that is no longer theirs is another bank, so
+    // the button has to actually go there rather than just say so.
+    expect(_lastLocation, ApprovalBankSampahListPage.route);
+    expect(find.text('Bank Sampah Saya'), findsOneWidget);
+  });
 }
+
+/// The location the `:id` route was last built with, so a test can read what
+/// the card actually asked for.
+String? _lastLocation;
 
 Future<TestJadwalNotifier> _pumpCustomer(
   WidgetTester tester,
@@ -162,6 +232,7 @@ Future<TestJadwalNotifier> _pumpCustomer(
     required DateTime startDate,
     required DateTime endDate,
   })? onLoadCalendarDates,
+  String? membershipId,
 }) async {
   final notifier = TestJadwalNotifier(
     repository: UnusedJadwalRepository(),
@@ -172,12 +243,22 @@ Future<TestJadwalNotifier> _pumpCustomer(
   final router = GoRouter(initialLocation: '/jadwal', routes: [
     GoRoute(
         path: '/jadwal',
-        builder: (_, __) => const JadwalPage(customerMode: true),
+        builder: (_, __) =>
+            JadwalPage(customerMode: true, membershipId: membershipId),
         routes: [
           GoRoute(
               path: ':id',
-              builder: (_, __) => const Scaffold(body: Text('Detail Jadwal'))),
+              builder: (_, state) {
+                _lastLocation = state.uri.toString();
+                return const Scaffold(body: Text('Detail Jadwal'));
+              }),
         ]),
+    GoRoute(
+        path: ApprovalBankSampahListPage.route,
+        builder: (_, state) {
+          _lastLocation = state.uri.toString();
+          return const Scaffold(body: Text('Bank Sampah Saya'));
+        }),
   ]);
   addTearDown(router.dispose);
   await tester.pumpWidget(

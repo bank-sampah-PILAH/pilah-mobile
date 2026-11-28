@@ -25,13 +25,14 @@ void main() {
   late _ScriptedRepository repository;
 
   Future<void> pumpContent(WidgetTester tester, List<Object> answers,
-      {String? membershipId}) async {
+      {String? membershipId, ValueChanged<String>? onSelect}) async {
     repository = _ScriptedRepository(answers);
     di.registerSingleton<NasabahRepository>(repository);
     addTearDown(() => di.unregister<NasabahRepository>());
     await tester.pumpWidget(MaterialApp(
       home: NasabahMembershipContent(
         membershipId: membershipId,
+        onSelect: onSelect,
         builder: (id) => Text('membership:$id'),
       ),
     ));
@@ -71,6 +72,31 @@ void main() {
 
     expect(repository.asked, [null, 'm2']);
     expect(find.text('membership:m2'), findsOneWidget);
+  });
+
+  testWidgets('hands a pick to the scope above instead of showing it alone',
+      (tester) async {
+    final picked = <String>[];
+    await pumpContent(
+      tester,
+      [
+        const NasabahApiException('Pilih bank sampah Anda.', choices: [
+          MembershipChoice('m1', 'Bank Melati'),
+          MembershipChoice('m2', 'Bank Mawar'),
+        ]),
+      ],
+      onSelect: picked.add,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bank Mawar'));
+    await tester.pumpAndSettle();
+
+    // With a scope above, the pick belongs to it: it remembers the bank and
+    // rebuilds this widget with it, so asking the API again here would both
+    // duplicate the request and lose the choice on the next screen.
+    expect(picked, ['m2']);
+    expect(repository.asked, [null]);
   });
 
   testWidgets('offers a retry after a failure that has no choices',

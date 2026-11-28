@@ -93,6 +93,74 @@ void main() {
     expect(result.getOrElse(() => const {}), {DateTime(2026, 10, 10)});
   });
 
+  group('a nasabah reading one bank', () {
+    test('carries the bank into a schedule detail request', () async {
+      when(() => remote.getDetail('schedule-1', membershipId: 'membership-a'))
+          .thenAnswer((_) async => _schedule());
+
+      final result = await repository.getDetail(
+        'schedule-1',
+        membershipId: 'membership-a',
+      );
+
+      // The backend resolves a membership for the detail too, so dropping it
+      // here would answer 422 for a nasabah who belongs to more than one bank.
+      expect(result.isRight(), isTrue);
+      verify(() => remote.getDetail('schedule-1', membershipId: 'membership-a'))
+          .called(1);
+    });
+
+    test('carries the bank into a date range', () async {
+      when(() => remote.getJadwal(
+            page: 1,
+            date: DateTime(2026, 10, 19),
+            dateTo: DateTime(2026, 10, 31),
+            membershipId: 'membership-a',
+          )).thenAnswer(
+        (_) async => JadwalPageModel(
+            items: [_schedule()], totalCount: 1, hasMore: false),
+      );
+
+      final result = await repository.getJadwal(
+        page: 1,
+        date: DateTime(2026, 10, 19),
+        dateTo: DateTime(2026, 10, 31),
+        membershipId: 'membership-a',
+      );
+
+      // The range and the bank travel together: the calendar asks for both at
+      // once, and a request that keeps only one reads the wrong schedules.
+      expect(result.isRight(), isTrue);
+      verify(() => remote.getJadwal(
+            page: 1,
+            date: DateTime(2026, 10, 19),
+            dateTo: DateTime(2026, 10, 31),
+            membershipId: 'membership-a',
+          )).called(1);
+    });
+
+    test('carries the bank into the calendar markers', () async {
+      when(() => remote.getCalendarDates(
+            DateTime(2026, 10, 1),
+            DateTime(2026, 10, 31),
+            membershipId: 'membership-a',
+          )).thenAnswer((_) async => {DateTime(2026, 10, 10)});
+
+      final result = await repository.getCalendarDates(
+        DateTime(2026, 10, 1),
+        DateTime(2026, 10, 31),
+        membershipId: 'membership-a',
+      );
+
+      expect(result.getOrElse(() => const {}), {DateTime(2026, 10, 10)});
+      verify(() => remote.getCalendarDates(
+            DateTime(2026, 10, 1),
+            DateTime(2026, 10, 31),
+            membershipId: 'membership-a',
+          )).called(1);
+    });
+  });
+
   test('creates a schedule through the remote source', () async {
     when(() => remote.createJadwal(any())).thenAnswer((_) async => _schedule());
 

@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_membership_content.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -43,152 +44,160 @@ class _NasabahHistoryScreenState extends ConsumerState<NasabahHistoryScreen> {
       body: SafeArea(
         child: auth?.role != 'nasabah'
             ? const Center(child: Text('Silakan masuk sebagai nasabah.'))
-            : NasabahMembershipContent(
-                key: ValueKey((auth!.id, auth.email, auth.token, member)),
+            : ActiveMembershipScope(
                 membershipId: member,
-                // One column for balance, tabs and both lists, so a wide window
-                // does not stretch the card and the Pencairan list.
-                builder: (id) => Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
-                    child: Column(
-                      children: [
-                        NasabahResource<NasabahBalance>(
-                          refreshOnResume: true,
-                          key: ValueKey((
-                            'balance',
-                            auth.id,
-                            auth.email,
-                            auth.token,
-                            id,
-                          )),
-                          load: () => di<NasabahRepository>().balance(id),
-                          registerReload: (reload) => _reloadBalance = reload,
-                          builder: (_, balance) => Container(
-                            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: NasabahStyle.emerald,
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'SALDO TABUNGAN',
-                                        style: NasabahStyle.text(
-                                          11,
-                                          weight: AppFontWeight.semibold,
-                                          color: NasabahStyle.emeraldLight,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        nasabahRupiah(balance.amount),
-                                        style: NasabahStyle.text(
-                                          24,
-                                          weight: AppFontWeight.bold,
-                                          color: Colors.white,
-                                          height: 1.25,
-                                        ),
-                                      ),
-                                      Text(
-                                        balance.updatedAt == null
-                                            ? 'Saldo saat ini'
-                                            : 'Diperbarui ${nasabahDate(balance.updatedAt!)}',
-                                        style: NasabahStyle.text(
-                                          12,
-                                          color: NasabahStyle.emeraldLight,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Icon(
-                                  Icons.account_balance_wallet_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: DefaultTabController(
-                            length: 2,
-                            initialIndex: widget.initialPencairan ? 1 : 0,
-                            child: Column(
-                              children: [
-                                Container(
-                                  margin:
-                                      const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: NasabahStyle.line
-                                        .withValues(alpha: 0.25),
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.md),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: TabBar(
-                                          dividerColor: Colors.transparent,
-                                          indicatorSize:
-                                              TabBarIndicatorSize.tab,
-                                          indicator: BoxDecoration(
-                                            color: NasabahStyle.emerald,
-                                            borderRadius: BorderRadius.circular(
-                                                AppRadius.md),
+                builder: (context, membership) => NasabahMembershipContent(
+                  key: ValueKey(
+                      (auth!.id, auth.email, auth.token, membership.id)),
+                  membershipId: membership.id,
+                  onSelect: membership.select,
+                  // One column for balance, tabs and both lists, so a wide window
+                  // does not stretch the card and the Pencairan list.
+                  builder: (id) => Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints:
+                          const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
+                      child: Column(
+                        children: [
+                          NasabahResource<NasabahBalance>(
+                            refreshOnResume: true,
+                            key: ValueKey((
+                              'balance',
+                              auth.id,
+                              auth.email,
+                              auth.token,
+                              id,
+                            )),
+                            load: () => di<NasabahRepository>().balance(id),
+                            registerReload: (reload) => _reloadBalance = reload,
+                            builder: (_, balance) => Container(
+                              margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: NasabahStyle.emerald,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'SALDO TABUNGAN',
+                                          style: NasabahStyle.text(
+                                            11,
+                                            weight: AppFontWeight.semibold,
+                                            color: NasabahStyle.emeraldLight,
                                           ),
-                                          labelColor: Colors.white,
-                                          unselectedLabelColor:
-                                              NasabahStyle.muted,
-                                          labelStyle: NasabahStyle.text(14,
-                                              weight: AppFontWeight.semibold),
-                                          tabs: const [
-                                            Tab(text: 'Setoran'),
-                                            Tab(text: 'Pencairan'),
-                                          ],
                                         ),
-                                      ),
-                                      NasabahPdfPreviewButton(membershipId: id),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  child: TabBarView(
-                                    children: [
-                                      ProviderScope(
-                                        key: ValueKey((
-                                          auth.id,
-                                          auth.email,
-                                          auth.token,
-                                          id,
-                                        )),
-                                        child: RiwayatNasabahPage(
-                                          membershipId: id,
-                                          onRefresh: () async {
-                                            await _reloadBalance?.call();
-                                          },
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          nasabahRupiah(balance.amount),
+                                          style: NasabahStyle.text(
+                                            24,
+                                            weight: AppFontWeight.bold,
+                                            color: Colors.white,
+                                            height: 1.25,
+                                          ),
                                         ),
-                                      ),
-                                      const PencairanHistoryTab(),
-                                    ],
+                                        Text(
+                                          balance.updatedAt == null
+                                              ? 'Saldo saat ini'
+                                              : 'Diperbarui ${nasabahDate(balance.updatedAt!)}',
+                                          style: NasabahStyle.text(
+                                            12,
+                                            color: NasabahStyle.emeraldLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 12),
+                                  const Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          Expanded(
+                            child: DefaultTabController(
+                              length: 2,
+                              initialIndex: widget.initialPencairan ? 1 : 0,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.fromLTRB(
+                                        16, 12, 16, 8),
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: NasabahStyle.line
+                                          .withValues(alpha: 0.25),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.md),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TabBar(
+                                            dividerColor: Colors.transparent,
+                                            indicatorSize:
+                                                TabBarIndicatorSize.tab,
+                                            indicator: BoxDecoration(
+                                              color: NasabahStyle.emerald,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      AppRadius.md),
+                                            ),
+                                            labelColor: Colors.white,
+                                            unselectedLabelColor:
+                                                NasabahStyle.muted,
+                                            labelStyle: NasabahStyle.text(14,
+                                                weight: AppFontWeight.semibold),
+                                            tabs: const [
+                                              Tab(text: 'Setoran'),
+                                              Tab(text: 'Pencairan'),
+                                            ],
+                                          ),
+                                        ),
+                                        NasabahPdfPreviewButton(
+                                            membershipId: id),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: TabBarView(
+                                      children: [
+                                        ProviderScope(
+                                          key: ValueKey((
+                                            auth.id,
+                                            auth.email,
+                                            auth.token,
+                                            id,
+                                          )),
+                                          child: RiwayatNasabahPage(
+                                            membershipId: id,
+                                            onRefresh: () async {
+                                              await _reloadBalance?.call();
+                                            },
+                                          ),
+                                        ),
+                                        const PencairanHistoryTab(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

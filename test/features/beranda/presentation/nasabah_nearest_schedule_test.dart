@@ -1,9 +1,11 @@
 import 'package:clock/clock.dart';
+import 'package:dio/dio.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
@@ -76,14 +78,16 @@ void main() {
       status: 'diterbitkan',
     );
 
-    when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
+    when(() => jadwalRepository.getJadwal(
+        page: 1, date: null, membershipId: 'preview-membership')).thenAnswer(
       (_) async => Right(JadwalPageResult(
         items: [ongoing, far],
         totalCount: 4,
         hasMore: true,
       )),
     );
-    when(() => jadwalRepository.getJadwal(page: 2, date: null)).thenAnswer(
+    when(() => jadwalRepository.getJadwal(
+        page: 2, date: null, membershipId: 'preview-membership')).thenAnswer(
       (_) async => Right(JadwalPageResult(
         items: [later, nearest],
         totalCount: 4,
@@ -136,5 +140,51 @@ void main() {
         '${today.month.toString().padLeft(2, '0')}-'
         '${today.day.toString().padLeft(2, '0')}';
     expect(find.text('Tanggal: $expectedDate'), findsOneWidget);
+  });
+
+  testWidgets('a bank that may not be read leaves the card empty',
+      (tester) async {
+    final auth = authNotifierIn(Authenticated(
+      authEntity: AuthEntity(
+        id: 'nasabah-1',
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'token',
+        role: 'nasabah',
+        nextStep: 'nasabah_dashboard',
+      ),
+    ));
+    final jadwalRepository = _JadwalRepository();
+    when(() => jadwalRepository.getJadwal(
+            page: 1, date: null, membershipId: 'preview-membership'))
+        .thenAnswer((_) async => Left(NetworkException.handleBadResponse(
+              Response(
+                requestOptions: RequestOptions(path: '/api/v1/jadwal'),
+                statusCode: 403,
+                data: {'error': 'Keanggotaan dan bank sampah harus aktif.'},
+              ),
+            )));
+
+    di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    di.registerSingleton<JadwalRepository>(jadwalRepository);
+    addTearDown(() async {
+      await di.unregister<NasabahRepository>();
+      await di.unregister<JadwalRepository>();
+    });
+
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
+      const MaterialApp(home: BerandaNasabahPage()),
+    ));
+    await tester.pumpAndSettle();
+
+    // The bank card above already carries a refusal when the bank itself
+    // cannot be read, so the schedule card says there is nothing upcoming
+    // instead of repeating the error underneath it.
+    await tester.scrollUntilVisible(
+        find.text('Belum ada jadwal mendatang.'), 240);
+    expect(find.text('Belum ada jadwal mendatang.'), findsOneWidget);
+    expect(find.text('Coba lagi'), findsNothing);
   });
 }

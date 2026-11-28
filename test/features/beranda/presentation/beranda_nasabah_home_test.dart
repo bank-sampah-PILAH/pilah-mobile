@@ -83,7 +83,10 @@ void main() {
       ),
     ));
     jadwal = _JadwalRepository();
-    when(() => jadwal.getJadwal(page: 1, date: null)).thenAnswer(
+    when(() => jadwal.getJadwal(
+        page: 1,
+        date: null,
+        membershipId: any(named: 'membershipId'))).thenAnswer(
       (_) async => const Right(
           JadwalPageResult(items: [], totalCount: 0, hasMore: false)),
     );
@@ -383,7 +386,10 @@ void main() {
 
   testWidgets('a failing schedule request is reported in its own card',
       (tester) async {
-    when(() => jadwal.getJadwal(page: 1, date: null)).thenAnswer(
+    when(() => jadwal.getJadwal(
+        page: 1,
+        date: null,
+        membershipId: any(named: 'membershipId'))).thenAnswer(
       (_) async => Left(GeneralException(message: 'offline')),
     );
     await pumpHome(tester, _HomeRepository(null, const []));

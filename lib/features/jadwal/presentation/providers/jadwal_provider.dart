@@ -22,6 +22,7 @@ class JadwalNotifier extends Notifier<JadwalState> {
   int _page = 1;
   bool _hasMore = false;
   bool _isLoadingMore = false;
+  String? _membershipId;
   DateTime? _dateFilter;
   DateTime? _dateEnd;
   DateTime? _calendarStart;
@@ -37,6 +38,13 @@ class JadwalNotifier extends Notifier<JadwalState> {
   static const _maxCalendarRangeDays = 62;
 
   JadwalNotifier(this.repository);
+
+  /// The bank whose schedules are being read, for a nasabah who may belong to
+  /// several. The page sets it before its first load, from the active-bank
+  /// scope; the pengurus side never sets it and its requests are unchanged.
+  void useMembership(String? membershipId) {
+    _membershipId = membershipId;
+  }
 
   @override
   JadwalState build() => const JadwalInitial();
@@ -84,7 +92,7 @@ class JadwalNotifier extends Notifier<JadwalState> {
       return;
     }
     result.fold(
-      (failure) => state = JadwalError(failure.displayMessage),
+      (failure) => state = _failed(failure),
       (page) {
         _page = 1;
         _hasMore = page.hasMore;
@@ -101,13 +109,47 @@ class JadwalNotifier extends Notifier<JadwalState> {
     );
   }
 
-  /// Tanpa [_dateEnd] argumen rentang tidak dikirim sama sekali.
+  /// Argumen yang kosong tidak dikirim sama sekali, bukan dikirim bernilai
+  /// null: tanpa rentang maupun keanggotaan, permintaan ini sama persis
+  /// seperti sebelum keduanya ada.
   Future<Either<NetworkException, JadwalPageResult>> _fetch(int page) {
     final end = _dateEnd;
+    final member = _membershipId;
+    if (member == null) {
+      return end == null
+          ? repository.getJadwal(page: page, date: _dateFilter)
+          : repository.getJadwal(page: page, date: _dateFilter, dateTo: end);
+    }
     return end == null
-        ? repository.getJadwal(page: page, date: _dateFilter)
-        : repository.getJadwal(page: page, date: _dateFilter, dateTo: end);
+        ? repository.getJadwal(
+            page: page,
+            date: _dateFilter,
+            membershipId: member,
+          )
+        : repository.getJadwal(
+            page: page,
+            date: _dateFilter,
+            dateTo: end,
+            membershipId: member,
+          );
   }
+
+  Future<Either<NetworkException, Set<DateTime>>> _fetchCalendar(
+    DateTime start,
+    DateTime end,
+  ) {
+    final member = _membershipId;
+    return member == null
+        ? repository.getCalendarDates(start, end)
+        : repository.getCalendarDates(start, end, membershipId: member);
+  }
+
+  /// A 403 is a refusal, not a hiccup: the bank is not the caller's to read,
+  /// so the screen says so instead of offering a reload that cannot work.
+  JadwalState _failed(NetworkException failure) =>
+      failure.response?.statusCode == 403
+          ? JadwalLocked(failure.displayMessage)
+          : JadwalError(failure.displayMessage);
 
   Future<void> loadNextPage() async {
     final current = state;
@@ -174,7 +216,7 @@ class JadwalNotifier extends Notifier<JadwalState> {
       }
     }
     final version = ++_calendarVersion;
-    final result = await repository.getCalendarDates(start, end);
+    final result = await _fetchCalendar(start, end);
     if (!ref.mounted || version != _calendarVersion) return;
     result.fold(
       (_) {},
@@ -205,7 +247,7 @@ class JadwalNotifier extends Notifier<JadwalState> {
     }
     final version = ++_upcomingVersion;
     final results = await Future.wait([
-      for (final (from, to) in ranges) repository.getCalendarDates(from, to),
+      for (final (from, to) in ranges) _fetchCalendar(from, to),
     ]);
     if (!ref.mounted || version != _upcomingVersion) return;
     final dates = <DateTime>{};
@@ -315,6 +357,7 @@ class JadwalNotifier extends Notifier<JadwalState> {
 
   void reset() {
     _sessionGeneration++;
+    _membershipId = null;
     _transitionInProgress = false;
     _saveInProgress = false;
     _loadVersion++;

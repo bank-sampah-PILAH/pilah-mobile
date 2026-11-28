@@ -23,6 +23,7 @@ import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
@@ -40,7 +41,17 @@ class JadwalPage extends ConsumerStatefulWidget {
   final bool customerMode;
   final DateTime? initialDate;
 
-  const JadwalPage({super.key, this.customerMode = false, this.initialDate});
+  /// The bank whose schedules this page reads, for a nasabah who may belong to
+  /// several (PIL-235). The route resolves it from the active-bank scope; the
+  /// pengurus side has one bank and passes none.
+  final String? membershipId;
+
+  const JadwalPage({
+    super.key,
+    this.customerMode = false,
+    this.initialDate,
+    this.membershipId,
+  });
 
   @override
   ConsumerState<JadwalPage> createState() => _JadwalPageState();
@@ -79,10 +90,20 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
         : cubit.loadJadwal(date: date, dateTo: end);
   }
 
+  /// Whether this page has asked for its own schedules yet.
+  ///
+  /// The provider is global and outlives the screen, so a page built for
+  /// another bank, or for another account, would otherwise paint whatever the
+  /// previous one left in it for the frame before its first load.
+  var _askedForOwn = false;
+
   @override
   void initState() {
     super.initState();
     _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
+    // Before the first load below, and unconditionally: a page opened without
+    // a bank must clear whichever one the previous session left behind.
+    ref.read(jadwalProvider.notifier).useMembership(widget.membershipId);
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
     // Belum boleh berlangganan MediaQuery di sini; lebar dibaca tanpa
     // dependensi dan didChangeDependencies menjaga perubahannya.
@@ -91,6 +112,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     _rangeMode = _wantsRange(LayoutBreakpoint.fromWidth(width ?? 0));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      setState(() => _askedForOwn = true);
       _loadAgenda(_selectedDate);
       ref.read(jadwalProvider.notifier).loadUpcomingDates();
       _loadCalendarDatesFor(_selectedDate);
@@ -341,8 +363,14 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
 
   Widget _buildAgendaBody() {
     final state = ref.watch(jadwalProvider);
-    if (state is JadwalInitial || state is JadwalLoading) {
+    if (!_askedForOwn || state is JadwalInitial || state is JadwalLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (state is JadwalLocked) {
+      return _LockedMessage(
+        message: state.message,
+        showBanks: widget.customerMode,
+      );
     }
     if (state is JadwalError) {
       return _RetryableMessage(
@@ -457,7 +485,11 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                   queryParameters: {
                     'date': '${_selectedDate.year}-'
                         '${_selectedDate.month.toString().padLeft(2, '0')}-'
-                        '${_selectedDate.day.toString().padLeft(2, '0')}'
+                        '${_selectedDate.day.toString().padLeft(2, '0')}',
+                    // The detail answers for one bank, so the link says which
+                    // one rather than making it resolve the question again.
+                    if (widget.membershipId != null)
+                      'keanggotaan_id': widget.membershipId!,
                   },
                 ).toString()),
                 onCancel: null,
@@ -763,6 +795,39 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
     }
     return const SizedBox(height: 1);
   }
+}
+
+/// The bank is not the caller's to read, so there is nothing to reload.
+///
+/// A nasabah is pointed at "Bank sampah saya", which is where they can switch
+/// to a bank that is theirs. A pengurus has one bank and nowhere else to go,
+/// so they get the reason alone.
+class _LockedMessage extends StatelessWidget {
+  const _LockedMessage({required this.message, required this.showBanks});
+
+  final String message;
+  final bool showBanks;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(message, textAlign: TextAlign.center),
+              if (showBanks)
+                AppButton(
+                  label: 'Bank sampah saya',
+                  variant: AppButtonVariant.text,
+                  icon: Icons.fact_check_outlined,
+                  onPressed: () =>
+                      context.push(ApprovalBankSampahListPage.route),
+                ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _RetryableMessage extends StatelessWidget {

@@ -77,6 +77,7 @@ class _EmptyJadwalRepository implements JadwalRepository {
     required int page,
     DateTime? date,
     DateTime? dateTo,
+    String? membershipId,
   }) async =>
       Right(JadwalPageResult(
         items: const [],

@@ -17,7 +17,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
@@ -25,6 +25,7 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -60,18 +61,6 @@ class _HomeSession extends ConsumerStatefulWidget {
 
 class _HomeSessionState extends ConsumerState<_HomeSession>
     with WidgetsBindingObserver {
-  /// The membership this screen is showing, and the one the active selection
-  /// last resolved to. They differ only while the nasabah is looking at a
-  /// pick of this screen's own: "none", to get the chooser back, or a pick
-  /// the storage would not keep. That difference is what tells a pick made
-  /// here from the bank "Bank sampah saya" considers active.
-  String? _shownId;
-  String? _activeId;
-
-  /// Whether a load is in flight that already awaits the active selection, so
-  /// its resolution is recorded instead of reloaded.
-  var _seeding = false;
-  int _selectionVersion = 0;
   Future<void> Function()? _reload;
   Future<void> Function()? _reloadSchedule;
 
@@ -86,7 +75,6 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _reloadWhenActiveBankChanges();
   }
 
   @override
@@ -100,72 +88,6 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
     if (state == AppLifecycleState.resumed) {
       unawaited(_refresh().catchError((_) {}));
     }
-  }
-
-  /// Shows [id] and remembers it as the active bank, so "Bank sampah saya"
-  /// marks the bank the beranda displays rather than the one picked before.
-  ///
-  /// A null id is the nasabah asking for the chooser back: there is no bank
-  /// to remember, so that pick lives on this screen alone, as does one the
-  /// storage refused to keep. Both are given up as soon as the active bank
-  /// changes anywhere, because that is an explicit choice too.
-  Future<void> _select(String? id) async {
-    final kept = id != null &&
-        await ref.read(activeMembershipProvider.notifier).select(id);
-    if (!mounted) return;
-    setState(() {
-      _shownId = id;
-      if (kept) _activeId = id;
-      _selectionVersion++;
-    });
-  }
-
-  /// The bank the beranda should load: the nasabah's pick on this screen, or
-  /// else the one saved in "Bank sampah saya", so it opens on the bank they
-  /// actually chose rather than whichever row the backend returned first.
-  ///
-  /// Awaiting the saved choice here, rather than reading it off the first
-  /// frame, is what keeps this to a single request. Read too early it is
-  /// still null, and the beranda would fetch the wrong bank and then fetch
-  /// again. The resource's own spinner covers the wait.
-  Future<String?> _seedMembershipId() async {
-    if (_shownId != _activeId) return _shownId;
-    _seeding = true;
-    try {
-      final resolved = await ref.read(activeMembershipProvider.future);
-      _shownId = resolved;
-      _activeId = resolved;
-      return resolved;
-    } finally {
-      _seeding = false;
-    }
-  }
-
-  /// Reloads when the active bank changes elsewhere: switched on the "Bank
-  /// sampah saya" detail page, or resolved to another bank because a refresh
-  /// of the membership list left the saved one unopenable.
-  ///
-  /// The comparison is against the bank this screen last resolved to, not
-  /// against the previous state, so a later refresh is treated like any other
-  /// change rather than skipped along with the first resolution. That first
-  /// resolution is the one case with nothing to reload: the load in flight is
-  /// awaiting the very value being reported, so it is recorded and left to
-  /// finish.
-  void _reloadWhenActiveBankChanges() {
-    ref.listenManual(activeMembershipProvider, (_, next) {
-      if (next.isLoading) return;
-      final resolved = next.value;
-      if (resolved == _activeId) return;
-      _activeId = resolved;
-      if (_seeding) {
-        _shownId = resolved;
-        return;
-      }
-      setState(() {
-        _shownId = resolved;
-        _selectionVersion++;
-      });
-    });
   }
 
   void _details(String title, Widget body) {
@@ -212,34 +134,38 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
   // so it keeps the app bar.
   bool get _webHeader => WebContentSurface.contains(context);
 
+  /// The phone app bar, with the avatar that leads to Profil. Null on the web
+  /// shell, where the rail carries both and the page paints its own title.
+  PreferredSizeWidget? _appBar(BuildContext context) => _webHeader
+      ? null
+      : NasabahPageAppBar(
+          title: 'Beranda',
+          actions: [
+            _notifications(context),
+            IconButton(
+              tooltip: 'Profil',
+              onPressed: () => context.go(AppLocations.profile),
+              icon: CircleAvatar(
+                radius: 19,
+                backgroundColor: NasabahStyle.emeraldLight,
+                child: Text(
+                  widget.name.isEmpty
+                      ? 'N'
+                      : widget.name.characters.first.toUpperCase(),
+                  style: _text(14,
+                      weight: AppFontWeight.semibold,
+                      color: NasabahStyle.emeraldDark),
+                ),
+              ),
+            ),
+          ],
+        );
+
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: WebContentSurface.pageColor(context,
             phone: NasabahStyle.background),
-        appBar: _webHeader
-            ? null
-            : NasabahPageAppBar(
-                title: 'Beranda',
-                actions: [
-                  _notifications(context),
-                  IconButton(
-                    tooltip: 'Profil',
-                    onPressed: () => context.go(AppLocations.profile),
-                    icon: CircleAvatar(
-                      radius: 19,
-                      backgroundColor: NasabahStyle.emeraldLight,
-                      child: Text(
-                        widget.name.isEmpty
-                            ? 'N'
-                            : widget.name.characters.first.toUpperCase(),
-                        style: _text(14,
-                            weight: AppFontWeight.semibold,
-                            color: NasabahStyle.emeraldDark),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        appBar: _appBar(context),
         body: SafeArea(
             child: Align(
                 alignment: Alignment.topCenter,
@@ -279,142 +205,147 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
                           ),
                         ),
                         const SizedBox(height: 8),
-                        NasabahResource<NasabahHome>(
-                          key: ValueKey(_selectionVersion),
-                          load: () async => widget.repository.home(
-                            membershipId: await _seedMembershipId(),
-                          ),
-                          onSelect: _select,
-                          registerReload: (reload) => _reload = reload,
-                          builder: (context, home) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _BankUnitCard(
-                                unitName: home.bank.name,
-                                logoUrl: home.bank.logoUrl,
-                                onSelect: () => _select(null),
-                                onOpen: () => _details(
-                                  'Detail Bank Sampah',
-                                  NasabahResource<NasabahBank>(
-                                    load: () => widget.repository
-                                        .bank(home.membershipId),
-                                    builder: (_, bank) => Padding(
-                                      padding: const EdgeInsets.only(top: 16),
-                                      child: NasabahBankDetail(bank: bank),
+                        ActiveMembershipScope(
+                          builder: (context, membership) =>
+                              NasabahResource<NasabahHome>(
+                            load: () => widget.repository.home(
+                              membershipId: membership.id,
+                            ),
+                            onSelect: membership.select,
+                            registerReload: (reload) => _reload = reload,
+                            builder: (context, home) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _BankUnitCard(
+                                  unitName: home.bank.name,
+                                  logoUrl: home.bank.logoUrl,
+                                  onSelect: () => membership.select(null),
+                                  onOpen: () => _details(
+                                    'Detail Bank Sampah',
+                                    NasabahResource<NasabahBank>(
+                                      load: () => widget.repository
+                                          .bank(home.membershipId),
+                                      builder: (_, bank) => Padding(
+                                        padding: const EdgeInsets.only(top: 16),
+                                        child: NasabahBankDetail(bank: bank),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              _BalanceCard(
-                                balance: home.balance,
-                                bankName: home.bank.name,
-                                latestActivity: home.activities.isEmpty
-                                    ? null
-                                    : home.activities.first,
-                                onOpen: () => context.go(Uri(
-                                  path: AppLocations.history,
-                                  queryParameters: {
-                                    'keanggotaan_id': home.membershipId,
-                                  },
-                                ).toString()),
-                              ),
-                              const SizedBox(height: 24),
-                              _SectionHeading(
-                                title: 'Jadwal Terdekat',
-                                onAll: () => context.go(JadwalPage.route),
-                              ),
-                              const SizedBox(height: 8),
-                              NasabahResource<JadwalEntity?>(
-                                load: _loadNearestSchedule,
-                                registerReload: (reload) =>
-                                    _reloadSchedule = reload,
-                                builder: (context, schedule) {
-                                  if (schedule == null) {
-                                    return _card(
-                                      child: Row(children: [
-                                        const Icon(
-                                          Icons.calendar_month_outlined,
-                                          color: _emerald,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            'Belum ada jadwal mendatang.',
-                                            style: _text(13, color: _muted),
+                                const SizedBox(height: 12),
+                                _BalanceCard(
+                                  balance: home.balance,
+                                  bankName: home.bank.name,
+                                  latestActivity: home.activities.isEmpty
+                                      ? null
+                                      : home.activities.first,
+                                  onOpen: () => context.go(Uri(
+                                    path: AppLocations.history,
+                                    queryParameters: {
+                                      'keanggotaan_id': home.membershipId,
+                                    },
+                                  ).toString()),
+                                ),
+                                const SizedBox(height: 24),
+                                _SectionHeading(
+                                  title: 'Jadwal Terdekat',
+                                  onAll: () => context.go(JadwalPage.route),
+                                ),
+                                const SizedBox(height: 8),
+                                NasabahResource<JadwalEntity?>(
+                                  load: () =>
+                                      _loadNearestSchedule(home.membershipId),
+                                  registerReload: (reload) =>
+                                      _reloadSchedule = reload,
+                                  builder: (context, schedule) {
+                                    if (schedule == null) {
+                                      return _card(
+                                        child: Row(children: [
+                                          const Icon(
+                                            Icons.calendar_month_outlined,
+                                            color: _emerald,
                                           ),
-                                        ),
-                                      ]),
-                                    );
-                                  }
-                                  final start = schedule.mulaiPada.toLocal();
-                                  return InkWell(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.lg),
-                                    onTap: () => context.go(Uri(
-                                      path: JadwalPage.route,
-                                      queryParameters: {
-                                        'date': _scheduleDateParam(start),
-                                      },
-                                    ).toString()),
-                                    child: _card(
-                                      child: Row(children: [
-                                        const Icon(
-                                          Icons.calendar_month_outlined,
-                                          color: _emerald,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                schedule.jenisKegiatan,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: _text(14,
-                                                    weight:
-                                                        AppFontWeight.semibold),
-                                              ),
-                                              Text(
-                                                '${nasabahDate(start)} · ${_scheduleTime(start)}',
-                                                style: _text(12, color: _muted),
-                                              ),
-                                              if (schedule.lokasi.isNotEmpty)
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Belum ada jadwal mendatang.',
+                                              style: _text(13, color: _muted),
+                                            ),
+                                          ),
+                                        ]),
+                                      );
+                                    }
+                                    final start = schedule.mulaiPada.toLocal();
+                                    return InkWell(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.lg),
+                                      onTap: () => context.go(Uri(
+                                        path: JadwalPage.route,
+                                        queryParameters: {
+                                          'date': _scheduleDateParam(start),
+                                        },
+                                      ).toString()),
+                                      child: _card(
+                                        child: Row(children: [
+                                          const Icon(
+                                            Icons.calendar_month_outlined,
+                                            color: _emerald,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
                                                 Text(
-                                                  schedule.lokasi,
+                                                  schedule.jenisKegiatan,
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
+                                                  style: _text(14,
+                                                      weight: AppFontWeight
+                                                          .semibold),
+                                                ),
+                                                Text(
+                                                  '${nasabahDate(start)} · ${_scheduleTime(start)}',
                                                   style:
                                                       _text(12, color: _muted),
                                                 ),
-                                            ],
+                                                if (schedule.lokasi.isNotEmpty)
+                                                  Text(
+                                                    schedule.lokasi,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: _text(12,
+                                                        color: _muted),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const Icon(Icons.chevron_right,
-                                            color: _muted),
-                                      ]),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              _SectionHeading(
-                                title: 'Terbaru',
-                                onAll: () => context.go(Uri(
-                                  path: AppLocations.history,
-                                  queryParameters: {
-                                    'keanggotaan_id': home.membershipId,
+                                          const Icon(Icons.chevron_right,
+                                              color: _muted),
+                                        ]),
+                                      ),
+                                    );
                                   },
-                                ).toString()),
-                              ),
-                              const SizedBox(height: 8),
-                              NasabahActivityList(
-                                activities: home.activities.take(1).toList(),
-                              ),
-                            ],
+                                ),
+                                const SizedBox(height: 24),
+                                _SectionHeading(
+                                  title: 'Terbaru',
+                                  onAll: () => context.go(Uri(
+                                    path: AppLocations.history,
+                                    queryParameters: {
+                                      'keanggotaan_id': home.membershipId,
+                                    },
+                                  ).toString()),
+                                ),
+                                const SizedBox(height: 8),
+                                NasabahActivityList(
+                                  activities: home.activities.take(1).toList(),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -424,28 +355,57 @@ class _HomeSessionState extends ConsumerState<_HomeSession>
       );
 }
 
-Future<JadwalEntity?> _loadNearestSchedule() async {
-  final repository = di<JadwalRepository>();
+/// One page of [membershipId]'s schedules, or null when the bank is refused.
+///
+/// A bank that is no longer this nasabah's to read is not an error worth
+/// repeating here: the bank card above already carries the refusal, so the
+/// schedule card simply has nothing to show.
+Future<JadwalPageResult?> _schedulePage(int pageNumber, String membershipId) {
+  final result = di<JadwalRepository>()
+      .getJadwal(page: pageNumber, membershipId: membershipId);
+  return result.then((either) => either.fold<JadwalPageResult?>(
+        (failure) => failure.response?.statusCode == 403
+            ? null
+            : throw NasabahApiException(failure.displayMessage),
+        (page) => page,
+      ));
+}
+
+/// The earlier of [nearest] and the soonest published schedule in [items] that
+/// has not finished yet.
+JadwalEntity? _soonestOf(
+  Iterable<JadwalEntity> items,
+  JadwalEntity? nearest,
+  DateTime now,
+) {
+  var soonest = nearest;
+  for (final schedule in items) {
+    final start = schedule.mulaiPada.toLocal();
+    if (schedule.isPublished &&
+        !schedule.selesaiPada.toLocal().isBefore(now) &&
+        (soonest == null || start.isBefore(soonest.mulaiPada.toLocal()))) {
+      soonest = schedule;
+    }
+  }
+  return soonest;
+}
+
+/// The nearest upcoming schedule of [membershipId], or null when there is
+/// none.
+///
+/// The bank is explicit because the backend otherwise refuses the list for a
+/// nasabah with more than one (PIL-235); before that it merged the schedules
+/// of every bank they belonged to, and this card showed whichever came first.
+Future<JadwalEntity?> _loadNearestSchedule(String membershipId) async {
   final now = clock.now();
   JadwalEntity? nearest;
   var pageNumber = 1;
   // ponytail: scans every upcoming page; add a server-side nearest query if
   // volume hurts homepage load time.
   while (true) {
-    final result = await repository.getJadwal(page: pageNumber);
-    final page = result.fold(
-      (failure) => throw NasabahApiException(failure.displayMessage),
-      (page) => page,
-    );
-    for (final schedule in page.items) {
-      final start = schedule.mulaiPada.toLocal();
-      final end = schedule.selesaiPada.toLocal();
-      if (schedule.isPublished &&
-          !end.isBefore(now) &&
-          (nearest == null || start.isBefore(nearest.mulaiPada.toLocal()))) {
-        nearest = schedule;
-      }
-    }
+    final page = await _schedulePage(pageNumber, membershipId);
+    if (page == null) return null;
+    nearest = _soonestOf(page.items, nearest, now);
     if (page.items.isEmpty || !page.hasMore) return nearest;
     pageNumber++;
   }

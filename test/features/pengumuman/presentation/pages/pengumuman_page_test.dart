@@ -6,7 +6,15 @@ import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_reposit
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
+
+import '../../../../support/active_membership_support.dart';
 import '../../../../support/auth_support.dart';
+import '../../../../support/nasabah_approval_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
@@ -28,13 +36,31 @@ void main() {
     repository = NasabahPengumumanRepository(api.network);
   });
 
-  Future<void> openPage(WidgetTester tester,
-      {Size size = const Size(800, 2000)}) async {
+  Future<void> openPage(
+    WidgetTester tester, {
+    Size size = const Size(800, 2000),
+    String? membershipId = 'm-1',
+    MemoryAppStorage? storage,
+    List<NasabahMembershipEntity>? memberships,
+  }) async {
     await pumpRouted(
       tester,
       withAuthenticationProvider(
         authNotifierIn(Authenticated(authEntity: testAuth(role: 'nasabah'))),
-        PengumumanPage(membershipId: 'm-1'),
+        PengumumanPage(membershipId: membershipId),
+        overrides: [
+          activeMembershipSelectionProvider.overrideWithValue(
+            storage == null
+                ? ActiveMembershipSelection.none()
+                : ActiveMembershipSelection(storage),
+          ),
+          if (memberships != null)
+            nasabahApprovalProvider.overrideWith(
+              () => TestNasabahApprovalNotifier(
+                initialState: NasabahApprovalLoaded(memberships),
+              ),
+            ),
+        ],
       ),
       extraRoutes: ['/pengumuman/detail'],
       pushed: true,
@@ -50,6 +76,33 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('asks for the active bank when the route names none',
+      (tester) async {
+    final storage = MemoryAppStorage();
+    await ActiveMembershipSelection(storage).select('u1', 'membership-a');
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': <Map<String, dynamic>>[],
+    });
+
+    // The route is locked for handover (PIL-436), so this is the guard rather
+    // than a screen a nasabah can open today. It still has to be right: a
+    // nasabah with two banks would otherwise meet a 422 the moment pengumuman
+    // is unlocked.
+    await openPage(
+      tester,
+      membershipId: null,
+      storage: storage,
+      memberships: [
+        membershipRow('membership-a'),
+        membershipRow('membership-b'),
+      ],
+    );
+
+    expect(api.last.query['keanggotaan_id'], 'membership-a');
+  });
 
   testWidgets('lists announcements with a dot only on unread rows',
       (tester) async {

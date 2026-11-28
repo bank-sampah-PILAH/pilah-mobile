@@ -12,6 +12,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/active_membership_scope.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart'
     show nasabahDate;
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
@@ -39,9 +40,12 @@ class PengumumanPage extends ConsumerWidget {
         body: Center(child: Text('Silakan masuk sebagai nasabah.')),
       );
     }
-    return _PengumumanListBody(
-      key: ValueKey((auth!.id, auth.email, membershipId)),
+    return ActiveMembershipScope(
       membershipId: membershipId,
+      builder: (context, membership) => _PengumumanListBody(
+        key: ValueKey((auth!.id, auth.email, membership.id)),
+        membershipId: membership.id,
+      ),
     );
   }
 }
@@ -59,12 +63,18 @@ class _PengumumanListBody extends ConsumerStatefulWidget {
 class _PengumumanListBodyState extends ConsumerState<_PengumumanListBody> {
   late final ScrollController _scrollController;
 
+  /// Whether this screen has asked for its own announcements yet. The provider
+  /// is global, so a screen built for another bank would otherwise show that
+  /// bank's announcements for the frame before its first load.
+  var _askedForOwn = false;
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        setState(() => _askedForOwn = true);
         ref
             .read(nasabahPengumumanProvider.notifier)
             .load(membershipId: widget.membershipId);
@@ -98,7 +108,8 @@ class _PengumumanListBodyState extends ConsumerState<_PengumumanListBody> {
         title: 'Pengumuman',
         showBack: true,
       ),
-      body: switch (state.status) {
+      body: switch (
+          _askedForOwn ? state.status : NasabahPengumumanStatus.loading) {
         NasabahPengumumanStatus.initial ||
         NasabahPengumumanStatus.loading =>
           const Padding(

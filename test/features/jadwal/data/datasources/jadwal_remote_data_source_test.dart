@@ -59,6 +59,38 @@ void main() {
     verify(() => network.post('/api/v1/jadwal/schedule-1/terbitkan')).called(1);
   });
 
+  test('asks for one schedule in the bank it was given', () async {
+    final network = _MockNetworkService();
+    when(() => network.get(
+          '/api/v1/jadwal/schedule-1',
+          queryParams: any(named: 'queryParams'),
+        )).thenAnswer((_) async => _response(_schedule('schedule-1')));
+
+    final detail = await JadwalRemoteDataSourceImpl(network)
+        .getDetail('schedule-1', membershipId: 'membership-1');
+
+    // The backend resolves a membership for the detail too, so without this a
+    // nasabah with several banks gets 422 on every card they tap.
+    expect(detail.id, 'schedule-1');
+    verify(() => network.get(
+          '/api/v1/jadwal/schedule-1',
+          queryParams: {'keanggotaan_id': 'membership-1'},
+        )).called(1);
+  });
+
+  test('asks for one schedule without a bank when none is known', () async {
+    final network = _MockNetworkService();
+    when(() => network.get('/api/v1/jadwal/schedule-1'))
+        .thenAnswer((_) async => _response(_schedule('schedule-1')));
+
+    final detail =
+        await JadwalRemoteDataSourceImpl(network).getDetail('schedule-1');
+
+    // No empty parameter either, so a pengurus request stays what it was.
+    expect(detail.id, 'schedule-1');
+    verify(() => network.get('/api/v1/jadwal/schedule-1')).called(1);
+  });
+
   test('loads one page of schedules without draining the API', () async {
     final network = _MockNetworkService();
     final queries = <Map<String, dynamic>>[];
@@ -82,13 +114,19 @@ void main() {
     final result = await JadwalRemoteDataSourceImpl(network).getJadwal(
       page: 1,
       date: DateTime(2026, 10, 10),
+      membershipId: 'membership-1',
     );
 
     expect(result.items.map((schedule) => schedule.id), ['schedule-1']);
     expect(result.totalCount, 21);
     expect(result.hasMore, isTrue);
     expect(queries, [
-      {'page_size': 20, 'page': 1, 'date': '2026-10-10'},
+      {
+        'page_size': 20,
+        'page': 1,
+        'date': '2026-10-10',
+        'keanggotaan_id': 'membership-1',
+      },
     ]);
   });
 
@@ -138,6 +176,7 @@ void main() {
     final dates = await JadwalRemoteDataSourceImpl(network).getCalendarDates(
       DateTime(2026, 10, 1),
       DateTime(2026, 10, 31),
+      membershipId: 'membership-1',
     );
 
     expect(dates, {DateTime(2026, 10, 10), DateTime(2026, 10, 12)});
@@ -146,6 +185,7 @@ void main() {
           queryParams: {
             'start_date': '2026-10-01',
             'end_date': '2026-10-31',
+            'keanggotaan_id': 'membership-1',
           },
         )).called(1);
   });

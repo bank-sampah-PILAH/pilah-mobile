@@ -11,6 +11,7 @@ class NasabahActivityCard extends StatelessWidget {
     required this.title,
     required this.date,
     required this.amount,
+    this.subtitle,
     this.isWithdrawal = false,
     this.onTap,
   });
@@ -18,6 +19,10 @@ class NasabahActivityCard extends StatelessWidget {
   final String title;
   final DateTime? date;
   final String amount;
+
+  /// An extra line under the date, used where a row needs to name the bank it
+  /// belongs to. Nothing is reserved for it when it is null.
+  final String? subtitle;
   final bool isWithdrawal;
   final VoidCallback? onTap;
 
@@ -53,6 +58,13 @@ class NasabahActivityCard extends StatelessWidget {
                     if (local != null)
                       Text(
                         '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year} · ${local.hour.toString().padLeft(2, '0')}.${local.minute.toString().padLeft(2, '0')}',
+                        style: NasabahStyle.text(12, color: NasabahStyle.muted),
+                      ),
+                    if (subtitle != null && subtitle!.isNotEmpty)
+                      Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: NasabahStyle.text(12, color: NasabahStyle.muted),
                       ),
                   ],

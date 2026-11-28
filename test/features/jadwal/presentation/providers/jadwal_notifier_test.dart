@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart' show DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -843,6 +844,118 @@ void main() {
     expect(error, isNull);
     expect((cubit.state as JadwalLoaded).items, [schedule]);
     expect((cubit.state as JadwalLoaded).isSaving, isFalse);
+  });
+
+  group('a nasabah reading one bank', () {
+    test('carries the chosen bank on the list and the calendar', () async {
+      when(() => repository.getJadwal(
+            page: 1,
+            date: null,
+            membershipId: 'membership-a',
+          )).thenAnswer((_) async => Right(_page([schedule])));
+      when(() => repository.getCalendarDates(
+            any(),
+            any(),
+            membershipId: 'membership-a',
+          )).thenAnswer((_) async => const Right({}));
+      final cubit = createNotifier(repository);
+
+      cubit.useMembership('membership-a');
+      await cubit.loadJadwal();
+      await cubit.loadCalendarDates(
+        startDate: DateTime(2026, 10, 1),
+        endDate: DateTime(2026, 10, 31),
+      );
+
+      // The calendar dots come from the same queryset as the list, so a bank
+      // on one and no bank on the other would mark days the list cannot show.
+      expect(cubit.state, isA<JadwalLoaded>());
+      verify(() => repository.getJadwal(
+          page: 1, date: null, membershipId: 'membership-a')).called(1);
+      verify(() => repository.getCalendarDates(any(), any(),
+          membershipId: 'membership-a')).called(1);
+    });
+
+    test('carries the chosen bank on a date range', () async {
+      when(() => repository.getJadwal(
+            page: 1,
+            date: DateTime(2026, 10, 19),
+            dateTo: DateTime(2026, 10, 25),
+            membershipId: 'membership-a',
+          )).thenAnswer((_) async => Right(_page([schedule])));
+      final cubit = createNotifier(repository);
+
+      cubit.useMembership('membership-a');
+      await cubit.loadJadwal(
+        date: DateTime(2026, 10, 19),
+        dateTo: DateTime(2026, 10, 25),
+      );
+
+      // Picking a week on the calendar must not drop the bank: the range and
+      // the bank narrow the same queryset, and a request that keeps only the
+      // range is refused for a nasabah with more than one bank.
+      expect(cubit.state, isA<JadwalLoaded>());
+      verify(() => repository.getJadwal(
+            page: 1,
+            date: DateTime(2026, 10, 19),
+            dateTo: DateTime(2026, 10, 25),
+            membershipId: 'membership-a',
+          )).called(1);
+    });
+
+    test('a bank that may not be opened is locked, not an error', () async {
+      when(() => repository.getJadwal(
+            page: 1,
+            date: null,
+            membershipId: 'membership-a',
+          )).thenAnswer((_) async => Left(NetworkException.handleBadResponse(
+            Response(
+              requestOptions: RequestOptions(path: '/api/v1/jadwal'),
+              statusCode: 403,
+              data: {'error': 'Keanggotaan dan bank sampah harus aktif.'},
+            ),
+          )));
+      final cubit = createNotifier(repository);
+
+      cubit.useMembership('membership-a');
+      await cubit.loadJadwal();
+
+      // Nothing to retry: the schedules stay out of reach until the nasabah
+      // picks a bank that is theirs to open, so the screen must not offer a
+      // reload button that cannot work.
+      expect(cubit.state,
+          const JadwalLocked('Keanggotaan dan bank sampah harus aktif.'));
+    });
+
+    test('a failure that is not a refusal stays retryable', () async {
+      when(() => repository.getJadwal(
+                page: 1,
+                date: null,
+                membershipId: 'membership-a',
+              ))
+          .thenAnswer((_) async => Left(GeneralException(message: 'offline')));
+      final cubit = createNotifier(repository);
+
+      cubit.useMembership('membership-a');
+      await cubit.loadJadwal();
+
+      expect(cubit.state, const JadwalError('offline'));
+    });
+
+    test('resetting the session forgets the bank', () async {
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([schedule])),
+      );
+      final cubit = createNotifier(repository);
+
+      cubit.useMembership('membership-a');
+      cubit.reset();
+      await cubit.loadJadwal();
+
+      // A new session is a different account until it says otherwise, so the
+      // previous nasabah's bank must not ride along on its first request.
+      verify(() => repository.getJadwal(page: 1, date: null)).called(1);
+    });
   });
 
   test('a page result is equal to another with the same content', () {
