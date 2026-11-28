@@ -22,6 +22,7 @@ import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencai
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
@@ -333,6 +334,18 @@ void main() {
           isFalse);
     });
 
+    testWidgets('still reaches the setoran panel route', (tester) async {
+      // The panel is now staff-gated by its parent path. Without the entry
+      // argument it still falls back to the page behind it rather than being
+      // refused outright.
+      final router = await boot(tester);
+
+      await visit(tester, router, '/transaksi-baru/panel');
+
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          TransaksiBaruPage.route);
+    });
+
     testWidgets('is kept off the customer-only pages', (tester) async {
       final router = await boot(tester);
 
@@ -409,6 +422,27 @@ void main() {
         await visit(tester, router, path);
         expect(find.byType(DashboardPage), findsNothing, reason: path);
         expect(find.byType(NasabahPage), findsNothing, reason: path);
+      }
+    });
+
+    testWidgets('cannot reach the staff pages that sat outside the guard',
+        (tester) async {
+      // None of these were in the guard's staff set, so each one opened for a
+      // nasabah: the setoran panel is a child path, the superadmin dashboard
+      // was never listed, and the two `extra`-guarded pages only checked
+      // whether they had their argument, not who was asking.
+      final router = await boot(tester);
+
+      for (final path in const [
+        '/transaksi-baru/panel',
+        '/superadmin-dashboard',
+        '/edit-pencairan',
+        '/riwayat-harga',
+      ]) {
+        await visit(tester, router, path);
+        expect(router.routerDelegate.currentConfiguration.uri.path,
+            AppLocations.dashboard,
+            reason: path);
       }
     });
 

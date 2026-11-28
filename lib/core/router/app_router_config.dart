@@ -13,6 +13,7 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/locked_routes.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
+import 'package:pilah_mobile/core/router/route_access.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
@@ -32,11 +33,8 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
-import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pengumuman_routes.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/legal/domain/legal_document.dart';
@@ -493,38 +491,10 @@ class AppRouterConfig {
       role: role,
     );
     if (webRedirect != null) return webRedirect;
-    final staffPaths = {
-      NasabahPage.route,
-      HargaPage.route,
-      LaporanPage.route,
-      TransaksiBaruPage.route,
-      PengumumanFormPage.route,
-      PengumumanKelolaPage.route,
-    };
-    final customerPaths = {
-      AppLocations.history,
-      AppLocations.customerBank,
-      ApprovalBankSampahListPage.route,
-      ApprovalBankSampahDetailPage.route,
-      PengumumanPage.route,
-      PengumumanDetailPage.route,
-    };
-    final protected = staffPaths.contains(path) ||
-        customerPaths.contains(path) ||
-        path == AppLocations.dashboard ||
-        path == AppLocations.profile;
-    if (role == 'superadmin' && protected) {
-      return SuperAdminDashboardScreen.route;
-    }
-    if (role == 'nasabah' && staffPaths.contains(path)) {
-      return AppLocations.dashboard;
-    }
-    if (role == 'pengelola' && customerPaths.contains(path)) {
-      return AppLocations.dashboard;
-    }
-    if (!{'nasabah', 'pengelola', 'superadmin'}.contains(role) && protected) {
-      return LoginPage.route;
-    }
-    return null;
+    // Who may be where lives in [roleRouteRedirect], which answers for every
+    // path rather than for two listed sets. Returning null for the path we are
+    // already on keeps a refusal from redirecting to itself.
+    final denied = roleRouteRedirect(path: path, role: role);
+    return denied == path ? null : denied;
   }
 }
