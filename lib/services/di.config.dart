@@ -22,6 +22,8 @@ import '../core/client/app_environment.dart' as _i119;
 import '../core/client/network_service.dart' as _i941;
 import '../core/client/network_utils.dart' as _i936;
 import '../core/database/secure_database.dart' as _i124;
+import '../core/errors/error_module.dart' as _i279;
+import '../core/errors/error_reporter.dart' as _i1071;
 import '../core/media/image_picker_module.dart' as _i189;
 import '../core/router/invite_token_store.dart' as _i901;
 import '../core/storage/app_storage.dart' as _i812;
@@ -205,6 +207,7 @@ extension GetItInjectableX on _i174.GetIt {
     final analyticsModule = _$AnalyticsModule();
     final imagePickerModule = _$ImagePickerModule();
     final storageModule = _$StorageModule();
+    final errorModule = _$ErrorModule();
     gh.lazySingleton<_i986.AnalyticsClient>(
         () => analyticsModule.analyticsClient());
     gh.lazySingleton<_i183.ImagePicker>(() => imagePickerModule.imagePicker);
@@ -222,6 +225,8 @@ extension GetItInjectableX on _i174.GetIt {
       () => storageModule.sharedPreferences,
       instanceName: 'shared_preferences',
     );
+    gh.lazySingleton<_i1071.ErrorReporter>(
+        () => errorModule.errorReporter(gh<_i986.AnalyticsClient>()));
     gh.lazySingleton<_i124.SecureDatabase>(
         () => const _i124.SecureDatabaseImpl());
     gh.lazySingleton<_i357.AnalyticsConsentStore>(() =>
@@ -241,6 +246,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i941.NetworkService>(() => _i941.NetworkService(
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
+          errorReporter: gh<_i1071.ErrorReporter>(),
         ));
     gh.lazySingleton<_i184.AktivitasRepository>(
         () => _i694.AktivitasRepositoryImpl(gh<_i941.NetworkService>()));
@@ -392,3 +398,5 @@ class _$AnalyticsModule extends _i940.AnalyticsModule {}
 class _$ImagePickerModule extends _i189.ImagePickerModule {}
 
 class _$StorageModule extends _i624.StorageModule {}
+
+class _$ErrorModule extends _i279.ErrorModule {}

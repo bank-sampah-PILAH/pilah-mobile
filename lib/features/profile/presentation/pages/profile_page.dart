@@ -69,6 +69,8 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
+enum _TeamAction { makePrimary, remove }
+
 class _ProfileView extends ConsumerStatefulWidget {
   const _ProfileView({required this.isWeb});
 
@@ -346,6 +348,57 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     _snack('Link undangan disalin ke clipboard!');
   }
 
+  String _displayName(TeamMember member) =>
+      member.nama.isNotEmpty ? member.nama : member.email;
+
+  Future<void> _onMakePrimary(TeamMember member) async {
+    final name = _displayName(member);
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Jadikan $name Pengurus Utama?',
+      message: 'Anda akan menjadi pengurus biasa dan tidak bisa lagi membuat '
+          'tautan undangan atau mengelola pengurus lain. Hanya $name yang '
+          'bisa mengembalikan jabatan ini.',
+      confirmLabel: 'Ya, Jadikan',
+    );
+    if (!confirmed || !mounted) return;
+
+    final error =
+        await ref.read(profileProvider.notifier).transferPrimary(member.id);
+    if (!mounted) return;
+    primaryTransferred(ref.read(analyticsClientProvider),
+        success: error == null);
+    if (error != null) {
+      _snack(error.displayMessage, error: true);
+      return;
+    }
+    _snack('Jabatan Pengurus Utama dialihkan ke $name');
+  }
+
+  Future<void> _onRemoveMember(TeamMember member) async {
+    final name = _displayName(member);
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluarkan $name dari tim?',
+      message: '$name tidak bisa lagi mengakses bank sampah ini. Riwayat '
+          'setoran yang ia catat tetap ada. Mereka baru bisa bergabung '
+          'kembali lewat tautan undangan.',
+      confirmLabel: 'Ya, Keluarkan',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    final error =
+        await ref.read(profileProvider.notifier).removeMember(member.id);
+    if (!mounted) return;
+    memberRemoved(ref.read(analyticsClientProvider), success: error == null);
+    if (error != null) {
+      _snack(error.displayMessage, error: true);
+      return;
+    }
+    _snack('$name dikeluarkan dari tim');
+  }
+
   Future<void> _onCreateInvite(TeamInvite? currentInvite) async {
     if (currentInvite != null) {
       final confirmed = await showAppConfirmDialog(
@@ -418,7 +471,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           const SizedBox(height: AppSpacing.sm),
           AppButton(
             label: 'Coba Lagi',
-            variant: AppButtonVariant.outlined,
+            variant: AppButtonVariant.outlinedOnDark,
             onPressed: () =>
                 ref.read(profileProvider.notifier).load(silent: true),
           ),
@@ -436,7 +489,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           const SizedBox(height: AppSpacing.sm),
           AppButton(
             label: 'Buat Link Undangan',
-            variant: AppButtonVariant.outlined,
+            variant: AppButtonVariant.outlinedOnDark,
             isLoading: state.isCreatingInvite,
             onPressed:
                 state.isCreatingInvite ? null : () => _onCreateInvite(null),
@@ -1165,7 +1218,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                               thickness: 1,
                               indent: 16,
                               endIndent: 16),
-                        _buildMemberRow(team[i]),
+                        _buildMemberRow(
+                          team[i],
+                          canManage: isPengelolaUtama && !team[i].isCurrentUser,
+                          busy: state.isChangingTeam,
+                        ),
                       ],
                     ],
                   ),
@@ -1191,7 +1248,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
     );
   }
 
-  Widget _buildMemberRow(TeamMember member) {
+  Widget _buildMemberRow(
+    TeamMember member, {
+    required bool canManage,
+    required bool busy,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
@@ -1259,6 +1320,30 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               ),
             ),
           ),
+          if (canManage)
+            PopupMenuButton<_TeamAction>(
+              key: ValueKey('team-menu-${member.id}'),
+              tooltip: 'Aksi untuk ${_displayName(member)}',
+              icon: const Icon(Icons.more_vert, color: AppColors.inkSoft),
+              enabled: !busy,
+              onSelected: (action) => switch (action) {
+                _TeamAction.makePrimary => _onMakePrimary(member),
+                _TeamAction.remove => _onRemoveMember(member),
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: _TeamAction.makePrimary,
+                  child: Text('Jadikan Pengurus Utama'),
+                ),
+                const PopupMenuItem(
+                  value: _TeamAction.remove,
+                  child: Text(
+                    'Keluarkan',
+                    style: TextStyle(color: AppColors.danger),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

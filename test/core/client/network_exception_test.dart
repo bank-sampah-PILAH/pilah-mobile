@@ -24,4 +24,21 @@ void main() {
       expect(NetworkException.extractMessage(response), isNull);
     });
   });
+
+  group('NetworkException.handleBadResponse', () {
+    test('keeps the response of a server failure, so its request can be found',
+        () {
+      for (final status in [500, 503]) {
+        final response = Response<dynamic>(
+          requestOptions: RequestOptions(path: '/x'),
+          statusCode: status,
+        );
+
+        final error = NetworkException.handleBadResponse(response);
+
+        expect(error, isA<InternalServerErrorException>(), reason: '$status');
+        expect(error.response, same(response), reason: '$status');
+      }
+    });
+  });
 }

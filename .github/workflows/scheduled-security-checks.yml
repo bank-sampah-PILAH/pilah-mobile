@@ -1,0 +1,42 @@
+# Non-gate checks for the mobile repo: gitleaks secret scan. Monthly cron
+# plus manual dispatch. This repo holds the Android keystore, Play service
+# account JSONs, and tokens as GitHub secrets — a leaked credential in git
+# history must be caught here, not only in the backend repo.
+name: Scheduled security checks
+
+on:
+  schedule:
+    # First day of each month, off the hour. GitHub Actions cron cannot
+    # express "first Monday": day-of-month and day-of-week combine as OR.
+    - cron: "53 2 1 * *"
+  workflow_dispatch:
+  # Validate changes to this workflow on PRs touching it.
+  pull_request:
+    branches:
+      - staging
+      - main
+    paths:
+      - ".github/workflows/**"
+
+concurrency:
+  group: scheduled-security-checks
+  cancel-in-progress: false
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # Full-history scan. Blocking — a leaked credential must fail the run.
+    # Docker CLI (private repo: gitleaks-action needs a license for PR mode).
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        run: >
+          docker run --rm -v "$PWD":/repo zricethezav/gitleaks detect
+          --source /repo --no-banner
+          --gitleaks-ignore-path /repo/.gitleaksignore

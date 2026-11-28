@@ -28,6 +28,16 @@ void profileSettingsSaved(
       ],
     });
 
+/// The Pengurus Utama role was handed to another pengurus. Only whether it
+/// worked is sent, never who the role went to.
+void primaryTransferred(AnalyticsClient client, {required bool success}) =>
+    client.capture('pengurus_utama_dialihkan', {'berhasil': success});
+
+/// A pengurus was removed from the bank sampah. Only whether it worked is sent,
+/// never who was removed.
+void memberRemoved(AnalyticsClient client, {required bool success}) =>
+    client.capture('pengurus_dikeluarkan', {'berhasil': success});
+
 /// Copying the invite link was tried. It says whether it worked, and the link
 /// itself is never sent.
 void inviteLinkCopied(AnalyticsClient client, {required bool success}) =>

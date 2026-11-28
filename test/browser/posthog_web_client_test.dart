@@ -5,6 +5,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:pilah_mobile/core/analytics/posthog_web_client.dart';
+import 'package:pilah_mobile/core/errors/web_exception_event_scrubber.dart';
 import 'package:test/test.dart';
 import 'package:web/web.dart' as web;
 
@@ -334,6 +335,157 @@ void main() {
       'save_referrer': false,
       'save_campaign_params': false,
       'capture_performance': true,
+      // posthog-js would send the message of any uncaught error as it is, and
+      // the project setting "exception autocapture" turns that on for every
+      // client at once. Errors go through ErrorReporter, which cleans them.
+      'capture_exceptions': false,
+      'before_send': isNotNull,
+    });
+  });
+
+  group('error messages in what posthog-js is about to send', () {
+    JSFunction beforeSend() {
+      final args = globalContext.getProperty<JSObject>('__initArgs'.toJS);
+      final options = args.getProperty<JSObject>(1.toJS);
+      return options.getProperty<JSFunction>('before_send'.toJS);
+    }
+
+    Map<Object?, Object?> run(Map<String, Object?> captureResult) {
+      final result = beforeSend().callAsFunction(
+        null,
+        captureResult.jsify(),
+      ) as JSObject;
+      return result.dartify()! as Map<Object?, Object?>;
+    }
+
+    test('keep only the type, whichever way the exception got there', () async {
+      await _client().start();
+
+      final out = run({
+        'event': r'$exception',
+        'properties': {
+          r'$exception_list': [
+            {
+              'type': 'StateError',
+              'value': 'Budi Santoso menyetor Rp 50.000 0812345678',
+            },
+          ],
+        },
+      });
+
+      final list = (out['properties']! as Map)[r'$exception_list']! as List;
+      expect((list.single as Map)['value'], 'StateError');
+    });
+
+    test(
+        'are dropped when the event has no properties, no list or an empty one',
+        () async {
+      await _client().start();
+
+      for (final event in [
+        {'event': r'$exception'},
+        {'event': r'$exception', 'properties': <String, Object?>{}},
+        {
+          'event': r'$exception',
+          'properties': {r'$exception_list': <Object?>[]},
+        },
+      ]) {
+        expect(beforeSend().callAsFunction(null, event.jsify()), isNull,
+            reason: '$event');
+      }
+    });
+
+    test('are dropped when an exception has no type', () async {
+      await _client().start();
+
+      final out = beforeSend().callAsFunction(
+        null,
+        {
+          'event': r'$exception',
+          'properties': {
+            r'$exception_list': [
+              {'value': 'Budi Santoso menyetor Rp 50.000'},
+            ],
+          },
+        }.jsify(),
+      );
+
+      expect(out, isNull);
+    });
+
+    test('say the error was not handled when the reporter marked it so',
+        () async {
+      await _client().start();
+
+      final out = run({
+        'event': r'$exception',
+        'properties': {
+          webNotHandledMarker: false,
+          r'$exception_handled': true,
+          r'$exception_list': [
+            {
+              'type': 'Error',
+              'value': 'x',
+              'mechanism': {'handled': true, 'type': 'generic'},
+            },
+          ],
+        },
+      });
+
+      final properties = out['properties']! as Map;
+      final entry = (properties[r'$exception_list']! as List).single as Map;
+      expect((entry['mechanism']! as Map)['handled'], isFalse);
+      expect(properties[r'$exception_handled'], isFalse);
+      expect(properties.containsKey(webNotHandledMarker), isFalse,
+          reason: 'the marker is internal and is not sent');
+    });
+
+    test('stay handled when nothing says otherwise', () async {
+      await _client().start();
+
+      final out = run({
+        'event': r'$exception',
+        'properties': {
+          r'$exception_handled': true,
+          r'$exception_list': [
+            {
+              'type': 'Error',
+              'value': 'x',
+              'mechanism': {'handled': true, 'type': 'generic'},
+            },
+          ],
+        },
+      });
+
+      final properties = out['properties']! as Map;
+      final entry = (properties[r'$exception_list']! as List).single as Map;
+      expect((entry['mechanism']! as Map)['handled'], isTrue);
+    });
+
+    test('are dropped rather than sent as they are when they cannot be read',
+        () async {
+      await _client().start();
+
+      final out = beforeSend().callAsFunction(
+        null,
+        {
+          'event': r'$exception',
+          'properties': {r'$exception_list': 'not a list'},
+        }.jsify(),
+      );
+
+      expect(out, isNull);
+    });
+
+    test('leave every other event alone', () async {
+      await _client().start();
+
+      final out = run({
+        'event': 'app_dibuka',
+        'properties': {'note': 'hubungi budi@example.com'},
+      });
+
+      expect((out['properties']! as Map)['note'], 'hubungi budi@example.com');
     });
   });
 

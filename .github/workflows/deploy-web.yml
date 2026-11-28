@@ -89,6 +89,13 @@ jobs:
           flutter analyze --fatal-infos
           flutter test
 
+      - name: Compute app version
+        run: |
+          version="$(grep -m1 '^version:' pubspec.yaml | cut -d' ' -f2)-${GITHUB_SHA::7}"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      # --source-maps lets PostHog show the real file and function of an error.
+      # The maps are uploaded below and never deployed.
       - name: Build dashboard once
         run: |
           if [ "$FLAVOR" = staging ]; then
@@ -96,7 +103,40 @@ jobs:
           else
             target=lib/main_production.dart
           fi
-          flutter build web --release -t "$target"
+          flutter build web --release --source-maps -t "$target" \
+            --dart-define=APP_VERSION="$APP_VERSION"
+          printf '%s\n' "$GITHUB_SHA" > build/web/revision.txt
+
+      # A failed upload only costs readable stack traces, so it must not stop
+      # the deploy. It runs before the maps are removed, and the removal below
+      # runs whatever happens here.
+      - name: Upload source maps to PostHog
+        continue-on-error: true
+        env:
+          POSTHOG_CLI_API_KEY: ${{ secrets.POSTHOG_CLI_API_KEY }}
+          # Not a secret: the id of the one PostHog project (it is in its URL).
+          POSTHOG_CLI_PROJECT_ID: "693641"
+        run: |
+          if [ -z "$POSTHOG_CLI_API_KEY" ]; then
+            echo "::warning::POSTHOG_CLI_API_KEY is not set; source maps were not uploaded."
+            exit 0
+          fi
+          npx --yes @posthog/cli@0.20.1 --host https://us.posthog.com \
+            sourcemap process --directory build/web \
+            --release-name pilah-web --release-version "$APP_VERSION" \
+            --delete-after \
+            || echo "::warning::Source map upload to PostHog failed; errors will show minified stack traces."
+
+      - name: Keep source maps out of the deployed files
+        if: ${{ always() }}
+        run: |
+          if [ -d build/web ]; then
+            find build/web -name '*.map' -delete
+            if find build/web -name '*.map' | grep -q .; then
+              echo "::error::Source maps are still in build/web."
+              exit 1
+            fi
+          fi
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
@@ -154,4 +194,17 @@ jobs:
           curl --fail --retry 8 --retry-all-errors --retry-delay 5 "$url/health"
           curl --fail --retry 3 --retry-all-errors "$url/" > /dev/null
           echo "Dashboard production: $url" >> "$GITHUB_STEP_SUMMARY"
-          echo "Configure backend PILAH_WEB_ORIGIN and Google Authorized JavaScript origins with this exact origin." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify Firebase preview and publish production routing
+        if: inputs.flavor == 'production' && vars.FIREBASE_WEB_ENABLED == 'true'
+        run: |
+          firebase=(npx --yes firebase-tools@13.35.1)
+          preview="$("${firebase[@]}" hosting:channel:deploy production-check \
+            --project "$PROJECT_ID" --expires 7d --non-interactive --json)"
+          preview_url="$(jq -er '[.result[] | .url] | if length == 1 then .[0] else error("Expected one preview URL") end' <<< "$preview")"
+          echo "Firebase preview: $preview_url" >> "$GITHUB_STEP_SUMMARY"
+          python3 scripts/check_firebase_web.py "$preview_url" "$GITHUB_SHA"
+          "${firebase[@]}" deploy --only hosting --project "$PROJECT_ID" --non-interactive
+          live_url="https://$PROJECT_ID.web.app"
+          python3 scripts/check_firebase_web.py "$live_url" "$GITHUB_SHA"
+          echo "Firebase production: $live_url ($GITHUB_SHA)" >> "$GITHUB_STEP_SUMMARY"
