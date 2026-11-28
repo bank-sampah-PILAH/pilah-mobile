@@ -4,7 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
@@ -426,7 +426,7 @@ void main() {
       expect(find.byType(NasabahBankPage), findsNothing);
 
       await visit(tester, router, '/approval-bank-sampah');
-      expect(find.byType(ApprovalBankSampahListPage), findsOneWidget);
+      expect(find.byType(BankMembershipPanel), findsOneWidget);
 
       // PIL-539: applying to another bank sampah from Bank sampah saya.
       await visit(tester, router, '/ajukan-bank-sampah');

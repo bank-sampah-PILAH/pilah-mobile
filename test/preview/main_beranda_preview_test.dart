@@ -57,17 +57,15 @@ void main() {
   });
 
   testWidgets('keeps an already registered repository', (tester) async {
-    di.registerSingleton<NasabahRepository>(
-        PreviewNasabahRepository(bankName: 'Bank Terdaftar'));
+    final repository = PreviewNasabahRepository(bankName: 'Bank Terdaftar');
+    di.registerSingleton<NasabahRepository>(repository);
     await tester.pumpWidget(preview.buildPreviewApp());
     final router = GoRouter.of(tester.element(find.byType(BerandaNasabahPage)));
     addTearDown(router.dispose);
-    // Two frames: the beranda resolves which bank is active before it loads
-    // one (PIL-235), and the preview has nowhere to have saved a choice, so
-    // that resolution settles as "none" a frame before the card is built.
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
-    expect(find.textContaining('Bank Terdaftar'), findsWidgets);
+    expect(find.text('Bank sampah saya'), findsOneWidget);
+    expect(di<NasabahRepository>(), same(repository));
   });
 
   testWidgets('the preview router also serves history and profile',

@@ -14,6 +14,8 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -27,35 +29,25 @@ import 'package:pilah_mobile/services/di.dart';
 import '../../../support/active_membership_support.dart';
 import '../../../support/nasabah_approval_support.dart';
 import '../../../support/auth_support.dart';
-import '../../../support/fake_image_download.dart';
 import '../../../support/stub_api.dart';
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
 /// A preview repository whose home carries the given balance and activities.
 class _HomeRepository extends PreviewNasabahRepository {
-  _HomeRepository(this.balanceUpdatedAt, this.activities, {this.logoUrl});
+  _HomeRepository(this.balanceUpdatedAt, this.activities);
 
   final DateTime? balanceUpdatedAt;
   final List<NasabahActivity> activities;
-  final String? logoUrl;
   final asked = <String?>[];
-
-  /// Banks the backend offers when the beranda asks without a membership,
-  /// which is how the nasabah picks one from this screen.
-  List<MembershipChoice> choices = const [];
 
   @override
   Future<NasabahBank> bank(String membershipId) async =>
-      NasabahBank('Bank Sampah Melati', 'Jl. Melati', 'Depok', '08123456789',
-          logoUrl: logoUrl);
+      NasabahBank('Bank Sampah Melati', 'Jl. Melati', 'Depok', '08123456789');
 
   @override
   Future<NasabahHome> home({String? membershipId}) async {
     asked.add(membershipId);
-    if (membershipId == null && choices.isNotEmpty) {
-      throw NasabahApiException('Pilih bank sampah Anda.', choices: choices);
-    }
     return NasabahHome(
       await profile(),
       membershipId ?? 'membership-1',
@@ -111,6 +103,8 @@ void main() {
     di.registerSingleton<NasabahRepository>(repository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
       GoRoute(path: '/beranda', builder: (_, __) => const BerandaNasabahPage()),
+      GoRoute(
+          path: '/dashboard', builder: (_, __) => const BerandaNasabahPage()),
       GoRoute(
         path: '/jadwal',
         builder: (_, state) => const Scaffold(body: Text('halaman jadwal')),
@@ -196,52 +190,51 @@ void main() {
     expect(repository.asked, ['membership-dipilih', 'membership-lain']);
   });
 
-  testWidgets(
-      'a bank picked here becomes the saved active bank, and a later switch '
-      'elsewhere still reloads', (tester) async {
+  testWidgets('switching from Bank sampah saya persists and reloads the home',
+      (tester) async {
     final storage = MemoryAppStorage();
     await ActiveMembershipSelection(storage)
         .select('nasabah-1', 'membership-a');
-    final repository = _HomeRepository(null, const [])
-      ..choices = const [MembershipChoice('membership-b', 'Mawar')];
+    final repository = _HomeRepository(null, const []);
 
     await pumpHome(
       tester,
       repository,
       storage: storage,
       memberships: [
-        membershipRow('membership-a'),
-        membershipRow('membership-b'),
+        membershipRow('membership-a', nama: 'Bank Anggrek'),
+        membershipRow('membership-b', nama: 'Bank Mawar'),
       ],
+      extraRoutes: {
+        ApprovalBankSampahListPage.route: (_, state) => BankMembershipPanel(
+              owner: const AuthEntity(
+                id: 'nasabah-1',
+                name: 'Siti',
+                email: 'siti@example.test',
+                photoUrl: '',
+                token: 'token',
+                role: 'nasabah',
+                nextStep: 'nasabah_dashboard',
+              ),
+              scrollToHistory: state.uri.queryParameters['tab'] == 'history',
+            ),
+      },
     );
     expect(repository.asked, ['membership-a']);
 
-    // Asking for the chooser back reloads without a membership, which is what
-    // makes the backend offer the banks to pick from.
-    await tester.tap(find.byTooltip('Pilih ulang bank sampah'));
+    await tester.tap(find.text('Bank sampah saya'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Mawar'));
+    await tester.tap(find.text('Bank Mawar').first);
     await tester.pumpAndSettle();
-
-    expect(repository.asked, ['membership-a', null, 'membership-b']);
+    await tester.tap(find.text('Jadikan bank aktif'));
+    await tester.pumpAndSettle();
 
     final container = ProviderScope.containerOf(
       tester.element(find.byType(BerandaNasabahPage)),
     );
-    // The bank picked here is the one "Bank sampah saya" marks as active, so
-    // the two screens cannot disagree about which bank is in use.
     expect(container.read(activeMembershipProvider).value, 'membership-b');
     expect(storage.values['active_membership_id:nasabah-1'], 'membership-b');
-
-    // Standing in for a switch made afterwards on the membership detail page:
-    // a pick made here must not deafen the beranda to it.
-    await container
-        .read(activeMembershipProvider.notifier)
-        .select('membership-a');
-    await tester.pumpAndSettle();
-
-    expect(repository.asked,
-        ['membership-a', null, 'membership-b', 'membership-a']);
+    expect(repository.asked, ['membership-a', 'membership-b', 'membership-b']);
   });
 
   testWidgets('follows the bank a membership refresh resolves to',
@@ -347,41 +340,17 @@ void main() {
     expect(find.text('riwayat membership-1'), findsOneWidget);
   });
 
-  testWidgets('choosing the bank again reloads the home without a membership',
+  testWidgets('Bank sampah saya replaces the standalone bank action',
       (tester) async {
-    final repository = _HomeRepository(null, const []);
-    await pumpHome(tester, repository);
-    expect(repository.asked, [null]);
-
-    await tester.tap(find.byTooltip('Pilih ulang bank sampah'));
-    await tester.pumpAndSettle();
-
-    expect(repository.asked, [null, null]);
-  });
-
-  testWidgets('a stored bank logo is drawn from its URL', (tester) async {
-    final debugImage = FakeImageDownload.install();
     await pumpHome(
-        tester, _HomeRepository(null, const [], logoUrl: '/media/logo.png'));
+      tester,
+      _HomeRepository(null, const []),
+      memberships: [membershipRow('membership-a')],
+    );
 
-    // Let the avatar start its download without racing it.
-    await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 100)));
-    debugImage.finish();
-    await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 200)));
-    await tester.pump();
-
-    final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar).first);
-    expect(avatar.foregroundImage, isA<NetworkImage>());
-    expect((avatar.foregroundImage! as NetworkImage).url, isNotEmpty);
-    FakeImageDownload.uninstall();
-  });
-
-  testWidgets('without a logo the membership card keeps its BS initial',
-      (tester) async {
-    await pumpHome(tester, _HomeRepository(null, const []));
-    expect(find.text('BS'), findsOneWidget);
+    expect(find.text('Bank sampah saya'), findsOneWidget);
+    expect(find.byTooltip('Pilih ulang bank sampah'), findsNothing);
+    expect(find.text('KEANGGOTAAN AKTIF'), findsNothing);
   });
 
   testWidgets('a failing schedule request is reported in its own card',

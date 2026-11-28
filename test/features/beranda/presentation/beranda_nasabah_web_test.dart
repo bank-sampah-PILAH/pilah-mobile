@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
-import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
@@ -76,14 +76,14 @@ void main() {
     expect(find.text('Beranda'), findsOneWidget);
   });
 
-  testWidgets('the web header keeps balance, bank detail and schedule',
+  testWidgets('the web home keeps one Bank sampah saya panel entry',
       (tester) async {
     await pump(tester, window: const Size(1440, 900), inWebShell: true);
 
     expect(find.textContaining('SALDO DI'), findsOneWidget);
-    expect(find.text('Detail Bank Sampah'), findsOneWidget);
+    expect(find.byType(BankMembershipHomeCard), findsOneWidget);
+    expect(find.text('Detail Bank Sampah'), findsNothing);
     expect(find.text('Jadwal Terdekat'), findsOneWidget);
-    expect(find.byType(AppTapTarget), findsOneWidget);
   });
 
   testWidgets('a tablet-width browser also gets the web page header',

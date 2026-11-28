@@ -6,10 +6,12 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -20,6 +22,15 @@ class NasabahVerificationHome extends ConsumerWidget {
   const NasabahVerificationHome({super.key, required this.name});
 
   final String name;
+
+  Future<void> _openHistory(BuildContext context, WidgetRef ref) async {
+    final auth = ref.read(authenticationProvider);
+    if (auth is! Authenticated) return;
+    await showBankMembershipPanel(context, scrollToHistory: true);
+    if (context.mounted) {
+      await ref.read(nasabahApprovalProvider.notifier).load(silent: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,18 +120,8 @@ class NasabahVerificationHome extends ConsumerWidget {
                   AppButton(
                     label: 'Bank sampah saya',
                     variant: AppButtonVariant.text,
-                    // The same glyph the beranda shows for this destination.
-                    // The wallet one belongs to Tabungan in the nav rail.
                     icon: Icons.fact_check_outlined,
-                    onPressed: () => context
-                        .push(ApprovalBankSampahListPage.route)
-                        .then((_) {
-                      if (context.mounted) {
-                        ref
-                            .read(nasabahApprovalProvider.notifier)
-                            .load(silent: true);
-                      }
-                    }),
+                    onPressed: () => _openHistory(context, ref),
                   ),
                   const SizedBox(height: 32),
                   Text('Perjalanan pengajuan',

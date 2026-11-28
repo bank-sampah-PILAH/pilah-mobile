@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 
+import '../../../../support/active_membership_support.dart';
+import '../../../../support/auth_support.dart';
 import '../../../../support/nasabah_approval_support.dart';
 
 NasabahMembershipEntity _membership(MembershipStatus status) =>
     NasabahMembershipEntity(
       id: 'membership-${status.name}',
-      bankSampahId: 'bank',
+      bankSampahId: 'bank-${status.name}',
       bankSampahNama: 'Bank Sampah Melati',
       bankSampahKota: 'Bandung',
       bankSampahAlamat: 'Jl. Melati',
@@ -29,7 +35,12 @@ void main() {
     NasabahApprovalState state, {
     String name = 'Siti',
   }) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final notifier = TestNasabahApprovalNotifier(initialState: state);
+    final storage = MemoryAppStorage();
     final router = GoRouter(routes: [
       GoRoute(
         path: '/',
@@ -38,17 +49,22 @@ void main() {
         ),
       ),
       GoRoute(
-        path: RegisterNasabahScreen.route,
-        builder: (_, __) => const Scaffold(body: Text('form pengajuan')),
+        path: ApprovalBankSampahListPage.route,
+        builder: (context, routeState) => BankMembershipPanel(
+          owner: const AuthEntity(
+            id: 'nasabah-1',
+            name: 'Siti',
+            email: 'siti@example.test',
+            photoUrl: '',
+            token: 'token-1',
+            role: 'nasabah',
+          ),
+          scrollToHistory: routeState.uri.queryParameters['tab'] == 'history',
+        ),
       ),
       GoRoute(
-        path: ApprovalBankSampahListPage.route,
-        builder: (context, __) => Scaffold(
-          body: TextButton(
-            onPressed: () => context.pop(),
-            child: const Text('daftar bank sampah'),
-          ),
-        ),
+        path: RegisterNasabahScreen.route,
+        builder: (_, __) => const Scaffold(body: Text('form pengajuan')),
       ),
       GoRoute(
         path: ApprovalBankSampahDetailPage.route,
@@ -62,15 +78,32 @@ void main() {
       ),
     ]);
     addTearDown(router.dispose);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [nasabahApprovalProvider.overrideWith(() => notifier)],
-      child: MaterialApp.router(routerConfig: router),
+    final auth = authNotifierIn(Authenticated(
+      authEntity: const AuthEntity(
+        id: 'nasabah-1',
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'token-1',
+        role: 'nasabah',
+      ),
+    ));
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
+      MaterialApp.router(routerConfig: router),
+      overrides: [
+        nasabahApprovalProvider.overrideWith(() => notifier),
+        activeMembershipSelectionProvider.overrideWithValue(
+          ActiveMembershipSelection(storage),
+        ),
+        activeMembershipUserIdProvider.overrideWithValue('nasabah-1'),
+      ],
     ));
     await tester.pump();
     return notifier;
   }
 
-  testWidgets('a nasabah still waiting can reach Bank sampah saya',
+  testWidgets('verification opens Bank sampah saya directly at history',
       (tester) async {
     await pumpHome(
       tester,
@@ -80,7 +113,9 @@ void main() {
     await tester.tap(find.text('Bank sampah saya'));
     await tester.pumpAndSettle();
 
-    expect(find.text('daftar bank sampah'), findsOneWidget);
+    expect(find.text('Bank Sampah Melati'), findsOneWidget);
+    expect(find.text('Belum ada riwayat pengajuan'), findsNothing);
+    expect(find.text('Belum ada bank yang diikuti'), findsNothing);
   });
 
   testWidgets('refreshes the status after returning from the list',
@@ -93,12 +128,11 @@ void main() {
 
     await tester.tap(find.text('Bank sampah saya'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('daftar bank sampah'));
+    await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // Silent, so a status that changed while they were on the list appears
-    // without the screen falling back to its spinner.
-    expect(notifier.loadCalls, [true]);
+    // The full page loads on entry; verification refreshes when it closes.
+    expect(notifier.loadCalls, [false, true]);
   });
 
   testWidgets('greets the nasabah while status loads', (tester) async {

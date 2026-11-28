@@ -15,7 +15,12 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/active_membership_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/bank_membership_panel.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
@@ -25,7 +30,9 @@ import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_c
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
+import '../../../support/active_membership_support.dart';
 import '../../../support/approved_membership.dart';
+import '../../../support/nasabah_approval_support.dart';
 import '../../../support/auth_support.dart';
 import '../../../support/fake_riwayat.dart';
 import '../../../support/profile_support.dart';
@@ -106,6 +113,7 @@ void main() {
     WidgetTester tester, {
     String bankName = 'Bank Sampah Melati',
     NasabahRepository? repository,
+    bool activeBank = false,
   }) async {
     final auth = authNotifierIn(Unauthenticated());
     final jadwalRepository = _JadwalRepository();
@@ -124,7 +132,27 @@ void main() {
       )),
     );
 
-    final approval = buildApprovedMembershipNotifier();
+    final storage = MemoryAppStorage();
+    if (activeBank) {
+      await ActiveMembershipSelection(storage)
+          .select('nasabah-225', 'membership');
+    }
+    final approval = activeBank
+        ? TestNasabahApprovalNotifier(
+            initialState: const NasabahApprovalLoaded([
+              NasabahMembershipEntity(
+                id: 'membership',
+                bankSampahId: 'bank',
+                bankSampahNama: 'Bank Sampah Melati',
+                bankSampahKota: 'Bandung',
+                bankSampahAlamat: 'Jl. Melati',
+                status: MembershipStatus.approved,
+                isActive: true,
+                dapatDibuka: true,
+              ),
+            ]),
+          )
+        : buildApprovedMembershipNotifier();
     di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
@@ -147,6 +175,10 @@ void main() {
       ProviderScope(
         overrides: [
           nasabahApprovalProvider.overrideWith(() => approval),
+          if (activeBank)
+            activeMembershipSelectionProvider.overrideWithValue(
+              ActiveMembershipSelection(storage),
+            ),
           // The shell watches the profile for its logo; no data source here.
           profileProvider.overrideWith(SilentProfileNotifier.new),
         ],
@@ -205,22 +237,23 @@ void main() {
       }
     });
 
-    testWidgets('beranda menyediakan akses aktif ke Detail Bank Sampah',
+    testWidgets('Bank sampah saya opens the full page on Bank Diikuti',
         (tester) async {
       final semantics = tester.ensureSemantics();
       try {
-        await loginAsNasabah(tester);
-        final entry = find.text('Detail Bank Sampah');
-        await tester.scrollUntilVisible(entry, 200);
-        await tester.pumpAndSettle();
-        expect(entry, findsOneWidget);
+        await loginAsNasabah(tester, activeBank: true);
         expect(
-          tester
-              .getSemantics(entry)
-              .getSemanticsData()
-              .hasAction(SemanticsAction.tap),
-          isTrue,
+          find.descendant(
+            of: find.byType(BankMembershipHomeCard),
+            matching: find.text('Bank Sampah Melati'),
+          ),
+          findsOneWidget,
         );
+        await tester.tap(find.text('Bank sampah saya'));
+        await tester.pumpAndSettle();
+        expect(find.text('Bank Diikuti'), findsOneWidget);
+        expect(find.text('Riwayat pengajuan'), findsOneWidget);
+        expect(find.text('Bank Sampah Melati'), findsWidgets);
       } finally {
         semantics.dispose();
       }
@@ -233,41 +266,16 @@ void main() {
       expect(find.text('TOTAL KAS BULAN INI'), findsNothing);
     });
 
-    for (final entry in {
-      'Detail Bank Sampah': 'Jl. Melati',
-    }.entries) {
-      testWidgets('ketuk ${entry.key} membuka informasi dan dapat ditutup', (
-        tester,
-      ) async {
-        await loginAsNasabah(tester);
-        await tester.scrollUntilVisible(find.text(entry.key), 200);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(entry.key));
-        await tester.pumpAndSettle();
-        expect(find.text(entry.value), findsOneWidget);
-        await tester.ensureVisible(find.text('Tutup'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Tutup'));
-        await tester.pumpAndSettle();
-        expect(find.text(entry.value), findsNothing);
-        expect(
-          find.descendant(
-            of: find.byType(AppBar),
-            matching: find.text('Beranda'),
-          ),
-          findsOneWidget,
-        );
-        expect(tester.takeException(), isNull);
-      });
-    }
-    testWidgets(
-        'Detail Bank Sampah sheet renders the shared bank detail widget', (
-      tester,
-    ) async {
-      await loginAsNasabah(tester);
-      await tester.scrollUntilVisible(find.text('Detail Bank Sampah'), 200);
+    testWidgets('active bank detail uses the mobile sheet and animated row',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await loginAsNasabah(tester, activeBank: true);
+      await tester.tap(find.text('Bank sampah saya'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Detail Bank Sampah'));
+      await tester.tap(find.text('Bank Sampah Melati').last);
       await tester.pumpAndSettle();
       expect(find.byType(NasabahBankDetail), findsOneWidget);
       expect(
@@ -275,16 +283,31 @@ void main() {
               of: find.byType(NasabahBankDetail),
               matching: find.text('Jl. Melati')),
           findsOneWidget);
+      expect(
+          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
+          .5);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(
+          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation)).turns,
+          0);
+      expect(tester.takeException(), isNull);
     });
 
     for (final bankName in ['Bank Sampah Melati', 'Bank Sampah Kenanga']) {
       testWidgets('menampilkan unit milik akun: $bankName', (tester) async {
         await loginAsNasabah(tester, bankName: bankName);
-        expect(find.text(bankName), findsOneWidget);
+        expect(
+          find.textContaining('SALDO DI ${bankName.toUpperCase()}'),
+          findsOneWidget,
+        );
         final otherBank = bankName == 'Bank Sampah Melati'
             ? 'Bank Sampah Kenanga'
             : 'Bank Sampah Melati';
-        expect(find.text(otherBank), findsNothing);
+        expect(
+          find.textContaining('SALDO DI ${otherBank.toUpperCase()}'),
+          findsNothing,
+        );
       });
     }
 

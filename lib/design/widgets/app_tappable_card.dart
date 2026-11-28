@@ -8,12 +8,14 @@ class AppTappableCard extends StatelessWidget {
   final VoidCallback onTap;
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final bool outlined;
 
   const AppTappableCard({
     super.key,
     required this.onTap,
     required this.child,
     this.padding = const EdgeInsets.all(16),
+    this.outlined = false,
   });
 
   static const _radius = 16.0;
@@ -28,6 +30,7 @@ class AppTappableCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(_radius),
+            border: outlined ? Border.all(color: AppColors.border) : null,
             boxShadow: [
               BoxShadow(
                 color: AppColors.black.withValues(alpha: 0.03),
