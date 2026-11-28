@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/font_size.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
@@ -60,6 +62,8 @@ class BankMembershipPanel extends ConsumerStatefulWidget {
 
 class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
     with SingleTickerProviderStateMixin {
+  final _search = TextEditingController();
+  MembershipStatus? _historyStatus;
   bool _ownerDataReady = false;
   bool _loading = false;
   bool _loadFailed = false;
@@ -78,9 +82,12 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
 
   @override
   void dispose() {
+    _search.dispose();
     _tabController.dispose();
     super.dispose();
   }
+
+  void _clearSearch() => setState(_search.clear);
 
   bool _ownsCurrentSession() => _sameOwner(
         widget.owner,
@@ -164,6 +171,31 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
             Tab(text: 'Bank Diikuti'),
             Tab(text: 'Riwayat pengajuan'),
           ]),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              0,
+            ),
+            child: TextField(
+              controller: _search,
+              onChanged: (_) => setState(() {}),
+              textInputAction: TextInputAction.search,
+              style: appInputStyle,
+              decoration: appSearchDecoration(
+                hintText: 'Cari nama bank sampah',
+              ).copyWith(
+                suffixIcon: _search.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Hapus pencarian',
+                        onPressed: _clearSearch,
+                        icon: const Icon(Icons.close),
+                      ),
+              ),
+            ),
+          ),
           Expanded(child: _body(state, activeId)),
         ]),
       ),
@@ -214,67 +246,122 @@ class _BankMembershipPanelState extends ConsumerState<BankMembershipPanel>
         .toList();
     final activeIndex = followed.indexWhere((item) => item.id == activeId);
     if (activeIndex > 0) followed.insert(0, followed.removeAt(activeIndex));
+    final query = _search.text.trim().toLowerCase();
 
     return TabBarView(controller: _tabController, children: [
-      _followedTab(followed, activeId),
-      _historyTab(history),
+      _followedTab(followed, activeId, query),
+      _historyTab(history, query),
     ]);
   }
 
+  bool _matchesName(NasabahMembershipEntity membership, String query) =>
+      membership.bankSampahNama.toLowerCase().contains(query);
+
   Widget _followedTab(
-          List<NasabahMembershipEntity> followed, String? activeId) =>
-      ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
+    List<NasabahMembershipEntity> followed,
+    String? activeId,
+    String query,
+  ) {
+    final matches = followed.where((item) => _matchesName(item, query));
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        if (followed.isEmpty)
+          const _PanelEmptyState(
+            title: 'Belum ada bank yang diikuti',
+            message: 'Bank yang disetujui akan muncul di sini.',
+          )
+        else if (matches.isEmpty)
+          const _PanelEmptyState(
+            title: 'Tidak ada bank diikuti yang cocok',
+            message: 'Ubah atau hapus pencarian nama bank sampah.',
+          ),
+        for (final membership in matches) ...[
+          _MembershipRow(
+            key: ValueKey(membership.id),
+            membership: membership,
+            isActive: membership.id == activeId,
+            history: false,
+            onTap: isSelectableMembership(membership)
+                ? () => _openBankDetail(membership)
+                : null,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ],
+    );
+  }
+
+  Widget _historyTab(List<NasabahMembershipEntity> history, String query) {
+    final matches = history.where((membership) =>
+        _matchesName(membership, query) &&
+        (_historyStatus == null || membership.status == _historyStatus));
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        if (history.isNotEmpty) _historyFilters(query),
+        if (history.isEmpty)
+          const _PanelEmptyState(
+            title: 'Belum ada riwayat pengajuan',
+            message: 'Pengajuan ke bank sampah akan muncul di sini.',
+          )
+        else if (matches.isEmpty)
+          const _PanelEmptyState(
+            title: 'Tidak ada pengajuan yang cocok',
+            message: 'Ubah pencarian atau filter status pengajuan.',
+          ),
+        for (final membership in matches) ...[
+          _MembershipRow(
+            key: ValueKey(membership.id),
+            membership: membership,
+            isActive: false,
+            history: true,
+            onTap: () => _openHistoryDetail(membership),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        if (history.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: 'Ajukan bank baru',
+            icon: Icons.add,
+            variant: AppButtonVariant.outlined,
+            isLoading: _applying,
+            onPressed: _applying ? null : _apply,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _historyFilters(String query) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (followed.isEmpty)
-            const _PanelEmptyState(
-              title: 'Belum ada bank yang diikuti',
-              message: 'Bank yang disetujui akan muncul di sini.',
+          Wrap(
+            spacing: AppSpacing.xs,
+            children: [
+              _statusChip('Semua', null),
+              _statusChip('Menunggu', MembershipStatus.pending),
+              _statusChip('Disetujui', MembershipStatus.approved),
+              _statusChip('Ditolak', MembershipStatus.rejected),
+            ],
+          ),
+          if (query.isNotEmpty || _historyStatus != null)
+            TextButton(
+              onPressed: () => setState(() {
+                _search.clear();
+                _historyStatus = null;
+              }),
+              child: const Text('Reset pencarian dan filter'),
             ),
-          for (final membership in followed) ...[
-            _MembershipRow(
-              key: ValueKey(membership.id),
-              membership: membership,
-              isActive: membership.id == activeId,
-              history: false,
-              onTap: isSelectableMembership(membership)
-                  ? () => _openBankDetail(membership)
-                  : null,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
+          const SizedBox(height: AppSpacing.sm),
         ],
       );
 
-  Widget _historyTab(List<NasabahMembershipEntity> history) => ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          if (history.isEmpty)
-            const _PanelEmptyState(
-              title: 'Belum ada riwayat pengajuan',
-              message: 'Pengajuan ke bank sampah akan muncul di sini.',
-            ),
-          for (final membership in history) ...[
-            _MembershipRow(
-              key: ValueKey(membership.id),
-              membership: membership,
-              isActive: false,
-              history: true,
-              onTap: () => _openHistoryDetail(membership),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          if (history.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              label: 'Ajukan bank baru',
-              icon: Icons.add,
-              variant: AppButtonVariant.outlined,
-              isLoading: _applying,
-              onPressed: _applying ? null : _apply,
-            ),
-          ],
-        ],
+  Widget _statusChip(String label, MembershipStatus? status) => AppChip(
+        label: label,
+        selected: _historyStatus == status,
+        onTap: () => setState(() => _historyStatus = status),
       );
 
   Future<void> _openBankDetail(NasabahMembershipEntity membership) async {

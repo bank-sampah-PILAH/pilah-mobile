@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -215,6 +216,135 @@ void main() {
     expect(find.text('Jadikan bank aktif'), findsNothing);
     await tester.tap(find.text('Bank Tidak Tersedia'));
     await tester.pumpAndSettle();
+    expect(storage.values['active_membership_id:nasabah-1'], bankA.id);
+    expect(container.read(activeMembershipProvider).value, bankA.id);
+  });
+
+  testWidgets('search filters followed and history by bank name',
+      (tester) async {
+    final pending = membershipRow(
+      'pending-a',
+      nama: 'Anggrek',
+      status: MembershipStatus.pending,
+    );
+    final rejected = membershipRow(
+      'rejected-c',
+      nama: 'Cempaka',
+      status: MembershipStatus.rejected,
+    );
+    final storage = MemoryAppStorage()
+      ..values['active_membership_id:nasabah-1'] = bankA.id;
+    final (container, _) = await pumpPage(
+      tester,
+      memberships: [bankA, pending, rejected],
+      storage: storage,
+    );
+    final search = find.byType(TextField);
+
+    await tester.enterText(search, '  BANK A  ');
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+    await tester.tap(find.text('Riwayat pengajuan'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(search).controller!.text, '  BANK A  ');
+    expect(find.text('Bank A').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+
+    await tester.enterText(search, 'a');
+    await tester.pumpAndSettle();
+    expect(find.text('Anggrek').hitTestable(), findsOneWidget);
+    expect(find.text('Cempaka').hitTestable(), findsOneWidget);
+    await tester.tap(find.text('Bank Diikuti'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+    await tester.enterText(search, 'no matching bank');
+    await tester.pumpAndSettle();
+    expect(find.text('Tidak ada bank diikuti yang cocok'), findsOneWidget);
+    expect(storage.values['active_membership_id:nasabah-1'], bankA.id);
+    expect(container.read(activeMembershipProvider).value, bankA.id);
+  });
+
+  testWidgets('search clear and no-match differ from true empty state',
+      (tester) async {
+    await pumpPage(tester, memberships: [], storage: MemoryAppStorage());
+    final search = find.byType(TextField);
+
+    expect(find.text('Belum ada bank yang diikuti'), findsOneWidget);
+    await tester.enterText(search, 'bank');
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada bank yang diikuti'), findsOneWidget);
+    expect(find.text('Tidak ada bank diikuti yang cocok'), findsNothing);
+    await tester.tap(find.byTooltip('Hapus pencarian'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada bank yang diikuti'), findsOneWidget);
+    await tester.tap(find.text('Riwayat pengajuan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada riwayat pengajuan'), findsOneWidget);
+    await tester.enterText(search, 'bank');
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada riwayat pengajuan'), findsOneWidget);
+    expect(find.text('Tidak ada pengajuan yang cocok'), findsNothing);
+  });
+
+  testWidgets('history status filter combines with search and resets',
+      (tester) async {
+    final pending = membershipRow(
+      'pending-a',
+      nama: 'Anggrek',
+      status: MembershipStatus.pending,
+    );
+    final rejected = membershipRow(
+      'rejected-c',
+      nama: 'Cempaka',
+      status: MembershipStatus.rejected,
+    );
+    final storage = MemoryAppStorage()
+      ..values['active_membership_id:nasabah-1'] = bankA.id;
+    final (container, _) = await pumpPage(
+      tester,
+      memberships: [bankA, pending, rejected],
+      storage: storage,
+    );
+    final search = find.byType(TextField);
+
+    await tester.tap(find.text('Riwayat pengajuan'));
+    await tester.pumpAndSettle();
+    await tester.enterText(search, 'a');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppChip, 'Ditolak'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cempaka').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+
+    await tester.tap(find.text('Bank Diikuti'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bank A').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+    await tester.tap(find.text('Riwayat pengajuan'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<AppChip>(find.widgetWithText(AppChip, 'Ditolak')).selected,
+      isTrue,
+    );
+
+    await tester.tap(find.byTooltip('Hapus pencarian'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(search).controller!.text, isEmpty);
+    expect(
+      tester.widget<AppChip>(find.widgetWithText(AppChip, 'Ditolak')).selected,
+      isTrue,
+    );
+    expect(find.text('Cempaka').hitTestable(), findsOneWidget);
+    expect(find.text('Anggrek').hitTestable(), findsNothing);
+
+    await tester.tap(find.text('Reset pencarian dan filter'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(search).controller!.text, isEmpty);
+    expect(find.text('Bank A'), findsOneWidget);
+    expect(find.text('Anggrek'), findsOneWidget);
+    expect(find.text('Cempaka'), findsOneWidget);
     expect(storage.values['active_membership_id:nasabah-1'], bankA.id);
     expect(container.read(activeMembershipProvider).value, bankA.id);
   });
